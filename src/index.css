@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root {
+  --color-bg: #0a0a0f;
+  --color-surface: #161210;
+  --color-gold: #d4af70;
+  --color-hp: #c04040;
+  --color-mana: #3060c0;
+  --color-idle: #80c040;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-gold);
+  font-family: 'Crimson Text', serif;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Cinzel', serif;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.unequip-btn {
+  color: #3a2818;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.unequip-btn:hover {
+  color: #c04040;
+}

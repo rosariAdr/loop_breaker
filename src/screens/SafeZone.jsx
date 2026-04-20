@@ -1,0 +1,854 @@
+import { useState } from 'react'
+import { useGameStore } from '../store/gameStore'
+import { ZONES } from '../data/zones'
+import { RESOURCES } from '../data/resources'
+import { SKILLS } from '../data/skills'
+import { QUESTS } from '../data/quests'
+import {
+  EQUIPMENT_TEMPLATES,
+  RARITY_TIERS,
+  RARITY_CONFIG,
+  canCraft,
+  createEquipmentInstance,
+} from '../data/equipment'
+
+// Génère les bâtiments d'un village de façon déterministe
+// (basé sur l'id du village pour que ça soit stable entre les sessions)
+function generateVillageBuildings(villageId, optionalBuildings) {
+  // Seed simple basé sur le nom du village
+  const seed = villageId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  const rng = (n) => ((seed * 9301 + 49297) % 233280) / 233280 < n
+
+  const buildings = []
+  optionalBuildings.forEach(({ id, chance }, i) => {
+    const hash = ((seed + i * 1234) % 100) / 100
+    if (hash < chance) buildings.push(id)
+  })
+  return buildings
+}
+
+export default function SafeZone() {
+  const { world, setScreen, hero, sleep, healHero, restoreHeroMana, spendGold, addConsumable, removeResource, addEquipmentToInventory } = useGameStore()
+  const [activeBuilding, setActiveBuilding] = useState(null)
+
+  const zone = ZONES[world.currentZone]
+  if (!zone) return null
+
+  // Trouver la localisation actuelle
+  const isCity = zone.city?.id === world.currentLocation
+  const location = isCity
+    ? zone.city
+    : zone.villages?.find(v => v.id === world.currentLocation)
+
+  if (!location) return null
+
+  // Construire la liste des bâtiments disponibles
+  let buildings = [...(location.buildings ?? [])]
+  if (!isCity && location.optionalBuildings) {
+    // Récupérer depuis le store ou générer
+    const stored = world.generatedVillages?.[location.id]
+    if (stored) {
+      buildings = [...buildings, ...stored.buildings]
+    } else {
+      const optional = generateVillageBuildings(location.id, location.optionalBuildings)
+      buildings = [...buildings, ...optional]
+      // Sauvegarder dans le store
+      useGameStore.setState(state => ({
+        world: {
+          ...state.world,
+          generatedVillages: {
+            ...state.world.generatedVillages,
+            [location.id]: { buildings: optional }
+          }
+        }
+      }))
+    }
+  }
+
+  const BUILDING_INFO = {
+    inn: { icon: '🍺', name: 'The Hearth Inn', color: '#c08040' },
+    church: { icon: '⛪', name: 'Church of the Old Gods', color: '#c0a060' },
+    merchant: { icon: '🛒', name: "Merchant's Stall", color: '#60c080' },
+    alchemy: { icon: '⚗️', name: 'Alchemy Workshop', color: '#8060c0' },
+    blacksmith: { icon: '🔨', name: "Blacksmith's Forge", color: '#808080' },
+    knight_trainer: { icon: '⚔', name: 'Sir Aldric — Knight Trainer', color: '#c08040' },
+  }
+
+  return (
+    <div className="flex h-full" style={{ minHeight: 'calc(100vh - 48px)' }}>
+      {/* Panneau principal */}
+      <div className="flex-1 flex flex-col p-6 gap-5">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => { setActiveBuilding(null); setScreen('world_map') }}
+            style={{ color: '#6a5a4a', fontSize: '0.85rem', fontFamily: 'Cinzel, serif' }}
+          >
+            ← Map
+          </button>
+          <div>
+            <h2 style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '1.3rem' }}>
+              {location.name}
+            </h2>
+            <p style={{ color: '#6a5a4a', fontSize: '0.78rem' }}>
+              {isCity ? '🏰 Major City' : '🏘 Village'} · {zone.name}
+            </p>
+          </div>
+        </div>
+
+        {/* Grille des bâtiments */}
+        {!activeBuilding && (
+          <div className="grid grid-cols-2 gap-3 max-w-lg">
+            {buildings.map(buildingId => {
+              const info = BUILDING_INFO[buildingId]
+              if (!info) return null
+              return (
+                <button
+                  key={buildingId}
+                  onClick={() => setActiveBuilding(buildingId)}
+                  className="p-4 rounded text-left transition-all hover:opacity-90"
+                  style={{
+                    background: '#0f0c08',
+                    border: `1px solid #2a2018`,
+                    borderLeft: `3px solid ${info.color}`,
+                  }}
+                >
+                  <p style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>{info.icon}</p>
+                  <p style={{ fontFamily: 'Cinzel, serif', color: info.color, fontSize: '0.85rem' }}>
+                    {info.name}
+                  </p>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Contenu du bâtiment sélectionné */}
+        {activeBuilding === 'inn' && (
+          <InnPanel onBack={() => setActiveBuilding(null)} />
+        )}
+        {activeBuilding === 'church' && (
+          <ChurchPanel onBack={() => setActiveBuilding(null)} />
+        )}
+        {activeBuilding === 'merchant' && (
+          <MerchantPanel onBack={() => setActiveBuilding(null)} zoneId={world.currentZone} />
+        )}
+        {activeBuilding === 'alchemy' && (
+          <AlchemyPanel onBack={() => setActiveBuilding(null)} />
+        )}
+        {activeBuilding === 'blacksmith' && (
+          <BlacksmithPanel onBack={() => setActiveBuilding(null)} zoneId={world.currentZone} />
+        )}
+        {activeBuilding === 'knight_trainer' && (
+          <KnightTrainerPanel onBack={() => setActiveBuilding(null)} />
+        )}
+      </div>
+
+      {/* Mini sidebar */}
+      <aside
+        className="w-48 p-4 border-l flex flex-col gap-4"
+        style={{ borderColor: '#2a2018', background: '#0a0805' }}
+      >
+        <SidebarStat label="HP" value={`${hero.stats.hp}/${hero.stats.maxHp}`} color="#c04040" />
+        <SidebarStat label="Mana" value={`${hero.stats.mana}/${hero.stats.maxMana}`} color="#3060c0" />
+        <SidebarStat label="Gold" value={`${hero.inventory.gold}g`} color="#d4af70" />
+        <SidebarStat label="Tokens" value={`${hero.reputationTokens}`} color="#c084fc" />
+        <SidebarStat label="Day" value={world.dayCount} color="#6a5a4a" />
+      </aside>
+    </div>
+  )
+}
+
+// ── Bâtiments ─────────────────────────────────────────────────────────────────
+
+function InnPanel({ onBack }) {
+  const { sleep, world } = useGameStore()
+
+  const handleSleep = () => {
+    sleep()
+    onBack()
+  }
+
+  return (
+    <Panel title="🍺 The Hearth Inn" onBack={onBack}>
+      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
+        "Rest your bones, traveler. The road is long."
+      </p>
+      <div className="flex flex-col gap-3 max-w-sm">
+        <InfoLine label="Day" value={world.dayCount} />
+        <InfoLine label="Tick" value={`${world.tickCount}/24`} />
+
+        <button
+          onClick={handleSleep}
+          className="mt-2 px-4 py-3 rounded transition-all hover:opacity-90"
+          style={{
+            fontFamily: 'Cinzel, serif',
+            background: '#0f1a0f',
+            color: '#80c040',
+            border: '1px solid #406030',
+          }}
+        >
+          💤 Sleep until morning
+          <br />
+          <span style={{ fontSize: '0.75rem', color: '#507040' }}>
+            Fully restores HP & Mana · Advances to Day {world.dayCount + 1}
+          </span>
+        </button>
+      </div>
+    </Panel>
+  )
+}
+
+function ChurchPanel({ onBack }) {
+  const { hero, healHero, restoreHeroMana } = useGameStore()
+
+  const handlePray = () => {
+    healHero(Math.round(hero.stats.maxHp * 0.40))
+    restoreHeroMana(Math.round(hero.stats.maxMana * 0.40))
+  }
+
+  const alreadyFull = hero.stats.hp >= hero.stats.maxHp && hero.stats.mana >= hero.stats.maxMana
+
+  return (
+    <Panel title="⛪ Church of the Old Gods" onBack={onBack}>
+      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
+        "The gods hear those who kneel."
+      </p>
+      <div className="flex flex-col gap-3 max-w-sm">
+        <InfoLine label="HP" value={`${hero.stats.hp} / ${hero.stats.maxHp}`} />
+        <InfoLine label="Mana" value={`${hero.stats.mana} / ${hero.stats.maxMana}`} />
+
+        <button
+          onClick={handlePray}
+          disabled={alreadyFull}
+          className="mt-2 px-4 py-3 rounded transition-all"
+          style={{
+            fontFamily: 'Cinzel, serif',
+            background: alreadyFull ? '#0a0a0a' : '#0f0f1a',
+            color: alreadyFull ? '#3a3a4a' : '#c0a0ff',
+            border: `1px solid ${alreadyFull ? '#1a1a2a' : '#5040a0'}`,
+            cursor: alreadyFull ? 'not-allowed' : 'pointer',
+          }}
+        >
+          🙏 Pray
+          <br />
+          <span style={{ fontSize: '0.75rem', color: '#7060b0' }}>
+            {alreadyFull ? 'Already at full strength' : 'Restores 40% HP & Mana'}
+          </span>
+        </button>
+      </div>
+    </Panel>
+  )
+}
+
+function MerchantPanel({ onBack, zoneId }) {
+  const { hero, spendGold, addConsumable, addEquipmentToInventory } = useGameStore()
+  const [tab, setTab] = useState('potions') // 'potions' | 'equipment'
+
+  const potionStock = [
+    'hp_potion_small', 'hp_potion_medium',
+    'mana_potion_small', 'mana_potion_medium',
+  ]
+
+  // Équipements vendus par le marchand : templates avec merchantStock
+  const equipStock = Object.values(EQUIPMENT_TEMPLATES).flatMap(t =>
+    Object.entries(t.merchantStock ?? {})
+      .filter(([, avail]) => avail)
+      .map(([rarity]) => ({ templateId: t.id, rarity, price: t.merchantBuyPrice?.[rarity] ?? 999 }))
+  )
+
+  const buyPotion = (id) => {
+    const res = RESOURCES[id]
+    if (!res || hero.inventory.gold < res.buyPrice) return
+    spendGold(res.buyPrice)
+    addConsumable(id, 1)
+  }
+
+  const buyEquipment = (templateId, rarity, price) => {
+    if (hero.inventory.gold < price) return
+    spendGold(price)
+    addEquipmentToInventory(createEquipmentInstance(templateId, rarity))
+  }
+
+  return (
+    <Panel title="🛒 Merchant's Stall" onBack={onBack}>
+      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+        "Quality goods at honest prices. Mostly."
+      </p>
+      <div className="flex flex-col gap-2" style={{ maxWidth: '480px' }}>
+        <InfoLine label="Gold" value={`${hero.inventory.gold}g`} />
+
+        {/* Tabs */}
+        <div className="flex gap-2 mt-1 mb-2">
+          {['potions', 'equipment'].map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className="px-3 py-1 rounded text-xs capitalize"
+              style={{
+                fontFamily: 'Cinzel, serif',
+                background: tab === t ? '#1a1408' : '#0f0c08',
+                color: tab === t ? '#d4af70' : '#4a3a2a',
+                border: `1px solid ${tab === t ? '#3a2818' : '#1a1410'}`,
+              }}
+            >
+              {t === 'potions' ? '🧪 Potions' : '⚔ Equipment'}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'potions' && potionStock.map(id => {
+          const res = RESOURCES[id]
+          if (!res) return null
+          const canAfford = hero.inventory.gold >= res.buyPrice
+          const owned = hero.inventory.consumables[id] || 0
+          return (
+            <div key={id} className="flex items-center justify-between p-2 rounded"
+              style={{ background: '#0f0c08', border: '1px solid #1a1410' }}>
+              <div>
+                <p style={{ color: '#d4af70', fontSize: '0.85rem' }}>{res.name}</p>
+                <p style={{ color: '#6a5a4a', fontSize: '0.75rem' }}>{res.description} · Owned: {owned}</p>
+              </div>
+              <button
+                onClick={() => buyPotion(id)}
+                disabled={!canAfford}
+                className="px-3 py-1 rounded text-xs ml-3"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  background: canAfford ? '#1a1408' : '#0f0c08',
+                  color: canAfford ? '#d4af70' : '#4a3a2a',
+                  border: `1px solid ${canAfford ? '#3a2818' : '#1a1410'}`,
+                  cursor: canAfford ? 'pointer' : 'not-allowed',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Buy {res.buyPrice}g
+              </button>
+            </div>
+          )
+        })}
+
+        {tab === 'equipment' && equipStock.map(({ templateId, rarity, price }) => {
+          const t = EQUIPMENT_TEMPLATES[templateId]
+          const rc = RARITY_CONFIG[rarity]
+          const canAfford = hero.inventory.gold >= price
+          return (
+            <div key={`${templateId}_${rarity}`} className="flex items-center justify-between p-2 rounded"
+              style={{ background: '#0f0c08', border: '1px solid #1a1410', borderLeft: `3px solid ${rc.color}` }}>
+              <div>
+                <p style={{ color: rc.color, fontSize: '0.85rem', fontFamily: 'Cinzel, serif' }}>
+                  {rc.label} {t.name}
+                </p>
+                <p style={{ color: '#6a5a4a', fontSize: '0.73rem' }}>
+                  {Object.entries(t.baseStats).map(([s, v]) =>
+                    `+${Math.round(v * rc.mult)} ${s}`
+                  ).join(' · ')}
+                </p>
+              </div>
+              <button
+                onClick={() => buyEquipment(templateId, rarity, price)}
+                disabled={!canAfford}
+                className="px-3 py-1 rounded text-xs ml-3"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  background: canAfford ? '#1a1408' : '#0f0c08',
+                  color: canAfford ? '#d4af70' : '#4a3a2a',
+                  border: `1px solid ${canAfford ? '#3a2818' : '#1a1410'}`,
+                  cursor: canAfford ? 'pointer' : 'not-allowed',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Buy {price}g
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </Panel>
+  )
+}
+
+function AlchemyPanel({ onBack }) {
+  return (
+    <Panel title="⚗️ Alchemy Workshop" onBack={onBack}>
+      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', fontStyle: 'italic' }}>
+        "The alchemist squints at your ingredients."
+      </p>
+      <p style={{ color: '#4a3a2a', fontSize: '0.82rem', marginTop: '1rem' }}>
+        Crafting system coming in a future update.
+      </p>
+    </Panel>
+  )
+}
+
+function BlacksmithPanel({ onBack }) {
+  const { hero, spendGold, removeResource, addEquipmentToInventory } = useGameStore()
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [selectedRarity, setSelectedRarity] = useState('common')
+  const [craftMsg, setCraftMsg] = useState(null)
+
+  // Templates disponibles au forgeron
+  const smithTemplates = Object.values(EQUIPMENT_TEMPLATES).filter(t =>
+    t.availableAt?.includes('blacksmith')
+  )
+
+  const template = selectedTemplate ? EQUIPMENT_TEMPLATES[selectedTemplate] : null
+  const recipe = template?.craftRecipes?.[selectedRarity]
+
+  const hasIngredients = recipe ? canCraft(selectedTemplate, selectedRarity, hero.inventory.resources) : false
+  const hasGold = recipe ? hero.inventory.gold >= recipe.gold : false
+  const canDoCraft = hasIngredients && hasGold
+
+  const handleCraft = () => {
+    if (!canDoCraft || !recipe) return
+    // Consommer les ingrédients
+    Object.entries(recipe.ingredients).forEach(([resId, qty]) => removeResource(resId, qty))
+    spendGold(recipe.gold)
+    const item = createEquipmentInstance(selectedTemplate, selectedRarity)
+    addEquipmentToInventory(item)
+    setCraftMsg(`✓ ${item.name} crafted!`)
+    setTimeout(() => setCraftMsg(null), 2500)
+  }
+
+  // Rarités disponibles pour le template sélectionné
+  const availableRarities = template
+    ? RARITY_TIERS.filter(r => template.craftRecipes?.[r])
+    : []
+
+  return (
+    <Panel title="🔨 Blacksmith's Forge" onBack={onBack}>
+      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+        "The forge roars. The smith nods at you."
+      </p>
+
+      <div className="flex gap-4" style={{ maxWidth: '580px' }}>
+        {/* Liste des templates */}
+        <div className="flex flex-col gap-1" style={{ width: '180px', flexShrink: 0 }}>
+          <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+            Items
+          </p>
+          {['weapon', 'helmet', 'armor', 'boots'].map(slot => (
+            <div key={slot}>
+              <p style={{ color: '#3a2a1a', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '0.4rem', marginBottom: '0.2rem' }}>
+                {slot}
+              </p>
+              {smithTemplates.filter(t => t.slot === slot).map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => { setSelectedTemplate(t.id); setSelectedRarity('common'); setCraftMsg(null) }}
+                  className="w-full text-left px-2 py-1.5 rounded text-xs mb-0.5"
+                  style={{
+                    background: selectedTemplate === t.id ? '#1a1208' : '#0f0c08',
+                    color: selectedTemplate === t.id ? '#d4af70' : '#6a5a4a',
+                    border: `1px solid ${selectedTemplate === t.id ? '#3a2818' : '#1a1410'}`,
+                    fontFamily: 'Cinzel, serif',
+                  }}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Détail du craft */}
+        <div className="flex-1 flex flex-col gap-3">
+          {!template ? (
+            <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
+              Select an item to craft.
+            </p>
+          ) : (
+            <>
+              <div>
+                <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.95rem' }}>{template.name}</p>
+                <p style={{ color: '#6a5a4a', fontSize: '0.75rem', marginTop: '0.2rem' }}>{template.description}</p>
+              </div>
+
+              {/* Sélecteur de rareté */}
+              <div className="flex flex-wrap gap-1">
+                {availableRarities.map(r => {
+                  const rc = RARITY_CONFIG[r]
+                  return (
+                    <button
+                      key={r}
+                      onClick={() => { setSelectedRarity(r); setCraftMsg(null) }}
+                      className="px-2 py-0.5 rounded text-xs"
+                      style={{
+                        fontFamily: 'Cinzel, serif',
+                        color: rc.color,
+                        background: selectedRarity === r ? '#1a1210' : '#0f0c08',
+                        border: `1px solid ${selectedRarity === r ? rc.color : '#2a2018'}`,
+                      }}
+                    >
+                      {rc.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Recette */}
+              {recipe && (
+                <div className="flex flex-col gap-1">
+                  <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Recipe
+                  </p>
+                  {Object.entries(recipe.ingredients).map(([resId, qty]) => {
+                    const res = RESOURCES[resId]
+                    const owned = hero.inventory.resources[resId] ?? 0
+                    const ok = owned >= qty
+                    return (
+                      <div key={resId} className="flex justify-between items-center"
+                        style={{ fontSize: '0.78rem' }}>
+                        <span style={{ color: ok ? '#80c040' : '#c04040' }}>
+                          {ok ? '✓' : '✗'} {res?.name ?? resId}
+                        </span>
+                        <span style={{ color: ok ? '#6a9a4a' : '#8a3a2a' }}>
+                          {owned}/{qty}
+                        </span>
+                      </div>
+                    )
+                  })}
+                  <div className="flex justify-between items-center mt-1" style={{ fontSize: '0.78rem' }}>
+                    <span style={{ color: hasGold ? '#80c040' : '#c04040' }}>
+                      {hasGold ? '✓' : '✗'} Gold
+                    </span>
+                    <span style={{ color: hasGold ? '#6a9a4a' : '#8a3a2a' }}>
+                      {hero.inventory.gold}/{recipe.gold}g
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Stat preview */}
+              {recipe && (
+                <div style={{ fontSize: '0.75rem', color: '#6a5a4a' }}>
+                  {Object.entries(template.baseStats).map(([s, v]) => (
+                    <span key={s} style={{ marginRight: '0.75rem', color: RARITY_CONFIG[selectedRarity].color }}>
+                      +{Math.round(v * RARITY_CONFIG[selectedRarity].mult)} {s}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Bouton craft */}
+              <button
+                onClick={handleCraft}
+                disabled={!canDoCraft}
+                className="px-4 py-2 rounded text-sm transition-all"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  background: canDoCraft ? '#1a1208' : '#0f0c08',
+                  color: canDoCraft ? '#d4af70' : '#4a3a2a',
+                  border: `1px solid ${canDoCraft ? '#6a5018' : '#1a1410'}`,
+                  cursor: canDoCraft ? 'pointer' : 'not-allowed',
+                }}
+              >
+                🔨 Craft {RARITY_CONFIG[selectedRarity]?.label} {template.name}
+              </button>
+
+              {craftMsg && (
+                <p style={{ color: '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>
+                  {craftMsg}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </Panel>
+  )
+}
+
+// ── Sir Aldric — Knight Trainer ───────────────────────────────────────────────
+
+// Skills qu'Aldric peut enseigner directement (contre or/ressources)
+const ALDRIC_TRADES = [
+  {
+    skillId: 'power_strike',
+    cost: { gold: 80 },
+    description: 'A focused blow. A warrior\'s first lesson.',
+  },
+  {
+    skillId: 'shield_stance',
+    cost: { gold: 100 },
+    description: 'Defense is as vital as offense.',
+  },
+  {
+    skillId: 'battle_focus',
+    cost: { gold: 120, resources: { wolf_pelt: 3 } },
+    description: 'Focus forged from the hunt.',
+  },
+]
+
+function KnightTrainerPanel({ onBack }) {
+  const { hero, world, spendGold, removeResource, addSkillToInventory, startQuest, completeQuest, isQuestComplete } = useGameStore()
+  const [tab, setTab] = useState('quests') // 'quests' | 'trades'
+  const [msg, setMsg] = useState(null)
+
+  // Garde-fous pour les anciennes sauvegardes avec format incorrect
+  const activeQuests = Array.isArray(world.activeQuests) ? world.activeQuests : []
+  const completedQuests = Array.isArray(world.completedQuests) ? world.completedQuests : []
+
+  const flash = (text, color = '#80c040') => {
+    setMsg({ text, color })
+    setTimeout(() => setMsg(null), 2500)
+  }
+
+  const handleTrade = (trade) => {
+    const { cost, skillId } = trade
+    if (hero.inventory.gold < (cost.gold ?? 0)) return flash('Not enough gold.', '#c04040')
+    if (cost.resources) {
+      for (const [resId, qty] of Object.entries(cost.resources)) {
+        if ((hero.inventory.resources[resId] ?? 0) < qty)
+          return flash(`Not enough ${RESOURCES[resId]?.name ?? resId}.`, '#c04040')
+      }
+    }
+    const alreadyOwns =
+      hero.inventory.manaStones.some(s => s.skillId === skillId) ||
+      hero.activeSkills.some(s => s.skillId === skillId) ||
+      hero.passiveSkills.some(s => s.skillId === skillId)
+    if (alreadyOwns) return flash('You already know this skill.', '#c04040')
+
+    spendGold(cost.gold ?? 0)
+    if (cost.resources) {
+      for (const [resId, qty] of Object.entries(cost.resources)) removeResource(resId, qty)
+    }
+    addSkillToInventory({ skillId, level: 1, xp: 0 })
+    flash(`Learned: ${SKILLS[skillId]?.name ?? skillId}!`)
+  }
+
+  const questIds = Object.keys(QUESTS).filter(qId => QUESTS[qId].giverNpc === 'sir_aldric')
+
+  return (
+    <Panel title="⚔ Sir Aldric — Knight of Millhaven" onBack={onBack}>
+      <p style={{ color: '#7a6a5a', fontSize: '0.83rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+        "I have fought for twenty years. Let me spare you the worst of the lessons."
+      </p>
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4">
+        {['quests', 'trades'].map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className="px-3 py-1 rounded text-xs capitalize"
+            style={{
+              fontFamily: 'Cinzel, serif',
+              background: tab === t ? '#1a1408' : '#0f0c08',
+              color: tab === t ? '#d4af70' : '#4a3a2a',
+              border: `1px solid ${tab === t ? '#3a2818' : '#1a1410'}`,
+            }}
+          >
+            {t === 'quests' ? '📜 Quests' : '⚔ Techniques'}
+          </button>
+        ))}
+      </div>
+
+      {msg && (
+        <p className="mb-3" style={{ color: msg.color, fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>
+          {msg.text}
+        </p>
+      )}
+
+      {/* ── Tab Quêtes ── */}
+      {tab === 'quests' && (
+        <div className="flex flex-col gap-3" style={{ maxWidth: '460px' }}>
+          {questIds.map((questId) => {
+            const quest = QUESTS[questId]
+            const isActive = activeQuests.includes(questId)
+            const isDone = completedQuests.includes(questId)
+            const canComplete = isActive && isQuestComplete(questId)
+
+            let statusColor = '#4a3a2a'
+            let statusLabel = 'Not started'
+            if (isDone) { statusColor = '#80c040'; statusLabel = 'Completed ✓' }
+            else if (canComplete) { statusColor = '#d4af70'; statusLabel = 'Ready to claim!' }
+            else if (isActive) { statusColor = '#6a9a4a'; statusLabel = 'In progress' }
+
+            return (
+              <div
+                key={questId}
+                className="p-3 rounded"
+                style={{
+                  background: '#0f0c08',
+                  border: `1px solid ${isDone ? '#2a3a18' : canComplete ? '#4a3a18' : '#1a1410'}`,
+                  opacity: isDone ? 0.6 : 1,
+                }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <p style={{ fontFamily: 'Cinzel, serif', color: isDone ? '#4a5a2a' : '#d4af70', fontSize: '0.88rem' }}>
+                      {quest.name}
+                    </p>
+                    <p style={{ color: '#5a4a3a', fontSize: '0.75rem', marginTop: '0.2rem', fontStyle: 'italic' }}>
+                      {quest.flavorText}
+                    </p>
+                    {/* Objectifs */}
+                    <div className="mt-2 flex flex-col gap-0.5">
+                      {quest.objectives.map((obj) => {
+                        let current = 0
+                        let target = 0
+                        if (obj.type === 'kill') {
+                          current = world.monsterKillCounts[obj.monsterId] ?? 0
+                          target = obj.count
+                        } else if (obj.type === 'level') {
+                          current = hero.level
+                          target = obj.targetLevel
+                        }
+                        const done = current >= target
+                        return (
+                          <p key={obj.id} style={{ color: done ? '#80c040' : '#6a5a3a', fontSize: '0.72rem' }}>
+                            {done ? '✓' : '○'} {obj.label} ({Math.min(current, target)}/{target})
+                          </p>
+                        )
+                      })}
+                    </div>
+                    {/* Récompense */}
+                    <p style={{ color: '#6a5a3a', fontSize: '0.7rem', marginTop: '0.4rem' }}>
+                      Reward: {quest.reward.skill && `${SKILLS[quest.reward.skill.skillId]?.name ?? quest.reward.skill.skillId}`}
+                      {quest.reward.gold && ` · ${quest.reward.gold}g`}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <p style={{ color: statusColor, fontSize: '0.68rem', fontFamily: 'Cinzel, serif', whiteSpace: 'nowrap' }}>
+                      {statusLabel}
+                    </p>
+                    {!isActive && !isDone && (
+                      <button
+                        onClick={() => { startQuest(questId); flash(`Quest accepted: ${quest.name}`) }}
+                        className="px-2 py-0.5 rounded text-xs"
+                        style={{ fontFamily: 'Cinzel, serif', background: '#0f1808', color: '#80c040', border: '1px solid #2a4020' }}
+                      >
+                        Accept
+                      </button>
+                    )}
+                    {canComplete && (
+                      <button
+                        onClick={() => { completeQuest(questId); flash(`Quest complete! Reward claimed.`) }}
+                        className="px-2 py-0.5 rounded text-xs"
+                        style={{ fontFamily: 'Cinzel, serif', background: '#1a1408', color: '#d4af70', border: '1px solid #4a3a18' }}
+                      >
+                        Claim
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Tab Techniques ── */}
+      {tab === 'trades' && (
+        <div className="flex flex-col gap-2" style={{ maxWidth: '460px' }}>
+          <InfoLine label="Gold" value={`${hero.inventory.gold}g`} />
+          <div className="mt-2 flex flex-col gap-2">
+            {ALDRIC_TRADES.map((trade) => {
+              const skill = SKILLS[trade.skillId]
+              if (!skill) return null
+              const alreadyOwns =
+                hero.inventory.manaStones.some(s => s.skillId === trade.skillId) ||
+                hero.activeSkills.some(s => s.skillId === trade.skillId) ||
+                hero.passiveSkills.some(s => s.skillId === trade.skillId)
+              const canAffordGold = hero.inventory.gold >= (trade.cost.gold ?? 0)
+              const canAffordRes = !trade.cost.resources || Object.entries(trade.cost.resources).every(
+                ([resId, qty]) => (hero.inventory.resources[resId] ?? 0) >= qty
+              )
+              const canBuy = canAffordGold && canAffordRes && !alreadyOwns
+
+              const costLabel = [
+                trade.cost.gold && `${trade.cost.gold}g`,
+                ...(trade.cost.resources
+                  ? Object.entries(trade.cost.resources).map(([rId, q]) => `${q}× ${RESOURCES[rId]?.name ?? rId}`)
+                  : []),
+              ].filter(Boolean).join(' + ')
+
+              return (
+                <div
+                  key={trade.skillId}
+                  className="flex items-center justify-between p-3 rounded"
+                  style={{
+                    background: '#0f0c08',
+                    border: `1px solid ${alreadyOwns ? '#2a3a18' : '#1a1410'}`,
+                    opacity: alreadyOwns ? 0.55 : 1,
+                  }}
+                >
+                  <div className="flex-1">
+                    <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.88rem' }}>
+                      {skill.name}
+                      <span className="ml-2 text-xs" style={{ color: skill.type === 'active' ? '#60c0a0' : '#c084fc' }}>
+                        [{skill.type}]
+                      </span>
+                    </p>
+                    <p style={{ color: '#5a4a3a', fontSize: '0.73rem', fontStyle: 'italic', marginTop: '0.15rem' }}>
+                      {trade.description}
+                    </p>
+                    <p style={{ color: '#6a5a3a', fontSize: '0.7rem', marginTop: '0.2rem' }}>
+                      Cost: {costLabel}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleTrade(trade)}
+                    disabled={!canBuy}
+                    className="ml-3 px-3 py-1 rounded text-xs shrink-0"
+                    style={{
+                      fontFamily: 'Cinzel, serif',
+                      background: alreadyOwns ? '#0f0c08' : canBuy ? '#1a1208' : '#0f0c08',
+                      color: alreadyOwns ? '#3a4a2a' : canBuy ? '#d4af70' : '#4a3a2a',
+                      border: `1px solid ${alreadyOwns ? '#2a3a18' : canBuy ? '#3a2818' : '#1a1410'}`,
+                      cursor: canBuy ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    {alreadyOwns ? '✓ Known' : 'Learn'}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </Panel>
+  )
+}
+
+// ── Composants utilitaires ────────────────────────────────────────────────────
+
+function Panel({ title, onBack, children }) {
+  return (
+    <div className="max-w-lg">
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          onClick={onBack}
+          style={{ color: '#6a5a4a', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}
+        >
+          ← Back
+        </button>
+        <h3 style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '1rem' }}>
+          {title}
+        </h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function InfoLine({ label, value }) {
+  return (
+    <div className="flex justify-between items-center py-1 border-b" style={{ borderColor: '#1a1410' }}>
+      <span style={{ color: '#6a5a4a', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>{label}</span>
+      <span style={{ color: '#d4af70', fontSize: '0.85rem' }}>{value}</span>
+    </div>
+  )
+}
+
+function SidebarStat({ label, value, color }) {
+  return (
+    <div>
+      <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        {label}
+      </p>
+      <p style={{ color, fontSize: '0.9rem' }}>{value}</p>
+    </div>
+  )
+}
