@@ -54,7 +54,7 @@ const CATALOG = [
 ]
 
 export default function GodsShop() {
-  const { hero, meta, spendReputationTokens, applyTransmigration, addConsumable } = useGameStore()
+  const { hero, meta, applyTransmigration, addConsumable } = useGameStore()
   const [purchases, setPurchases] = useState([])
   const [tokens, setTokens] = useState(hero.reputationTokens + (meta.lastRunSummary?.reputationTokens ?? 0))
 

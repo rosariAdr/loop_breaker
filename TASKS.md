@@ -13,6 +13,8 @@ _(rien en cours)_
 
 _(aucune dépendance externe bloquante)_
 
+> **Note** : `GIT01` + `X06` ont été clos en parallèle de PROC00 (repo créé sur GitHub `rosariAdr/loop_breaker`, branches `master` + `dev`, première PR mergée).
+
 ---
 
 ## Someday
@@ -20,19 +22,6 @@ _(aucune dépendance externe bloquante)_
 ### v0.1 — P1 : Stabilité & fondations (à faire en premier)
 
 #### Process & Git
-- [ ] **GIT01 — Setup Git + stratégie de branches** (XS)
-  - Créer le repo GitHub (`winget install gh` ou création manuelle) ; branches : `main` (stable, taggué), `dev` (intégration), `feat/ID` (features M/L) ; process : feat → dev → PR → main
-  - AC : repo créé, branches main+dev présentes, `.gitignore` correct (node_modules, dist)
-  - Dépend de : X06
-- [ ] **X06 — Push initial sur GitHub** (XS) - `gh` pas installé localement — `winget install gh` ou création manuelle du repo
-- [ ] **PROC00 — Socle de développement** (L)
-  - Créer `CONTRIBUTING.md` à la racine (workflow Git + DoD par type de ticket + conventions de code — contenu : voir `PROC00_ticket.md` généré par Claude Chat)
-  - Créer `CHANGELOG.md` avec entrées rétroactives v0 et v0.1
-  - Adopter la convention de commits `type(scope): description` pour tous les nouveaux commits (types : feat/fix/test/refactor/chore/docs/style/perf)
-  - Appliquer la checklist de fin de session à chaque Claude Code session : tests verts + build OK + lint OK + TASKS.md + CONTEXT.md + commit
-  - Créer `balance/combat_stats.csv` : stats monstres × zone_mult × run_count calculées
-  - AC : `npm run test:run` + `npm run build` + `npm run lint` passent en vert après setup ; checklist utilisée sur le commit suivant ; CONTEXT.md section §10 process à jour
-  - Dépend de : GIT01, X06
 
 #### Robustesse technique
 - [ ] **TECH01 — React Error Boundaries** (S)
@@ -255,6 +244,22 @@ _(aucune dépendance externe bloquante)_
 ---
 
 ## Done
+
+### v0.1 — Process & socle développement (2026-04-25)
+
+- [x] ~~**GIT01** — Setup Git + stratégie de branches~~ (2026-04-25)
+  - Repo créé sur GitHub : `rosariAdr/loop_breaker`
+  - Branches : `master` (stable, taggable) et `dev` (intégration)
+  - `.gitignore` correct (node_modules, dist, .claude/, public/monsters/*.png)
+- [x] ~~**X06** — Push initial sur GitHub~~ (2026-04-25)
+  - PR #1 `dev → master` mergée — 30+ fichiers source + 322 tests + docs
+  - Convention de commits adoptée dès ce premier commit (`chore: initial codebase import — v0.1.2`)
+- [x] ~~**PROC00** — Socle de développement~~ (2026-04-25)
+  - `CONTRIBUTING.md` (~280 lignes) : workflow Git, convention commits, DoD par type, conventions code, checklist fin de session, règle save, process PR, règle de sync `dev` ↔ `master`
+  - `CHANGELOG.md` : Keep a Changelog + SemVer ; entrées rétroactives v0.0.1 / v0.0.2 / v0.1.0 / v0.1.1 / v0.1.2 + section [Unreleased]
+  - `balance/combat_stats.csv` (115 lignes : 23 monstres × 5 niveaux de scaling) + `scripts/generate-balance-csv.mjs` pour régénérer après modif data
+  - `CONTEXT.md` §3, §10 et §12 mis à jour (main → master, références PROC00)
+  - AC : `npm run test:run` + `npm run build` + `npm run lint` verts ; checklist appliquée sur le commit de clôture
 
 ### v0 — Base jouable (clôturée — avril 2026)
 

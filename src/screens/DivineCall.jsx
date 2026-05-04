@@ -4,7 +4,7 @@ import { DEITIES } from '../data/deities'
 import { SKILLS } from '../data/skills'
 
 export default function DivineCall() {
-  const { pendingDivineCall, acceptDeity, refuseDeity, hero } = useGameStore()
+  const { pendingDivineCall, acceptDeity, refuseDeity } = useGameStore()
   const [phase, setPhase] = useState('message')   // 'message' | 'choose_skill' | 'confirm_refuse'
   const [chosenSkill, setChosenSkill] = useState(null)
 

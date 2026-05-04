@@ -183,7 +183,7 @@ function MonsterRow({ monsterId }) {
 }
 
 // ── Section donjon ────────────────────────────────────────────────────────────
-function DungeonSection({ zone, world, setScreen }) {
+function DungeonSection({ zone, world }) {
   const dungeon = world.dungeons[zone.id]
   if (!dungeon) return null
 
@@ -242,7 +242,7 @@ function DungeonSection({ zone, world, setScreen }) {
 }
 
 // ── Section Demon Lord ────────────────────────────────────────────────────────
-function DemonLordSection({ world, setScreen }) {
+function DemonLordSection({ world }) {
   const handleChallenge = () => {
     alert('Demon Lord battle coming soon!')
   }

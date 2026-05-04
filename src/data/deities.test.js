@@ -1,6 +1,6 @@
 // Tests divinités : conditions d'éveil + blessing + masquage UX (DV01/DV06/DV08/DV09)
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   DEITIES,
   ACTIVE_DEITIES,
@@ -18,7 +18,7 @@ describe('checkIgnarethAwakening — DV01', () => {
   })
 
   it('false si moins de 20 victoires', () => {
-    const wins = Array.from({ length: 19 }, (_, i) => ({ type: 'victory', day: 5 }))
+    const wins = Array.from({ length: 19 }, () => ({ type: 'victory', day: 5 }))
     expect(checkIgnarethAwakening({ battleLog: wins, dayCount: 5 })).toBe(false)
   })
 

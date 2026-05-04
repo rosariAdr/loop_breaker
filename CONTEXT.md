@@ -85,11 +85,14 @@ public/
 racine/
 ├── TASKS.md                    # Backlog source de vérité
 ├── ROADMAP.csv                 # Liste originale 60 items (lecture seule)
-├── CONTRIBUTING.md             # [à créer — PROC00] DoD, workflow, conventions
-├── CHANGELOG.md                # [à créer — PROC00] Historique versions
-├── DESIGN.md                   # [à créer — PROC00] ADRs, décisions actées
-├── PLAYTESTS.md                # [à créer — PROC00] Journal playtest
-├── balance/combat_stats.csv    # [à créer — PROC00] Stats monstres × scaling
+├── CONTRIBUTING.md             # ✅ DoD, workflow Git, conventions, checklist fin de session
+├── CHANGELOG.md                # ✅ Historique versions (Keep a Changelog + SemVer)
+├── balance/
+│   └── combat_stats.csv        # ✅ Stats monstres × zone_mult × runCount (115 lignes)
+├── scripts/
+│   └── generate-balance-csv.mjs # ✅ Régénère le CSV après modif data
+├── DESIGN.md                   # [v1] ADRs détaillés (les courts sont dans CONTEXT.md §11)
+├── PLAYTESTS.md                # [PROC05, v0.1 P2] Journal playtest structuré
 ├── README.md                   # Vide — à remplir (pitch + setup + screenshot)
 ├── package.json
 ├── vite.config.js              # vitest globals + jsdom + setupFiles
@@ -263,9 +266,10 @@ Pipeline documenté dans `public/monsters/README.md`. Priorité : 6 monstres Ash
 
 ### Git
 ```
-main (stable, taggué) ← dev (intégration) ← feat/ID (features M/L)
+master (stable, taggué) ← dev (intégration) ← feat/ID (features M/L)
 ```
 Convention commits : `type(scope): description` — types : feat/fix/test/refactor/chore/docs/style/perf
+**Important** : après chaque merge `dev → master`, fast-forward `dev` sur `master` (sinon les nouvelles feat sont en retard). Détails dans `CONTRIBUTING.md` §2.
 
 ### Checklist fin de session (obligatoire)
 ```
@@ -337,11 +341,12 @@ Traits pondérés par contexte de recrutement + score de relation. followProbabi
 
 - **`TASKS.md`** — backlog source de vérité (Active / Waiting On / Someday / Done)
 - **`ROADMAP.csv`** — liste originale 60 items (lecture seule)
-- **`CONTRIBUTING.md`** — [à créer PROC00] workflow Git, conventions code, DoD
-- **`CHANGELOG.md`** — [à créer PROC00] historique versions
-- **`DESIGN.md`** — [à créer PROC00] ADRs détaillés, décisions game design
-- **`PLAYTESTS.md`** — [à créer PROC00] journal de playtest structuré
-- **`balance/combat_stats.csv`** — [à créer PROC00] stats monstres × scaling
+- **`CONTRIBUTING.md`** — workflow Git, conventions code, DoD par type, checklist fin de session ✅
+- **`CHANGELOG.md`** — historique versions (Keep a Changelog + SemVer) ✅
+- **`balance/combat_stats.csv`** — stats monstres × zone_mult × runCount (115 lignes) ✅
+- **`scripts/generate-balance-csv.mjs`** — script de régénération du CSV après modif data ✅
+- **`DESIGN.md`** — [v1] ADRs détaillés, décisions game design (les ADRs courts sont dans CONTEXT.md §11)
+- **`PLAYTESTS.md`** — [v0.1 P2 — PROC05] journal de playtest structuré
 - **`public/monsters/README.md`** — guide génération portraits (Gemini + remove.bg)
 - **`vite.config.js`** — config vitest (jsdom, globals, setupFiles)
 

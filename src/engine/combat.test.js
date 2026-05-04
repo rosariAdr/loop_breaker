@@ -54,7 +54,6 @@ describe('calcBaseDamage', () => {
 describe('calcSkillDamage', () => {
   const baseHero = { strength: 10, intelligence: 8, mana: 60, maxMana: 60, hp: 100, maxHp: 100 }
   const skillPhysical = { skillId: 'savage_bite', level: 1, xp: 0, currentCooldown: 0 }
-  const skillMagic    = { skillId: 'flame_burst',  level: 1, xp: 0, currentCooldown: 0 }
 
   it('renvoie 0 pour un skill inconnu', () => {
     expect(calcSkillDamage({ skillId: 'inexistant', level: 1 }, baseHero, 1)).toBe(0)
@@ -187,11 +186,8 @@ describe('applySkillCost — S07 réduction au niveau', () => {
 // ── canUseSkill — B09 cost.hp + S07 ──────────────────────────────────────────
 describe('canUseSkill — B09 cost.hp + S07 niveau', () => {
   it("refuse si cost.hp >= hp courant", () => {
-    // On simule un skill qui coûte 50 hp
-    const fakeSkill = { skillId: 'fake_hp_skill', level: 1, currentCooldown: 0 }
-    // Trick : injecter le template via SKILLS n'est pas possible, alors on mock
-    // En réalité aucun skill du jeu n'a cost.hp > 0 actuellement, donc on prouve la logique en testant la branche
-    // via un cas où le coût scale au niveau et atteint le seuil
+    // En réalité aucun skill du jeu n'a cost.hp > 0 actuellement, donc on prouve
+    // la logique sur un cas où le HP est très bas mais le skill ne coûte pas de HP.
     const heroLowHp = { mana: 60, hp: 5, maxHp: 100, maxMana: 60 }
     const skillWithHp = { skillId: 'savage_bite', level: 1, currentCooldown: 0 }
     // savage_bite cost.hp = 0 → reste utilisable
