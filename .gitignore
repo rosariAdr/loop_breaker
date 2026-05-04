@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# Environment
+.env.local
+.env.*.local
 *.local
 
 # Test coverage
@@ -17,6 +21,8 @@ coverage/
 
 # Editor directories and files
 .vscode/*
+.vscode/
+.idea/
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -25,3 +31,10 @@ coverage/
 *.njsproj
 *.sln
 *.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+*.local
