@@ -103,25 +103,70 @@ export function getRelationTier(score) {
   return { label: 'Strong Ally', color: '#40c080' }
 }
 
-// Vérifier la condition d'éveil d'Ignareth
+// DV01 — flag d'activation des logs (mis à true depuis la console pour debug)
+// `window.__DEITY_DEBUG = true` puis jouer pour voir les conditions évoluer.
+const isDebug = () => typeof window !== 'undefined' && window.__DEITY_DEBUG === true
+
+// DV08 — Appliquer la bénédiction passive d'une divinité aux stats du héros.
+// Mute non, retourne un nouvel objet stats.
+// Effets supportés :
+//   - { stat: 'strength', multiplier: 0.15 } → +15% sur la stat (Ignareth)
+//   - { type: 'hp_regen_per_tick', value: 0.02 } → géré au tick (pas dans les stats)
+export function applyDeityBlessing(stats, deityId) {
+  const deity = DEITIES[deityId]
+  if (!deity?.blessing?.effect) return stats
+  const eff = deity.blessing.effect
+  if (eff.stat && typeof eff.multiplier === 'number') {
+    const current = stats[eff.stat] ?? 0
+    return { ...stats, [eff.stat]: Math.round(current * (1 + eff.multiplier)) }
+  }
+  // Effets passifs runtime (regen, etc.) ne modifient pas les stats — gérés ailleurs
+  return stats
+}
+
+// Vérifier la condition d'éveil d'Ignareth (20 victoires en 5 jours)
 export function checkIgnarethAwakening(worldState) {
   const { battleLog } = worldState
-  if (!battleLog || battleLog.length < 20) return false
+  if (!battleLog || battleLog.length < 20) {
+    if (isDebug()) console.debug('[Ignareth]', { wins: battleLog?.length ?? 0, needed: 20, status: 'building up' })
+    return false
+  }
 
   // Chercher 20 victoires dans les 5 derniers jours in-game
   const currentDay = worldState.dayCount
   const recentWins = battleLog.filter(
     (entry) => entry.type === 'victory' && entry.day >= currentDay - 5
   )
-  return recentWins.length >= 20
+  const ready = recentWins.length >= 20
+  if (isDebug()) {
+    console.debug('[Ignareth]', {
+      recentWins: recentWins.length,
+      needed: 20,
+      windowDays: 5,
+      currentDay,
+      status: ready ? 'AWAKENING' : 'building up',
+    })
+  }
+  return ready
 }
 
-// Vérifier la condition d'éveil de Sylvara
+// Vérifier la condition d'éveil de Sylvara (entrer 8 fois en combat à 85%+ HP)
 export function checkSylvaraAwakening(worldState) {
   const { combatEntryLog } = worldState
-  if (!combatEntryLog || combatEntryLog.length < 8) return false
+  if (!combatEntryLog || combatEntryLog.length < 8) {
+    if (isDebug()) console.debug('[Sylvara]', { entries: combatEntryLog?.length ?? 0, needed: 8, status: 'building up' })
+    return false
+  }
 
   // Les 8 dernières entrées en combat doivent avoir été à 85%+ HP
   const lastEight = combatEntryLog.slice(-8)
-  return lastEight.every((entry) => entry.hpPercent >= 0.85)
+  const ready = lastEight.every((entry) => entry.hpPercent >= 0.85)
+  if (isDebug()) {
+    console.debug('[Sylvara]', {
+      lastEightHp: lastEight.map(e => Math.round(e.hpPercent * 100) + '%'),
+      threshold: '85%',
+      status: ready ? 'AWAKENING' : 'building up',
+    })
+  }
+  return ready
 }

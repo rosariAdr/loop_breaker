@@ -1,5 +1,5 @@
 import { useGameStore } from '../store/gameStore'
-import { QUESTS } from '../data/quests'
+import { QUESTS, QUEST_NPCS } from '../data/quests'
 import { SKILLS } from '../data/skills'
 
 const ALL_QUESTS = Object.values(QUESTS)
@@ -89,12 +89,21 @@ function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, canComplete
   const borderColor = isCompleted ? '#305030' : isActive ? '#3a2818' : '#2a2018'
   const bgColor     = isCompleted ? '#081008' : '#0a0a08'
 
+  const npc = QUEST_NPCS[quest.giverNpc]
+
   return (
     <div className="p-4 rounded border" style={{ background: bgColor, borderColor }}>
       <div className="flex items-start justify-between gap-2 mb-1">
-        <p style={{ fontFamily: 'Cinzel, serif', color: isCompleted ? '#40c080' : '#d4af70', fontSize: '0.9rem' }}>
-          {quest.name}{isCompleted && ' ✓'}
-        </p>
+        <div className="flex-1">
+          <p style={{ fontFamily: 'Cinzel, serif', color: isCompleted ? '#40c080' : '#d4af70', fontSize: '0.9rem' }}>
+            {quest.name}{isCompleted && ' ✓'}
+          </p>
+          {npc && (
+            <p style={{ color: '#6a5a4a', fontSize: '0.68rem', fontFamily: 'Cinzel, serif', marginTop: '0.1rem' }}>
+              {npc.sigil} {npc.name} · {npc.title}
+            </p>
+          )}
+        </div>
         {isActive && canComplete && (
           <button
             onClick={onComplete}

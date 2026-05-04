@@ -13,3 +13,6 @@ Object.defineProperty(globalThis, 'localStorage', {
   value: localStorageMock,
   writable: true,
 })
+
+// Extensions DOM pour React Testing Library
+import '@testing-library/jest-dom/vitest'

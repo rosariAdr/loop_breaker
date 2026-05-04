@@ -103,6 +103,11 @@ function SkillsTab({ manaStones, hero, selected, setSelected, equipActive, equip
             No mana stones in bag. Defeat monsters to steal their techniques.
           </p>
         )}
+        {manaStones.length > 0 && !selectedSkill && (
+          <p style={{ color: '#5a4a3a', fontSize: '0.75rem', fontStyle: 'italic', marginBottom: '0.25rem' }}>
+            ← Click a mana stone to see equip options
+          </p>
+        )}
         {manaStones.map((stone, i) => {
           const t = SKILLS[stone.skillId]
           if (!t) return null

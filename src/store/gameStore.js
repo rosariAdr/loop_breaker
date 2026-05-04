@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { MONSTERS } from '../data/monsters'
 import { QUESTS } from '../data/quests'
+import { DEITIES, applyDeityBlessing } from '../data/deities'
 
 // ── État initial du héros ─────────────────────────────────────────────────────
 const INITIAL_HERO = {
@@ -61,6 +62,9 @@ const INITIAL_HERO = {
   deathCount: 0,
   reputationTokens: 0,     // jetons gagnés via quêtes
   adventurerRankTokens: 0, // jetons convertis en rang
+
+  // Flag : le joueur a-t-il choisi son nom ? (faux = CharacterCreation à afficher)
+  heroNamed: false,
 }
 
 // ── État initial du monde ─────────────────────────────────────────────────────
@@ -177,6 +181,9 @@ export const useGameStore = create((set, get) => ({
 
   // Level up en attente d'affichage (nombre de niveaux gagnés non confirmés)
   pendingLevelUp: 0,
+
+  // S04 — Level-ups de skills récents (consommés par Combat.jsx pour afficher une notif)
+  recentSkillLevelUps: [], // [{ id, skillId, fromLevel, toLevel, timestamp }]
 
   // ── Naviguer entre écrans ──────────────────────────────────────────────────
   setScreen: (screen) => set({ currentScreen: screen }),
@@ -360,13 +367,22 @@ export const useGameStore = create((set, get) => ({
 
   gainSkillXp: (skillId, xpAmount) =>
     set((state) => {
+      const levelUps = []  // S04 — tracker les level-ups pour notif
       const updateSkillXp = (skills) =>
         skills.map((s) => {
           if (s.skillId !== skillId) return s
           const newXp = s.xp + xpAmount
           const xpNeeded = s.level === 1 ? 20 : 50
           if (newXp >= xpNeeded && s.level < 3) {
-            return { ...s, xp: newXp - xpNeeded, level: s.level + 1 }
+            const toLevel = s.level + 1
+            levelUps.push({
+              id: `${skillId}_${Date.now()}_${Math.random()}`,
+              skillId,
+              fromLevel: s.level,
+              toLevel,
+              timestamp: Date.now(),
+            })
+            return { ...s, xp: newXp - xpNeeded, level: toLevel }
           }
           return { ...s, xp: newXp }
         })
@@ -377,8 +393,18 @@ export const useGameStore = create((set, get) => ({
           activeSkills: updateSkillXp(state.hero.activeSkills),
           passiveSkills: updateSkillXp(state.hero.passiveSkills),
         },
+        recentSkillLevelUps: [...state.recentSkillLevelUps, ...levelUps],
       }
     }),
+
+  // S04 — Consomme un level-up notif (après affichage par Combat.jsx)
+  clearSkillLevelUp: (id) =>
+    set((state) => ({
+      recentSkillLevelUps: state.recentSkillLevelUps.filter((e) => e.id !== id),
+    })),
+
+  // Reset complet (utile pour tests ou si l'écran change)
+  clearAllSkillLevelUps: () => set({ recentSkillLevelUps: [] }),
 
   // ── Inventaire ────────────────────────────────────────────────────────────
   addResource: (resourceId, qty) =>
@@ -548,19 +574,34 @@ export const useGameStore = create((set, get) => ({
     set({ pendingDivineCall: { deityId }, currentScreen: 'divine_call' }),
 
   acceptDeity: (deityId, chosenSkillId) =>
-    set((state) => ({
-      hero: {
-        ...state.hero,
-        deity: deityId,
-        divineSkill: { skillId: chosenSkillId, level: 1, xp: 0 },
-      },
-      meta: {
-        ...state.meta,
-        divineBonds: { ...state.meta.divineBonds, medieval_fantasy: deityId },
-      },
-      pendingDivineCall: null,
-      currentScreen: 'world_map',
-    })),
+    set((state) => {
+      const divineSkill = { skillId: chosenSkillId, level: 1, xp: 0 }
+      const alreadyIn = state.hero.activeSkills.some(s => s.skillId === chosenSkillId)
+      const newActiveSkills = alreadyIn
+        ? state.hero.activeSkills
+        : [...state.hero.activeSkills, divineSkill]
+
+      // DV08 — appliquer la bénédiction passive aux stats (ex: Ignareth +15% strength)
+      const newStats = applyDeityBlessing(state.hero.stats, deityId)
+      const blessing = DEITIES[deityId]?.blessing ?? null
+
+      return {
+        hero: {
+          ...state.hero,
+          deity: deityId,
+          deityBlessing: blessing,
+          divineSkill,
+          activeSkills: newActiveSkills,
+          stats: newStats,
+        },
+        meta: {
+          ...state.meta,
+          divineBonds: { ...state.meta.divineBonds, medieval_fantasy: deityId },
+        },
+        pendingDivineCall: null,
+        currentScreen: 'world_map',
+      }
+    }),
 
   refuseDeity: () =>
     set({
@@ -606,31 +647,76 @@ export const useGameStore = create((set, get) => ({
     })),
 
   // Appliquer la renaissance après la boutique des dieux
-  applyTransmigration: (shopPurchases) =>
+  // shopPurchases : {
+  //   extraSkills?:    [{ type: 'active'|'passive', ... }],   // T07 — slot bonus skill
+  //   rankRestored?:   boolean,                                // T06 — restaure 80% des rep tokens
+  //   bonusStatSlot?:  boolean,                                // T08 — +1 stat random
+  //   bonusStat?:      string,                                 // T08 — stat précise (override random)
+  //   skillLevelUps?:  number,                                 // T09 — N levels sur skills hérités
+  // }
+  applyTransmigration: (shopPurchases = {}) =>
     set((state) => {
       const { pendingInheritance } = state.meta
       if (!pendingInheritance) return state
 
-      // Recalculer les stats de base avec la stat héritée
+      // Stats de base + héritage (+10% sur la stat choisie)
       const newStats = { ...INITIAL_HERO.stats }
-      newStats[pendingInheritance.stat] = Math.round(
-        INITIAL_HERO.stats[pendingInheritance.stat] * 1.10 // +10% sur la stat héritée
-      )
+      if (pendingInheritance.stat) {
+        newStats[pendingInheritance.stat] = Math.round(
+          INITIAL_HERO.stats[pendingInheritance.stat] * 1.10
+        )
+      }
       newStats.hp = newStats.maxHp = 100
       newStats.mana = newStats.maxMana = 60
 
-      // Construire les skills hérités
+      // T08 — stat bonus (slot supplémentaire)
+      if (shopPurchases.bonusStatSlot) {
+        const statKeys = ['strength', 'agility', 'intelligence', 'chance', 'def']
+        const bonusStat = shopPurchases.bonusStat
+          ?? statKeys[Math.floor(Math.random() * statKeys.length)]
+        if (statKeys.includes(bonusStat)) {
+          newStats[bonusStat] = (newStats[bonusStat] ?? 0) + 1
+        }
+      }
+
+      // T11 — Compensation solo : run précédent sans divinité
+      const wasSolo = !state.hero.deity
+      const soloLevelBonus = wasSolo ? 1 : 0
+
+      // T09 — Skill level ups boutique (au-dessus du niveau actuel)
+      const skillLevelUps = Math.max(0, shopPurchases.skillLevelUps ?? 0)
+
+      // Construire les skills hérités avec bonus T09 + T11
+      const applyLevelBonus = (skill) => {
+        if (!skill) return null
+        const bonus = soloLevelBonus + skillLevelUps
+        return { ...skill, level: Math.min(3, (skill.level ?? 1) + bonus) }
+      }
+
       const inheritedActive = pendingInheritance.activeSkill
-        ? [{ ...pendingInheritance.activeSkill, currentCooldown: 0 }]
+        ? [{ ...applyLevelBonus(pendingInheritance.activeSkill), currentCooldown: 0 }]
         : []
       const inheritedPassive = pendingInheritance.passiveSkill
-        ? [pendingInheritance.passiveSkill]
+        ? [applyLevelBonus(pendingInheritance.passiveSkill)]
         : []
 
-      // Ajouter les bonus d'achat boutique
-      const extraSkills = shopPurchases.extraSkills || []
-      const allActive = [...inheritedActive, ...extraSkills.filter((s) => s.type === 'active')]
-      const allPassive = [...inheritedPassive, ...extraSkills.filter((s) => s.type === 'passive')]
+      // T07 — bonus skill slot (normaliser au format { skillId, level, xp, currentCooldown? })
+      const extraSkills = shopPurchases.extraSkills ?? []
+      const normalizeSkill = (s, isActive) => ({
+        skillId: s.skillId,
+        level: s.level ?? 1,
+        xp: s.xp ?? 0,
+        ...(isActive ? { currentCooldown: 0 } : {}),
+      })
+      const extraActive = extraSkills.filter((s) => s.type === 'active').map((s) => normalizeSkill(s, true))
+      const extraPassive = extraSkills.filter((s) => s.type === 'passive').map((s) => normalizeSkill(s, false))
+      const allActive = [...inheritedActive, ...extraActive]
+      const allPassive = [...inheritedPassive, ...extraPassive]
+
+      // T06 — Rank restoration : 80% des rep tokens du run précédent
+      const restoredTokens = shopPurchases.rankRestored
+        ? Math.round((state.hero.reputationTokens ?? 0) * 0.80)
+        : 0
 
       return {
         hero: {
@@ -640,7 +726,10 @@ export const useGameStore = create((set, get) => ({
           passiveSkills: allPassive,
           runNumber: state.hero.runNumber + 1,
           deathCount: state.hero.deathCount + 1,
-          reputationTokens: 0,
+          reputationTokens: restoredTokens,
+          // heroNamed : on garde le nom — pas la peine de retaper à chaque run
+          name: state.hero.name,
+          heroNamed: state.hero.heroNamed,
         },
         world: { ...INITIAL_WORLD },
         meta: {
@@ -648,6 +737,8 @@ export const useGameStore = create((set, get) => ({
           pendingInheritance: null,
         },
         currentScreen: 'world_map',
+        pendingLevelUp: 0,
+        recentSkillLevelUps: [],
       }
     }),
 
@@ -841,6 +932,16 @@ export const useGameStore = create((set, get) => ({
       },
     })),
 
+  // ── Nom du héros (CharacterCreation) ─────────────────────────────────────
+  renameHero: (name) =>
+    set((state) => ({
+      hero: {
+        ...state.hero,
+        name: name.trim() || 'The Wanderer',
+        heroNamed: true,
+      },
+    })),
+
   // ── Persistence localStorage ──────────────────────────────────────────────
   saveGame: () => {
     const { hero, world, meta } = get()
@@ -864,7 +965,40 @@ export const useGameStore = create((set, get) => ({
         currentHuntingSpot: world.currentHuntingSpot ?? null,
       }
 
-      set({ hero, world: migratedWorld, meta })
+      // ── Migration hero : garantir tous les champs (anti-crash old saves) ──
+      const inventory = hero.inventory ?? {}
+      const migratedInventory = {
+        resources:   inventory.resources   ?? {},
+        consumables: inventory.consumables ?? {},
+        manaStones:  Array.isArray(inventory.manaStones) ? inventory.manaStones : [],
+        equipment:   Array.isArray(inventory.equipment)  ? inventory.equipment  : [],
+        gold:        inventory.gold ?? 0,
+      }
+      const migratedEquipped = {
+        weapon: null, helmet: null, armor: null, boots: null,
+        ...(hero.equipped ?? {}),
+      }
+      // Migration DV02 rétroactive : si divineSkill existe mais pas dans activeSkills, l'ajouter
+      const baseActive = Array.isArray(hero.activeSkills) ? hero.activeSkills : []
+      const divineInActive = hero.divineSkill && !baseActive.some(s => s.skillId === hero.divineSkill.skillId)
+      const migratedActiveSkills = divineInActive && baseActive.length < 6
+        ? [...baseActive, hero.divineSkill]
+        : baseActive
+
+      const migratedHero = {
+        ...INITIAL_HERO,                 // socle complet (anti-crash sur tout nouveau champ)
+        ...hero,
+        heroNamed: hero.heroNamed ?? (hero.name !== 'The Wanderer'),
+        reputationTokens: hero.reputationTokens ?? 0,
+        inventory: migratedInventory,
+        equipped: migratedEquipped,
+        activeSkills: migratedActiveSkills,
+        passiveSkills: Array.isArray(hero.passiveSkills) ? hero.passiveSkills : [],
+        battleLog: Array.isArray(hero.battleLog) ? hero.battleLog : [],
+        combatEntryLog: Array.isArray(hero.combatEntryLog) ? hero.combatEntryLog : [],
+        titles: Array.isArray(hero.titles) ? hero.titles : [],
+      }
+      set({ hero: migratedHero, world: migratedWorld, meta })
       return true
     } catch {
       return false
@@ -918,5 +1052,7 @@ export const useGameStore = create((set, get) => ({
       currentScreen: 'world_map',
       activeCombat: null,
       pendingDivineCall: null,
+      pendingLevelUp: 0,
+      recentSkillLevelUps: [],
     }),
 }))

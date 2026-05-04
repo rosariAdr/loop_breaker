@@ -9,7 +9,7 @@ export default function HeroSheet() {
 
   return (
     <div className="flex h-full" style={{ minHeight: 'calc(100vh - 48px)' }}>
-      <div className="flex-1 flex flex-col p-6 gap-6 overflow-y-auto max-w-2xl">
+      <div className="flex-1 flex flex-col p-6 gap-6 overflow-y-auto">
 
         {/* Header */}
         <div className="flex items-center gap-4">
