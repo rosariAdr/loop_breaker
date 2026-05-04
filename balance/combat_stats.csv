@@ -1,0 +1,116 @@
+monster_id,name,zone,rank,effective_zone_id,zone_mult,run_count,run_scale,effective_scale,hp_base,atk_base,def_base,spd_base,hp_scaled,atk_scaled,def_scaled,spd_scaled,expReward
+ashwood_wolf,Ashwood Wolf,ashenvale,common,ashenvale,1.00,1,1.080,1.080,40,8,3,12,43,9,3,12,15
+ashwood_wolf,Ashwood Wolf,ashenvale,common,ashenvale,1.00,5,1.469,1.469,40,8,3,12,59,12,4,12,15
+ashwood_wolf,Ashwood Wolf,ashenvale,common,ashenvale,1.00,10,2.159,2.159,40,8,3,12,86,17,6,12,15
+ashwood_wolf,Ashwood Wolf,ashenvale,common,ashenvale,1.00,15,3.172,3.172,40,8,3,12,127,25,10,12,15
+ashwood_wolf,Ashwood Wolf,ashenvale,common,ashenvale,1.00,25,6.848,6.848,40,8,3,12,274,55,21,12,15
+rotting_shambler,Rotting Shambler,ashenvale,common,ashenvale,1.00,1,1.080,1.080,60,6,5,5,65,6,5,5,18
+rotting_shambler,Rotting Shambler,ashenvale,common,ashenvale,1.00,5,1.469,1.469,60,6,5,5,88,9,7,5,18
+rotting_shambler,Rotting Shambler,ashenvale,common,ashenvale,1.00,10,2.159,2.159,60,6,5,5,130,13,11,5,18
+rotting_shambler,Rotting Shambler,ashenvale,common,ashenvale,1.00,15,3.172,3.172,60,6,5,5,190,19,16,5,18
+rotting_shambler,Rotting Shambler,ashenvale,common,ashenvale,1.00,25,6.848,6.848,60,6,5,5,411,41,34,5,18
+gloom_bat,Gloom Bat,ashenvale,common,ashenvale,1.00,1,1.080,1.080,28,7,1,20,30,8,1,20,12
+gloom_bat,Gloom Bat,ashenvale,common,ashenvale,1.00,5,1.469,1.469,28,7,1,20,41,10,1,20,12
+gloom_bat,Gloom Bat,ashenvale,common,ashenvale,1.00,10,2.159,2.159,28,7,1,20,60,15,2,20,12
+gloom_bat,Gloom Bat,ashenvale,common,ashenvale,1.00,15,3.172,3.172,28,7,1,20,89,22,3,20,12
+gloom_bat,Gloom Bat,ashenvale,common,ashenvale,1.00,25,6.848,6.848,28,7,1,20,192,48,7,20,12
+marsh_serpent,Marsh Serpent,ashenvale,common,ashenvale,1.00,1,1.080,1.080,50,11,4,10,54,12,4,10,22
+marsh_serpent,Marsh Serpent,ashenvale,common,ashenvale,1.00,5,1.469,1.469,50,11,4,10,73,16,6,10,22
+marsh_serpent,Marsh Serpent,ashenvale,common,ashenvale,1.00,10,2.159,2.159,50,11,4,10,108,24,9,10,22
+marsh_serpent,Marsh Serpent,ashenvale,common,ashenvale,1.00,15,3.172,3.172,50,11,4,10,159,35,13,10,22
+marsh_serpent,Marsh Serpent,ashenvale,common,ashenvale,1.00,25,6.848,6.848,50,11,4,10,342,75,27,10,22
+briar_wraith,Briar Wraith,ashenvale,common,ashenvale,1.00,1,1.080,1.080,35,10,2,14,38,11,2,14,20
+briar_wraith,Briar Wraith,ashenvale,common,ashenvale,1.00,5,1.469,1.469,35,10,2,14,51,15,3,14,20
+briar_wraith,Briar Wraith,ashenvale,common,ashenvale,1.00,10,2.159,2.159,35,10,2,14,76,22,4,14,20
+briar_wraith,Briar Wraith,ashenvale,common,ashenvale,1.00,15,3.172,3.172,35,10,2,14,111,32,6,14,20
+briar_wraith,Briar Wraith,ashenvale,common,ashenvale,1.00,25,6.848,6.848,35,10,2,14,240,68,14,14,20
+bog_shambler,Bog Shambler,ashenvale,common,ashenvale,1.00,1,1.080,1.080,65,10,6,6,70,11,6,6,25
+bog_shambler,Bog Shambler,ashenvale,common,ashenvale,1.00,5,1.469,1.469,65,10,6,6,96,15,9,6,25
+bog_shambler,Bog Shambler,ashenvale,common,ashenvale,1.00,10,2.159,2.159,65,10,6,6,140,22,13,6,25
+bog_shambler,Bog Shambler,ashenvale,common,ashenvale,1.00,15,3.172,3.172,65,10,6,6,206,32,19,6,25
+bog_shambler,Bog Shambler,ashenvale,common,ashenvale,1.00,25,6.848,6.848,65,10,6,6,445,68,41,6,25
+stone_golem,Stone Golem,ashenvale,common,ashenvale,1.00,1,1.080,1.080,100,12,15,4,108,13,16,4,30
+stone_golem,Stone Golem,ashenvale,common,ashenvale,1.00,5,1.469,1.469,100,12,15,4,147,18,22,4,30
+stone_golem,Stone Golem,ashenvale,common,ashenvale,1.00,10,2.159,2.159,100,12,15,4,216,26,32,4,30
+stone_golem,Stone Golem,ashenvale,common,ashenvale,1.00,15,3.172,3.172,100,12,15,4,317,38,48,4,30
+stone_golem,Stone Golem,ashenvale,common,ashenvale,1.00,25,6.848,6.848,100,12,15,4,685,82,103,4,30
+hollow_knight,Hollow Knight,ashenvale,common,ashenvale,1.00,1,1.080,1.080,80,14,10,8,86,15,11,8,35
+hollow_knight,Hollow Knight,ashenvale,common,ashenvale,1.00,5,1.469,1.469,80,14,10,8,118,21,15,8,35
+hollow_knight,Hollow Knight,ashenvale,common,ashenvale,1.00,10,2.159,2.159,80,14,10,8,173,30,22,8,35
+hollow_knight,Hollow Knight,ashenvale,common,ashenvale,1.00,15,3.172,3.172,80,14,10,8,254,44,32,8,35
+hollow_knight,Hollow Knight,ashenvale,common,ashenvale,1.00,25,6.848,6.848,80,14,10,8,548,96,68,8,35
+ruin_specter,Ruin Specter,ashenvale,common,ashenvale,1.00,1,1.080,1.080,45,16,3,16,49,17,3,16,32
+ruin_specter,Ruin Specter,ashenvale,common,ashenvale,1.00,5,1.469,1.469,45,16,3,16,66,24,4,16,32
+ruin_specter,Ruin Specter,ashenvale,common,ashenvale,1.00,10,2.159,2.159,45,16,3,16,97,35,6,16,32
+ruin_specter,Ruin Specter,ashenvale,common,ashenvale,1.00,15,3.172,3.172,45,16,3,16,143,51,10,16,32
+ruin_specter,Ruin Specter,ashenvale,common,ashenvale,1.00,25,6.848,6.848,45,16,3,16,308,110,21,16,32
+barrow_wight,Barrow Wight,ashenvale,common,ashenvale,1.00,1,1.080,1.080,90,18,8,9,97,19,9,9,45
+barrow_wight,Barrow Wight,ashenvale,common,ashenvale,1.00,5,1.469,1.469,90,18,8,9,132,26,12,9,45
+barrow_wight,Barrow Wight,ashenvale,common,ashenvale,1.00,10,2.159,2.159,90,18,8,9,194,39,17,9,45
+barrow_wight,Barrow Wight,ashenvale,common,ashenvale,1.00,15,3.172,3.172,90,18,8,9,285,57,25,9,45
+barrow_wight,Barrow Wight,ashenvale,common,ashenvale,1.00,25,6.848,6.848,90,18,8,9,616,123,55,9,45
+grave_knight,Grave Knight,ashenvale,common,ashenvale,1.00,1,1.080,1.080,110,20,14,7,119,22,15,7,55
+grave_knight,Grave Knight,ashenvale,common,ashenvale,1.00,5,1.469,1.469,110,20,14,7,162,29,21,7,55
+grave_knight,Grave Knight,ashenvale,common,ashenvale,1.00,10,2.159,2.159,110,20,14,7,237,43,30,7,55
+grave_knight,Grave Knight,ashenvale,common,ashenvale,1.00,15,3.172,3.172,110,20,14,7,349,63,44,7,55
+grave_knight,Grave Knight,ashenvale,common,ashenvale,1.00,25,6.848,6.848,110,20,14,7,753,137,96,7,55
+soul_harvester,Soul Harvester,ashenvale,elite,ashenvale,1.00,1,1.080,1.080,200,28,12,12,216,30,13,12,100
+soul_harvester,Soul Harvester,ashenvale,elite,ashenvale,1.00,5,1.469,1.469,200,28,12,12,294,41,18,12,100
+soul_harvester,Soul Harvester,ashenvale,elite,ashenvale,1.00,10,2.159,2.159,200,28,12,12,432,60,26,12,100
+soul_harvester,Soul Harvester,ashenvale,elite,ashenvale,1.00,15,3.172,3.172,200,28,12,12,634,89,38,12,100
+soul_harvester,Soul Harvester,ashenvale,elite,ashenvale,1.00,25,6.848,6.848,200,28,12,12,1370,192,82,12,100
+cursed_warlord,Cursed Warlord,blighted_road,elite,blighted_road,1.80,1,1.080,1.944,250,30,18,10,486,58,35,10,120
+cursed_warlord,Cursed Warlord,blighted_road,elite,blighted_road,1.80,5,1.469,2.645,250,30,18,10,661,79,48,10,120
+cursed_warlord,Cursed Warlord,blighted_road,elite,blighted_road,1.80,10,2.159,3.886,250,30,18,10,972,117,70,10,120
+cursed_warlord,Cursed Warlord,blighted_road,elite,blighted_road,1.80,15,3.172,5.710,250,30,18,10,1427,171,103,10,120
+cursed_warlord,Cursed Warlord,blighted_road,elite,blighted_road,1.80,25,6.848,12.327,250,30,18,10,3082,370,222,10,120
+bone_colossus,Bone Colossus,blighted_road,elite,blighted_road,1.80,1,1.080,1.944,350,25,28,5,680,49,54,5,140
+bone_colossus,Bone Colossus,blighted_road,elite,blighted_road,1.80,5,1.469,2.645,350,25,28,5,926,66,74,5,140
+bone_colossus,Bone Colossus,blighted_road,elite,blighted_road,1.80,10,2.159,3.886,350,25,28,5,1360,97,109,5,140
+bone_colossus,Bone Colossus,blighted_road,elite,blighted_road,1.80,15,3.172,5.710,350,25,28,5,1998,143,160,5,140
+bone_colossus,Bone Colossus,blighted_road,elite,blighted_road,1.80,25,6.848,12.327,350,25,28,5,4315,308,345,5,140
+grimstone_troll,Grimstone Troll,grimspire,common,grimspire,2.50,1,1.080,2.700,180,28,20,6,486,76,54,6,80
+grimstone_troll,Grimstone Troll,grimspire,common,grimspire,2.50,5,1.469,3.673,180,28,20,6,661,103,73,6,80
+grimstone_troll,Grimstone Troll,grimspire,common,grimspire,2.50,10,2.159,5.397,180,28,20,6,972,151,108,6,80
+grimstone_troll,Grimstone Troll,grimspire,common,grimspire,2.50,15,3.172,7.930,180,28,20,6,1427,222,159,6,80
+grimstone_troll,Grimstone Troll,grimspire,common,grimspire,2.50,25,6.848,17.121,180,28,20,6,3082,479,342,6,80
+cursed_sentinel,Cursed Sentinel,grimspire,common,grimspire,2.50,1,1.080,2.700,150,32,25,9,405,86,68,9,90
+cursed_sentinel,Cursed Sentinel,grimspire,common,grimspire,2.50,5,1.469,3.673,150,32,25,9,551,118,92,9,90
+cursed_sentinel,Cursed Sentinel,grimspire,common,grimspire,2.50,10,2.159,5.397,150,32,25,9,810,173,135,9,90
+cursed_sentinel,Cursed Sentinel,grimspire,common,grimspire,2.50,15,3.172,7.930,150,32,25,9,1190,254,198,9,90
+cursed_sentinel,Cursed Sentinel,grimspire,common,grimspire,2.50,25,6.848,17.121,150,32,25,9,2568,548,428,9,90
+abyssal_hound,Abyssal Hound,grimspire,common,grimspire,2.50,1,1.080,2.700,130,35,12,18,351,95,32,18,85
+abyssal_hound,Abyssal Hound,grimspire,common,grimspire,2.50,5,1.469,3.673,130,35,12,18,478,129,44,18,85
+abyssal_hound,Abyssal Hound,grimspire,common,grimspire,2.50,10,2.159,5.397,130,35,12,18,702,189,65,18,85
+abyssal_hound,Abyssal Hound,grimspire,common,grimspire,2.50,15,3.172,7.930,130,35,12,18,1031,278,95,18,85
+abyssal_hound,Abyssal Hound,grimspire,common,grimspire,2.50,25,6.848,17.121,130,35,12,18,2226,599,205,18,85
+wyvern_scout,Wyvern Scout,grimspire,common,grimspire,2.50,1,1.080,2.700,160,30,15,16,432,81,41,16,95
+wyvern_scout,Wyvern Scout,grimspire,common,grimspire,2.50,5,1.469,3.673,160,30,15,16,588,110,55,16,95
+wyvern_scout,Wyvern Scout,grimspire,common,grimspire,2.50,10,2.159,5.397,160,30,15,16,864,162,81,16,95
+wyvern_scout,Wyvern Scout,grimspire,common,grimspire,2.50,15,3.172,7.930,160,30,15,16,1269,238,119,16,95
+wyvern_scout,Wyvern Scout,grimspire,common,grimspire,2.50,25,6.848,17.121,160,30,15,16,2739,514,257,16,95
+plague_monk,Plague Monk,grimspire,common,grimspire,2.50,1,1.080,2.700,120,28,10,11,324,76,27,11,88
+plague_monk,Plague Monk,grimspire,common,grimspire,2.50,5,1.469,3.673,120,28,10,11,441,103,37,11,88
+plague_monk,Plague Monk,grimspire,common,grimspire,2.50,10,2.159,5.397,120,28,10,11,648,151,54,11,88
+plague_monk,Plague Monk,grimspire,common,grimspire,2.50,15,3.172,7.930,120,28,10,11,952,222,79,11,88
+plague_monk,Plague Monk,grimspire,common,grimspire,2.50,25,6.848,17.121,120,28,10,11,2055,479,171,11,88
+iron_wraith,Iron Wraith,grimspire,common,grimspire,2.50,1,1.080,2.700,140,33,8,15,378,89,22,15,92
+iron_wraith,Iron Wraith,grimspire,common,grimspire,2.50,5,1.469,3.673,140,33,8,15,514,121,29,15,92
+iron_wraith,Iron Wraith,grimspire,common,grimspire,2.50,10,2.159,5.397,140,33,8,15,756,178,43,15,92
+iron_wraith,Iron Wraith,grimspire,common,grimspire,2.50,15,3.172,7.930,140,33,8,15,1110,262,63,15,92
+iron_wraith,Iron Wraith,grimspire,common,grimspire,2.50,25,6.848,17.121,140,33,8,15,2397,565,137,15,92
+hollow_crypt_boss,The Crypt Keeper,ashenvale,boss,dungeon_boss,3.50,1,1.080,3.780,400,22,14,8,1512,83,53,8,300
+hollow_crypt_boss,The Crypt Keeper,ashenvale,boss,dungeon_boss,3.50,5,1.469,5.143,400,22,14,8,2057,113,72,8,300
+hollow_crypt_boss,The Crypt Keeper,ashenvale,boss,dungeon_boss,3.50,10,2.159,7.556,400,22,14,8,3022,166,106,8,300
+hollow_crypt_boss,The Crypt Keeper,ashenvale,boss,dungeon_boss,3.50,15,3.172,11.103,400,22,14,8,4441,244,155,8,300
+hollow_crypt_boss,The Crypt Keeper,ashenvale,boss,dungeon_boss,3.50,25,6.848,23.970,400,22,14,8,9588,527,336,8,300
+forsaken_citadel_boss,Lord of the Forsaken,grimspire,boss,dungeon_boss,3.50,1,1.080,3.780,900,48,35,11,3402,181,132,11,700
+forsaken_citadel_boss,Lord of the Forsaken,grimspire,boss,dungeon_boss,3.50,5,1.469,5.143,900,48,35,11,4628,247,180,11,700
+forsaken_citadel_boss,Lord of the Forsaken,grimspire,boss,dungeon_boss,3.50,10,2.159,7.556,900,48,35,11,6801,363,264,11,700
+forsaken_citadel_boss,Lord of the Forsaken,grimspire,boss,dungeon_boss,3.50,15,3.172,11.103,900,48,35,11,9992,533,389,11,700
+forsaken_citadel_boss,Lord of the Forsaken,grimspire,boss,dungeon_boss,3.50,25,6.848,23.970,900,48,35,11,21573,1151,839,11,700
+malachar,Malachar the Undying,grimspire,demon_lord,demon_lord,6.00,1,1.080,6.480,3000,90,60,14,19440,583,389,14,5000
+malachar,Malachar the Undying,grimspire,demon_lord,demon_lord,6.00,5,1.469,8.816,3000,90,60,14,26448,793,529,14,5000
+malachar,Malachar the Undying,grimspire,demon_lord,demon_lord,6.00,10,2.159,12.954,3000,90,60,14,38861,1166,777,14,5000
+malachar,Malachar the Undying,grimspire,demon_lord,demon_lord,6.00,15,3.172,19.033,3000,90,60,14,57099,1713,1142,14,5000
+malachar,Malachar the Undying,grimspire,demon_lord,demon_lord,6.00,25,6.848,41.091,3000,90,60,14,123273,3698,2465,14,5000

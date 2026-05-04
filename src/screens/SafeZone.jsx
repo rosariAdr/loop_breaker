@@ -17,7 +17,6 @@ import {
 function generateVillageBuildings(villageId, optionalBuildings) {
   // Seed simple basé sur le nom du village
   const seed = villageId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-  const rng = (n) => ((seed * 9301 + 49297) % 233280) / 233280 < n
 
   const buildings = []
   optionalBuildings.forEach(({ id, chance }, i) => {
@@ -28,7 +27,7 @@ function generateVillageBuildings(villageId, optionalBuildings) {
 }
 
 export default function SafeZone() {
-  const { world, setScreen, hero, sleep, healHero, restoreHeroMana, spendGold, addConsumable, removeResource, addEquipmentToInventory } = useGameStore()
+  const { world, setScreen, hero } = useGameStore()
   const [activeBuilding, setActiveBuilding] = useState(null)
 
   const zone = ZONES[world.currentZone]
@@ -258,7 +257,7 @@ function ChurchPanel({ onBack }) {
   )
 }
 
-function MerchantPanel({ onBack, zoneId }) {
+function MerchantPanel({ onBack }) {
   const { hero, spendGold, addConsumable, addEquipmentToInventory } = useGameStore()
   const [tab, setTab] = useState('potions') // 'potions' | 'equipment'
 

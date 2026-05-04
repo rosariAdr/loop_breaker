@@ -4,7 +4,7 @@ import { SKILLS, isDivineSkillInheritable } from '../data/skills'
 import { ZONES } from '../data/zones'
 
 export default function PostMortem() {
-  const { meta, confirmInheritance, hero, resetGame } = useGameStore()
+  const { meta, confirmInheritance, resetGame } = useGameStore()
   const summary = meta.lastRunSummary
 
   // Sélection de l'héritage
@@ -31,7 +31,6 @@ export default function PostMortem() {
   })
 
   const statKeys = ['strength', 'agility', 'intelligence', 'chance', 'def']
-  const canConfirm = chosenStat && chosenActive !== undefined && chosenPassive !== undefined
 
   const handleConfirm = () => {
     confirmInheritance(chosenStat, chosenActive, chosenPassive)
@@ -119,7 +118,7 @@ export default function PostMortem() {
                 Skip (no active skills)
               </button>
             )}
-            {activeSkills.map((s, i) => {
+            {activeSkills.map((s) => {
               const t = SKILLS[s.skillId]
               return (
                 <button

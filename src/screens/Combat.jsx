@@ -138,7 +138,8 @@ export default function Combat() {
   const [combatStats, setCombatStats] = useState({ dmgDealt: 0, dmgTaken: 0, manaSpent: 0, kills: 0 })
 
   const heroStatsRef = useRef(heroStats)
-  heroStatsRef.current = heroStats
+  // Mise à jour du ref hors render (évite l'erreur ESLint react-hooks/refs)
+  useEffect(() => { heroStatsRef.current = heroStats }, [heroStats])
 
   const addLog = useCallback((text, type = 'info') => {
     setLog(prev => [{ text, type, id: Date.now() + Math.random() }, ...prev].slice(0, 25))
@@ -167,6 +168,8 @@ export default function Combat() {
     })
   }, [recentSkillLevelUps, clearSkillLevelUp, addLog])
 
+  // Initialisation au mount du combat — sync activeCombat → state local
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!activeCombat) return
     const initial = activeCombat.enemies
@@ -175,7 +178,8 @@ export default function Combat() {
     setSelectedTargetId(initial[0]?.id ?? null)
     recordCombatEntry()
     addLog(`Battle begins! (${initial.length} ${initial.length > 1 ? 'enemies' : 'enemy'})`, 'system')
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const finishCombat = useCallback((outcome, cause = 'Unknown enemy') => {
     const finalStats = heroStatsRef.current

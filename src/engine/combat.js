@@ -2,7 +2,7 @@
 // Appelé par le store Zustand et l'écran Combat.jsx
 
 import { MONSTERS } from '../data/monsters'
-import { SKILLS, isDivineSkillInheritable } from '../data/skills'
+import { SKILLS } from '../data/skills'
 import { RESOURCES } from '../data/resources'
 import { scaleMonsterStats, ZONE_MULTS } from '../data/zones'
 import { checkIgnarethAwakening, checkSylvaraAwakening } from '../data/deities'
@@ -218,15 +218,12 @@ export function generateEnemies(monsterId, zoneId, runCount) {
  * Simple pour le POC : attaque basique 80% du temps.
  */
 export function enemyAI(enemy, heroStats) {
-  // 80% attaque basique
-  const roll = Math.random()
-  if (roll < 0.80 || true) { // simplifié pour le POC
-    const dmg = calcBaseDamage(enemy.stats.atk, heroStats.def)
-    return {
-      type: 'attack',
-      damage: dmg,
-      log: `${enemy.name} attacks for ${dmg} damage!`,
-    }
+  // POC : toujours attaque basique (TODO B05 — diversifier l'IA avec skills/effets)
+  const dmg = calcBaseDamage(enemy.stats.atk, heroStats.def)
+  return {
+    type: 'attack',
+    damage: dmg,
+    log: `${enemy.name} attacks for ${dmg} damage!`,
   }
 }
 
