@@ -38,3 +38,15 @@ Thumbs.db
 
 # Debug
 *.local
+
+# Claude Code IDE config
+.claude/
+
+# Monster portraits — local only for now
+# TODO: optimiser tous les PNG via squoosh.app (≤ 300 KB) avant de re-add
+# Le README.md reste tracké (guide de génération)
+public/monsters/*.png
+public/monsters/*.webp
+public/monsters/*.jpg
+public/monsters/*.jpeg
+public/

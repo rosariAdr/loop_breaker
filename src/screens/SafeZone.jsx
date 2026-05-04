@@ -162,7 +162,7 @@ export default function SafeZone() {
 // ── Bâtiments ─────────────────────────────────────────────────────────────────
 
 function InnPanel({ onBack }) {
-  const { sleep, world } = useGameStore()
+  const { sleep, world, setScreen } = useGameStore()
 
   const handleSleep = () => {
     sleep()
@@ -192,6 +192,23 @@ function InnPanel({ onBack }) {
           <br />
           <span style={{ fontSize: '0.75rem', color: '#507040' }}>
             Fully restores HP & Mana · Advances to Day {world.dayCount + 1}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setScreen('quest_board')}
+          className="px-4 py-3 rounded transition-all hover:opacity-90"
+          style={{
+            fontFamily: 'Cinzel, serif',
+            background: '#0a0818',
+            color: '#c084fc',
+            border: '1px solid #3a1c60',
+          }}
+        >
+          📋 Quest Board
+          <br />
+          <span style={{ fontSize: '0.75rem', color: '#5a3a80' }}>
+            View & claim available quests
           </span>
         </button>
       </div>

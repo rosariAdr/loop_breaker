@@ -10,9 +10,17 @@ import SafeZone from './screens/SafeZone'
 import PostMortem from './screens/PostMortem'
 import GodsShop from './screens/GodsShop'
 import DivineCall from './screens/DivineCall'
+import QuestBoard from './screens/QuestBoard'
+import LevelUpModal from './screens/LevelUpModal'
+import CharacterCreation from './screens/CharacterCreation'
 
 function App() {
-  const { currentScreen, loadGame, saveGame, pendingDivineCall, processIdleTick, advanceTick } = useGameStore()
+  const {
+    currentScreen, loadGame, saveGame,
+    pendingDivineCall, pendingLevelUp,
+    processIdleTick, advanceTick,
+    hero,
+  } = useGameStore()
 
   // Charger la sauvegarde au démarrage
   useEffect(() => {
@@ -24,7 +32,7 @@ function App() {
     const interval = setInterval(() => {
       const { world, activeCombat } = useGameStore.getState()
       if (world.isIdleActive && !activeCombat) {
-        processIdleTick()
+        try { processIdleTick() } catch (e) { console.error('[idle tick]', e) }
       }
     }, 3000)
     return () => clearInterval(interval)
@@ -33,9 +41,9 @@ function App() {
   // Tick calendrier : 1 tick toutes les 30 secondes (1 journée = 12 min)
   useEffect(() => {
     const interval = setInterval(() => {
-      const { activeCombat, currentScreen } = useGameStore.getState()
+      const { activeCombat, currentScreen: cs } = useGameStore.getState()
       const pausedScreens = ['post_mortem', 'gods_shop', 'divine_call']
-      if (!activeCombat && !pausedScreens.includes(currentScreen)) advanceTick()
+      if (!activeCombat && !pausedScreens.includes(cs)) advanceTick()
     }, 30000)
     return () => clearInterval(interval)
   }, [])
@@ -57,22 +65,33 @@ function App() {
       case 'post_mortem':   return <PostMortem />
       case 'gods_shop':     return <GodsShop />
       case 'divine_call':   return <WorldMap /> // fond derrière le modal
+      case 'quest_board':   return <QuestBoard />
       default:              return <WorldMap />
     }
   }
 
+  // C01 — CharacterCreation : run #1 et nom non choisi
+  const showCharCreation = hero.runNumber === 1 && !hero.heroNamed
+
+  // C02 — LevelUpModal : niveaux gagnés non confirmés
+  const showLevelUp = pendingLevelUp > 0 && !showCharCreation
+
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#0a0a0f' }}>
       <NavBar />
+      <DayBar />
       <main className="flex-1">
         {renderScreen()}
       </main>
-      {/* DivineCall est un modal — toujours monté si pendingDivineCall existe */}
+      {/* Modals — par ordre de priorité */}
       {pendingDivineCall && <DivineCall />}
+      {showLevelUp && <LevelUpModal />}
+      {showCharCreation && <CharacterCreation />}
     </div>
   )
 }
 
+// ── NavBar ─────────────────────────────────────────────────────────────────────
 function NavBar() {
   const { setScreen, currentScreen, hero, world, saveGame } = useGameStore()
   const [saveFlash, setSaveFlash] = useState(false)
@@ -110,6 +129,12 @@ function NavBar() {
           <span style={{ color: '#3a6a8a', fontSize: '0.7rem' }}>{hero.exp}/{hero.expToNext}</span>
         </div>
         <span style={{ color: '#4a4030', fontSize: '0.78rem' }}>Day {world.dayCount}</span>
+        {/* U07 — Tokens de réputation */}
+        {hero.reputationTokens > 0 && (
+          <span style={{ color: '#c084fc', fontSize: '0.75rem' }}>
+            🪙 {hero.reputationTokens}
+          </span>
+        )}
       </div>
 
       {/* Barres HP / MP */}
@@ -156,6 +181,46 @@ function NavBar() {
   )
 }
 
+// ── DayBar — I03 ──────────────────────────────────────────────────────────────
+function DayBar() {
+  const { world, sleep, currentScreen } = useGameStore()
+
+  // Masquer pendant les écrans fullscreen ou le combat
+  const hide = ['post_mortem', 'gods_shop', 'divine_call', 'combat'].includes(currentScreen)
+  if (hide) return null
+
+  const pct = Math.min(100, (world.tickCount / 24) * 100)
+  const isNight = world.isNight
+
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-1 border-b"
+      style={{ borderColor: '#1a1410', background: '#060604' }}
+    >
+      <span style={{ color: isNight ? '#4a4060' : '#4a4030', fontSize: '0.68rem', fontFamily: 'Cinzel, serif', whiteSpace: 'nowrap' }}>
+        {isNight ? '🌙' : '☀️'} Day {world.dayCount} · T{world.tickCount}/24
+      </span>
+      <div className="flex-1 h-1 rounded overflow-hidden" style={{ background: '#1a1410' }}>
+        <div
+          className="h-full rounded transition-all duration-500"
+          style={{
+            width: `${pct}%`,
+            background: isNight ? '#302858' : '#4a3818',
+          }}
+        />
+      </div>
+      <button
+        onClick={sleep}
+        className="text-xs px-2 py-0.5 rounded"
+        style={{ fontFamily: 'Cinzel, serif', color: '#4a3a2a', border: '1px solid #2a1a10', background: 'transparent' }}
+      >
+        💤
+      </button>
+    </div>
+  )
+}
+
+// ── Bar ───────────────────────────────────────────────────────────────────────
 function Bar({ value, max, color, label }) {
   const percent = Math.max(0, Math.min(100, (value / max) * 100))
   return (

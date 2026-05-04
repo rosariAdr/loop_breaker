@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { SKILLS } from '../data/skills'
+import { SKILLS, isDivineSkillInheritable } from '../data/skills'
 import { ZONES } from '../data/zones'
 
 export default function PostMortem() {
-  const { meta, confirmInheritance, hero } = useGameStore()
+  const { meta, confirmInheritance, hero, resetGame } = useGameStore()
   const summary = meta.lastRunSummary
 
   // Sélection de l'héritage
@@ -14,13 +14,20 @@ export default function PostMortem() {
 
   if (!summary) return null
 
+  // DV10 — un skill divin n'est héritable qu'à partir du niveau 2
+  const isInheritable = (s) => {
+    const t = SKILLS[s.skillId]
+    if (!t) return false
+    return isDivineSkillInheritable({ ...t, level: s.level })
+  }
+
   const activeSkills = summary.skills.filter(s => {
     const t = SKILLS[s.skillId]
-    return t?.type === 'active'
+    return t?.type === 'active' && isInheritable(s)
   })
   const passiveSkills = summary.skills.filter(s => {
     const t = SKILLS[s.skillId]
-    return t?.type === 'passive'
+    return t?.type === 'passive' && isInheritable(s)
   })
 
   const statKeys = ['strength', 'agility', 'intelligence', 'chance', 'def']
@@ -179,6 +186,21 @@ export default function PostMortem() {
             }}
           >
             Enter the Gods' Shop →
+          </button>
+
+          {/* Reset complet */}
+          <button
+            onClick={resetGame}
+            className="w-full py-2 rounded mt-1 text-xs transition-all hover:opacity-80"
+            style={{
+              fontFamily: 'Cinzel, serif',
+              background: 'transparent',
+              color: '#4a2a1a',
+              border: '1px solid #2a1410',
+              cursor: 'pointer',
+            }}
+          >
+            ↺ New Run — reset everything
           </button>
         </div>
       </div>

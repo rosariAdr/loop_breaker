@@ -66,13 +66,18 @@ export default function GodsShop() {
   }
 
   const handleConfirm = () => {
-    // Appliquer les achats
-    if (purchases.includes('starter_kit')) {
-      addConsumable('hp_potion_small', 3)
-      addConsumable('mana_potion_small', 3)
+    // T10 — Starter kit (peut être acheté plusieurs fois)
+    const starterKitCount = purchases.filter(p => p === 'starter_kit').length
+    if (starterKitCount > 0) {
+      addConsumable('hp_potion_small', 3 * starterKitCount)
+      addConsumable('mana_potion_small', 3 * starterKitCount)
     }
+    // T07 — Bonus skill : un skill actif basique offert (power_strike Lv 1)
+    const extraSkills = purchases.includes('bonus_skill')
+      ? [{ type: 'active', skillId: 'power_strike', level: 1, xp: 0 }]
+      : []
     const shopPurchases = {
-      extraSkills: [],
+      extraSkills,
       rankRestored: purchases.includes('rank_restore'),
       bonusStatSlot: purchases.includes('bonus_stat'),
       skillLevelUps: purchases.filter(p => p === 'skill_levelup').length,

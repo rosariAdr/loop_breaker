@@ -12,6 +12,7 @@ import {
   enemyAI,
   isDefeated,
   checkAwakeningConditions,
+  getScaledSkillCost,
 } from '../engine/combat'
 import { calcEquippedStatBonuses } from '../data/equipment'
 
@@ -60,6 +61,36 @@ const RANK_BADGE = {
   demon_lord: { label: 'DEMON LORD', color: '#ff5050', bg: '#2a0808', border: '#882020' },
 }
 
+// ── Portrait monstre : charge /monsters/<id>.png, fallback emoji si manquant ──
+// Les images doivent être dans `public/monsters/<monsterId>.png`
+// Format conseillé : 512×512 PNG, fond transparent, style fantasy joyeuse aventure
+function MonsterPortrait({ monsterId, fallbackEmoji, size = 120 }) {
+  const [errored, setErrored] = useState(false)
+  if (errored || !monsterId) {
+    return (
+      <span style={{ fontSize: `${Math.round(size * 0.55)}px`, lineHeight: 1 }}>
+        {fallbackEmoji ?? '👹'}
+      </span>
+    )
+  }
+  return (
+    <img
+      src={`/monsters/${monsterId}.png`}
+      alt=""
+      onError={() => setErrored(true)}
+      draggable={false}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        objectFit: 'contain',
+        filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.7))',
+        userSelect: 'none',
+        pointerEvents: 'none',
+      }}
+    />
+  )
+}
+
 export default function Combat() {
   const {
     hero,
@@ -74,6 +105,8 @@ export default function Combat() {
     gainExp,
     triggerDivineCall,
     recordCombatEntry,
+    recentSkillLevelUps,
+    clearSkillLevelUp,
   } = useGameStore()
 
   const equipBonuses = calcEquippedStatBonuses(hero.equipped ?? {})
@@ -97,6 +130,12 @@ export default function Combat() {
   const [selectedTargetId, setSelectedTargetId] = useState(null)
   const [heroHitFlash, setHeroHitFlash] = useState(false)
   const [turnCount, setTurnCount] = useState(1)
+  const [animatingEnemyId, setAnimatingEnemyId] = useState(null) // id ennemi qui reçoit un coup
+  const [animatingHero, setAnimatingHero] = useState(false)      // héros qui reçoit un coup
+  const [attackingEnemyId, setAttackingEnemyId] = useState(null) // B02 — ennemi qui frappe
+  const [floatingNumbers, setFloatingNumbers] = useState([])     // B07 — [{id, targetId, amount, type}]
+  // B08 — stats de combat pour le résumé
+  const [combatStats, setCombatStats] = useState({ dmgDealt: 0, dmgTaken: 0, manaSpent: 0, kills: 0 })
 
   const heroStatsRef = useRef(heroStats)
   heroStatsRef.current = heroStats
@@ -104,6 +143,29 @@ export default function Combat() {
   const addLog = useCallback((text, type = 'info') => {
     setLog(prev => [{ text, type, id: Date.now() + Math.random() }, ...prev].slice(0, 25))
   }, [])
+
+  // B07 — push un nombre flottant, auto-cleanup après 800ms
+  const pushFloatingNumber = useCallback((targetId, amount, type = 'damage') => {
+    const id = Date.now() + Math.random()
+    setFloatingNumbers(prev => [...prev, { id, targetId, amount, type }])
+    setTimeout(() => setFloatingNumbers(prev => prev.filter(n => n.id !== id)), 800)
+  }, [])
+
+  // S04 — Notif level-up de skill : afficher floating + log, puis clear
+  useEffect(() => {
+    if (!recentSkillLevelUps || recentSkillLevelUps.length === 0) return
+    recentSkillLevelUps.forEach((entry) => {
+      // Le floating number affiche "✦ Lv X" sur le héros
+      const id = Date.now() + Math.random()
+      setFloatingNumbers(prev => [...prev, { id, targetId: 'hero', amount: `Lv ${entry.toLevel}`, type: 'levelup' }])
+      setTimeout(() => setFloatingNumbers(prev => prev.filter(n => n.id !== id)), 1100)
+      // Log
+      const skillName = SKILLS[entry.skillId]?.name ?? entry.skillId
+      addLog(`✦ ${skillName} → Lv ${entry.toLevel}!`, 'levelup')
+      // Clear l'entrée du store
+      clearSkillLevelUp(entry.id)
+    })
+  }, [recentSkillLevelUps, clearSkillLevelUp, addLog])
 
   useEffect(() => {
     if (!activeCombat) return
@@ -115,7 +177,7 @@ export default function Combat() {
     addLog(`Battle begins! (${initial.length} ${initial.length > 1 ? 'enemies' : 'enemy'})`, 'system')
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const finishCombat = useCallback((outcome) => {
+  const finishCombat = useCallback((outcome, cause = 'Unknown enemy') => {
     const finalStats = heroStatsRef.current
     useGameStore.setState(state => ({
       hero: {
@@ -125,7 +187,7 @@ export default function Combat() {
     }))
     if (outcome === 'defeat') {
       addLog('You have fallen...', 'defeat')
-      setTimeout(() => useGameStore.getState().heroDeath(), 1000)
+      setTimeout(() => useGameStore.getState().heroDeath(cause), 1000)
       return
     }
     setResult(outcome)
@@ -141,13 +203,21 @@ export default function Combat() {
           return
         }
         addLog(action.log, 'enemy')
+        // B02 — flash sur l'ennemi qui attaque
+        setAttackingEnemyId(enemy.id)
+        setTimeout(() => setAttackingEnemyId(null), 400)
+        // B07 — dégâts flottants sur le héros
+        pushFloatingNumber('hero', action.damage, 'damage')
+        // B08 — track les dégâts pris
+        setCombatStats(s => ({ ...s, dmgTaken: s.dmgTaken + action.damage }))
         setHeroStats(prev => {
           const newHp = Math.max(0, prev.hp - action.damage)
-          if (newHp <= 0) setTimeout(() => finishCombat('defeat'), 300)
+          if (newHp <= 0) setTimeout(() => finishCombat('defeat', enemy.name), 300)
           return { ...prev, hp: newHp }
         })
         setHeroHitFlash(true)
-        setTimeout(() => setHeroHitFlash(false), 400)
+        setAnimatingHero(true)
+        setTimeout(() => { setHeroHitFlash(false); setAnimatingHero(false) }, 400)
         if (i === aliveEnemies.length - 1) {
           setTimeout(() => {
             setTurnCount(t => t + 1)
@@ -156,10 +226,11 @@ export default function Combat() {
         }
       }, i * 500)
     })
-  }, [addLog, finishCombat])
+  }, [addLog, finishCombat, pushFloatingNumber])
 
   const handleVictory = useCallback((defeatedEnemies) => {
     addLog('Victory!', 'victory')
+    setCombatStats(s => ({ ...s, kills: defeatedEnemies.length }))  // B08
     const allLoot = []
     defeatedEnemies.forEach(e => {
       const drops = calcDrops(e.monsterId, heroStatsRef.current.chance)
@@ -222,6 +293,9 @@ export default function Combat() {
     const target = aliveEnemies.find(e => e.id === selectedTargetId) ?? aliveEnemies[0]
     const dmg = calcBaseDamage(heroStats.strength, target.stats.def)
     setIsAnimating(true)
+    setAnimatingEnemyId(target.id)
+    pushFloatingNumber(target.id, dmg, 'damage')                        // B07
+    setCombatStats(s => ({ ...s, dmgDealt: s.dmgDealt + dmg }))         // B08
     setTimeout(() => {
       const updatedEnemies = enemies.map(e =>
         e.id === target.id ? { ...e, currentHp: Math.max(0, e.currentHp - dmg) } : e
@@ -229,6 +303,7 @@ export default function Combat() {
       setEnemies(updatedEnemies)
       addLog(`You strike ${target.name} for ${dmg} damage.`, 'player')
       setIsAnimating(false)
+      setAnimatingEnemyId(null)
       afterPlayerAction(updatedEnemies)
     }, 300)
   }
@@ -243,9 +318,22 @@ export default function Combat() {
     const skillTarget = aliveEnemies.find(e => e.id === selectedTargetId) ?? aliveEnemies[0]
     setIsAnimating(true)
     setHeroStats(applySkillCost(skill, heroStats))
+    // B08 — track la mana dépensée
+    setCombatStats(s => ({ ...s, manaSpent: s.manaSpent + (template.cost?.mana ?? 0) }))
     if (template.effect?.damage) {
       const dmg = calcSkillDamage(skill, heroStats, skill.level)
       const isAoe = template.effect.aoe
+      // B07 — nombre flottant sur chaque cible touchée
+      if (isAoe) {
+        enemies.filter(e => !isDefeated(e)).forEach(e => pushFloatingNumber(e.id, dmg, 'skill'))
+      } else {
+        pushFloatingNumber(skillTarget.id, dmg, 'skill')
+      }
+      // B08 — dégâts infligés (×N si AoE)
+      const totalDmgDealt = isAoe
+        ? dmg * enemies.filter(e => !isDefeated(e)).length
+        : dmg
+      setCombatStats(s => ({ ...s, dmgDealt: s.dmgDealt + totalDmgDealt }))
       setTimeout(() => {
         const updatedEnemies = enemies.map(e => {
           if (isDefeated(e)) return e
@@ -264,6 +352,7 @@ export default function Combat() {
     } else if (template.effect?.heal) {
       const healAmt = Math.round(heroStats.maxHp * template.effect.heal.value)
       setHeroStats(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt) }))
+      pushFloatingNumber('hero', healAmt, 'heal')  // B07 — flottant de soin
       addLog(`${template.name} restores ${healAmt} HP!`, 'heal')
       setHeroSkills(prev => prev.map(s =>
         s.skillId === skill.skillId ? { ...s, currentCooldown: template.cooldown } : s
@@ -291,10 +380,12 @@ export default function Combat() {
     if (res.effect.type === 'heal_percent') {
       const healAmt = Math.round(heroStats.maxHp * res.effect.value)
       setHeroStats(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt) }))
+      pushFloatingNumber('hero', healAmt, 'heal')  // B07
       addLog(`Used ${res.name} — restored ${healAmt} HP.`, 'heal')
     } else if (res.effect.type === 'mana_restore_percent') {
       const manaAmt = Math.round(heroStats.maxMana * res.effect.value)
       setHeroStats(prev => ({ ...prev, mana: Math.min(prev.maxMana, prev.mana + manaAmt) }))
+      pushFloatingNumber('hero', manaAmt, 'mana')  // B07
       addLog(`Used ${res.name} — restored ${manaAmt} Mana.`, 'mana')
     }
     useGameStore.setState(state => ({
@@ -343,6 +434,9 @@ export default function Combat() {
               key={enemy.id}
               enemy={enemy}
               isSelected={selectedTargetId === enemy.id}
+              isHit={animatingEnemyId === enemy.id}
+              isAttacking={attackingEnemyId === enemy.id}
+              floatingNumbers={floatingNumbers.filter(n => n.targetId === enemy.id)}
               onSelect={() => !isDefeated(enemy) && phase === 'player' && setSelectedTargetId(enemy.id)}
             />
           ))}
@@ -357,7 +451,14 @@ export default function Combat() {
 
         {/* Zone héros — bas de l'arène, centré */}
         <div className="flex justify-center px-8 pt-4 pb-3">
-          <HeroCard heroStats={heroStats} heroName={hero.name} deity={hero.deity} hitFlash={heroHitFlash} />
+          <HeroCard
+            heroStats={heroStats}
+            heroName={hero.name}
+            deity={hero.deity}
+            hitFlash={heroHitFlash}
+            isAnimHit={animatingHero}
+            floatingNumbers={floatingNumbers.filter(n => n.targetId === 'hero')}
+          />
         </div>
       </div>
 
@@ -380,7 +481,7 @@ export default function Combat() {
 
       {/* ── Résultat ── */}
       {phase === 'result' && (
-        <ResultPanel result={result} loot={loot} onLeave={handleLeave} />
+        <ResultPanel result={result} loot={loot} combatStats={combatStats} onLeave={handleLeave} />
       )}
 
       {/* ── Log de combat ── */}
@@ -428,7 +529,7 @@ function PhaseIndicator({ phase, turnCount }) {
 }
 
 // ── Carte ennemi ──────────────────────────────────────────────────────────────
-function EnemyCard({ enemy, isSelected, onSelect }) {
+function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = [], onSelect }) {
   const hpPct = Math.max(0, Math.min(1, enemy.currentHp / enemy.stats.hp))
   const dead = isDefeated(enemy)
   const rankBadge = RANK_BADGE[enemy.rank]
@@ -436,10 +537,12 @@ function EnemyCard({ enemy, isSelected, onSelect }) {
 
   return (
     <div
-      className="flex flex-col items-center gap-2.5 transition-all duration-300"
+      className={`flex flex-col items-center gap-2.5 transition-all duration-300 relative${isHit ? ' anim-shake' : ''}${isAttacking ? ' anim-flash' : ''}`}
       style={{ opacity: dead ? 0.22 : 1, cursor: dead ? 'default' : 'pointer' }}
       onClick={onSelect}
     >
+      {/* B07 — Nombres flottants (dégâts) */}
+      <FloatingNumbers numbers={floatingNumbers} />
       {/* Indicateur ciblage */}
       {isSelected && !dead && (
         <p style={{
@@ -456,7 +559,7 @@ function EnemyCard({ enemy, isSelected, onSelect }) {
       {/* Portrait — 128px, badge en overlay */}
       <div className="relative">
         <div
-          className="flex items-center justify-center transition-all duration-200"
+          className="flex items-center justify-center transition-all duration-200 overflow-hidden"
           style={{
             width: '128px',
             height: '128px',
@@ -472,7 +575,11 @@ function EnemyCard({ enemy, isSelected, onSelect }) {
             filter: dead ? 'grayscale(1) brightness(0.35)' : 'none',
           }}
         >
-          {dead ? '💀' : emoji}
+          {dead ? (
+            <span>💀</span>
+          ) : (
+            <MonsterPortrait monsterId={enemy.monsterId} fallbackEmoji={emoji} size={120} />
+          )}
         </div>
 
         {/* Badge de rang en overlay — haut gauche */}
@@ -532,9 +639,11 @@ function EnemyCard({ enemy, isSelected, onSelect }) {
 }
 
 // ── Carte héros ───────────────────────────────────────────────────────────────
-function HeroCard({ heroStats, heroName, deity, hitFlash }) {
+function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, floatingNumbers = [] }) {
   return (
-    <div className="flex items-center gap-6">
+    <div className={`flex items-center gap-6 relative${isAnimHit ? ' anim-flash' : ''}`}>
+      {/* B07 — Nombres flottants (dégâts reçus / soins) */}
+      <FloatingNumbers numbers={floatingNumbers} />
       {/* Portrait — 96px */}
       <div
         className="flex items-center justify-center flex-shrink-0"
@@ -582,6 +691,59 @@ function HeroCard({ heroStats, heroName, deity, hitFlash }) {
           width={200}
         />
       </div>
+    </div>
+  )
+}
+
+// ── B08 — Stat de combat (résumé) ────────────────────────────────────────────
+function CombatStat({ icon, label, value, color }) {
+  return (
+    <div className="flex items-center gap-1.5" title={label}>
+      <span style={{ fontSize: '0.9rem' }}>{icon}</span>
+      <div className="flex flex-col items-start leading-tight">
+        <span style={{ color: '#5a4a3a', fontSize: '0.58rem', fontFamily: 'Cinzel, serif', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          {label}
+        </span>
+        <span style={{ color, fontSize: '0.85rem', fontWeight: 600 }}>{value}</span>
+      </div>
+    </div>
+  )
+}
+
+// ── B07 — Nombres flottants ──────────────────────────────────────────────────
+const FLOATING_COLORS = {
+  damage:  { color: '#ff6040', prefix: '-' },
+  skill:   { color: '#c084fc', prefix: '-' },
+  heal:    { color: '#40d080', prefix: '+' },
+  mana:    { color: '#40a0f0', prefix: '+' },
+  levelup: { color: '#f0c040', prefix: '✦ ' }, // S04
+}
+
+function FloatingNumbers({ numbers }) {
+  if (!numbers || numbers.length === 0) return null
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
+      {numbers.map((n, i) => {
+        const style = FLOATING_COLORS[n.type] ?? FLOATING_COLORS.damage
+        return (
+          <span
+            key={n.id}
+            className="absolute anim-float"
+            style={{
+              top: '10%',
+              left: `${42 + (i % 3) * 8}%`,  // légère offset pour éviter l'overlap
+              fontFamily: 'Cinzel, serif',
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              color: style.color,
+              textShadow: `0 0 6px ${style.color}80, 0 2px 4px #000`,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {style.prefix}{n.amount}
+          </span>
+        )
+      })}
     </div>
   )
 }
@@ -696,12 +858,14 @@ function ActionPanel({
               if (!template || template.type !== 'active') return null
               const usable = canUseSkill(skill, heroStats) && !isAnimating
               const onCD = skill.currentCooldown > 0
+              // S07 — coût scalé au niveau (lecture des stats affichées)
+              const scaledCost = getScaledSkillCost(template, skill.level)
               return (
                 <button
                   key={skill.skillId}
                   onClick={() => onUseSkill(skill)}
                   disabled={!usable}
-                  className="px-4 py-2.5 rounded-lg text-left transition-all hover:opacity-90"
+                  className="relative px-4 py-2.5 rounded-lg text-left transition-all hover:opacity-90 overflow-hidden"
                   style={{
                     background: onCD ? '#0a0808' : usable ? '#100a1c' : '#0a0808',
                     color: onCD ? '#3a2848' : usable ? '#c084fc' : '#3a2848',
@@ -715,10 +879,41 @@ function ActionPanel({
                   </p>
                   <p style={{ color: usable ? '#7060a8' : '#2a1838', fontSize: '0.72rem' }}>
                     Lv{skill.level}
-                    {template.cost.mana > 0 && ` · ${template.cost.mana}MP`}
-                    {template.cost.hp > 0 && ` · ${template.cost.hp}HP`}
-                    {onCD && ` · CD:${skill.currentCooldown}`}
+                    {scaledCost.mana > 0 && ` · ${scaledCost.mana}MP`}
+                    {scaledCost.hp > 0 && ` · ${scaledCost.hp}HP`}
                   </p>
+                  {/* S05 — Cooldown overlay : grand compteur centré */}
+                  {onCD && (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      style={{
+                        background: 'rgba(8, 6, 12, 0.78)',
+                        backdropFilter: 'grayscale(0.7)',
+                      }}
+                    >
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span style={{
+                          fontFamily: 'Cinzel, serif',
+                          fontSize: '1.6rem',
+                          fontWeight: 700,
+                          color: '#806080',
+                          textShadow: '0 0 6px rgba(128,96,128,0.4)',
+                          lineHeight: 1,
+                        }}>
+                          {skill.currentCooldown}
+                        </span>
+                        <span style={{
+                          fontFamily: 'Cinzel, serif',
+                          fontSize: '0.55rem',
+                          color: '#5a4868',
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                        }}>
+                          {skill.currentCooldown === 1 ? 'turn' : 'turns'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </button>
               )
             })}
@@ -786,7 +981,7 @@ function ActionPanel({
 }
 
 // ── Résultat — pleine largeur, dramatique ─────────────────────────────────────
-function ResultPanel({ result, loot, onLeave }) {
+function ResultPanel({ result, loot, combatStats, onLeave }) {
   const isVictory = result === 'victory'
   const isFled = result === 'fled'
 
@@ -798,7 +993,7 @@ function ResultPanel({ result, loot, onLeave }) {
 
   return (
     <div
-      className="mx-4 mb-2 rounded-xl overflow-hidden"
+      className="mx-4 mb-2 rounded-xl overflow-hidden anim-pop"
       style={{ background: colors.bg, border: `1px solid ${colors.border}` }}
     >
       {/* Banner — pleine largeur */}
@@ -842,6 +1037,16 @@ function ResultPanel({ result, loot, onLeave }) {
         </div>
       )}
 
+      {/* B08 — Stats de combat */}
+      {combatStats && isVictory && (
+        <div className="px-6 py-2 flex justify-center gap-5" style={{ borderTop: `1px solid ${colors.bannerBorder}40` }}>
+          <CombatStat icon="⚔️" label="Dealt"  value={combatStats.dmgDealt}  color="#d4af70" />
+          <CombatStat icon="💥" label="Taken"  value={combatStats.dmgTaken}  color="#c06060" />
+          <CombatStat icon="✨" label="Mana"   value={combatStats.manaSpent} color="#60a0f0" />
+          <CombatStat icon="💀" label="Kills"  value={combatStats.kills}    color="#a080c0" />
+        </div>
+      )}
+
       <div className="px-6 pb-5 flex justify-center">
         <button
           onClick={onLeave}
@@ -874,6 +1079,7 @@ function CombatLog({ log }) {
     mana:    '#40a0f0',
     system:  '#708070',
     info:    '#6a5a4a',
+    levelup: '#f0c040',  // S04
   }
 
   return (

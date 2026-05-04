@@ -58,14 +58,30 @@ export function calcTurnOrder(hero, enemies) {
 // ── Coût d'un skill ───────────────────────────────────────────────────────────
 
 /**
+ * Calcule le coût scalé d'un skill selon son niveau.
+ * S07 — chaque niveau au-delà de 1 applique la réduction `costReduction` du palier.
+ * Lv 2 : -10% (par défaut). Lv 3 : -20%.
+ * Retourne { mana, hp } arrondis (jamais < 0).
+ */
+export function getScaledSkillCost(template, level) {
+  if (!template) return { mana: 0, hp: 0 }
+  const reduction = template.levelBonuses?.[level]?.costReduction ?? 0
+  return {
+    mana: Math.max(0, Math.round(template.cost.mana * (1 - reduction))),
+    hp: Math.max(0, Math.round(template.cost.hp * (1 - reduction))),
+  }
+}
+
+/**
  * Vérifie si le héros peut utiliser un skill (mana + hp suffisants).
  */
 export function canUseSkill(skill, heroStats) {
   const template = SKILLS[skill.skillId]
   if (!template) return false
   if (skill.currentCooldown > 0) return false
-  if (heroStats.mana < template.cost.mana) return false
-  if (heroStats.hp <= template.cost.hp) return false // ne peut pas se suicider avec
+  const cost = getScaledSkillCost(template, skill.level)
+  if (heroStats.mana < cost.mana) return false
+  if (heroStats.hp <= cost.hp) return false // ne peut pas se suicider avec
   return true
 }
 
@@ -75,10 +91,11 @@ export function canUseSkill(skill, heroStats) {
 export function applySkillCost(skill, heroStats) {
   const template = SKILLS[skill.skillId]
   if (!template) return heroStats
+  const cost = getScaledSkillCost(template, skill.level)
   return {
     ...heroStats,
-    mana: heroStats.mana - template.cost.mana,
-    hp: heroStats.hp - template.cost.hp,
+    mana: heroStats.mana - cost.mana,
+    hp: heroStats.hp - cost.hp,
   }
 }
 
