@@ -26,4 +26,21 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // Override : ErrorBoundary doit être un class component (React n'a pas de hook équivalent).
+  // La règle react-refresh ne gère pas bien les class components → on la désactive ici.
+  {
+    files: ['src/components/ErrorBoundary.jsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  // Helpers/constantes co-exportés depuis QuestBoard.jsx (getRankInfo, RANK_TIERS).
+  // Acceptable car ces exports sont utilisés uniquement en tests, pas par les autres
+  // composants → le HMR n'en pâtit pas en pratique.
+  {
+    files: ['src/screens/QuestBoard.jsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

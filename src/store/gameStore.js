@@ -3,7 +3,13 @@ import { MONSTERS } from '../data/monsters'
 import { QUESTS } from '../data/quests'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
 
+// ── TECH02 — Save schema versioning ──────────────────────────────────────────
+// Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
+// nécessite une migration. Ajouter la migration correspondante dans `runMigrations`.
+export const SAVE_VERSION = 2
+
 // ── État initial du héros ─────────────────────────────────────────────────────
+// (les migrations sont définies plus bas, après les INITIAL_*)
 const INITIAL_HERO = {
   name: 'The Wanderer',
 
@@ -163,6 +169,90 @@ function applyLevelUps(exp, level, expToNext, stats) {
   return { exp, level, expToNext, stats, levelsGained }
 }
 
+// ── TECH02 — Migrations save (séquentielles) ─────────────────────────────────
+
+/**
+ * Migration v1 → v2 : structure complète des champs hero/world/meta.
+ * Reprend toute la logique de robustesse anti-crash sur vieilles saves.
+ */
+function migrateV1ToV2(save) {
+  const { hero = {}, world = {}, meta = {} } = save
+
+  // ── World ──
+  const migratedWorld = {
+    ...INITIAL_WORLD,
+    ...world,
+    completedQuests: Array.isArray(world.completedQuests) ? world.completedQuests : [],
+    activeQuests: Array.isArray(world.activeQuests) ? world.activeQuests : [],
+    currentHuntingSpot: world.currentHuntingSpot ?? null,
+    monsterKillCounts: world.monsterKillCounts ?? {},
+    idleToggles: world.idleToggles ?? {},
+    idleLog: Array.isArray(world.idleLog) ? world.idleLog : [],
+    generatedVillages: world.generatedVillages ?? {},
+    dungeons: world.dungeons ?? { ...INITIAL_WORLD.dungeons },
+  }
+
+  // ── Hero ──
+  const inventory = hero.inventory ?? {}
+  const migratedInventory = {
+    resources:   inventory.resources   ?? {},
+    consumables: inventory.consumables ?? {},
+    manaStones:  Array.isArray(inventory.manaStones) ? inventory.manaStones : [],
+    equipment:   Array.isArray(inventory.equipment)  ? inventory.equipment  : [],
+    gold:        inventory.gold ?? 0,
+  }
+  const migratedEquipped = {
+    weapon: null, helmet: null, armor: null, boots: null,
+    ...(hero.equipped ?? {}),
+  }
+
+  // Migration DV02 rétroactive : si divineSkill existe mais pas dans activeSkills, l'ajouter
+  const baseActive = Array.isArray(hero.activeSkills) ? hero.activeSkills : []
+  const divineInActive = hero.divineSkill && !baseActive.some(s => s.skillId === hero.divineSkill.skillId)
+  const migratedActiveSkills = divineInActive && baseActive.length < 6
+    ? [...baseActive, hero.divineSkill]
+    : baseActive
+
+  const migratedHero = {
+    ...INITIAL_HERO,
+    ...hero,
+    heroNamed: hero.heroNamed ?? (hero.name && hero.name !== 'The Wanderer' ? true : false),
+    reputationTokens: hero.reputationTokens ?? 0,
+    inventory: migratedInventory,
+    equipped: migratedEquipped,
+    activeSkills: migratedActiveSkills,
+    passiveSkills: Array.isArray(hero.passiveSkills) ? hero.passiveSkills : [],
+    battleLog: Array.isArray(hero.battleLog) ? hero.battleLog : [],
+    combatEntryLog: Array.isArray(hero.combatEntryLog) ? hero.combatEntryLog : [],
+    titles: Array.isArray(hero.titles) ? hero.titles : [],
+  }
+
+  // ── Meta ──
+  const migratedMeta = {
+    ...INITIAL_META,
+    ...meta,
+    divineBonds: meta.divineBonds ?? {},
+    titlesEarned: Array.isArray(meta.titlesEarned) ? meta.titlesEarned : [],
+  }
+
+  return { hero: migratedHero, world: migratedWorld, meta: migratedMeta, saveVersion: 2 }
+}
+
+/**
+ * Applique toutes les migrations nécessaires en séquence pour amener
+ * une save à la version courante (SAVE_VERSION).
+ */
+export function runMigrations(save) {
+  let current = save
+  const fromVersion = current.saveVersion ?? 1  // pas de saveVersion = v1 (legacy)
+
+  if (fromVersion < 2) current = migrateV1ToV2(current)
+  // Ajouter les futures migrations ici :
+  // if (fromVersion < 3) current = migrateV2ToV3(current)
+
+  return current
+}
+
 // ── Store Zustand ─────────────────────────────────────────────────────────────
 export const useGameStore = create((set, get) => ({
   // ── State ──────────────────────────────────────────────────────────────────
@@ -184,6 +274,9 @@ export const useGameStore = create((set, get) => ({
 
   // S04 — Level-ups de skills récents (consommés par Combat.jsx pour afficher une notif)
   recentSkillLevelUps: [], // [{ id, skillId, fromLevel, toLevel, timestamp }]
+
+  // TECH03 — Flag levé si le dernier saveGame a échoué (quota localStorage dépassé, etc.)
+  saveQuotaExceeded: false,
 
   // ── Naviguer entre écrans ──────────────────────────────────────────────────
   setScreen: (screen) => set({ currentScreen: screen }),
@@ -215,6 +308,27 @@ export const useGameStore = create((set, get) => ({
         hero: {
           ...state.hero,
           stats: { ...state.hero.stats, mana: Math.min(mana + amount, maxMana) },
+        },
+      }
+    }),
+
+  // CAL01 — Prier à l'église : restaure 40% HP/mana ET consomme 1 tick (rollover si tickCount=23)
+  prayAtChurch: () =>
+    set((state) => {
+      const { hp, maxHp, mana, maxMana } = state.hero.stats
+      const newHp = Math.min(hp + Math.round(maxHp * 0.40), maxHp)
+      const newMana = Math.min(mana + Math.round(maxMana * 0.40), maxMana)
+      const newTick = state.world.tickCount + 1
+      const rolloverDay = newTick >= 24
+      return {
+        hero: {
+          ...state.hero,
+          stats: { ...state.hero.stats, hp: newHp, mana: newMana },
+        },
+        world: {
+          ...state.world,
+          tickCount: rolloverDay ? 0 : newTick,
+          dayCount: rolloverDay ? state.world.dayCount + 1 : state.world.dayCount,
         },
       }
     }),
@@ -945,60 +1059,25 @@ export const useGameStore = create((set, get) => ({
   // ── Persistence localStorage ──────────────────────────────────────────────
   saveGame: () => {
     const { hero, world, meta } = get()
-    localStorage.setItem('roguelite_save', JSON.stringify({ hero, world, meta }))
+    const payload = JSON.stringify({ hero, world, meta, saveVersion: SAVE_VERSION })
+    try {
+      localStorage.setItem('roguelite_save', payload)
+      // Reset le flag si une sauvegarde précédente a échoué
+      if (get().saveQuotaExceeded) set({ saveQuotaExceeded: false })
+    } catch (e) {
+      // TECH03 — quota exceeded ou autre erreur de persistance
+      console.error('[save] localStorage write failed:', e?.name, e?.message)
+      set({ saveQuotaExceeded: true })
+    }
   },
 
   loadGame: () => {
     const raw = localStorage.getItem('roguelite_save')
     if (!raw) return false
     try {
-      const { hero, world, meta } = JSON.parse(raw)
-
-      // ── Migration : normaliser les anciens formats de sauvegarde ──────
-      const migratedWorld = {
-        ...INITIAL_WORLD,   // valeurs par défaut pour les champs nouveaux
-        ...world,
-        // completedQuests était un nombre (0) dans l'ancienne version
-        completedQuests: Array.isArray(world.completedQuests) ? world.completedQuests : [],
-        activeQuests: Array.isArray(world.activeQuests) ? world.activeQuests : [],
-        // currentHuntingSpot absent des anciennes sauvegardes
-        currentHuntingSpot: world.currentHuntingSpot ?? null,
-      }
-
-      // ── Migration hero : garantir tous les champs (anti-crash old saves) ──
-      const inventory = hero.inventory ?? {}
-      const migratedInventory = {
-        resources:   inventory.resources   ?? {},
-        consumables: inventory.consumables ?? {},
-        manaStones:  Array.isArray(inventory.manaStones) ? inventory.manaStones : [],
-        equipment:   Array.isArray(inventory.equipment)  ? inventory.equipment  : [],
-        gold:        inventory.gold ?? 0,
-      }
-      const migratedEquipped = {
-        weapon: null, helmet: null, armor: null, boots: null,
-        ...(hero.equipped ?? {}),
-      }
-      // Migration DV02 rétroactive : si divineSkill existe mais pas dans activeSkills, l'ajouter
-      const baseActive = Array.isArray(hero.activeSkills) ? hero.activeSkills : []
-      const divineInActive = hero.divineSkill && !baseActive.some(s => s.skillId === hero.divineSkill.skillId)
-      const migratedActiveSkills = divineInActive && baseActive.length < 6
-        ? [...baseActive, hero.divineSkill]
-        : baseActive
-
-      const migratedHero = {
-        ...INITIAL_HERO,                 // socle complet (anti-crash sur tout nouveau champ)
-        ...hero,
-        heroNamed: hero.heroNamed ?? (hero.name !== 'The Wanderer'),
-        reputationTokens: hero.reputationTokens ?? 0,
-        inventory: migratedInventory,
-        equipped: migratedEquipped,
-        activeSkills: migratedActiveSkills,
-        passiveSkills: Array.isArray(hero.passiveSkills) ? hero.passiveSkills : [],
-        battleLog: Array.isArray(hero.battleLog) ? hero.battleLog : [],
-        combatEntryLog: Array.isArray(hero.combatEntryLog) ? hero.combatEntryLog : [],
-        titles: Array.isArray(hero.titles) ? hero.titles : [],
-      }
-      set({ hero: migratedHero, world: migratedWorld, meta })
+      const parsed = JSON.parse(raw)
+      const migrated = runMigrations(parsed)
+      set({ hero: migrated.hero, world: migrated.world, meta: migrated.meta })
       return true
     } catch {
       return false
@@ -1054,5 +1133,6 @@ export const useGameStore = create((set, get) => ({
       pendingDivineCall: null,
       pendingLevelUp: 0,
       recentSkillLevelUps: [],
+      saveQuotaExceeded: false,
     }),
 }))

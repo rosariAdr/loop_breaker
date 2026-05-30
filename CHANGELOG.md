@@ -9,7 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Added (Batch A — Robustness)
+- **TECH01** — `<ErrorBoundary>` class component dans `src/components/` ; wrappé autour de `<main>` dans App.jsx ; fallback UI avec boutons "Reload page" et "Reset save (last resort)"
+- **TECH02** — Save schema versioning : constante exportée `SAVE_VERSION = 2`, helper `runMigrations(save)` exporté et `migrateV1ToV2(save)` interne ; `saveGame` inclut `saveVersion`, `loadGame` lit la version et applique migrations en chaîne
+- **X02** — Battery anti-régression migration saves : 18 tests dans `gameStore.test.js` couvrant tous les champs `inventory.*`, `equipped`, `activeSkills/passiveSkills`, `battleLog/combatEntryLog/titles`, `world.*`, `meta.divineBonds`, save vide, etc.
+- **TECH03** — localStorage quota warning : try/catch dans `saveGame`, flag `saveQuotaExceeded` dans le store, reset au prochain save réussi ou `resetGame`
+
+### Added (Batch B — Calendar + Quest UI)
+- **CAL01** — Action `prayAtChurch()` : restaure 40% HP/Mana ET consomme 1 tick (rollover jour si tickCount=23) ; ChurchPanel utilise désormais cette action
+- **Q02** — Barres de progression visuelles dans QuestBoard : chaque objectif a maintenant une `<div role="progressbar">` sous le texte `(current/target)` (gold avant complétion, vert quand done)
+- **Q06** — Rang aventurier dans QuestBoard : helper exporté `getRankInfo(tokens)` + composant `<RankBanner>` avec 5 tiers (Copper/Silver/Gold/Platinum/Diamond) + barre vers prochain tier
+
+### Fixed
+- **B11** — Boss : tab Flee disabled vérifié pour `boss/elite/demon_lord` + tooltip natif "Cannot flee from a boss" + cursor not-allowed + 5 tests explicites
+
+### Added (PROC00 — précédente)
 - **PROC00** — Socle de développement : `CONTRIBUTING.md`, `CHANGELOG.md`, `balance/combat_stats.csv`
 - Convention de commits Conventional Commits (`type(scope): description`)
 - Stratégie de branches `master` ← `dev` ← `feat/<ID>`
@@ -17,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `CONTEXT.md` §3 : alignement sur `master` (au lieu de `main`) suite au choix de naming GitHub
+- `eslint.config.js` : override `react-refresh/only-export-components: off` pour `src/components/ErrorBoundary.jsx` (class component obligatoire) et `src/screens/QuestBoard.jsx` (helpers co-exportés)
 
 ---
 

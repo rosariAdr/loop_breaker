@@ -13,6 +13,7 @@ import DivineCall from './screens/DivineCall'
 import QuestBoard from './screens/QuestBoard'
 import LevelUpModal from './screens/LevelUpModal'
 import CharacterCreation from './screens/CharacterCreation'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function App() {
   const {
@@ -81,7 +82,9 @@ function App() {
       <NavBar />
       <DayBar />
       <main className="flex-1">
-        {renderScreen()}
+        <ErrorBoundary>
+          {renderScreen()}
+        </ErrorBoundary>
       </main>
       {/* Modals — par ordre de priorité */}
       {pendingDivineCall && <DivineCall />}

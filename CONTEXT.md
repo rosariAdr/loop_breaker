@@ -183,16 +183,18 @@ racine/
 
 ---
 
-## 6. Tests (322 total, 7 fichiers, ~3s)
+## 6. Tests (385 total, 9 fichiers, ~3s)
 
 ```
-src/engine/combat.test.js         #  54 tests : damage, drops, scaling, getScaledSkillCost
-src/store/gameStore.test.js       # 143 tests : actions, migration, S04/DV08/T06-T11/DV10
-src/scenarios.test.js             #  27 tests : parties simulées bout en bout
-src/data/quests.test.js           #  14 tests : QUESTS + QUEST_NPCS
-src/data/deities.test.js          #  22 tests : conditions éveil, applyDeityBlessing, DV06
-src/screens/Combat.test.jsx       #  13 tests : rendu, animations, stats combat
-src/screens/screens.test.jsx      #  49 tests : smoke + nav + layouts + flows
+src/engine/combat.test.js                #  54 tests : damage, drops, scaling, getScaledSkillCost
+src/store/gameStore.test.js              # 197 tests : actions, migration, S04/DV08/T06-T11/DV10/TECH02/TECH03/X02/CAL01
+src/scenarios.test.js                    #  27 tests : parties simulées bout en bout
+src/data/quests.test.js                  #  14 tests : QUESTS + QUEST_NPCS
+src/data/deities.test.js                 #  22 tests : conditions éveil, applyDeityBlessing, DV06
+src/screens/Combat.test.jsx              #  16 tests : rendu, animations, stats combat, B11 boss flee
+src/screens/QuestBoard.test.jsx          #  18 tests : Q02 progress bars, Q06 rank tiers
+src/screens/screens.test.jsx             #  49 tests : smoke + nav + layouts + flows
+src/components/ErrorBoundary.test.jsx    #   8 tests : TECH01 fallback UI + reload/reset save
 ```
 
 **Politique de tests** :

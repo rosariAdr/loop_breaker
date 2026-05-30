@@ -216,12 +216,7 @@ function InnPanel({ onBack }) {
 }
 
 function ChurchPanel({ onBack }) {
-  const { hero, healHero, restoreHeroMana } = useGameStore()
-
-  const handlePray = () => {
-    healHero(Math.round(hero.stats.maxHp * 0.40))
-    restoreHeroMana(Math.round(hero.stats.maxMana * 0.40))
-  }
+  const { hero, prayAtChurch } = useGameStore()
 
   const alreadyFull = hero.stats.hp >= hero.stats.maxHp && hero.stats.mana >= hero.stats.maxMana
 
@@ -235,7 +230,7 @@ function ChurchPanel({ onBack }) {
         <InfoLine label="Mana" value={`${hero.stats.mana} / ${hero.stats.maxMana}`} />
 
         <button
-          onClick={handlePray}
+          onClick={prayAtChurch}
           disabled={alreadyFull}
           className="mt-2 px-4 py-3 rounded transition-all"
           style={{
@@ -249,7 +244,7 @@ function ChurchPanel({ onBack }) {
           🙏 Pray
           <br />
           <span style={{ fontSize: '0.75rem', color: '#7060b0' }}>
-            {alreadyFull ? 'Already at full strength' : 'Restores 40% HP & Mana'}
+            {alreadyFull ? 'Already at full strength' : 'Restores 40% HP & Mana · costs 1 tick'}
           </span>
         </button>
       </div>

@@ -158,6 +158,91 @@ describe('Combat — MonsterPortrait : image avec fallback emoji', () => {
   })
 })
 
+// ── B11 — Boss : fuite désactivée ────────────────────────────────────────────
+describe('Combat — B11 boss flee disabled', () => {
+  it("le bouton Flee tab est disabled quand l'ennemi est un boss", () => {
+    const boss = {
+      id: 'boss_0',
+      monsterId: 'hollow_crypt_boss',
+      name: 'The Crypt Keeper',
+      stats: { hp: 400, atk: 22, def: 14, spd: 8 },
+      currentHp: 400,
+      rank: 'boss',
+      expReward: 300,
+    }
+    useGameStore.getState().startCombat([boss])
+    render(<Combat />)
+    const fleeBtn = screen.getByText('Flee').closest('button')
+    expect(fleeBtn).toBeDisabled()
+  })
+
+  it("le tooltip 'Cannot flee from a boss' est présent sur le bouton Flee disabled", () => {
+    const boss = {
+      id: 'boss_0',
+      monsterId: 'hollow_crypt_boss',
+      name: 'The Crypt Keeper',
+      stats: { hp: 400, atk: 22, def: 14, spd: 8 },
+      currentHp: 400,
+      rank: 'boss',
+      expReward: 300,
+    }
+    useGameStore.getState().startCombat([boss])
+    render(<Combat />)
+    const fleeBtn = screen.getByText('Flee').closest('button')
+    expect(fleeBtn.getAttribute('title')).toMatch(/Cannot flee from a boss/i)
+  })
+
+  it("le bouton Flee est ACTIF quand l'ennemi est common (non boss)", () => {
+    const enemy = {
+      id: 'common_0',
+      monsterId: 'ashwood_wolf',
+      name: 'Wolf',
+      stats: { hp: 40, atk: 8, def: 3, spd: 12 },
+      currentHp: 40,
+      rank: 'common',
+      expReward: 15,
+    }
+    useGameStore.getState().startCombat([enemy])
+    render(<Combat />)
+    const fleeBtn = screen.getByText('Flee').closest('button')
+    expect(fleeBtn).not.toBeDisabled()
+    // Pas de tooltip "Cannot flee" sur monstre commun
+    expect(fleeBtn.getAttribute('title')).toBeFalsy()
+  })
+
+  it("le bouton Flee est disabled quand l'ennemi est elite", () => {
+    const elite = {
+      id: 'elite_0',
+      monsterId: 'soul_harvester',
+      name: 'Soul Harvester',
+      stats: { hp: 200, atk: 28, def: 12, spd: 12 },
+      currentHp: 200,
+      rank: 'elite',
+      expReward: 100,
+    }
+    useGameStore.getState().startCombat([elite])
+    render(<Combat />)
+    const fleeBtn = screen.getByText('Flee').closest('button')
+    expect(fleeBtn).toBeDisabled()
+  })
+
+  it("le bouton Flee est disabled quand l'ennemi est demon_lord", () => {
+    const demon = {
+      id: 'demon_0',
+      monsterId: 'malachar',
+      name: 'Malachar',
+      stats: { hp: 3000, atk: 90, def: 60, spd: 14 },
+      currentHp: 3000,
+      rank: 'demon_lord',
+      expReward: 5000,
+    }
+    useGameStore.getState().startCombat([demon])
+    render(<Combat />)
+    const fleeBtn = screen.getByText('Flee').closest('button')
+    expect(fleeBtn).toBeDisabled()
+  })
+})
+
 describe('Combat — B08 résumé étendu (ResultPanel)', () => {
   it("après victoire, affiche dégâts infligés + kills", async () => {
     // Héros OP pour one-shot

@@ -24,14 +24,7 @@ _(aucune dépendance externe bloquante)_
 #### Process & Git
 
 #### Robustesse technique
-- [ ] **TECH01 — React Error Boundaries** (S)
-  - Composant `<ErrorBoundary>` dans App.jsx qui catch les erreurs React et affiche un écran propre (message + bouton "Reset save") au lieu du crash blanc
-  - AC : composant créé, wrappé autour des écrans principaux, testé avec un throw simulé, bouton reset fonctionnel
-- [ ] **TECH02 — Save schema versioning** (S)
-  - Ajouter `saveVersion: N` dans le JSON de save ; `loadGame` vérifie la version et applique les migrations en séquence ; incrémenter à chaque ajout de clé dans `INITIAL_*`
-  - AC : champ `saveVersion` présent, migration `v1→v2` exemple écrite, test sur save sans `saveVersion` (migration automatique)
-  - Dépend de : X02
-- [ ] **X02 — Tester migration saves** (S) - vérifier que `loadGame` garantit tous les nouveaux champs après chaque ajout dans `INITIAL_*` ; test dédié dans `gameStore.test.js`
+> ✅ TECH01, TECH02, X02 → fait dans Batch A+B (2026-05-04, voir Done)
 
 #### UX critique
 - [ ] **UX03 — Confirmation avant actions destructives** (XS)
@@ -54,12 +47,10 @@ _(aucune dépendance externe bloquante)_
 - [ ] **B13 — Keyframe hero-attack sur tour du joueur** (XS) - `@keyframes hero-attack` : translateX(+18px) puis retour 300ms, déclenchée quand le joueur confirme Attack ou Skill
 
 #### Calendrier (fusion I05 + I06 + I07)
-- [ ] **CAL01 — Cycle jour/nuit complet** (S) - (1) vérifier tickCount cycle bien sur 24 ; (2) sleep restore HP/mana 100% + déclenche dungeon respawn dans zones cleared ; (3) church pray consomme 1 tick ; 3 tests unitaires correspondants
-  > ~~I05~~, ~~I06~~, ~~I07~~ fusionnés ici — liés et testables ensemble
+> ✅ CAL01 → fait dans Batch A+B (2026-05-04, voir Done)
 
 #### Quêtes & UI
-- [ ] **Q02 — Barres de progression visuelles** (S) - remplacer texte `(3/5)` par barre `<progress>` stylisée dans QuestBoard
-- [ ] **Q06 — Rang aventurier dans Quest Board** (S) - tokens affichés + barre de progression vers le prochain rang
+> ✅ Q02 + Q06 → fait dans Batch A+B (2026-05-04, voir Done)
 - [ ] **Q07 — Animation récompense quête** (S) - flash mana stone + toast (dépend U01)
 - [ ] **U03 — Vérifier fonts Cinzel** (XS) - valider rendu Chrome + Firefox ; fallback `serif` si Google Fonts indisponible
 - [ ] **UX01 — Tooltips sur les stats du héros** (S) - hover sur STR/AGI/INT/Chance/HP/Mana → popover expliquant l'effet en jeu
@@ -77,7 +68,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **D07 — Idle interdit dans donjons** (XS) - test : aucun toggle idle accessible en `currentScreen === 'dungeon'`
 
 #### Combat
-- [ ] **B11 — Boss : fuite désactivée** (XS) - bouton Flee grisé + tooltip "Cannot flee from a boss" en boss combat
+> ✅ B11 → fait dans Batch A+B (2026-05-04, voir Done)
 - [ ] **PROC06 — Debug/cheat panel dev** (S) - accessible via `Ctrl+Shift+D` en `import.meta.env.DEV` uniquement ; commandes : give_item, add_tokens, force_deity, skip_day, set_run_count, kill_malachar
 
 #### Process
@@ -90,7 +81,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **W03 — Transport vers le prochain monde après kill Malachar** (S) - transport direct ; même socle d'héritage (1 stat + 1 active + 1 passive + boutique) ; bonus automatiques : titre "Slayer of Eldenmoor" + skill Gluttony hors slots (dépend M01 + GLT01)
 - [ ] **T13 — Titre permanent Demon Lord Slayer** (S) - affiché sur HeroSheet, persistant entre runs (dépend M01)
 - [ ] **M02 — Compteur Demon Lords kills** (XS) - tracker `meta.demonLordKills: { [universeId]: N }` pour win condition globale
-- [ ] **TECH03 — localStorage quota warning** (XS) - détecter `QuotaExceededError` sur `setItem` → toast warning + suggestion export save
+> ✅ TECH03 → fait dans Batch A+B (2026-05-04, voir Done)
 
 ---
 
@@ -244,6 +235,49 @@ _(aucune dépendance externe bloquante)_
 ---
 
 ## Done
+
+### v0.1 — Batch A+B : Robustesse + Calendar + Quest UI (2026-05-04)
+
+**8 tickets, +63 tests (322 → 385), TDD strict, 0 commit (branche `feat/batch_AB` pour review GitKraken)**
+
+#### Batch A — Robustesse technique
+- [x] ~~**TECH01** — React Error Boundaries~~ (2026-05-04)
+  - Nouveau `src/components/ErrorBoundary.jsx` (class component, seul moyen en React) wrappé autour de `<main>` dans App.jsx.
+  - Fallback UI : message d'erreur abrégé + boutons "Reload page" et "Reset save (last resort)" avec confirm().
+  - 8 tests dans `ErrorBoundary.test.jsx` (rendu normal, throw → fallback, message affiché, reload, reset save avec/sans confirm, log via componentDidCatch).
+  - eslint.config.js : override `react-refresh/only-export-components: off` pour ce fichier (incompat class components).
+- [x] ~~**TECH02** — Save schema versioning~~ (2026-05-04)
+  - Constante exportée `SAVE_VERSION = 2` en haut de `gameStore.js`.
+  - Helper `runMigrations(save)` exporté + `migrateV1ToV2(save)` interne séquentiel.
+  - `saveGame` inclut `saveVersion` dans le JSON. `loadGame` lit la version et applique les migrations en chaîne.
+  - 5 tests dédiés (saveVersion écrit, constant exportée, legacy v1 sans saveVersion, save explicite v1 → v2, runMigrations testable directement).
+- [x] ~~**X02** — Tests migration saves (battery)~~ (2026-05-04)
+  - 18 tests anti-régression dans `gameStore.test.js` couvrant `inventory.equipment/manaStones/consumables/resources` absents, `equipped`, `activeSkills/passiveSkills`, `battleLog/combatEntryLog/titles`, `world.completedQuests=0` (legacy number), `world.dungeons/monsterKillCounts`, `meta.divineBonds`, save vide, hero/world/meta absent.
+  - Pattern factorisé `buildSaveMissing(path, value)` pour faciliter l'ajout de tests futurs.
+- [x] ~~**TECH03** — localStorage quota warning~~ (2026-05-04)
+  - Try/catch autour de `localStorage.setItem` dans `saveGame`. Sur erreur (`QuotaExceededError` ou autre) : `console.error` + flag `saveQuotaExceeded: true` dans le store.
+  - Flag reset à `false` au prochain save réussi et au `resetGame`.
+  - 4 tests : flag par défaut, mock setItem qui throw, succès reset, resetGame reset.
+
+#### Batch B — Calendar + Quêtes UI
+- [x] ~~**CAL01** — Cycle jour/nuit complet~~ (2026-05-04)
+  - Nouvelle action `prayAtChurch()` dans gameStore.js : restaure 40% HP/Mana ET consomme 1 tick (avec rollover jour si tickCount=23).
+  - `ChurchPanel` (SafeZone.jsx) utilise `prayAtChurch` au lieu de `healHero`+`restoreHeroMana`. Sous-titre "Restores 40% HP & Mana · costs 1 tick".
+  - 4 tests CAL01 + complément test cycle 24 ticks.
+- [x] ~~**Q02** — Barres de progression visuelles~~ (2026-05-04)
+  - Dans `QuestBoard.jsx` chaque objectif affiche maintenant : ligne texte `(current/target)` + barre `<div role="progressbar">` en dessous (gold sur dark, vert quand complété).
+  - 4 tests : présence des barres, `aria-valuenow` correct, saturation à valuemax si over-kill, pas de barre sur quêtes complétées.
+- [x] ~~**Q06** — Rang aventurier dans Quest Board~~ (2026-05-04)
+  - Helper `getRankInfo(tokens)` exporté + constante `RANK_TIERS` (Copper 0-9, Silver 10-29, Gold 30-69, Platinum 70-149, Diamond 150+).
+  - Composant `<RankBanner>` affiché en haut de QuestBoard : tier coloré + barre de progression vers le tier suivant + label "X/Y to next tier" ou "MAX".
+  - 14 tests : seuils tiers, edge cases (négatif/undefined), rendu UI avec aria, MAX label.
+- [x] ~~**B11** — Boss : fuite désactivée~~ (2026-05-04)
+  - Tab "Flee" disabled (déjà existant) + ajout d'un `title="Cannot flee from a boss"` (tooltip natif) + `cursor: not-allowed`.
+  - 5 tests explicites dans `Combat.test.jsx` : tab disabled sur boss/elite/demon_lord, tooltip présent, tab actif sur common.
+
+#### Cleanup lint
+- 2 erreurs `Unused eslint-disable directive` retirées (gameStore.js + ErrorBoundary.jsx)
+- Override `eslint.config.js` pour autoriser exports non-composants dans `ErrorBoundary.jsx` et `QuestBoard.jsx`
 
 ### v0.1 — Process & socle développement (2026-04-25)
 

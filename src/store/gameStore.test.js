@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useGameStore } from './gameStore'
 
 // Reset du store avant chaque test
@@ -675,6 +675,55 @@ describe('advanceTick', () => {
     expect(useGameStore.getState().world.tickCount).toBe(23)
     expect(useGameStore.getState().world.dayCount).toBe(1)
   })
+
+  // CAL01 — vérifications complémentaires
+  it('CAL01 — cycle complet : 24 advanceTick = +1 jour exact', () => {
+    const startDay = useGameStore.getState().world.dayCount
+    for (let i = 0; i < 24; i++) useGameStore.getState().advanceTick()
+    expect(useGameStore.getState().world.dayCount).toBe(startDay + 1)
+    expect(useGameStore.getState().world.tickCount).toBe(0)
+  })
+})
+
+// ── CAL01 — prayAtChurch (Church Pray consomme 1 tick) ───────────────────────
+describe('CAL01 — prayAtChurch', () => {
+  beforeEach(() => {
+    useGameStore.getState().resetGame()
+    useGameStore.setState(state => ({
+      hero: { ...state.hero, stats: { ...state.hero.stats, hp: 30, mana: 10 } },
+      world: { ...state.world, tickCount: 5 },
+    }))
+  })
+
+  it("restaure 40% HP et 40% mana", () => {
+    const before = useGameStore.getState().hero.stats
+    useGameStore.getState().prayAtChurch()
+    const after = useGameStore.getState().hero.stats
+    expect(after.hp).toBe(before.hp + Math.round(before.maxHp * 0.40))
+    expect(after.mana).toBe(before.mana + Math.round(before.maxMana * 0.40))
+  })
+
+  it("consomme 1 tick (tickCount + 1)", () => {
+    const beforeTick = useGameStore.getState().world.tickCount
+    useGameStore.getState().prayAtChurch()
+    expect(useGameStore.getState().world.tickCount).toBe(beforeTick + 1)
+  })
+
+  it("passe au jour suivant si pray est fait au tick 23", () => {
+    useGameStore.setState(state => ({ world: { ...state.world, tickCount: 23, dayCount: 1 } }))
+    useGameStore.getState().prayAtChurch()
+    expect(useGameStore.getState().world.tickCount).toBe(0)
+    expect(useGameStore.getState().world.dayCount).toBe(2)
+  })
+
+  it("HP cap au max (pas d'overflow)", () => {
+    useGameStore.setState(state => ({
+      hero: { ...state.hero, stats: { ...state.hero.stats, hp: state.hero.stats.maxHp - 5 } },
+    }))
+    useGameStore.getState().prayAtChurch()
+    const { hp, maxHp } = useGameStore.getState().hero.stats
+    expect(hp).toBeLessThanOrEqual(maxHp)
+  })
 })
 
 describe('sleep', () => {
@@ -1220,5 +1269,256 @@ describe('Migration save — anti-crash inventaire (régression)', () => {
     expect(Array.isArray(useGameStore.getState().hero.titles)).toBe(true)
     expect(Array.isArray(useGameStore.getState().hero.battleLog)).toBe(true)
     expect(Array.isArray(useGameStore.getState().hero.combatEntryLog)).toBe(true)
+  })
+})
+
+// ── TECH02 — Save schema versioning ──────────────────────────────────────────
+describe('TECH02 — saveGame écrit avec saveVersion', () => {
+  it("saveGame écrit un saveVersion dans le JSON localStorage", () => {
+    useGameStore.getState().resetGame()
+    useGameStore.getState().saveGame()
+    const raw = localStorage.getItem('roguelite_save')
+    const parsed = JSON.parse(raw)
+    expect(parsed.saveVersion).toBe(2)
+  })
+
+  it("saveVersion est exporté comme constante (cohérence)", async () => {
+    const mod = await import('./gameStore')
+    expect(mod.SAVE_VERSION).toBe(2)
+  })
+
+  it("loadGame d'une save SANS saveVersion (legacy v1) la migre vers v2", () => {
+    const legacySave = {
+      hero: useGameStore.getState().hero,
+      world: useGameStore.getState().world,
+      meta: useGameStore.getState().meta,
+      // pas de saveVersion → traité comme v1
+    }
+    localStorage.setItem('roguelite_save', JSON.stringify(legacySave))
+    expect(useGameStore.getState().loadGame()).toBe(true)
+    // La save v1 doit être restaurée intégralement (rien ne crash)
+    expect(useGameStore.getState().hero).toBeDefined()
+    expect(useGameStore.getState().world).toBeDefined()
+  })
+
+  it("loadGame d'une save avec saveVersion: 1 applique la migration", () => {
+    const save = {
+      hero: { name: 'Old', stats: {}, level: 1 },  // hero minimal
+      world: { dayCount: 3 },
+      meta: {},
+      saveVersion: 1,
+    }
+    localStorage.setItem('roguelite_save', JSON.stringify(save))
+    useGameStore.getState().loadGame()
+    // Tous les champs INITIAL_* doivent être présents
+    expect(useGameStore.getState().hero.activeSkills).toEqual([])
+    expect(useGameStore.getState().hero.passiveSkills).toEqual([])
+    expect(useGameStore.getState().hero.inventory).toBeDefined()
+    expect(useGameStore.getState().hero.equipped).toEqual({ weapon: null, helmet: null, armor: null, boots: null })
+    expect(useGameStore.getState().world.dayCount).toBe(3) // valeur préservée
+  })
+
+  it("runMigrations exporté est testable directement", async () => {
+    const { runMigrations } = await import('./gameStore')
+    const result = runMigrations({ hero: {}, world: {}, meta: {} })
+    expect(result.saveVersion).toBe(2)
+    expect(result.hero.activeSkills).toEqual([])
+    expect(result.world.activeQuests).toEqual([])
+  })
+})
+
+// ── X02 — Battery anti-régression sur les vieilles saves ────────────────────
+describe('X02 — Battery migration anti-régression', () => {
+  beforeEach(() => {
+    useGameStore.getState().resetGame()
+    localStorage.clear()
+  })
+
+  // Pattern factorisé : crée une save legacy avec un champ retiré, vérifie défaut appliqué
+  const buildSaveMissing = (path, value = undefined) => {
+    const save = {
+      hero: JSON.parse(JSON.stringify(useGameStore.getState().hero)),
+      world: JSON.parse(JSON.stringify(useGameStore.getState().world)),
+      meta: JSON.parse(JSON.stringify(useGameStore.getState().meta)),
+    }
+    const parts = path.split('.')
+    let target = save
+    for (let i = 0; i < parts.length - 1; i++) target = target[parts[i]]
+    if (value === undefined) delete target[parts[parts.length - 1]]
+    else target[parts[parts.length - 1]] = value
+    return save
+  }
+
+  const expectArray = (path) => {
+    const parts = path.split('.')
+    let target = useGameStore.getState()
+    for (const p of parts) target = target[p]
+    expect(Array.isArray(target)).toBe(true)
+  }
+
+  const expectObject = (path) => {
+    const parts = path.split('.')
+    let target = useGameStore.getState()
+    for (const p of parts) target = target[p]
+    expect(target).toBeDefined()
+    expect(typeof target).toBe('object')
+    expect(target).not.toBeNull()
+  }
+
+  it("hero.inventory.equipment absent → tableau vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.inventory.equipment')))
+    useGameStore.getState().loadGame()
+    expectArray('hero.inventory.equipment')
+  })
+
+  it("hero.inventory.manaStones absent → tableau vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.inventory.manaStones')))
+    useGameStore.getState().loadGame()
+    expectArray('hero.inventory.manaStones')
+  })
+
+  it("hero.inventory.consumables absent → objet vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.inventory.consumables')))
+    useGameStore.getState().loadGame()
+    expectObject('hero.inventory.consumables')
+  })
+
+  it("hero.inventory.resources absent → objet vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.inventory.resources')))
+    useGameStore.getState().loadGame()
+    expectObject('hero.inventory.resources')
+  })
+
+  it("hero.equipped absent → 4 slots null", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.equipped')))
+    useGameStore.getState().loadGame()
+    expect(useGameStore.getState().hero.equipped).toEqual({
+      weapon: null, helmet: null, armor: null, boots: null,
+    })
+  })
+
+  it("hero.activeSkills absent → tableau vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.activeSkills')))
+    useGameStore.getState().loadGame()
+    expectArray('hero.activeSkills')
+  })
+
+  it("hero.passiveSkills absent → tableau vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.passiveSkills')))
+    useGameStore.getState().loadGame()
+    expectArray('hero.passiveSkills')
+  })
+
+  it("hero.battleLog absent → tableau vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.battleLog')))
+    useGameStore.getState().loadGame()
+    expectArray('hero.battleLog')
+  })
+
+  it("hero.combatEntryLog absent → tableau vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.combatEntryLog')))
+    useGameStore.getState().loadGame()
+    expectArray('hero.combatEntryLog')
+  })
+
+  it("hero.titles absent → tableau vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.titles')))
+    useGameStore.getState().loadGame()
+    expectArray('hero.titles')
+  })
+
+  it("world.completedQuests = 0 (number, ancien format) → tableau vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('world.completedQuests', 0)))
+    useGameStore.getState().loadGame()
+    expectArray('world.completedQuests')
+  })
+
+  it("world.activeQuests = 0 (number, ancien format) → tableau vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('world.activeQuests', 0)))
+    useGameStore.getState().loadGame()
+    expectArray('world.activeQuests')
+  })
+
+  it("world.dungeons absent → restauré depuis INITIAL_WORLD", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('world.dungeons')))
+    useGameStore.getState().loadGame()
+    const dungeons = useGameStore.getState().world.dungeons
+    expect(dungeons).toBeDefined()
+    expect(dungeons.ashenvale).toBeDefined()
+    expect(dungeons.grimspire).toBeDefined()
+  })
+
+  it("world.monsterKillCounts absent → objet vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('world.monsterKillCounts')))
+    useGameStore.getState().loadGame()
+    expectObject('world.monsterKillCounts')
+  })
+
+  it("meta.divineBonds absent → objet vide", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('meta.divineBonds')))
+    useGameStore.getState().loadGame()
+    expectObject('meta.divineBonds')
+  })
+
+  it("meta.lastRunSummary null préservé (state légitime)", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('meta.lastRunSummary', null)))
+    useGameStore.getState().loadGame()
+    expect(useGameStore.getState().meta.lastRunSummary).toBeNull()
+  })
+
+  it("hero entier absent → reste sur INITIAL_HERO", () => {
+    const save = { world: useGameStore.getState().world, meta: useGameStore.getState().meta }
+    localStorage.setItem('roguelite_save', JSON.stringify(save))
+    expect(() => useGameStore.getState().loadGame()).not.toThrow()
+    expect(useGameStore.getState().hero).toBeDefined()
+    expect(useGameStore.getState().hero.activeSkills).toEqual([])
+  })
+
+  it("save vide ({}) ne crash pas", () => {
+    localStorage.setItem('roguelite_save', JSON.stringify({}))
+    expect(() => useGameStore.getState().loadGame()).not.toThrow()
+  })
+})
+
+// ── TECH03 — localStorage quota warning ──────────────────────────────────────
+describe('TECH03 — localStorage quota warning', () => {
+  beforeEach(() => {
+    useGameStore.getState().resetGame()
+  })
+
+  it("saveQuotaExceeded est false par défaut", () => {
+    expect(useGameStore.getState().saveQuotaExceeded).toBe(false)
+  })
+
+  it("saveGame qui throw QuotaExceededError → flag passe à true", () => {
+    const original = localStorage.setItem
+    const err = new Error('quota exceeded')
+    err.name = 'QuotaExceededError'
+    localStorage.setItem = () => { throw err }
+    // Silence console.error pour ce test
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    useGameStore.getState().saveGame()
+
+    expect(useGameStore.getState().saveQuotaExceeded).toBe(true)
+    expect(errSpy).toHaveBeenCalled()
+
+    // restore
+    localStorage.setItem = original
+    errSpy.mockRestore()
+  })
+
+  it("saveGame réussi reset le flag à false si précédemment true", () => {
+    // Setup: flag à true
+    useGameStore.setState({ saveQuotaExceeded: true })
+    // Now succeed
+    useGameStore.getState().saveGame()
+    expect(useGameStore.getState().saveQuotaExceeded).toBe(false)
+  })
+
+  it("resetGame remet saveQuotaExceeded à false", () => {
+    useGameStore.setState({ saveQuotaExceeded: true })
+    useGameStore.getState().resetGame()
+    expect(useGameStore.getState().saveQuotaExceeded).toBe(false)
   })
 })

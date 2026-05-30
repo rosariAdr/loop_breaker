@@ -814,6 +814,8 @@ function ActionPanel({
             key={tab.id}
             onClick={() => !tab.disabled && onSelectAction(tab.id)}
             disabled={tab.disabled}
+            // B11 — tooltip explicite quand Flee est désactivé sur un boss
+            title={tab.disabled && tab.id === 'flee' ? 'Cannot flee from a boss' : undefined}
             className="flex-1 py-3 flex items-center justify-center gap-2 transition-colors"
             style={{
               fontFamily: 'Cinzel, serif',
@@ -822,6 +824,7 @@ function ActionPanel({
               color: tab.disabled ? '#2a2018' : selectedAction === tab.id ? '#d4af70' : '#6a5a4a',
               borderBottom: selectedAction === tab.id ? '2px solid #d4af70' : '2px solid transparent',
               letterSpacing: '0.05em',
+              cursor: tab.disabled ? 'not-allowed' : 'pointer',
             }}
           >
             <span style={{ fontSize: '1.05rem' }}>{tab.icon}</span>
