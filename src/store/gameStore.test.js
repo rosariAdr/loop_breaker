@@ -406,6 +406,28 @@ describe('Système de quêtes', () => {
     const after = useGameStore.getState()
     expect(after.hero.inventory.gold).toBe(before.hero.inventory.gold)
   })
+
+  // UX03 — abandonQuest
+  it("abandonQuest retire la quête active sans la marquer complétée", () => {
+    useGameStore.getState().startQuest('first_blood')
+    expect(useGameStore.getState().world.activeQuests).toContain('first_blood')
+    useGameStore.getState().abandonQuest('first_blood')
+    expect(useGameStore.getState().world.activeQuests).not.toContain('first_blood')
+    expect(useGameStore.getState().world.completedQuests).not.toContain('first_blood')
+  })
+
+  it("abandonQuest sur une quête non active ne change rien", () => {
+    const before = useGameStore.getState().world.activeQuests
+    useGameStore.getState().abandonQuest('first_blood')
+    expect(useGameStore.getState().world.activeQuests).toEqual(before)
+  })
+
+  it("abandonQuest permet de re-accepter la même quête plus tard", () => {
+    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().abandonQuest('first_blood')
+    useGameStore.getState().startQuest('first_blood')
+    expect(useGameStore.getState().world.activeQuests).toContain('first_blood')
+  })
 })
 
 // ── Nouvelles quêtes Q03 + Q08 ───────────────────────────────────────────────
@@ -655,6 +677,59 @@ describe('confirmInheritance + applyTransmigration', () => {
     useGameStore.getState().applyTransmigration({ extraSkills: [] })
     expect(useGameStore.getState().world.dayCount).toBe(1)
   })
+
+  // T04 + W02 — Malachar resurrection counter
+  describe('T04 — Malachar resurrection counter', () => {
+    const transmigrate = () => {
+      useGameStore.getState().confirmInheritance('strength', null, null)
+      useGameStore.getState().applyTransmigration({})
+    }
+
+    it("compteur reste à 0 tant que Malachar n'a pas été tué", () => {
+      transmigrate()
+      expect(useGameStore.getState().world.demonLordResurrectionCounter).toBe(0)
+      expect(useGameStore.getState().world.demonLordDefeated).toBe(false)
+    })
+
+    it("compteur s'incrémente à 1 après transmigration si Malachar killed", () => {
+      useGameStore.getState().clearDungeon('grimspire')  // tue Malachar
+      transmigrate()
+      expect(useGameStore.getState().world.demonLordResurrectionCounter).toBe(1)
+      expect(useGameStore.getState().world.demonLordDefeated).toBe(true)
+    })
+
+    it("après 4 transmigrations post-kill : Malachar respawn (counter reset + defeated=false)", () => {
+      useGameStore.getState().clearDungeon('grimspire')
+      transmigrate()  // 1
+      transmigrate()  // 2
+      transmigrate()  // 3
+      transmigrate()  // 4 → respawn
+      expect(useGameStore.getState().world.demonLordResurrectionCounter).toBe(0)
+      expect(useGameStore.getState().world.demonLordDefeated).toBe(false)
+      // Le donjon grimspire est aussi reset (cleared/discovered)
+      expect(useGameStore.getState().world.dungeons.grimspire.cleared).toBe(false)
+      expect(useGameStore.getState().world.dungeons.grimspire.discovered).toBe(false)
+    })
+
+    it("après respawn, prochain kill remet le counter à 1", () => {
+      useGameStore.getState().clearDungeon('grimspire')
+      transmigrate()
+      transmigrate()
+      transmigrate()
+      transmigrate()  // respawn
+      // Re-kill
+      useGameStore.getState().clearDungeon('grimspire')
+      transmigrate()
+      expect(useGameStore.getState().world.demonLordResurrectionCounter).toBe(1)
+    })
+
+    it("W03 — flag malacharDefeatedThisRun reset à la transmigration", () => {
+      useGameStore.getState().clearDungeon('grimspire')
+      expect(useGameStore.getState().meta.malacharDefeatedThisRun).toBe(true)
+      transmigrate()
+      expect(useGameStore.getState().meta.malacharDefeatedThisRun).toBe(false)
+    })
+  })
 })
 
 // ── Calendrier / Sleep ───────────────────────────────────────────────────────
@@ -842,11 +917,67 @@ describe('Donjons', () => {
     expect(useGameStore.getState().world.dungeons.ashenvale.cleared).toBe(true)
   })
 
-  it("clearDungeon sur grimspire incrémente demonLordKills", () => {
-    const before = useGameStore.getState().meta.demonLordKills
+  it("clearDungeon sur grimspire flag demonLordDefeated", () => {
     useGameStore.getState().clearDungeon('grimspire')
-    expect(useGameStore.getState().meta.demonLordKills).toBe(before + 1)
     expect(useGameStore.getState().world.demonLordDefeated).toBe(true)
+  })
+
+  // M02 — Compteur Demon Lords kills par univers
+  it("M02 — clearDungeon('grimspire') incrémente meta.demonLordKills.medieval_fantasy", () => {
+    expect(useGameStore.getState().meta.demonLordKills.medieval_fantasy ?? 0).toBe(0)
+    useGameStore.getState().clearDungeon('grimspire')
+    expect(useGameStore.getState().meta.demonLordKills.medieval_fantasy).toBe(1)
+  })
+
+  it("M02 — incréments multiples (re-kill après respawn) s'additionnent", () => {
+    useGameStore.getState().clearDungeon('grimspire')
+    useGameStore.getState().clearDungeon('grimspire')
+    expect(useGameStore.getState().meta.demonLordKills.medieval_fantasy).toBe(2)
+  })
+
+  it("M02 — clearDungeon ashenvale n'incrémente PAS demonLordKills", () => {
+    useGameStore.getState().clearDungeon('ashenvale')
+    expect(useGameStore.getState().meta.demonLordKills.medieval_fantasy ?? 0).toBe(0)
+  })
+
+  // D05 — Warp à la sortie
+  it("D05 — clearDungeon warpe le hero vers la city de la zone", () => {
+    useGameStore.setState(state => ({
+      world: { ...state.world, currentLocation: 'millhaven', currentHuntingSpot: 'crumbled_ruins' },
+    }))
+    useGameStore.getState().clearDungeon('ashenvale')
+    expect(useGameStore.getState().world.currentLocation).toBe('ironhaven')
+    expect(useGameStore.getState().world.currentHuntingSpot).toBeNull()
+  })
+
+  it("D05 — clearDungeon stop l'idle (cohérence D07)", () => {
+    useGameStore.setState(state => ({
+      world: {
+        ...state.world,
+        isIdleActive: true,
+        idleTargetMonster: 'ashwood_wolf',
+      },
+    }))
+    useGameStore.getState().clearDungeon('ashenvale')
+    expect(useGameStore.getState().world.isIdleActive).toBe(false)
+    expect(useGameStore.getState().world.idleTargetMonster).toBeNull()
+  })
+
+  it("D05 — clearDungeon grimspire warpe vers stonehaven", () => {
+    useGameStore.getState().clearDungeon('grimspire')
+    expect(useGameStore.getState().world.currentLocation).toBe('stonehaven')
+  })
+
+  // W03 — Flag malacharDefeatedThisRun
+  it("W03 — clearDungeon('grimspire') lève malacharDefeatedThisRun", () => {
+    expect(useGameStore.getState().meta.malacharDefeatedThisRun).toBe(false)
+    useGameStore.getState().clearDungeon('grimspire')
+    expect(useGameStore.getState().meta.malacharDefeatedThisRun).toBe(true)
+  })
+
+  it("W03 — clearDungeon ashenvale NE lève PAS malacharDefeatedThisRun", () => {
+    useGameStore.getState().clearDungeon('ashenvale')
+    expect(useGameStore.getState().meta.malacharDefeatedThisRun).toBe(false)
   })
 })
 
@@ -873,6 +1004,45 @@ describe('toggleIdle', () => {
     useGameStore.getState().toggleIdle('ashwood_wolf')
     useGameStore.getState().toggleIdle('ashwood_wolf')
     expect(useGameStore.getState().world.isIdleActive).toBe(false)
+  })
+
+  // D07 — Idle interdit dans certaines zones / écrans
+  it("D07 — refuse l'activation idle sur la Blighted Road (idleAllowed=false)", () => {
+    useGameStore.setState(state => ({
+      world: {
+        ...state.world,
+        currentZone: 'blighted_road',
+        monsterKillCounts: { cursed_warlord: 10 },
+      },
+    }))
+    useGameStore.getState().toggleIdle('cursed_warlord')
+    expect(useGameStore.getState().world.isIdleActive).toBe(false)
+  })
+
+  it("D07 — refuse l'activation idle sur écran dungeon", () => {
+    useGameStore.setState(state => ({
+      currentScreen: 'dungeon',
+      world: {
+        ...state.world,
+        currentZone: 'ashenvale',
+        monsterKillCounts: { ashwood_wolf: 5 },
+      },
+    }))
+    useGameStore.getState().toggleIdle('ashwood_wolf')
+    expect(useGameStore.getState().world.isIdleActive).toBe(false)
+  })
+
+  it("D07 — autorise idle sur ashenvale (zone normale)", () => {
+    useGameStore.setState(state => ({
+      currentScreen: 'zone_view',
+      world: {
+        ...state.world,
+        currentZone: 'ashenvale',
+        monsterKillCounts: { ashwood_wolf: 5 },
+      },
+    }))
+    useGameStore.getState().toggleIdle('ashwood_wolf')
+    expect(useGameStore.getState().world.isIdleActive).toBe(true)
   })
 })
 
@@ -1269,6 +1439,54 @@ describe('Migration save — anti-crash inventaire (régression)', () => {
     expect(Array.isArray(useGameStore.getState().hero.titles)).toBe(true)
     expect(Array.isArray(useGameStore.getState().hero.battleLog)).toBe(true)
     expect(Array.isArray(useGameStore.getState().hero.combatEntryLog)).toBe(true)
+  })
+})
+
+// ── UX05 — Badge "nouveau loot" ──────────────────────────────────────────────
+describe('UX05 — unseenLoot flag', () => {
+  beforeEach(() => useGameStore.getState().resetGame())
+
+  it("flag par défaut à false", () => {
+    expect(useGameStore.getState().unseenLoot).toBe(false)
+  })
+
+  it("addResource lève le flag", () => {
+    useGameStore.getState().addResource('wolf_pelt', 1)
+    expect(useGameStore.getState().unseenLoot).toBe(true)
+  })
+
+  it("addEquipmentToInventory lève le flag", () => {
+    useGameStore.getState().addEquipmentToInventory({
+      instanceId: 'x', name: 'X', slot: 'weapon', rarity: 'common', stats: {}, sellPrice: 1,
+    })
+    expect(useGameStore.getState().unseenLoot).toBe(true)
+  })
+
+  it("addSkillToInventory lève le flag", () => {
+    useGameStore.getState().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })
+    expect(useGameStore.getState().unseenLoot).toBe(true)
+  })
+
+  it("addGold NE lève PAS le flag (gold visible ailleurs)", () => {
+    useGameStore.getState().addGold(50)
+    expect(useGameStore.getState().unseenLoot).toBe(false)
+  })
+
+  it("addConsumable NE lève PAS le flag (achat ≠ loot)", () => {
+    useGameStore.getState().addConsumable('hp_potion_small', 1)
+    expect(useGameStore.getState().unseenLoot).toBe(false)
+  })
+
+  it("markLootAsSeen reset à false", () => {
+    useGameStore.getState().addResource('wolf_pelt', 1)
+    useGameStore.getState().markLootAsSeen()
+    expect(useGameStore.getState().unseenLoot).toBe(false)
+  })
+
+  it("resetGame reset le flag", () => {
+    useGameStore.getState().addResource('wolf_pelt', 1)
+    useGameStore.getState().resetGame()
+    expect(useGameStore.getState().unseenLoot).toBe(false)
   })
 })
 

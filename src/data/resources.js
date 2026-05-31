@@ -247,6 +247,7 @@ export const RESOURCES = {
     zone: 'ashenvale',
     rarity: 'epic',
     sellPrice: 100,
+    category: 'dungeon_seal',  // D04 — monnaie alternative future
   },
   ancient_bone: {
     id: 'ancient_bone',
@@ -271,6 +272,7 @@ export const RESOURCES = {
     zone: 'grimspire',
     rarity: 'epic',
     sellPrice: 250,
+    category: 'dungeon_seal',  // D04
   },
   void_crystal: {
     id: 'void_crystal',
@@ -295,6 +297,7 @@ export const RESOURCES = {
     zone: 'grimspire',
     rarity: 'legendary',
     sellPrice: 2000,
+    category: 'dungeon_seal',  // D04 — relique ultime (sceau Demon Lord)
   },
 
   // ── Consommables (achetables chez le marchand) ────────────────────────

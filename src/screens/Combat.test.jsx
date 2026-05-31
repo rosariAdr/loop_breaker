@@ -158,6 +158,40 @@ describe('Combat — MonsterPortrait : image avec fallback emoji', () => {
   })
 })
 
+// ── B13 — Keyframe hero-attack ───────────────────────────────────────────────
+describe('Combat — B13 hero-attack animation', () => {
+  it("applique .anim-hero-attack sur HeroCard quand le joueur attaque", async () => {
+    setupCombat()
+    render(<Combat />)
+
+    // Avant l'attaque : aucune classe anim-hero-attack
+    expect(document.querySelector('.anim-hero-attack')).toBeNull()
+
+    const attackBtn = screen.getByText(/Basic Attack/i)
+    await act(async () => {
+      attackBtn.click()
+    })
+
+    // Pendant l'attaque : classe présente sur le HeroCard
+    expect(document.querySelector('.anim-hero-attack')).not.toBeNull()
+  })
+
+  it("retire .anim-hero-attack après ~320ms", async () => {
+    setupCombat()
+    render(<Combat />)
+    const attackBtn = screen.getByText(/Basic Attack/i)
+    await act(async () => {
+      attackBtn.click()
+    })
+    expect(document.querySelector('.anim-hero-attack')).not.toBeNull()
+
+    await act(async () => {
+      vi.advanceTimersByTime(400)
+    })
+    expect(document.querySelector('.anim-hero-attack')).toBeNull()
+  })
+})
+
 // ── B11 — Boss : fuite désactivée ────────────────────────────────────────────
 describe('Combat — B11 boss flee disabled', () => {
   it("le bouton Flee tab est disabled quand l'ennemi est un boss", () => {

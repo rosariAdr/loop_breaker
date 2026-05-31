@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { QUESTS, QUEST_NPCS } from '../data/quests'
 import { SKILLS } from '../data/skills'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const ALL_QUESTS = Object.values(QUESTS)
 
@@ -39,7 +41,8 @@ export function getRankInfo(tokens) {
 }
 
 export default function QuestBoard() {
-  const { hero, world, setScreen, startQuest, isQuestComplete, completeQuest } = useGameStore()
+  const { hero, world, setScreen, startQuest, isQuestComplete, completeQuest, abandonQuest } = useGameStore()
+  const [pendingAbandon, setPendingAbandon] = useState(null) // questObject
 
   const activeIds = world.activeQuests ?? []
   const completedIds = world.completedQuests ?? []
@@ -83,6 +86,7 @@ export default function QuestBoard() {
                 killCounts={world.monsterKillCounts}
                 canComplete={isQuestComplete(q.id)}
                 onComplete={() => completeQuest(q.id)}
+                onAbandon={() => setPendingAbandon(q)}
               />
             ))}
           </Section>
@@ -117,6 +121,18 @@ export default function QuestBoard() {
           </p>
         )}
       </div>
+
+      {/* UX03 — Confirmation abandon de quête */}
+      <ConfirmDialog
+        open={!!pendingAbandon}
+        title="Abandon quest?"
+        message={pendingAbandon ? `You are about to abandon "${pendingAbandon.name}". Your progress on this quest will be lost.` : ''}
+        confirmLabel="Abandon"
+        cancelLabel="Keep going"
+        variant="warn"
+        onConfirm={() => { abandonQuest(pendingAbandon.id); setPendingAbandon(null) }}
+        onCancel={() => setPendingAbandon(null)}
+      />
     </div>
   )
 }
@@ -169,7 +185,7 @@ function nextLabel(currentTierId) {
   return next?.label ?? '???'
 }
 
-function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, canComplete, onAccept, onComplete }) {
+function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, canComplete, onAccept, onComplete, onAbandon }) {
   const isCompleted = questStatus === 'completed'
   const isActive    = questStatus === 'active'
 
@@ -198,6 +214,16 @@ function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, canComplete
             style={{ fontFamily: 'Cinzel, serif', background: '#0a2010', color: '#40c080', border: '1px solid #305030', flexShrink: 0 }}
           >
             Claim
+          </button>
+        )}
+        {isActive && !canComplete && onAbandon && (
+          <button
+            onClick={onAbandon}
+            className="px-3 py-1 rounded text-xs"
+            style={{ fontFamily: 'Cinzel, serif', background: '#1a0808', color: '#a06040', border: '1px solid #4a2010', flexShrink: 0 }}
+            title="Abandon this quest"
+          >
+            Abandon
           </button>
         )}
         {questStatus === 'available' && (

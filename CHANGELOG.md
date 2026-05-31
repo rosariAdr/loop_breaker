@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Batch E — Donjons + Balance)
+- **D02** — Marker '?' du donjon cliquable dans WorldMapCanvas → `discoverDungeon` au 1er clic + label révélé "The Hollow Crypt · Lv 12-16"
+- **D04** — Field `category: 'dungeon_seal'` sur `crypt_seal`, `forsaken_seal`, `demon_lord_heart` (monnaie alternative future). Tests : drops garantis chance 1.0 sur les 3 boss
+- **D05** — `clearDungeon(zoneId)` warpe le hero vers la city de la zone, reset `currentHuntingSpot/isIdleActive/idleTargetMonster`
+- **D07** — `toggleIdle` refuse sur zones `idleAllowed: false` (Blighted Road) + `currentScreen === 'dungeon'` (anticipation D01)
+- **BAL01** — Coûts CATALOG révisés : starter_kit 10→5, oracle 15→8, skill_levelup 20→12, rank_restore 40→25, bonus_skill/stat 80→50. 5 scénarios simulant runs rapide/moyen/excellent/légendaire.
+
+### Added (Batch F — Win Condition)
+- **T04+W02** — `world.demonLordResurrectionCounter` incrémenté à chaque transmigration post-kill Malachar. Quand counter atteint 4 → Malachar respawn (donjon grimspire reset, defeated=false). Constante `RESURRECTION_CYCLES = 4`.
+- **M02** — `meta.demonLordKills` migré de `0` (number) à `{}` (object indexé par `universeId`) — préparation X08 multi-univers. `clearDungeon('grimspire')` incrémente `meta.demonLordKills.medieval_fantasy`.
+- **W03** — Flag `meta.malacharDefeatedThisRun` levé par `clearDungeon('grimspire')`, reset par `applyTransmigration`. Écran "to be continued" overlay dans PostMortem si flag levé (titre "Slayer of Eldenmoor" + bouton "Continue to Transmigration →").
+
+### Changed (Batch E+F)
+- `eslint.config.js` : override `react-refresh` pour `GodsShop.jsx` (export CATALOG pour BAL01)
+- `INITIAL_META.demonLordKills` : `0` → `{}` (breaking interne, migration save couverte par TECH02)
+- `INITIAL_META.malacharDefeatedThisRun: false` ajouté
+
+### Added (Batch C — UX & Tooltips)
+- **UX01** — `<Tooltip>` réutilisable (hover/focus/click) appliqué sur stats héros (HeroSheet) avec descriptions in-game
+- **UX02** — Diff comparée équipement : `↑+N` vert / `↓-N` rouge / `—` neutre par stat dans Inventory > Equipment + "vs équipé : <nom>"
+- **UX03** — `<ConfirmDialog>` réutilisable (variants destructive/warn/info) appliqué sur Sell rare (rarity ≥ epic), Reset save (PostMortem), Abandon de quête (QuestBoard + action store `abandonQuest`)
+- **UX05** — Badge "nouveau loot" dans NavBar > Bag : flag store `unseenLoot` levé par `addResource`/`addEquipmentToInventory`/`addSkillToInventory`, reset au mount d'Inventory
+- **U03** — `<link rel="preconnect">` Google Fonts dans index.html + font stacks étendus (Cinzel/Trajan Pro/Georgia fallback chain)
+- **B13** — `@keyframes hero-attack` (translateX +18px ping-pong 300ms) déclenchée par handleAttack/handleUseSkill dans Combat.jsx
+
+### Added (Batch D — WorldMap Canvas 2D + QTE)
+- **MAP01** — `src/screens/WorldMapCanvas.jsx` : Canvas 2D natif avec requestAnimationFrame loop + ResizeObserver DPR-aware. Helpers purs exportés `lerp`, `pctToPx`, `getNodeAtPosition`. Features : nodes cliquables, paths animés dashoffset, héros lerp 0.04 vers nodeId actif, marker "?" donjon, particles au clic, hover cursor pointer
+- **MAP02** — `src/components/QTEBar.jsx` : modal QTE avec barre ping-pong + zone verte + bouton NOW. Helpers purs `isInGreenZone`, `cursorPositionAt`. Intégré pour traverser Blighted Road : succès = entrée immédiate, échec = entrée + coût -5% maxHp
+
 ### Added (Batch A — Robustness)
 - **TECH01** — `<ErrorBoundary>` class component dans `src/components/` ; wrappé autour de `<main>` dans App.jsx ; fallback UI avec boutons "Reload page" et "Reset save (last resort)"
 - **TECH02** — Save schema versioning : constante exportée `SAVE_VERSION = 2`, helper `runMigrations(save)` exporté et `migrateV1ToV2(save)` interne ; `saveGame` inclut `saveVersion`, `loadGame` lit la version et applique migrations en chaîne

@@ -43,4 +43,19 @@ export default defineConfig([
       'react-refresh/only-export-components': 'off',
     },
   },
+  // Idem pour WorldMapCanvas.jsx (helpers purs lerp, pctToPx, getNodeAtPosition)
+  // et QTEBar.jsx (helpers isInGreenZone, cursorPositionAt).
+  {
+    files: ['src/screens/WorldMapCanvas.jsx', 'src/components/QTEBar.jsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  // GodsShop.jsx exporte CATALOG (BAL01) pour usage en tests scenarios.
+  {
+    files: ['src/screens/GodsShop.jsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

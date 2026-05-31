@@ -132,6 +132,7 @@ export default function Combat() {
   const [turnCount, setTurnCount] = useState(1)
   const [animatingEnemyId, setAnimatingEnemyId] = useState(null) // id ennemi qui reçoit un coup
   const [animatingHero, setAnimatingHero] = useState(false)      // héros qui reçoit un coup
+  const [heroAttackAnim, setHeroAttackAnim] = useState(false)    // B13 — héros qui lance une attaque/skill
   const [attackingEnemyId, setAttackingEnemyId] = useState(null) // B02 — ennemi qui frappe
   const [floatingNumbers, setFloatingNumbers] = useState([])     // B07 — [{id, targetId, amount, type}]
   // B08 — stats de combat pour le résumé
@@ -298,6 +299,8 @@ export default function Combat() {
     const dmg = calcBaseDamage(heroStats.strength, target.stats.def)
     setIsAnimating(true)
     setAnimatingEnemyId(target.id)
+    setHeroAttackAnim(true)                                             // B13
+    setTimeout(() => setHeroAttackAnim(false), 320)                     // B13 — reset après l'anim 300ms
     pushFloatingNumber(target.id, dmg, 'damage')                        // B07
     setCombatStats(s => ({ ...s, dmgDealt: s.dmgDealt + dmg }))         // B08
     setTimeout(() => {
@@ -321,6 +324,8 @@ export default function Combat() {
     if (aliveEnemies.length === 0) return
     const skillTarget = aliveEnemies.find(e => e.id === selectedTargetId) ?? aliveEnemies[0]
     setIsAnimating(true)
+    setHeroAttackAnim(true)                                             // B13
+    setTimeout(() => setHeroAttackAnim(false), 320)
     setHeroStats(applySkillCost(skill, heroStats))
     // B08 — track la mana dépensée
     setCombatStats(s => ({ ...s, manaSpent: s.manaSpent + (template.cost?.mana ?? 0) }))
@@ -461,6 +466,7 @@ export default function Combat() {
             deity={hero.deity}
             hitFlash={heroHitFlash}
             isAnimHit={animatingHero}
+            isAttacking={heroAttackAnim}
             floatingNumbers={floatingNumbers.filter(n => n.targetId === 'hero')}
           />
         </div>
@@ -643,9 +649,11 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
 }
 
 // ── Carte héros ───────────────────────────────────────────────────────────────
-function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, floatingNumbers = [] }) {
+function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking, floatingNumbers = [] }) {
+  // B13 — anim-hero-attack lors d'une attaque ; prend le pas sur anim-flash si actif
+  const animClass = isAttacking ? ' anim-hero-attack' : isAnimHit ? ' anim-flash' : ''
   return (
-    <div className={`flex items-center gap-6 relative${isAnimHit ? ' anim-flash' : ''}`}>
+    <div className={`flex items-center gap-6 relative${animClass}`}>
       {/* B07 — Nombres flottants (dégâts reçus / soins) */}
       <FloatingNumbers numbers={floatingNumbers} />
       {/* Portrait — 96px */}

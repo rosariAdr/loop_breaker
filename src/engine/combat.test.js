@@ -258,6 +258,50 @@ describe('calcDrops', () => {
     const valid = ids.every(id => ['stone_shard', 'earth_crystal'].includes(id))
     expect(valid).toBe(true)
   })
+
+  // ── D04 — Loot donjon exclusif ─────────────────────────────────────────────
+  describe('D04 — Loot donjon exclusif (boss + demon lord)', () => {
+    it('hollow_crypt_boss droppe TOUJOURS un crypt_seal', () => {
+      // chance: 1.0 → garanti sur 50 itérations
+      for (let i = 0; i < 50; i++) {
+        const drops = calcDrops('hollow_crypt_boss', 5)
+        const ids = drops.resources.map(r => r.id)
+        expect(ids).toContain('crypt_seal')
+      }
+    })
+
+    it('hollow_crypt_boss droppe TOUJOURS de l\'ancient_bone', () => {
+      for (let i = 0; i < 50; i++) {
+        const drops = calcDrops('hollow_crypt_boss', 5)
+        const ids = drops.resources.map(r => r.id)
+        expect(ids).toContain('ancient_bone')
+      }
+    })
+
+    it('forsaken_citadel_boss droppe TOUJOURS forsaken_seal + void_crystal', () => {
+      for (let i = 0; i < 30; i++) {
+        const drops = calcDrops('forsaken_citadel_boss', 5)
+        const ids = drops.resources.map(r => r.id)
+        expect(ids).toContain('forsaken_seal')
+        expect(ids).toContain('void_crystal')
+      }
+    })
+
+    it('malachar droppe TOUJOURS le demon_lord_heart + void_crystal', () => {
+      for (let i = 0; i < 30; i++) {
+        const drops = calcDrops('malachar', 5)
+        const ids = drops.resources.map(r => r.id)
+        expect(ids).toContain('demon_lord_heart')
+        expect(ids).toContain('void_crystal')
+      }
+    })
+
+    it('malachar a chance de skillDrop = 1.0 (soul_rend toujours obtenu)', () => {
+      for (let i = 0; i < 30; i++) {
+        expect(calcDrops('malachar', 5).skillDrop).toBe('soul_rend')
+      }
+    })
+  })
 })
 
 // ── buildEnemy ────────────────────────────────────────────────────────────────

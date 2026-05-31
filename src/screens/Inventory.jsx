@@ -1,15 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { SKILLS } from '../data/skills'
 import { RESOURCES, RARITY_COLORS } from '../data/resources'
 import { RARITY_CONFIG } from '../data/equipment'
+import ConfirmDialog from '../components/ConfirmDialog'
+
+// UX03 — Raretés qui déclenchent une confirmation avant Sell
+const PROTECTED_RARITIES = new Set(['epic', 'legendary', 'mythic', 'ex', 'exx'])
 
 const TABS = ['skills', 'equipment', 'consumables', 'resources']
 
 export default function Inventory() {
-  const { hero, setScreen, equipActiveSkill, equipPassiveSkill, equipItem, sellEquipment } = useGameStore()
+  const { hero, setScreen, equipActiveSkill, equipPassiveSkill, equipItem, sellEquipment, markLootAsSeen } = useGameStore()
   const [activeTab, setActiveTab] = useState('skills')
   const [selected, setSelected] = useState(null)
+
+  // UX05 — marquer le loot comme vu dès qu'on entre dans Inventory
+  useEffect(() => {
+    markLootAsSeen()
+  }, [markLootAsSeen])
 
   return (
     <div className="flex h-full" style={{ minHeight: 'calc(100vh - 48px)' }}>
@@ -201,11 +210,28 @@ function SkillsTab({ manaStones, hero, selected, setSelected, equipActive, equip
 // ── Onglet Équipement ─────────────────────────────────────────────────────────
 function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onSell }) {
   const selectedItem = selected !== null ? equipment[selected] : null
+  // UX03 — pending sell pour confirmation
+  const [pendingSell, setPendingSell] = useState(null) // { instanceId, name, rarity, sellPrice }
 
   // Vérifier si un item est déjà équipé dans son slot
   const isEquipped = (item) => {
     const slot = equipped[item.slot]
     return slot?.instanceId === item.instanceId
+  }
+
+  // UX03 — décide : confirmation ou sell direct
+  const handleSellClick = (item) => {
+    if (PROTECTED_RARITIES.has(item.rarity)) {
+      setPendingSell(item)
+    } else {
+      onSell(item.instanceId)
+      setSelected(null)
+    }
+  }
+  const confirmSell = () => {
+    onSell(pendingSell.instanceId)
+    setPendingSell(null)
+    setSelected(null)
   }
 
   if (equipment.length === 0) {
@@ -264,6 +290,9 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
           {(() => {
             const rc = RARITY_CONFIG[selectedItem.rarity]
             const alreadyEquipped = isEquipped(selectedItem)
+            const equippedInSlot = equipped[selectedItem.slot]
+            // UX02 — diff vs équipé actuel (si un item existe dans le slot et c'est pas le même)
+            const showDiff = equippedInSlot && !alreadyEquipped
             return (
               <>
                 <div>
@@ -271,12 +300,35 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
                   <p style={{ color: '#4a3a2a', fontSize: '0.72rem', textTransform: 'capitalize' }}>{selectedItem.slot}</p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  {Object.entries(selectedItem.stats).map(([s, v]) => (
-                    <div key={s} className="flex justify-between" style={{ fontSize: '0.78rem' }}>
-                      <span style={{ color: '#6a5a4a', textTransform: 'capitalize' }}>{s}</span>
-                      <span style={{ color: '#80c040' }}>+{v}</span>
-                    </div>
-                  ))}
+                  {Object.entries(selectedItem.stats).map(([s, v]) => {
+                    const equippedVal = equippedInSlot?.stats?.[s] ?? 0
+                    const diff = v - equippedVal
+                    return (
+                      <div key={s} className="flex justify-between items-baseline" style={{ fontSize: '0.78rem' }}>
+                        <span style={{ color: '#6a5a4a', textTransform: 'capitalize' }}>{s}</span>
+                        <span className="flex items-baseline gap-2">
+                          <span style={{ color: '#80c040' }}>+{v}</span>
+                          {showDiff && (
+                            <span
+                              data-testid={`diff-${s}`}
+                              style={{
+                                color: diff > 0 ? '#80c040' : diff < 0 ? '#c06040' : '#6a5a4a',
+                                fontSize: '0.7rem',
+                                fontFamily: 'Cinzel, serif',
+                              }}
+                            >
+                              {diff > 0 ? `↑+${diff}` : diff < 0 ? `↓${diff}` : '—'}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    )
+                  })}
+                  {showDiff && (
+                    <p style={{ color: '#5a4a3a', fontSize: '0.68rem', fontStyle: 'italic', marginTop: '0.2rem' }}>
+                      vs équipé : {equippedInSlot.name}
+                    </p>
+                  )}
                 </div>
                 <p style={{ color: '#4a3a2a', fontSize: '0.72rem' }}>Sell: {selectedItem.sellPrice}g</p>
                 <button
@@ -294,7 +346,7 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
                   {alreadyEquipped ? 'Already equipped' : 'Equip'}
                 </button>
                 <button
-                  onClick={() => { onSell(selectedItem.instanceId); setSelected(null) }}
+                  onClick={() => handleSellClick(selectedItem)}
                   className="w-full py-2 rounded text-xs transition-all"
                   style={{
                     fontFamily: 'Cinzel, serif',
@@ -303,13 +355,25 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
                     border: '1px solid #3a1818',
                   }}
                 >
-                  Sell {selectedItem.sellPrice}g
+                  Sell {selectedItem.sellPrice}g{PROTECTED_RARITIES.has(selectedItem.rarity) ? ' ⚠' : ''}
                 </button>
               </>
             )
           })()}
         </div>
       )}
+
+      {/* UX03 — Confirmation Sell pour les raretés Epic+ */}
+      <ConfirmDialog
+        open={!!pendingSell}
+        title="Sell rare item?"
+        message={pendingSell ? `You are about to sell ${pendingSell.name} (${pendingSell.rarity}). This cannot be undone.` : ''}
+        confirmLabel={pendingSell ? `Sell for ${pendingSell.sellPrice}g` : 'Sell'}
+        cancelLabel="Keep it"
+        variant="destructive"
+        onConfirm={confirmSell}
+        onCancel={() => setPendingSell(null)}
+      />
     </div>
   )
 }

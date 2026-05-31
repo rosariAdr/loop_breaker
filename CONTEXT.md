@@ -183,18 +183,23 @@ racine/
 
 ---
 
-## 6. Tests (385 total, 9 fichiers, ~3s)
+## 6. Tests (497 total, 14 fichiers, ~4.5s)
 
 ```
-src/engine/combat.test.js                #  54 tests : damage, drops, scaling, getScaledSkillCost
-src/store/gameStore.test.js              # 197 tests : actions, migration, S04/DV08/T06-T11/DV10/TECH02/TECH03/X02/CAL01
-src/scenarios.test.js                    #  27 tests : parties simulées bout en bout
+src/engine/combat.test.js                #  60 tests : damage, drops, scaling, getScaledSkillCost, D04 loot boss garanti
+src/store/gameStore.test.js              # 222 tests : actions, migration, S04/DV08/T06-T11/DV10/TECH02/TECH03/X02/CAL01/UX05/abandonQuest/M02/D05/D07/T04+W02/W03
+src/scenarios.test.js                    #  32 tests : parties simulées bout en bout + BAL01 économie tokens
 src/data/quests.test.js                  #  14 tests : QUESTS + QUEST_NPCS
 src/data/deities.test.js                 #  22 tests : conditions éveil, applyDeityBlessing, DV06
-src/screens/Combat.test.jsx              #  16 tests : rendu, animations, stats combat, B11 boss flee
+src/data/resources.test.js               #   5 tests : D04 dungeon_seal category sur seals/heart
+src/screens/Combat.test.jsx              #  18 tests : rendu, animations, B11 boss flee, B13 hero-attack
 src/screens/QuestBoard.test.jsx          #  18 tests : Q02 progress bars, Q06 rank tiers
-src/screens/screens.test.jsx             #  49 tests : smoke + nav + layouts + flows
-src/components/ErrorBoundary.test.jsx    #   8 tests : TECH01 fallback UI + reload/reset save
+src/screens/WorldMapCanvas.test.jsx      #  18 tests : MAP01 helpers + D02 dungeon marker
+src/screens/screens.test.jsx             #  61 tests : smoke + nav + layouts + UX02/UX05 + W03 banner
+src/components/ErrorBoundary.test.jsx    #   8 tests : TECH01 fallback UI
+src/components/Tooltip.test.jsx          #   9 tests : UX01 hover/focus/click popover
+src/components/ConfirmDialog.test.jsx    #   8 tests : UX03 destructive/warn variants
+src/components/QTEBar.test.jsx           #  19 tests : MAP02 helpers + smoke
 ```
 
 **Politique de tests** :

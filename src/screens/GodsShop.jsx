@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { SKILLS } from '../data/skills'
 
-const CATALOG = [
+// BAL01 — Coûts révisés (calibration économie tokens : run typique = ~8-12 tokens)
+// Cible : run moyen = 1 article achetable, run excellent = 2-3 articles.
+export const CATALOG = [
   {
     id: 'rank_restore',
     label: 'Adventurer Rank Restoration',
     description: 'Restore up to 80% of the rank you reached this run.',
-    cost: 40,
+    cost: 25,  // BAL01 : 40 → 25
     icon: '⚜',
     color: '#d4af70',
   },
@@ -15,7 +17,7 @@ const CATALOG = [
     id: 'bonus_skill',
     label: 'Bonus Skill Slot',
     description: 'Carry one additional skill (active or passive) beyond the base three.',
-    cost: 80,
+    cost: 50,  // BAL01 : 80 → 50
     icon: '✨',
     color: '#c084fc',
   },
@@ -23,7 +25,7 @@ const CATALOG = [
     id: 'bonus_stat',
     label: 'Bonus Stat Slot',
     description: 'Carry one additional stat beyond the base three.',
-    cost: 80,
+    cost: 50,  // BAL01 : 80 → 50
     icon: '📈',
     color: '#60a5fa',
   },
@@ -31,7 +33,7 @@ const CATALOG = [
     id: 'skill_levelup',
     label: 'Skill Level Up',
     description: 'Advance one of your inherited skills by one level.',
-    cost: 20,
+    cost: 12,  // BAL01 : 20 → 12
     icon: '⬆',
     color: '#40c080',
   },
@@ -39,7 +41,7 @@ const CATALOG = [
     id: 'starter_kit',
     label: 'Starter Kit',
     description: '3× Minor Healing Potion + 3× Minor Mana Potion to begin the next run.',
-    cost: 10,
+    cost: 5,   // BAL01 : 10 → 5
     icon: '🧪',
     color: '#80c040',
   },
@@ -47,7 +49,7 @@ const CATALOG = [
     id: 'divine_oracle',
     label: 'Divine Oracle',
     description: 'Reveals the relation score of deities in the next universe before you arrive.',
-    cost: 15,
+    cost: 8,   // BAL01 : 15 → 8
     icon: '🔮',
     color: '#c0a060',
   },

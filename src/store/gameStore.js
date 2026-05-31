@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { MONSTERS } from '../data/monsters'
 import { QUESTS } from '../data/quests'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
+import { ZONES } from '../data/zones'
 
 // ── TECH02 — Save schema versioning ──────────────────────────────────────────
 // Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
@@ -127,9 +128,14 @@ const INITIAL_WORLD = {
 const INITIAL_META = {
   totalDeaths: 0,
   totalPlaytime: 0,
-  demonLordKills: 0,
+  // M02 — Compteur Demon Lords kills par univers : { [universeId]: count }
+  // Préparation X08 multi-univers. Pour le POC : un seul univers 'medieval_fantasy'.
+  demonLordKills: {},
   titlesEarned: [],
   totalRepTokensEarned: 0,
+
+  // W03 — Flag levé si Malachar killed durant ce run (consommé au PostMortem)
+  malacharDefeatedThisRun: false,
 
   // Héritage en attente (rempli à la mort, consommé à la renaissance)
   pendingInheritance: null, // { stat, activeSkill, passiveSkill, bonuses }
@@ -278,6 +284,9 @@ export const useGameStore = create((set, get) => ({
   // TECH03 — Flag levé si le dernier saveGame a échoué (quota localStorage dépassé, etc.)
   saveQuotaExceeded: false,
 
+  // UX05 — Flag levé à chaque drop de loot (combat/idle), reset au passage sur Inventory
+  unseenLoot: false,
+
   // ── Naviguer entre écrans ──────────────────────────────────────────────────
   setScreen: (screen) => set({ currentScreen: screen }),
 
@@ -343,6 +352,7 @@ export const useGameStore = create((set, get) => ({
           equipment: [...state.hero.inventory.equipment, item],
         },
       },
+      unseenLoot: true,  // UX05
     })),
 
   equipItem: (instanceId) =>
@@ -423,7 +433,11 @@ export const useGameStore = create((set, get) => ({
           manaStones: [...state.hero.inventory.manaStones, skillData],
         },
       },
+      unseenLoot: true,  // UX05
     })),
+
+  // UX05 — Marque le loot comme vu (appelé à l'ouverture de l'écran Inventory)
+  markLootAsSeen: () => set({ unseenLoot: false }),
 
   equipActiveSkill: (skillData) =>
     set((state) => {
@@ -532,6 +546,7 @@ export const useGameStore = create((set, get) => ({
             resources: { ...state.hero.inventory.resources, [resourceId]: current + qty },
           },
         },
+        unseenLoot: true,  // UX05
       }
     }),
 
@@ -623,6 +638,12 @@ export const useGameStore = create((set, get) => ({
     set((state) => {
       const kills = state.world.monsterKillCounts[monsterId] || 0
       if (kills < 5) return state // pas encore débloqué
+
+      // D07 — Idle interdit dans certaines zones (Blighted Road) et écrans (dungeon)
+      const zone = ZONES[state.world.currentZone]
+      if (zone?.idleAllowed === false) return state
+      if (state.currentScreen === 'dungeon') return state
+
       const current = state.world.idleToggles[monsterId] || false
       return {
         world: {
@@ -832,6 +853,31 @@ export const useGameStore = create((set, get) => ({
         ? Math.round((state.hero.reputationTokens ?? 0) * 0.80)
         : 0
 
+      // T04 + W02 — Malachar resurrection counter
+      // Incrémenté à CHAQUE transmigration tant que Malachar est défait.
+      // Quand le counter atteint 4 → Malachar respawn (reset counter + flag defeated)
+      const RESURRECTION_CYCLES = 4
+      const wasDemonLordDefeated = state.world.demonLordDefeated
+      let newCounter = state.world.demonLordResurrectionCounter ?? 0
+      let nextDemonLordDefeated = wasDemonLordDefeated
+      let nextDungeons = { ...INITIAL_WORLD.dungeons }
+
+      if (wasDemonLordDefeated) {
+        newCounter += 1
+        if (newCounter >= RESURRECTION_CYCLES) {
+          // Malachar respawn
+          newCounter = 0
+          nextDemonLordDefeated = false
+          // Le donjon grimspire est aussi reset (cleared → false)
+          nextDungeons = {
+            ...nextDungeons,
+            grimspire: { ...nextDungeons.grimspire, cleared: false, discovered: false },
+          }
+        }
+      } else {
+        newCounter = 0  // pas de défaite encore : counter à 0
+      }
+
       return {
         hero: {
           ...INITIAL_HERO,
@@ -845,10 +891,18 @@ export const useGameStore = create((set, get) => ({
           name: state.hero.name,
           heroNamed: state.hero.heroNamed,
         },
-        world: { ...INITIAL_WORLD },
+        world: {
+          ...INITIAL_WORLD,
+          dungeons: nextDungeons,
+          // T04 — Malachar resurrection counter persiste à travers le nouveau monde
+          demonLordDefeated: nextDemonLordDefeated,
+          demonLordResurrectionCounter: newCounter,
+        },
         meta: {
           ...state.meta,
           pendingInheritance: null,
+          // W03 — Flag malacharDefeatedThisRun reset après transmigration (consommé)
+          malacharDefeatedThisRun: false,
         },
         currentScreen: 'world_map',
         pendingLevelUp: 0,
@@ -994,6 +1048,19 @@ export const useGameStore = create((set, get) => ({
       return { world: { ...state.world, activeQuests: [...activeQuests, questId] } }
     }),
 
+  // UX03 — Abandonner une quête active (perte de progression, mais retirable des actives)
+  abandonQuest: (questId) =>
+    set((state) => {
+      const { activeQuests } = state.world
+      if (!activeQuests.includes(questId)) return state
+      return {
+        world: {
+          ...state.world,
+          activeQuests: activeQuests.filter((q) => q !== questId),
+        },
+      }
+    }),
+
   isQuestComplete: (questId) => {
     const { hero, world } = get()
     const quest = QUESTS[questId]
@@ -1104,6 +1171,25 @@ export const useGameStore = create((set, get) => ({
     set((state) => {
       const dungeon = state.world.dungeons[zoneId]
       if (!dungeon) return state
+
+      // D05 — warp à la sortie : héros téléporté à la ville principale de la zone,
+      // sortie du spot de chasse, idle stop (cohérence D07).
+      const zoneData = ZONES[zoneId]
+      const safeCityId = zoneData?.city?.id ?? state.world.currentLocation
+
+      // M02 — incrément du compteur Demon Lords kills par univers
+      // Pour l'instant un seul univers : 'medieval_fantasy'. Préparation X08.
+      const universeId = 'medieval_fantasy'
+      const isDemonLordKill = zoneId === 'grimspire'
+      const updatedDemonLordKills = isDemonLordKill
+        ? {
+            ...(typeof state.meta.demonLordKills === 'object' ? state.meta.demonLordKills : {}),
+            [universeId]: ((typeof state.meta.demonLordKills === 'object'
+              ? state.meta.demonLordKills[universeId]
+              : state.meta.demonLordKills) ?? 0) + 1,
+          }
+        : state.meta.demonLordKills
+
       return {
         world: {
           ...state.world,
@@ -1111,14 +1197,18 @@ export const useGameStore = create((set, get) => ({
             ...state.world.dungeons,
             [zoneId]: { ...dungeon, cleared: true },
           },
-          demonLordDefeated: zoneId === 'grimspire' ? true : state.world.demonLordDefeated,
-          demonLordResurrectionCounter: zoneId === 'grimspire'
-            ? state.world.demonLordResurrectionCounter + 1
-            : state.world.demonLordResurrectionCounter,
+          demonLordDefeated: isDemonLordKill ? true : state.world.demonLordDefeated,
+          // D05 — warp
+          currentLocation: safeCityId,
+          currentHuntingSpot: null,
+          isIdleActive: false,
+          idleTargetMonster: null,
         },
         meta: {
           ...state.meta,
-          demonLordKills: zoneId === 'grimspire' ? state.meta.demonLordKills + 1 : state.meta.demonLordKills,
+          demonLordKills: updatedDemonLordKills,
+          // W03 — flag levé pour le post-mortem si Malachar killed ce run
+          malacharDefeatedThisRun: isDemonLordKill ? true : (state.meta.malacharDefeatedThisRun ?? false),
         },
       }
     }),
@@ -1134,5 +1224,6 @@ export const useGameStore = create((set, get) => ({
       pendingLevelUp: 0,
       recentSkillLevelUps: [],
       saveQuotaExceeded: false,
+      unseenLoot: false,
     }),
 }))
