@@ -6,7 +6,7 @@
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { MONSTERS, MONSTERS_BY_ZONE } from '../src/data/monsters.js'
+import { MONSTERS } from '../src/data/monsters.js'
 import { ZONE_MULTS, scaleMonsterStats } from '../src/data/zones.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -97,3 +97,36 @@ console.log(`✓ ${outPath}`)
 console.log(`  ${totalMonsters} monstres × ${RUN_LEVELS.length} niveaux = ${totalRows} lignes`)
 console.log(`  Zones rencontrées : ${[...new Set(Object.values(MONSTERS).map(m => getEffectiveZoneId(m)))].join(', ')}`)
 console.log(`  Cross-check : zone_mult × 1.08^run_count = effective_scale`)
+
+// ── PROC04 — Second CSV : récap des drops par monstre ────────────────────────
+const dropHeaders = [
+  'monster_id', 'name', 'zone', 'rank',
+  'gold_min', 'gold_max', 'exp_reward',
+  'skill_drop_id', 'skill_drop_chance',
+  'resource_drops',  // "resId:chance:minQty-maxQty;..."
+]
+const dropRows = [dropHeaders.join(',')]
+
+for (const [monsterId, monster] of Object.entries(MONSTERS)) {
+  const resourceSummary = (monster.resourceDrops ?? [])
+    .map(d => `${d.resourceId}:${d.chance}:${d.qty.min}-${d.qty.max}`)
+    .join(';')
+
+  dropRows.push([
+    monsterId,
+    escapeCsv(monster.name),
+    monster.zone,
+    monster.rank,
+    monster.goldReward?.min ?? 0,
+    monster.goldReward?.max ?? 0,
+    monster.expReward,
+    monster.skillDrop?.skillId ?? '',
+    monster.skillDrop?.chance ?? 0,
+    escapeCsv(resourceSummary),
+  ].join(','))
+}
+
+const dropPath = join(__dirname, '..', 'balance', 'drops_summary.csv')
+writeFileSync(dropPath, dropRows.join('\n') + '\n', 'utf8')
+console.log(`✓ ${dropPath}`)
+console.log(`  ${totalMonsters} monstres — gold/exp/skill drop/resource drops`)

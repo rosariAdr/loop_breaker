@@ -14,6 +14,8 @@ import QuestBoard from './screens/QuestBoard'
 import LevelUpModal from './screens/LevelUpModal'
 import CharacterCreation from './screens/CharacterCreation'
 import ErrorBoundary from './components/ErrorBoundary'
+import DebugPanel from './components/DebugPanel'
+import ToastContainer from './components/ToastContainer'
 
 function App() {
   const {
@@ -83,13 +85,20 @@ function App() {
       <DayBar />
       <main className="flex-1">
         <ErrorBoundary>
-          {renderScreen()}
+          {/* U04 — key={currentScreen} force le remount → re-déclenche le fade */}
+          <div key={currentScreen} className="anim-screen-fade h-full">
+            {renderScreen()}
+          </div>
         </ErrorBoundary>
       </main>
       {/* Modals — par ordre de priorité */}
       {pendingDivineCall && <DivineCall />}
       {showLevelUp && <LevelUpModal />}
       {showCharCreation && <CharacterCreation />}
+      {/* U01 — Toasts globaux */}
+      <ToastContainer />
+      {/* PROC06 — Debug panel (DEV only, Ctrl+Shift+D) */}
+      <DebugPanel />
     </div>
   )
 }

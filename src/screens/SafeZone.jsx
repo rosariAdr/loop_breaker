@@ -259,6 +259,8 @@ function MerchantPanel({ onBack }) {
   const potionStock = [
     'hp_potion_small', 'hp_potion_medium',
     'mana_potion_small', 'mana_potion_medium',
+    // Z02 — stock élargi
+    'stamina_ration', 'elixir_minor', 'mana_crystal', 'antidote_basic',
   ]
 
   // Équipements vendus par le marchand : templates avec merchantStock
@@ -509,7 +511,8 @@ function BlacksmithPanel({ onBack }) {
                     const ok = owned >= qty
                     return (
                       <div key={resId} className="flex justify-between items-center"
-                        style={{ fontSize: '0.78rem' }}>
+                        // Z03 — grise les ingrédients manquants
+                        style={{ fontSize: '0.78rem', opacity: ok ? 1 : 0.6 }}>
                         <span style={{ color: ok ? '#80c040' : '#c04040' }}>
                           {ok ? '✓' : '✗'} {res?.name ?? resId}
                         </span>
@@ -556,6 +559,17 @@ function BlacksmithPanel({ onBack }) {
               >
                 🔨 Craft {RARITY_CONFIG[selectedRarity]?.label} {template.name}
               </button>
+
+              {/* Z03 — Raison du blocage explicite */}
+              {recipe && !canDoCraft && (
+                <p data-testid="craft-blocked-reason" style={{ color: '#8a4030', fontSize: '0.72rem', fontStyle: 'italic' }}>
+                  {!hasIngredients && !hasGold
+                    ? 'Missing ingredients and gold.'
+                    : !hasIngredients
+                    ? 'Missing ingredients (see ✗ above).'
+                    : 'Not enough gold.'}
+                </p>
+              )}
 
               {craftMsg && (
                 <p style={{ color: '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>

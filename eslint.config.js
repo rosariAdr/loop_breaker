@@ -51,9 +51,10 @@ export default defineConfig([
       'react-refresh/only-export-components': 'off',
     },
   },
-  // GodsShop.jsx exporte CATALOG (BAL01) pour usage en tests scenarios.
+  // GodsShop.jsx exporte CATALOG (BAL01) + getBonusSkillPool (T07b) pour les tests.
+  // QuestBoard.jsx déjà couvert plus haut.
   {
-    files: ['src/screens/GodsShop.jsx'],
+    files: ['src/screens/GodsShop.jsx', 'src/screens/ZoneView.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

@@ -4,7 +4,7 @@ import { DEITIES } from '../data/deities'
 import { SKILLS } from '../data/skills'
 
 export default function DivineCall() {
-  const { pendingDivineCall, acceptDeity, refuseDeity } = useGameStore()
+  const { pendingDivineCall, acceptDeity, refuseDeity, meta } = useGameStore()
   const [phase, setPhase] = useState('message')   // 'message' | 'choose_skill' | 'confirm_refuse'
   const [chosenSkill, setChosenSkill] = useState(null)
 
@@ -12,6 +12,10 @@ export default function DivineCall() {
 
   const deity = DEITIES[pendingDivineCall.deityId]
   if (!deity) return null
+
+  // DV03 — Fidélité inter-run : ce dieu nous reconnaît si déjà lié dans cet univers
+  const universeId = deity.universe ?? 'medieval_fantasy'
+  const isReturningDeity = meta.divineBonds?.[universeId] === deity.id
 
   const skillOptions = deity.divineSkillOptions.map(id => ({
     id,
@@ -68,6 +72,22 @@ export default function DivineCall() {
                 {deity.title}
               </p>
             </div>
+
+            {/* DV03 — Bannière de reconnaissance (dieu déjà lié dans cet univers) */}
+            {isReturningDeity && (
+              <div
+                data-testid="returning-deity-banner"
+                className="p-2.5 rounded text-center"
+                style={{ background: `${deity.color}12`, border: `1px solid ${deity.color}40` }}
+              >
+                <p style={{ color: deity.color, fontSize: '0.78rem', fontFamily: 'Cinzel, serif', letterSpacing: '0.04em' }}>
+                  ✦ {deity.name} remembers you ✦
+                </p>
+                <p style={{ color: '#8a7a9a', fontSize: '0.72rem', fontStyle: 'italic', marginTop: '0.2rem' }}>
+                  "We have walked together before. I knew you would return."
+                </p>
+              </div>
+            )}
 
             {/* Message */}
             <div

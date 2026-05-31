@@ -560,6 +560,47 @@ export const SKILLS = {
     },
   },
 
+  // ── Skills divins — Voltaris (DV04) ───────────────────────────────────
+  chain_lightning: {
+    id: 'chain_lightning',
+    name: 'Chain Lightning',
+    description: "Voltaris's bolt. Deals 120% INT and arcs to a second enemy.",
+    type: 'active',
+    cost: { mana: 28, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'lightning', multiplier: 1.2, baseStat: 'intelligence' },
+      aoe: true, // arc vers les autres ennemis
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null,
+    container: 'divine',
+    inheritable: false,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+    },
+  },
+  overclock: {
+    id: 'overclock',
+    name: 'Overclock',
+    description: "Voltaris's gift of momentum. +80% speed for 2 turns.",
+    type: 'active',
+    cost: { mana: 25, hp: 0, stat_sacrifice: null },
+    cooldown: 4,
+    effect: {
+      selfBuff: { stat: 'agility', multiplier: 0.80, duration: 2 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null,
+    container: 'divine',
+    inheritable: false,
+    levelBonuses: {
+      2: { buffBonus: 0.20, costReduction: 0.10 },
+      3: { buffBonus: 0.40, costReduction: 0.20 },
+    },
+  },
+
   // ── Skill suprême — Demon Lord ────────────────────────────────────────
 
   soul_rend: {

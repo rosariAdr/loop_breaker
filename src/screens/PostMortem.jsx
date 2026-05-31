@@ -5,8 +5,10 @@ import { ZONES } from '../data/zones'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function PostMortem() {
-  const { meta, confirmInheritance, resetGame } = useGameStore()
+  const { meta, confirmInheritance, resetGame, markFirstDeathSeen } = useGameStore()
   const summary = meta.lastRunSummary
+  // TUT03 — hint au tout 1er run/1ère mort
+  const showFirstDeathHint = !meta.firstDeathSeen && meta.totalDeaths <= 1
 
   // Sélection de l'héritage
   const [chosenStat, setChosenStat] = useState(null)
@@ -132,8 +134,41 @@ export default function PostMortem() {
           </div>
         </div>
 
+        {/* TUT03 — Hint première transmigration */}
+        {showFirstDeathHint && (
+          <div
+            data-testid="first-death-hint"
+            className="p-4 rounded border anim-pop"
+            style={{ background: '#0a0f18', borderColor: '#2a4060' }}
+          >
+            <p style={{ fontFamily: 'Cinzel, serif', color: '#60a0d0', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+              ✦ First Transmigration
+            </p>
+            <p style={{ color: '#7a8a9a', fontSize: '0.78rem', lineHeight: 1.5 }}>
+              Death is not the end. You may carry <strong>one stat</strong>, <strong>one active skill</strong> and
+              <strong> one passive skill</strong> into your next life. Choose wisely — these become the foundation
+              of a stronger run. The Gods' Shop awaits after.
+            </p>
+            <button
+              onClick={markFirstDeathSeen}
+              className="mt-3 px-4 py-1.5 rounded text-xs"
+              style={{ fontFamily: 'Cinzel, serif', background: '#0a1828', color: '#60a0d0', border: '1px solid #2a4060' }}
+            >
+              Got it
+            </button>
+          </div>
+        )}
+
         {/* Choisir l'héritage */}
-        <div className="p-4 rounded border" style={{ background: '#0a0c08', borderColor: '#1a2810' }}>
+        <div
+          className="p-4 rounded border"
+          style={{
+            background: '#0a0c08',
+            // TUT03 — surbrillance pendant le 1er run
+            borderColor: showFirstDeathHint ? '#3a5070' : '#1a2810',
+            boxShadow: showFirstDeathHint ? '0 0 16px rgba(60,80,112,0.3)' : 'none',
+          }}
+        >
           <p className="mb-1 text-xs uppercase tracking-widest" style={{ color: '#4a3a2a', fontFamily: 'Cinzel, serif' }}>
             Transmigration — Choose what to carry
           </p>

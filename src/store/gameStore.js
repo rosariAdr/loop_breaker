@@ -1,8 +1,12 @@
 import { create } from 'zustand'
 import { MONSTERS } from '../data/monsters'
 import { QUESTS } from '../data/quests'
+import { SKILLS } from '../data/skills'
+import { RESOURCES } from '../data/resources'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
 import { ZONES } from '../data/zones'
+import { useToastStore } from './toastStore'
+import { removeOneManaStone } from '../utils/manaStones'
 
 // ── TECH02 — Save schema versioning ──────────────────────────────────────────
 // Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
@@ -72,6 +76,9 @@ const INITIAL_HERO = {
 
   // Flag : le joueur a-t-il choisi son nom ? (faux = CharacterCreation à afficher)
   heroNamed: false,
+
+  // DV07 — Le joueur a-t-il refusé une divinité ce run ? (→ bonus solo T11)
+  soloRun: false,
 }
 
 // ── État initial du monde ─────────────────────────────────────────────────────
@@ -136,6 +143,10 @@ const INITIAL_META = {
 
   // W03 — Flag levé si Malachar killed durant ce run (consommé au PostMortem)
   malacharDefeatedThisRun: false,
+
+  // TUT02/TUT03 — Hints d'onboarding déjà vus (ne se réaffichent jamais)
+  seenHints: [],        // ['idle_unlock', ...]
+  firstDeathSeen: false, // TUT03 — surbrillance PostMortem au 1er run
 
   // Héritage en attente (rempli à la mort, consommé à la renaissance)
   pendingInheritance: null, // { stat, activeSkill, passiveSkill, bonuses }
@@ -442,15 +453,16 @@ export const useGameStore = create((set, get) => ({
   equipActiveSkill: (skillData) =>
     set((state) => {
       if (state.hero.activeSkills.length >= 6) return state
+      // Refuse si le skill est déjà équipé (évite les doublons en slot)
+      if (state.hero.activeSkills.some((s) => s.skillId === skillData.skillId)) return state
       return {
         hero: {
           ...state.hero,
           activeSkills: [...state.hero.activeSkills, { ...skillData, currentCooldown: 0 }],
           inventory: {
             ...state.hero.inventory,
-            manaStones: state.hero.inventory.manaStones.filter(
-              (s) => s.skillId !== skillData.skillId
-            ),
+            // S03 — ne retire QU'UNE copie (removeOneManaStone), pas toutes
+            manaStones: removeOneManaStone(state.hero.inventory.manaStones, skillData.skillId),
           },
         },
       }
@@ -459,15 +471,15 @@ export const useGameStore = create((set, get) => ({
   equipPassiveSkill: (skillData) =>
     set((state) => {
       if (state.hero.passiveSkills.length >= 4) return state
+      if (state.hero.passiveSkills.some((s) => s.skillId === skillData.skillId)) return state
       return {
         hero: {
           ...state.hero,
           passiveSkills: [...state.hero.passiveSkills, skillData],
           inventory: {
             ...state.hero.inventory,
-            manaStones: state.hero.inventory.manaStones.filter(
-              (s) => s.skillId !== skillData.skillId
-            ),
+            // S03 — ne retire QU'UNE copie
+            manaStones: removeOneManaStone(state.hero.inventory.manaStones, skillData.skillId),
           },
         },
       }
@@ -623,14 +635,29 @@ export const useGameStore = create((set, get) => ({
   recordKill: (monsterId) =>
     set((state) => {
       const current = state.world.monsterKillCounts[monsterId] || 0
+      const newCount = current + 1
+
+      // TUT02 — Hint idle unlock : 1ère fois qu'un mob atteint 5 kills (seuil idle)
+      let newSeenHints = state.meta.seenHints
+      if (newCount >= 5 && !state.meta.seenHints.includes('idle_unlock')) {
+        const monsterName = MONSTERS[monsterId]?.name ?? monsterId
+        useToastStore.getState().addToast(
+          `Idle combat unlocked for ${monsterName}! Toggle it from the zone view.`,
+          'info',
+          4000,
+        )
+        newSeenHints = [...state.meta.seenHints, 'idle_unlock']
+      }
+
       return {
         world: {
           ...state.world,
           monsterKillCounts: {
             ...state.world.monsterKillCounts,
-            [monsterId]: current + 1,
+            [monsterId]: newCount,
           },
         },
+        meta: { ...state.meta, seenHints: newSeenHints },
       }
     }),
 
@@ -678,7 +705,9 @@ export const useGameStore = create((set, get) => ({
   endCombat: (result) =>
     set((state) => {
       // Enregistrer dans le battleLog pour les conditions d'éveil
-      const entry = { type: result, day: state.world.dayCount, turn: state.world.tickCount }
+      // DV04 — hpPercent à la fin du combat (pour Voltaris : victoires sous 30% HP)
+      const hpPercent = state.hero.stats.hp / state.hero.stats.maxHp
+      const entry = { type: result, day: state.world.dayCount, turn: state.world.tickCount, hpPercent }
       const newBattleLog = [...state.hero.battleLog, entry].slice(-100)
 
       return {
@@ -738,11 +767,13 @@ export const useGameStore = create((set, get) => ({
       }
     }),
 
+  // DV07 — Refuser la divinité = run solo (flag pour le bonus T11 à la transmigration)
   refuseDeity: () =>
-    set({
+    set((state) => ({
       pendingDivineCall: null,
       currentScreen: 'world_map',
-    }),
+      hero: { ...state.hero, soloRun: true },
+    })),
 
   // ── Mort & transmigration ─────────────────────────────────────────────────
   heroDeath: (cause = 'Unknown enemy') =>
@@ -770,6 +801,10 @@ export const useGameStore = create((set, get) => ({
         currentScreen: 'post_mortem',
       }
     }),
+
+  // TUT03 — Marque le hint de transmigration comme vu (1ère mort)
+  markFirstDeathSeen: () =>
+    set((state) => ({ meta: { ...state.meta, firstDeathSeen: true } })),
 
   // Confirmer l'héritage et passer à la boutique des dieux
   confirmInheritance: (chosenStat, chosenActiveSkill, chosenPassiveSkill) =>
@@ -814,8 +849,8 @@ export const useGameStore = create((set, get) => ({
         }
       }
 
-      // T11 — Compensation solo : run précédent sans divinité
-      const wasSolo = !state.hero.deity
+      // T11 + DV07 — Compensation solo : run précédent sans divinité OU refus explicite
+      const wasSolo = !state.hero.deity || state.hero.soloRun === true
       const soloLevelBonus = wasSolo ? 1 : 0
 
       // T09 — Skill level ups boutique (au-dessus du niveau actuel)
@@ -941,6 +976,8 @@ export const useGameStore = create((set, get) => ({
       const maxHp = state.hero.stats.maxHp
       if (currentHp / maxHp < 0.2) {
         const entry = { text: `[Idle] HP trop bas — combat suspendu.`, type: 'info', timestamp: Date.now() }
+        // I04 — toast warning (événement rare, non-spammy)
+        useToastStore.getState().addToast('Idle paused — HP too low. Rest before continuing.', 'warning')
         return {
           world: {
             ...state.world,
@@ -1003,6 +1040,15 @@ export const useGameStore = create((set, get) => ({
         text: `[Idle] Slew ${monster.name} · +${gold}g · +${xp}xp${levelUpStr}`,
         type: levelsGained > 0 ? 'drop' : 'kill',
         timestamp: Date.now(),
+      }
+
+      // I04 — toast sur level-up en idle (événement marquant, non-spammy)
+      if (levelsGained > 0) {
+        useToastStore.getState().addToast(`Level up! You reached level ${level} (idle).`, 'levelup')
+      }
+      // I04 — toast si idle s'arrête pour HP bas après ce combat
+      if (isLowHp) {
+        useToastStore.getState().addToast('Idle stopped — HP critically low.', 'warning')
       }
 
       return {
@@ -1085,6 +1131,20 @@ export const useGameStore = create((set, get) => ({
       }
       if (quest.reward.gold) newGold += quest.reward.gold
       const repTokens = quest.reward.reputationTokens ?? 1
+
+      // Q07 — Toast récompense de quête
+      const rewardParts = []
+      if (quest.reward.gold) rewardParts.push(`+${quest.reward.gold}g`)
+      if (repTokens) rewardParts.push(`+${repTokens} 🪙`)
+      if (quest.reward.skill) {
+        const skillName = SKILLS[quest.reward.skill.skillId]?.name ?? quest.reward.skill.skillId
+        rewardParts.push(skillName)
+      }
+      useToastStore.getState().addToast(
+        `Quest complete: ${quest.name} — ${rewardParts.join(' · ')}`,
+        'quest',
+      )
+
       return {
         world: {
           ...state.world,

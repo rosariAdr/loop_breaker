@@ -17,6 +17,37 @@ _(aucune dépendance externe bloquante)_
 
 ---
 
+## 🆕 À trier (version & priorité à définir plus tard)
+
+> Ajoutés le 2026-05-04 — idées du dev, non encore groomées ni assignées à une version.
+
+- [ ] **Z07 — Stock d'équipement différencié village vs ville** (S/M) - le marchand vend un stock dépendant de la taille de la localité :
+  - **Village** : équipements **communs** + **1 rare**
+  - **Ville** : que des **rares** + **1 epic**
+  - Implémentation : pondérer `equipStock` du MerchantPanel selon `location.type` (city/village) ; logique de tirage dans `SafeZone.jsx` ou helper data dans `equipment.js`
+  - AC : un village et une ville affichent des stocks distincts cohérents avec ces règles + test du helper de génération
+
+- [ ] **Q09 — Récompenses de quête variées (gold / équipement / ressources)** (S) - étendre le schéma `quest.reward` pour supporter, en plus du skill/gold/tokens actuels :
+  - `equipment: { templateId, rarity }` → ajouté à l'inventaire à la complétion
+  - `resources: { resourceId: qty }` → ajouté aux ressources
+  - Adapter `completeQuest` (gameStore) + l'affichage des RewardBadge dans QuestBoard + le toast Q07
+  - Note : le dev confectionnera ces quêtes-là plus tard (le ticket = juste le support technique)
+  - AC : une quête de test avec récompense équipement + ressources délivre bien les deux ; tests fonctionnels
+
+- [ ] **HOME01 — Système de "chez soi" (foyer)** (L) - établir un foyer où le héros peut s'installer ; hub d'artisanat et de stockage. Sous-features à découper plus tard :
+  - **Coffre de stockage** (illimité pour l'instant) : déplacer items/équipement/ressources entre inventaire et coffre ; persiste entre les runs ? (à décider — probablement non, lié au run actuel, sauf décision méta)
+  - **Atelier de potions** : crafter des consommables sur place (lien avec CRF02 alchimie)
+  - **Forge personnelle** : forger des armes sur place (lien avec CRF03 forge)
+  - Question design : le foyer est-il une **localité spéciale sur la carte** (nouveau type de node) ou un **écran accessible depuis n'importe où** ? Persiste-t-il entre transmigrations (méta) ou est-il par-univers ?
+  - AC : à définir au grooming — gros chantier, sans doute à éclater en HOME01a/b/c
+
+- [ ] **PROC07 — Debug panel : boutons "give stats"** (XS) - ajouter au `DebugPanel.jsx` des commandes pour booster les stats du héros directement :
+  - +5 STR, +5 AGI, +5 INT, +5 Chance, +5 DEF (ou un set complet "God mode stats")
+  - Éventuellement +50 maxHP / +50 maxMana
+  - AC : boutons présents en mode DEV, modifient bien `hero.stats`, tests sur 1-2 commandes
+
+---
+
 ## Someday
 
 ### v0.1 — P1 : Stabilité & fondations (à faire en premier)
@@ -43,23 +74,19 @@ _(aucune dépendance externe bloquante)_
 > ✅ CAL01 → fait dans Batch A+B (2026-05-04, voir Done)
 
 #### Quêtes & UI
-> ✅ Q02, Q06, UX01, UX02, UX03, UX05, U03 → fait dans Batch A+B+C+D (voir Done)
-- [ ] **Q07 — Animation récompense quête** (S) - flash mana stone + toast (dépend U01)
+> ✅ Q02, Q06, Q07, UX01, UX02, UX03, UX05, U03 → fait dans Batch A→L (voir Done)
 
 #### Marchands & bâtiments
-- [ ] **Z02 — Marchand : plus de consommables** (S) - compléter : antidote_basic, stamina_ration, elixir_minor, mana_crystal
-- [ ] **Z03 — Forge : recettes lisibles** (S) - griser ingrédients manquants avec quantité disponible/requise
+> ✅ Z02, Z03 → fait dans Batch G (2026-05-04, voir Done)
 
 #### Donjons
 > ✅ D02, D04, D05, D07 → fait dans Batch E+F (2026-05-04, voir Done)
 
 #### Combat
-> ✅ B11 → fait dans Batch A+B (2026-05-04, voir Done)
-- [ ] **PROC06 — Debug/cheat panel dev** (S) - accessible via `Ctrl+Shift+D` en `import.meta.env.DEV` uniquement ; commandes : give_item, add_tokens, force_deity, skip_day, set_run_count, kill_malachar
+> ✅ B11 → fait dans Batch A+B ; PROC06 → fait dans Batch G
 
 #### Process
-- [ ] **PROC04 — Balance spreadsheet combat** (S) - Google Sheets ou CSV versionné : stats monstres × zone_mult × run_count → HP/ATK résultants ; mis à jour à chaque changement de scaling
-- [ ] **PROC05 — Playtest log structuré** (XS) - fichier `PLAYTESTS.md` : date, durée, run N, jusqu'où, observations, bugs notés, ressenti général
+> ✅ PROC04, PROC05 → fait dans Batch G (2026-05-04, voir Done)
 
 #### Win condition & méta
 > ✅ T04+W02, M02, W03 → fait dans Batch E+F (2026-05-04, voir Done)
@@ -72,8 +99,7 @@ _(aucune dépendance externe bloquante)_
 
 #### Tutorial & onboarding
 - [ ] **TUT01 — Premier run guidé : tooltips contextuels** (L) - système de tooltips progressifs via flags `meta.seenHints[]` : J1→expliquer idle, J2→donjons, 1ère mort→transmigration, 1er dieu→divine call ; dismissable, jamais réaffichés
-- [ ] **TUT02 — Hint idle unlock** (XS) - 1ère fois que le kill count atteint 10 sur un mob → toast "Idle combat unlocked for this enemy type!"
-- [ ] **TUT03 — Hint transmigration (1ère mort)** (S) - surbrillance PostMortem au run 1 avec explications sur les 3 choix d'héritage ; flag `meta.firstDeathSeen`
+> ✅ TUT02, TUT03 → fait dans Batch I (2026-05-04, voir Done)
 
 #### Boss unique mechanics
 - [ ] **BSS01 — Crypt Keeper : mécanique invocation** (M) - à 50% HP, invoque 2 Skeleton Adds (HP faible, interrompent les skills si non tués en 2 tours) ; pas de loot sur les Adds
@@ -120,10 +146,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **CRF06 — Antidote craftable chez l'alchimiste** (M) - recette `antidote_minor` dans ALCHEMY_RECIPES, supprime 1 passif négatif permanent — dépend Z04
 
 #### Skills
-- [ ] **S02 — Aperçu skills ennemis** (M) - flou < 5 kills, révélé après ; dans ZoneView au hover
-- [ ] **S03 — Stack mana stones doublons** (S) - `Map<skillId, {count, stone}>` au lieu d'array
-- [ ] **S06 — Contenant cosmétique selon univers** (S) - champ `container: 'mana_stone'|'manuscript'|'chip'` ; affiché dans InventoryCard ; mécanique identique
-- [ ] **T07b — UI sélection skill bonus (pool = skills découverts)** (M) - remplacer `power_strike` hardcodé : sélection dans GodsShop parmi skills des runs précédents ; fallback run 1 = 3 skills Zone 1
+> ✅ S02, S03, S06, T07b → fait dans Batch J (2026-05-04, voir Done)
 
 #### Quêtes
 - [ ] **NPC02 — 10 nouvelles quêtes contenu** (M) - couvrir rangs Cuivre→Argent : élites, donjons, livraison, exploration
@@ -141,9 +164,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **D06 — Donjon spawn la nuit suivante** (M) - cycle sommeil déclenche respawn + position aléatoire + marker "?" — dépend CAL01 + MAP01
 
 #### Divinités
-- [ ] **DV03 — Fidélité inter-run** (M) - au retour dans le même univers, dieu précédent se souvient → pré-sélection dans DivineCall avec message de reconnaissance
-- [ ] **DV04 — Voltaris implémenté** (M) - Foudre+Action, Chaotique ; awakening : 5 combats <30% HP ; blessing +20% AGI ; "Chain Lightning" + "Overclock" ; relations : Ignareth+6, Sylvara−4
-- [ ] **DV07 — Refus de divinité = run solo** (M) - bouton "Refuse" dans DivineCall + flag `hero.soloRun: true` + bonus T11 à la transmigration
+> ✅ DV03, DV04, DV07 → fait dans Batch L (2026-05-04, voir Done)
 
 #### Transmigration & boutique
 - [ ] **T02 — Transmigration animée** (M) - écran de transition animé entre GodsShop et renaissance
@@ -151,10 +172,8 @@ _(aucune dépendance externe bloquante)_
 - [ ] **T12 — Skill suprême Demon Lord ("Soul Rend")** (M) - héritable sans condition ; flag `skill.alwaysInheritable: true`
 
 #### Idle & UI
-- [ ] **I04 — Toast loot idle** (S) - dépend U01
+> ✅ U01, I04, U04 → fait dans Batch H+I (2026-05-04, voir Done)
 - [ ] **I08 — Choix joueur en idle** (M) - config avant lancer idle : zone, monster type, craft en parallèle, seuil HP personnalisable
-- [ ] **U01 — Système de toasts global** (M) - `toastStore.js` Zustand : `{ toasts, addToast(msg, type, duration), removeToast(id) }` ; types : loot/levelup/quest/divine/gluttony/warning/error ; `<ToastContainer>` dans App.jsx ; débloque Q07, I04
-- [ ] **U04 — Transitions écrans** (S) - fade 150ms entre tous les `currentScreen` changes
 - [ ] **U06 — Décor WorldMap Canvas 2D** (M) - arbres/marais/ruines dessinés programmatiquement (positions seedées) — dépend MAP01
 - [ ] **U08 — Vue Carte = écran principal** (M) - WorldMap Canvas 2D comme home, zones cliquables — dépend MAP01
 - [ ] **U09 — Combat à la Pokémon (1 à 3 ennemis)** (M) - hero bottom-left + ennemis top-right 1-3 cards, barres HP/mana, ciblage — dépend B03
@@ -218,6 +237,46 @@ _(aucune dépendance externe bloquante)_
 ---
 
 ## Done
+
+### v0.1/v1 — Batch G+H+I+J+L : Cleanup + Toasts + Tutorial + Skills + Divinités (2026-05-04, uncommitted)
+
+**18 tickets, +143 tests (461 → 604), branche `feat/batch_AB`**
+
+#### Batch G — Fermeture v0.1
+- [x] ~~**Z02** — Marchand : 4 consommables~~ — `stamina_ration`, `elixir_minor`, `mana_crystal`, `antidote_basic` + effet `restore_both` (HP+Mana) géré dans Combat.
+- [x] ~~**Z03** — Forge recettes lisibles~~ — ingrédients manquants grisés (opacity) + message de blocage explicite + tests `canCraft` (nouveau `equipment.test.js`).
+- [x] ~~**PROC04** — Balance CSV enrichi~~ — second CSV `balance/drops_summary.csv` (gold/exp/skill drop/resource drops par monstre).
+- [x] ~~**PROC05** — Playtest log~~ — `PLAYTESTS.md` template + méthodo + grille d'observation.
+- [x] ~~**PROC06** — Debug panel dev~~ — `DebugPanel.jsx` (Ctrl+Shift+D, DEV only via `import.meta.env.DEV`), 17 commandes cheat. 9 tests.
+
+#### Batch H — Toasts (U01 fondation)
+- [x] ~~**U01** — Système de toasts global~~ — `toastStore.js` Zustand séparé (`addToast`/`removeToast`/`clearToasts`, 8 types, auto-dismiss). `ToastContainer.jsx` overlay bas-droit. 16 tests.
+- [x] ~~**Q07** — Toast récompense quête~~ — `completeQuest` pousse un toast `quest` avec gold/tokens/skill.
+- [x] ~~**I04** — Toast loot idle~~ — toasts `levelup` (level-up idle) + `warning` (HP bas) dans `processIdleTick`, non-spammy.
+
+#### Batch I — Transitions + Tutorial
+- [x] ~~**U04** — Transitions écrans~~ — `@keyframes screen-fade-in` 150ms + wrapper `key={currentScreen}` dans App.
+- [x] ~~**TUT02** — Hint idle unlock~~ — toast au 5e kill d'un mob + flag `meta.seenHints` (affiché une seule fois).
+- [x] ~~**TUT03** — Hint transmigration~~ — box explicatif + surbrillance dans PostMortem au 1er run (`meta.firstDeathSeen`), action `markFirstDeathSeen`.
+
+#### Batch J — Skills polish
+- [x] ~~**S02** — Aperçu skills ennemis~~ — `SkillDropPreview` dans ZoneView : skill droppable flouté (blur) tant que < 5 kills, révélé après. Nouveau `ZoneView.test.jsx`.
+- [x] ~~**S03** — Stack mana stones doublons~~ — `utils/manaStones.js` (`groupManaStones`/`removeOneManaStone`) + badge ×N dans Inventory. **Fix bug latent** : `equipActiveSkill`/`equipPassiveSkill` ne retiraient toutes les copies (filter) → maintenant une seule + refus de doublon en slot.
+- [x] ~~**S06** — Contenant cosmétique~~ — `data/containers.js` (`getSkillContainer` par univers : Mana Stones/Manuscripts/Data Chips/Fragments). Label dynamique dans Inventory.
+- [x] ~~**T07b** — UI sélection skill bonus~~ — `getBonusSkillPool(lastRunSummary)` (skills du run précédent ou fallback 3 Zone 1) + sélecteur dans GodsShop, remplace `power_strike` hardcodé.
+
+#### Batch L — Divinités v1
+- [x] ~~**DV04** — Voltaris~~ — 3e divinité (Foudre+Action, Chaotique). Awakening : 5 victoires sous 30% HP (`checkVoltarisAwakening` + `hpPercent` ajouté à `endCombat` battleLog). Blessing +20% AGI. Skills `chain_lightning` (120% INT, AoE) + `overclock` (+80% spd 2T). Relations Ignareth +6, Sylvara -4. 12 tests.
+- [x] ~~**DV03** — Fidélité inter-run~~ — bannière "X remembers you" dans DivineCall si `meta.divineBonds[universe] === deity.id`. Nouveau `DivineCall.test.jsx`.
+- [x] ~~**DV07** — Refus = run solo~~ — `refuseDeity` lève `hero.soloRun`, garantit le bonus T11 (+1 lvl skills) à la transmigration même si une divinité existait.
+
+#### Tests étendus
+- 604 tests total (+143 vs E+F), 23 fichiers (+9)
+- Nouveaux : `equipment.test.js`, `DebugPanel.test.jsx`, `toastStore.test.js`, `ToastContainer.test.jsx`, `manaStones.test.js`, `containers.test.js`, `ZoneView.test.jsx`, `GodsShop.test.jsx`, `DivineCall.test.jsx`
+
+#### Cleanup
+- Override `eslint.config.js` pour GodsShop/ZoneView (helpers co-exportés)
+- Fix bug equip-skill (retirait toutes les copies)
 
 ### v0.1 — Batch E+F : Donjons + Balance + Win Condition (2026-05-04, uncommitted)
 

@@ -34,6 +34,11 @@ describe('Smoke tests — montage de chaque écran', () => {
     expect(() => render(<App />)).not.toThrow()
   })
 
+  it('U04 — App wrappe le screen courant dans un conteneur anim-screen-fade', () => {
+    const { container } = render(<App />)
+    expect(container.querySelector('.anim-screen-fade')).not.toBeNull()
+  })
+
   it('HeroSheet monte', () => {
     render(<HeroSheet />)
     expect(screen.getByText(useGameStore.getState().hero.name)).toBeInTheDocument()
@@ -588,6 +593,41 @@ describe('PostMortem — actions', () => {
   it("affiche la cause de mort (T01)", () => {
     render(<PostMortem />)
     expect(screen.getByText('Stone Golem')).toBeInTheDocument()
+  })
+
+  // TUT03 — Hint première transmigration
+  it("TUT03 — affiche le hint si firstDeathSeen=false et totalDeaths<=1", () => {
+    useGameStore.setState(state => ({
+      meta: { ...state.meta, firstDeathSeen: false, totalDeaths: 1 },
+    }))
+    render(<PostMortem />)
+    expect(screen.getByTestId('first-death-hint')).toBeInTheDocument()
+    expect(screen.getByText(/First Transmigration/)).toBeInTheDocument()
+  })
+
+  it("TUT03 — PAS de hint si déjà vu (firstDeathSeen=true)", () => {
+    useGameStore.setState(state => ({
+      meta: { ...state.meta, firstDeathSeen: true, totalDeaths: 1 },
+    }))
+    render(<PostMortem />)
+    expect(screen.queryByTestId('first-death-hint')).toBeNull()
+  })
+
+  it("TUT03 — PAS de hint après plusieurs morts (totalDeaths>1)", () => {
+    useGameStore.setState(state => ({
+      meta: { ...state.meta, firstDeathSeen: false, totalDeaths: 5 },
+    }))
+    render(<PostMortem />)
+    expect(screen.queryByTestId('first-death-hint')).toBeNull()
+  })
+
+  it("TUT03 — clic sur 'Got it' marque le hint comme vu", () => {
+    useGameStore.setState(state => ({
+      meta: { ...state.meta, firstDeathSeen: false, totalDeaths: 1 },
+    }))
+    render(<PostMortem />)
+    fireEvent.click(screen.getByText('Got it'))
+    expect(useGameStore.getState().meta.firstDeathSeen).toBe(true)
   })
 
   it('affiche le bouton "↺ New Run"', () => {

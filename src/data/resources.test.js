@@ -42,3 +42,42 @@ describe('D04 — Loot exclusif donjon (category dungeon_seal)', () => {
     }
   })
 })
+
+// ── Z02 — Nouveaux consommables marchand ─────────────────────────────────────
+describe('Z02 — Consommables additionnels', () => {
+  const NEW_CONSUMABLES = ['stamina_ration', 'elixir_minor', 'mana_crystal', 'antidote_basic']
+
+  it("les 4 nouveaux consommables existent", () => {
+    for (const id of NEW_CONSUMABLES) {
+      expect(RESOURCES[id], `RESOURCES.${id} missing`).toBeDefined()
+    }
+  })
+
+  it("chacun a buyPrice, effect, isConsumable=true", () => {
+    for (const id of NEW_CONSUMABLES) {
+      const res = RESOURCES[id]
+      expect(res.buyPrice).toBeGreaterThan(0)
+      expect(res.effect).toBeDefined()
+      expect(res.isConsumable).toBe(true)
+    }
+  })
+
+  it("stamina_ration et elixir_minor utilisent restore_both", () => {
+    expect(RESOURCES.stamina_ration.effect.type).toBe('restore_both')
+    expect(RESOURCES.elixir_minor.effect.type).toBe('restore_both')
+  })
+
+  it("mana_crystal restaure 100% mana", () => {
+    expect(RESOURCES.mana_crystal.effect.type).toBe('mana_restore_percent')
+    expect(RESOURCES.mana_crystal.effect.value).toBe(1.0)
+  })
+
+  it("antidote_basic a un flag cureDebuffs (préparation CRF01)", () => {
+    expect(RESOURCES.antidote_basic.effect.cureDebuffs).toBe(true)
+  })
+
+  it("elixir_minor restaure plus que stamina_ration (progression prix)", () => {
+    expect(RESOURCES.elixir_minor.effect.value).toBeGreaterThan(RESOURCES.stamina_ration.effect.value)
+    expect(RESOURCES.elixir_minor.buyPrice).toBeGreaterThan(RESOURCES.stamina_ration.buyPrice)
+  })
+})

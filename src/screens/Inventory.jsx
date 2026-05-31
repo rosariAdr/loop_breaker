@@ -4,6 +4,11 @@ import { SKILLS } from '../data/skills'
 import { RESOURCES, RARITY_COLORS } from '../data/resources'
 import { RARITY_CONFIG } from '../data/equipment'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { groupManaStones } from '../utils/manaStones'
+import { getSkillContainer } from '../data/containers'
+
+// S06 — univers courant (hardcodé medieval pour le POC ; X08 le rendra dynamique)
+const CURRENT_UNIVERSE = 'medieval_fantasy'
 
 // UX03 — Raretés qui déclenchent une confirmation avant Sell
 const PROTECTED_RARITIES = new Set(['epic', 'legendary', 'mythic', 'ex', 'exx'])
@@ -53,7 +58,8 @@ export default function Inventory() {
                 borderBottom: activeTab === tab ? '2px solid #d4af70' : '2px solid transparent',
               }}
             >
-              {tab === 'skills' && `✨ Mana Stones (${hero.inventory.manaStones.length})`}
+              {/* S06 — label du contenant selon l'univers */}
+              {tab === 'skills' && `${getSkillContainer(CURRENT_UNIVERSE).icon} ${getSkillContainer(CURRENT_UNIVERSE).label} (${hero.inventory.manaStones.length})`}
               {tab === 'equipment' && `⚔ Equipment (${hero.inventory.equipment.length})`}
               {tab === 'consumables' && `🧪 Consumables`}
               {tab === 'resources' && `📦 Resources`}
@@ -117,12 +123,14 @@ function SkillsTab({ manaStones, hero, selected, setSelected, equipActive, equip
             ← Click a mana stone to see equip options
           </p>
         )}
-        {manaStones.map((stone, i) => {
-          const t = SKILLS[stone.skillId]
+        {/* S03 — Stack des doublons : on affiche une entrée par groupe (skillId+level) avec ×N */}
+        {groupManaStones(manaStones).map((group) => {
+          const t = SKILLS[group.skillId]
           if (!t) return null
+          const i = group.firstIndex
           return (
             <button
-              key={`${stone.skillId}-${i}`}
+              key={`${group.skillId}-${group.level}`}
               onClick={() => setSelected(i === selected ? null : i)}
               className="p-3 rounded text-left transition-all"
               style={{
@@ -135,6 +143,12 @@ function SkillsTab({ manaStones, hero, selected, setSelected, equipActive, equip
                   {t.container === 'divine' ? '✦' : t.container === 'supreme' ? '👑' : '💎'}
                 </span>
                 <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.85rem' }}>{t.name}</p>
+                {/* S03 — badge ×N si plusieurs copies */}
+                {group.count > 1 && (
+                  <span style={{ color: '#80c040', fontSize: '0.72rem', fontFamily: 'Cinzel, serif' }}>
+                    ×{group.count}
+                  </span>
+                )}
                 <span
                   className="ml-auto px-1.5 py-0.5 rounded text-xs"
                   style={{
@@ -144,7 +158,7 @@ function SkillsTab({ manaStones, hero, selected, setSelected, equipActive, equip
                 >
                   {t.type}
                 </span>
-                <span style={{ color: '#6a5a4a', fontSize: '0.75rem' }}>Lv {stone.level}</span>
+                <span style={{ color: '#6a5a4a', fontSize: '0.75rem' }}>Lv {group.level}</span>
               </div>
               <p style={{ color: '#6a5a4a', fontSize: '0.73rem', marginTop: '0.2rem' }}>
                 {t.description}

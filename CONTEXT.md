@@ -174,7 +174,7 @@ racine/
 | Boss | 3 | Crypt Keeper, Lord of the Forsaken, Malachar the Undying |
 | Skills | ~30 | dont 4 divins + 1 suprême (soul_rend) |
 | Quêtes | 8 | 3 sir_aldric, 3 ironhaven_captain, 2 greywatch_elder |
-| Divinités actives | 2 | Ignareth (war/fire, +15% str), Sylvara (nature/calm, regen) |
+| Divinités actives | 3 | Ignareth (war/fire, +15% str), Sylvara (nature/calm, regen), Voltaris (lightning/action, +20% AGI) |
 | Divinités designées | 3 | + Voltaris (foudre/action, +20% AGI), Hepharion (forge/artisanat), Aqualis (eau/continuité) |
 | Articles boutique | 6 | rank_restore(40), bonus_skill(80), bonus_stat(80), skill_levelup(20), starter_kit(10), oracle(15) |
 | Recettes craft | ~10 | weapons + armor à la forge |
@@ -183,23 +183,32 @@ racine/
 
 ---
 
-## 6. Tests (497 total, 14 fichiers, ~4.5s)
+## 6. Tests (604 total, 23 fichiers, ~6s)
 
 ```
-src/engine/combat.test.js                #  60 tests : damage, drops, scaling, getScaledSkillCost, D04 loot boss garanti
-src/store/gameStore.test.js              # 222 tests : actions, migration, S04/DV08/T06-T11/DV10/TECH02/TECH03/X02/CAL01/UX05/abandonQuest/M02/D05/D07/T04+W02/W03
-src/scenarios.test.js                    #  32 tests : parties simulées bout en bout + BAL01 économie tokens
-src/data/quests.test.js                  #  14 tests : QUESTS + QUEST_NPCS
-src/data/deities.test.js                 #  22 tests : conditions éveil, applyDeityBlessing, DV06
-src/data/resources.test.js               #   5 tests : D04 dungeon_seal category sur seals/heart
-src/screens/Combat.test.jsx              #  18 tests : rendu, animations, B11 boss flee, B13 hero-attack
-src/screens/QuestBoard.test.jsx          #  18 tests : Q02 progress bars, Q06 rank tiers
-src/screens/WorldMapCanvas.test.jsx      #  18 tests : MAP01 helpers + D02 dungeon marker
-src/screens/screens.test.jsx             #  61 tests : smoke + nav + layouts + UX02/UX05 + W03 banner
-src/components/ErrorBoundary.test.jsx    #   8 tests : TECH01 fallback UI
-src/components/Tooltip.test.jsx          #   9 tests : UX01 hover/focus/click popover
-src/components/ConfirmDialog.test.jsx    #   8 tests : UX03 destructive/warn variants
-src/components/QTEBar.test.jsx           #  19 tests : MAP02 helpers + smoke
+src/engine/combat.test.js                # damage, drops, scaling, getScaledSkillCost, D04 loot, Voltaris awakening
+src/store/gameStore.test.js              # actions, migration, économie, TUT02/TUT03, S03 stack, DV07 solo, T04/W02/W03, I04/Q07 toasts
+src/scenarios.test.js                    # parties simulées bout en bout + BAL01 économie tokens
+src/data/quests.test.js                  # QUESTS + QUEST_NPCS
+src/data/deities.test.js                 # conditions éveil (Ignareth/Sylvara/Voltaris), applyDeityBlessing, DV06, relations
+src/data/resources.test.js               # D04 dungeon_seal + Z02 consommables
+src/data/equipment.test.js               # Z03 canCraft + createEquipmentInstance
+src/data/containers.test.js              # S06 getSkillContainer par univers
+src/screens/Combat.test.jsx              # rendu, animations, B11 boss flee, B13 hero-attack
+src/screens/QuestBoard.test.jsx          # Q02 progress bars, Q06 rank tiers
+src/screens/WorldMapCanvas.test.jsx      # MAP01 helpers + D02 dungeon marker
+src/screens/ZoneView.test.jsx            # S02 SkillDropPreview (flou < 5 kills)
+src/screens/GodsShop.test.jsx            # T07b getBonusSkillPool + sélecteur
+src/screens/DivineCall.test.jsx          # DV03 fidélité inter-run, DV07 refus
+src/screens/screens.test.jsx             # smoke + nav + layouts + UX02/UX05 + W03 + TUT03 + U04 fade
+src/components/ErrorBoundary.test.jsx    # TECH01 fallback UI
+src/components/Tooltip.test.jsx          # UX01 hover/focus/click popover
+src/components/ConfirmDialog.test.jsx    # UX03 destructive/warn variants
+src/components/QTEBar.test.jsx           # MAP02 helpers + smoke
+src/components/DebugPanel.test.jsx       # PROC06 DEV panel + commandes cheat
+src/components/ToastContainer.test.jsx   # U01 rendu toasts
+src/store/toastStore.test.js             # U01 store (addToast/removeToast/auto-dismiss)
+src/utils/manaStones.test.js             # S03 groupManaStones + removeOneManaStone
 ```
 
 **Politique de tests** :

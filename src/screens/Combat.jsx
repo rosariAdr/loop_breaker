@@ -396,6 +396,17 @@ export default function Combat() {
       setHeroStats(prev => ({ ...prev, mana: Math.min(prev.maxMana, prev.mana + manaAmt) }))
       pushFloatingNumber('hero', manaAmt, 'mana')  // B07
       addLog(`Used ${res.name} — restored ${manaAmt} Mana.`, 'mana')
+    } else if (res.effect.type === 'restore_both') {
+      // Z02 — restaure HP + Mana en une fois
+      const healAmt = Math.round(heroStats.maxHp * res.effect.value)
+      const manaAmt = Math.round(heroStats.maxMana * res.effect.value)
+      setHeroStats(prev => ({
+        ...prev,
+        hp: Math.min(prev.maxHp, prev.hp + healAmt),
+        mana: Math.min(prev.maxMana, prev.mana + manaAmt),
+      }))
+      pushFloatingNumber('hero', healAmt, 'heal')  // B07
+      addLog(`Used ${res.name} — restored ${healAmt} HP & ${manaAmt} Mana.`, 'heal')
     }
     useGameStore.setState(state => ({
       hero: {

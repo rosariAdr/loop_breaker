@@ -76,15 +76,54 @@ export const DEITIES = {
     acceptMessage: "Then grow, child. Roots deep, branches wide. Let nothing uproot you.",
     refuseMessage: "The forest does not mourn those who leave it. Return if you change your mind.",
   },
+
+  // ── DV04 — Voltaris : Foudre + Action, Chaotique ─────────────────────────
+  voltaris: {
+    id: 'voltaris',
+    name: 'Voltaris',
+    title: 'The Storm Untamed',
+    domain: ['lightning', 'action', 'speed'],
+    alignment: 'chaotic',
+    universe: 'medieval_fantasy',
+    description: 'A reckless deity of thunder and momentum. He favors those who fight at the edge of death, never slowing, never yielding.',
+    color: '#60a0ff',
+    sigil: '⚡',
+
+    // Condition d'éveil — CACHÉE : remporter 5 combats en étant sous 30% HP
+    awakeningCondition: {
+      type: 'wins_below_hp',
+      wins: 5,
+      hpThreshold: 0.30,
+      description: 'Win 5 battles while below 30% HP',
+    },
+
+    // Bénédiction passive : +20% Agility
+    blessing: {
+      id: 'voltaris_blessing',
+      name: "Voltaris's Blessing",
+      description: 'The storm courses through you. Permanently increases Agility by 20%.',
+      effect: { stat: 'agility', multiplier: 0.20 },
+    },
+
+    // Deux skills divins au choix
+    divineSkillOptions: ['chain_lightning', 'overclock'],
+
+    // Dialogues
+    callMessage: "Ha! You dance on the knife's edge and laugh at the fall. Most mortals flee when their blood runs low — you charge harder. I am Voltaris, the Storm Untamed. Ride the lightning with me!",
+    acceptMessage: "YES! Faster, mortal! Let them never catch their breath — strike like thunder, vanish like the bolt!",
+    refuseMessage: "Bah! Your loss. The storm waits for no one... but it remembers a coward.",
+  },
 }
 
 // Divinités disponibles dans le POC
-export const ACTIVE_DEITIES = ['ignareth', 'sylvara']
+export const ACTIVE_DEITIES = ['ignareth', 'sylvara', 'voltaris']
 
 // Relations inter-divines : score symétrique -10 à +10
 // Paliers : Ennemi (-10/-6) | Rival (-5/-1) | Neutre (0) | Allié (1/5) | Allié fort (6/10)
 export const DIVINE_RELATIONS = {
-  ignareth_sylvara: -3, // Rival — le feu et la nature s'opposent, mais se respectent
+  ignareth_sylvara:  -3, // Rival — le feu et la nature s'opposent, mais se respectent
+  ignareth_voltaris:  6, // Allié fort — deux chaotiques belliqueux, ils s'admirent
+  sylvara_voltaris:  -4, // Rival — le calme contre la tempête
 }
 
 // Utilitaire : récupérer le score de relation entre deux dieux
@@ -165,6 +204,30 @@ export function checkSylvaraAwakening(worldState) {
     console.debug('[Sylvara]', {
       lastEightHp: lastEight.map(e => Math.round(e.hpPercent * 100) + '%'),
       threshold: '85%',
+      status: ready ? 'AWAKENING' : 'building up',
+    })
+  }
+  return ready
+}
+
+// DV04 — Vérifier la condition d'éveil de Voltaris (5 victoires sous 30% HP)
+export function checkVoltarisAwakening(worldState) {
+  const { battleLog } = worldState
+  if (!Array.isArray(battleLog)) {
+    if (isDebug()) console.debug('[Voltaris]', { lowHpWins: 0, needed: 5, status: 'building up' })
+    return false
+  }
+
+  // Compter les victoires terminées sous 30% HP
+  const lowHpWins = battleLog.filter(
+    (entry) => entry.type === 'victory' && (entry.hpPercent ?? 1) < 0.30
+  ).length
+  const ready = lowHpWins >= 5
+  if (isDebug()) {
+    console.debug('[Voltaris]', {
+      lowHpWins,
+      needed: 5,
+      threshold: '30% HP',
       status: ready ? 'AWAKENING' : 'building up',
     })
   }

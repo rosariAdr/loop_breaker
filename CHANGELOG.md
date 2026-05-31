@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Batch G — Fermeture v0.1)
+- **Z02** — 4 consommables marchand (`stamina_ration`, `elixir_minor`, `mana_crystal`, `antidote_basic`) + effet `restore_both` (HP+Mana)
+- **Z03** — Forge : ingrédients manquants grisés + message de blocage explicite + tests `canCraft`
+- **PROC04** — `balance/drops_summary.csv` (gold/exp/skill drop/resource drops par monstre)
+- **PROC05** — `PLAYTESTS.md` template structuré
+- **PROC06** — `DebugPanel.jsx` (Ctrl+Shift+D, DEV only, 17 commandes cheat)
+
+### Added (Batch H — Toasts)
+- **U01** — `toastStore.js` Zustand + `ToastContainer.jsx` (8 types, auto-dismiss, overlay bas-droit)
+- **Q07** — Toast récompense de quête à `completeQuest`
+- **I04** — Toasts `levelup` + `warning` sur événements idle marquants
+
+### Added (Batch I — Transitions + Tutorial)
+- **U04** — `@keyframes screen-fade-in` 150ms + wrapper `key={currentScreen}`
+- **TUT02** — Hint idle unlock (toast au 5e kill, flag `meta.seenHints`)
+- **TUT03** — Hint première transmigration dans PostMortem (`meta.firstDeathSeen` + action `markFirstDeathSeen`)
+
+### Added (Batch J — Skills polish)
+- **S02** — `SkillDropPreview` : skill droppable flouté tant que < 5 kills (ZoneView)
+- **S03** — `utils/manaStones.js` (`groupManaStones`/`removeOneManaStone`) + badge ×N
+- **S06** — `data/containers.js` (`getSkillContainer` cosmétique par univers)
+- **T07b** — `getBonusSkillPool` + sélecteur skill bonus dans GodsShop
+
+### Added (Batch L — Divinités v1)
+- **DV04** — Voltaris (3e divinité, Foudre+Action) : `checkVoltarisAwakening`, blessing +20% AGI, skills `chain_lightning` + `overclock`, relations Ignareth +6 / Sylvara -4
+- **DV03** — Fidélité inter-run : bannière de reconnaissance dans DivineCall
+- **DV07** — Refus = run solo (`hero.soloRun` → bonus T11 garanti)
+
+### Fixed (Batch J)
+- Bug latent equip-skill : `equipActiveSkill`/`equipPassiveSkill` retiraient TOUTES les copies d'un skill (filter par skillId) → corrigé via `removeOneManaStone` (une seule) + refus de doublon en slot
+
+### Changed (Batch G→L)
+- `endCombat` battleLog enrichi avec `hpPercent` (pour Voltaris)
+- `INITIAL_HERO.soloRun: false`, `INITIAL_META.seenHints: []`, `firstDeathSeen: false` ajoutés
+- eslint overrides étendus pour GodsShop/ZoneView (helpers co-exportés)
+
 ### Added (Batch E — Donjons + Balance)
 - **D02** — Marker '?' du donjon cliquable dans WorldMapCanvas → `discoverDungeon` au 1er clic + label révélé "The Hollow Crypt · Lv 12-16"
 - **D04** — Field `category: 'dungeon_seal'` sur `crypt_seal`, `forsaken_seal`, `demon_lord_heart` (monnaie alternative future). Tests : drops garantis chance 1.0 sur les 3 boss

@@ -5,7 +5,7 @@ import { MONSTERS } from '../data/monsters'
 import { SKILLS } from '../data/skills'
 import { RESOURCES } from '../data/resources'
 import { scaleMonsterStats, ZONE_MULTS } from '../data/zones'
-import { checkIgnarethAwakening, checkSylvaraAwakening } from '../data/deities'
+import { checkIgnarethAwakening, checkSylvaraAwakening, checkVoltarisAwakening } from '../data/deities'
 
 // ── Calcul de dégâts ──────────────────────────────────────────────────────────
 
@@ -243,6 +243,11 @@ export function checkAwakeningConditions(hero, worldState) {
 
   if (checkSylvaraAwakening({ combatEntryLog: hero.combatEntryLog })) {
     return 'sylvara'
+  }
+
+  // DV04 — Voltaris : 5 victoires sous 30% HP
+  if (checkVoltarisAwakening({ battleLog: hero.battleLog })) {
+    return 'voltaris'
   }
 
   return null

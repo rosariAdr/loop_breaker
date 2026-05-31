@@ -132,6 +132,28 @@ describe('equipActiveSkill', () => {
     // cleave doit rester dans manaStones
     expect(useGameStore.getState().hero.inventory.manaStones.some(s => s.skillId === 'cleave')).toBe(true)
   })
+
+  // S03 — équiper ne retire qu'UNE copie + pas de doublon en slot
+  it("S03 — équiper retire UNE seule copie quand on en a plusieurs", () => {
+    // 3 copies de savage_bite (1 du beforeEach + 2 ici)
+    useGameStore.getState().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })
+    useGameStore.getState().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })
+    expect(useGameStore.getState().hero.inventory.manaStones.filter(s => s.skillId === 'savage_bite')).toHaveLength(3)
+    useGameStore.getState().equipActiveSkill({ skillId: 'savage_bite', level: 1, xp: 0 })
+    // 2 copies restent dans le sac (pas 0 !)
+    expect(useGameStore.getState().hero.inventory.manaStones.filter(s => s.skillId === 'savage_bite')).toHaveLength(2)
+    expect(useGameStore.getState().hero.activeSkills).toHaveLength(1)
+  })
+
+  it("S03 — refuse d'équiper un skill déjà dans les slots actifs", () => {
+    useGameStore.getState().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })
+    useGameStore.getState().equipActiveSkill({ skillId: 'savage_bite', level: 1, xp: 0 })
+    const beforeStones = useGameStore.getState().hero.inventory.manaStones.length
+    // Re-équiper le même → refusé (pas de doublon)
+    useGameStore.getState().equipActiveSkill({ skillId: 'savage_bite', level: 1, xp: 0 })
+    expect(useGameStore.getState().hero.activeSkills.filter(s => s.skillId === 'savage_bite')).toHaveLength(1)
+    expect(useGameStore.getState().hero.inventory.manaStones.length).toBe(beforeStones)
+  })
 })
 
 describe('equipPassiveSkill', () => {
@@ -271,6 +293,36 @@ describe('processIdleTick', () => {
     useGameStore.getState().processIdleTick()
     expect(useGameStore.getState().world.isIdleActive).toBe(false)
   })
+
+  // I04 — Toasts sur événements idle marquants
+  it("I04 — toast warning quand idle s'arrête pour HP bas", async () => {
+    const { useToastStore } = await import('./toastStore')
+    useToastStore.getState().clearToasts()
+    useGameStore.setState(state => ({
+      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'stone_golem' },
+      hero: { ...state.hero, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } }
+    }))
+    useGameStore.getState().processIdleTick()
+    const warn = useToastStore.getState().toasts.find(t => t.type === 'warning')
+    expect(warn).toBeDefined()
+  })
+
+  it("I04 — toast levelup quand le héros monte de niveau en idle", async () => {
+    const { useToastStore } = await import('./toastStore')
+    useToastStore.getState().clearToasts()
+    // Héros proche du level up + idle actif sur un monstre rentable
+    useGameStore.setState(state => ({
+      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      hero: {
+        ...state.hero,
+        exp: 99, expToNext: 100,  // 1 xp suffit ? ashwood_wolf = 15 xp
+        stats: { ...state.hero.stats, hp: 100, maxHp: 100, strength: 50 },
+      },
+    }))
+    useGameStore.getState().processIdleTick()
+    const lvl = useToastStore.getState().toasts.find(t => t.type === 'levelup')
+    expect(lvl).toBeDefined()
+  })
 })
 
 // ── Persistance ───────────────────────────────────────────────────────────────
@@ -405,6 +457,29 @@ describe('Système de quêtes', () => {
     useGameStore.getState().completeQuest('ghost_quest_id')
     const after = useGameStore.getState()
     expect(after.hero.inventory.gold).toBe(before.hero.inventory.gold)
+  })
+
+  // Q07 — Toast récompense de quête
+  it('Q07 — completeQuest pousse un toast type quest', async () => {
+    const { useToastStore } = await import('./toastStore')
+    useToastStore.getState().clearToasts()
+    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().completeQuest('first_blood')
+    const toasts = useToastStore.getState().toasts
+    expect(toasts.length).toBeGreaterThanOrEqual(1)
+    const questToast = toasts.find(t => t.type === 'quest')
+    expect(questToast).toBeDefined()
+    expect(questToast.message).toMatch(/First Blood/)
+  })
+
+  it("Q07 — le toast inclut les récompenses (gold + tokens + skill)", async () => {
+    const { useToastStore } = await import('./toastStore')
+    useToastStore.getState().clearToasts()
+    useGameStore.getState().startQuest('first_blood')  // 50g + 1 token + counter_strike
+    useGameStore.getState().completeQuest('first_blood')
+    const questToast = useToastStore.getState().toasts.find(t => t.type === 'quest')
+    expect(questToast.message).toMatch(/50g/)
+    expect(questToast.message).toMatch(/🪙/)
   })
 
   // UX03 — abandonQuest
@@ -580,6 +655,25 @@ describe('refuseDeity', () => {
     const state = useGameStore.getState()
     expect(state.pendingDivineCall).toBeNull()
     expect(state.hero.deity).toBeNull()
+  })
+
+  // DV07 — Refus = run solo
+  it("DV07 — refuseDeity lève le flag hero.soloRun", () => {
+    useGameStore.getState().resetGame()
+    expect(useGameStore.getState().hero.soloRun).toBe(false)
+    useGameStore.getState().triggerDivineCall('ignareth')
+    useGameStore.getState().refuseDeity()
+    expect(useGameStore.getState().hero.soloRun).toBe(true)
+  })
+
+  it("DV07 — soloRun garantit le bonus T11 (+1 lvl skills) même si une divinité existait", () => {
+    useGameStore.getState().resetGame()
+    // Simule : a une divinité MAIS soloRun=true (a refusé une 2e divinité)
+    useGameStore.setState(state => ({ hero: { ...state.hero, deity: 'ignareth', soloRun: true } }))
+    useGameStore.getState().confirmInheritance('strength', { skillId: 'savage_bite', level: 1, xp: 0 }, null)
+    useGameStore.getState().applyTransmigration({})
+    const active = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    expect(active.level).toBe(2) // base 1 + solo bonus 1
   })
 })
 
@@ -1100,6 +1194,36 @@ describe('recordKill', () => {
     useGameStore.getState().recordKill('marsh_serpent')
     expect(useGameStore.getState().world.monsterKillCounts.ashwood_wolf).toBe(1)
     expect(useGameStore.getState().world.monsterKillCounts.marsh_serpent).toBe(1)
+  })
+
+  // TUT02 — Hint idle unlock
+  it("TUT02 — toast hint au 5e kill (idle unlock) + flag seenHints", async () => {
+    const { useToastStore } = await import('./toastStore')
+    useToastStore.getState().clearToasts()
+    useGameStore.getState().resetGame()
+    for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('ashwood_wolf')
+    expect(useGameStore.getState().meta.seenHints).toContain('idle_unlock')
+    const hint = useToastStore.getState().toasts.find(t => /Idle combat unlocked/.test(t.message))
+    expect(hint).toBeDefined()
+  })
+
+  it("TUT02 — hint affiché UNE seule fois (pas au 2e mob qui atteint 5)", async () => {
+    const { useToastStore } = await import('./toastStore')
+    useGameStore.getState().resetGame()
+    for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('ashwood_wolf')
+    useToastStore.getState().clearToasts()
+    // 2e mob atteint 5 → pas de nouveau hint
+    for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('marsh_serpent')
+    const hint = useToastStore.getState().toasts.find(t => /Idle combat unlocked/.test(t.message))
+    expect(hint).toBeUndefined()
+  })
+
+  it("TUT02 — pas de hint avant le 5e kill", async () => {
+    const { useToastStore } = await import('./toastStore')
+    useToastStore.getState().clearToasts()
+    useGameStore.getState().resetGame()
+    for (let i = 0; i < 4; i++) useGameStore.getState().recordKill('ashwood_wolf')
+    expect(useGameStore.getState().meta.seenHints).not.toContain('idle_unlock')
   })
 })
 
