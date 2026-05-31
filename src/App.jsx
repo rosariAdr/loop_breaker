@@ -13,6 +13,9 @@ import DivineCall from './screens/DivineCall'
 import QuestBoard from './screens/QuestBoard'
 import LevelUpModal from './screens/LevelUpModal'
 import CharacterCreation from './screens/CharacterCreation'
+import ErrorBoundary from './components/ErrorBoundary'
+import DebugPanel from './components/DebugPanel'
+import ToastContainer from './components/ToastContainer'
 
 function App() {
   const {
@@ -81,19 +84,28 @@ function App() {
       <NavBar />
       <DayBar />
       <main className="flex-1">
-        {renderScreen()}
+        <ErrorBoundary>
+          {/* U04 — key={currentScreen} force le remount → re-déclenche le fade */}
+          <div key={currentScreen} className="anim-screen-fade h-full">
+            {renderScreen()}
+          </div>
+        </ErrorBoundary>
       </main>
       {/* Modals — par ordre de priorité */}
       {pendingDivineCall && <DivineCall />}
       {showLevelUp && <LevelUpModal />}
       {showCharCreation && <CharacterCreation />}
+      {/* U01 — Toasts globaux */}
+      <ToastContainer />
+      {/* PROC06 — Debug panel (DEV only, Ctrl+Shift+D) */}
+      <DebugPanel />
     </div>
   )
 }
 
 // ── NavBar ─────────────────────────────────────────────────────────────────────
 function NavBar() {
-  const { setScreen, currentScreen, hero, world, saveGame } = useGameStore()
+  const { setScreen, currentScreen, hero, world, saveGame, unseenLoot } = useGameStore()
   const [saveFlash, setSaveFlash] = useState(false)
 
   const hideNav = ['post_mortem', 'gods_shop', 'divine_call'].includes(currentScreen)
@@ -147,21 +159,41 @@ function NavBar() {
       {!hideNav && (
         <div className="flex items-center gap-2">
           <nav className="flex gap-2">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setScreen(tab.id)}
-                className="px-3 py-1 text-sm rounded"
-                style={{
-                  fontFamily: 'Cinzel, serif',
-                  background: currentScreen === tab.id ? '#d4af70' : '#1a1410',
-                  color: currentScreen === tab.id ? '#0a0a0f' : '#d4af70',
-                  border: '1px solid #2a2018',
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {tabs.map(tab => {
+              const showBadge = tab.id === 'inventory' && unseenLoot && currentScreen !== 'inventory'
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setScreen(tab.id)}
+                  className="relative px-3 py-1 text-sm rounded"
+                  style={{
+                    fontFamily: 'Cinzel, serif',
+                    background: currentScreen === tab.id ? '#d4af70' : '#1a1410',
+                    color: currentScreen === tab.id ? '#0a0a0f' : '#d4af70',
+                    border: '1px solid #2a2018',
+                  }}
+                >
+                  {tab.label}
+                  {/* UX05 — Badge point rouge sur Bag si nouveau loot non consulté */}
+                  {showBadge && (
+                    <span
+                      data-testid="unseen-loot-badge"
+                      aria-label="new loot"
+                      className="absolute rounded-full"
+                      style={{
+                        top: '-3px',
+                        right: '-3px',
+                        width: '8px',
+                        height: '8px',
+                        background: '#e04040',
+                        border: '1px solid #1a0808',
+                        boxShadow: '0 0 6px #e04040',
+                      }}
+                    />
+                  )}
+                </button>
+              )
+            })}
           </nav>
           <button
             onClick={handleSave}

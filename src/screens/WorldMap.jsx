@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { ZONES } from '../data/zones'
 import { MONSTERS } from '../data/monsters'
+import WorldMapCanvas from './WorldMapCanvas'
+import QTEBar from '../components/QTEBar'
 
 // ── Chemins SVG entre nœuds de la carte ──────────────────────────────────────
 const MAP_PATHS = [
@@ -17,20 +20,13 @@ const MAP_PATHS = [
   ['greywatch', 'barrow_hills'],
 ]
 
-// Positions centrales des nœuds (% du conteneur)
-const NODE_POSITIONS = {
-  ashenvale_forest: { x: 28, y: 18 },
-  thornmarsh:       { x: 10, y: 52 },
-  crumbled_ruins:   { x: 65, y: 22 },
-  barrow_hills:     { x: 40, y: 72 },
-  ironhaven:        { x: 44, y: 52 },
-  millhaven:        { x: 16, y: 32 },
-  greywatch:        { x: 62, y: 68 },
-}
+// (NODE_POSITIONS retiré — les positions % sont définies inline dans canvasNodes)
 
 export default function WorldMap() {
   const { world, setScreen, hero } = useGameStore()
   const zone = ZONES.ashenvale
+  // MAP02 — QTE pour traverser Blighted Road
+  const [qteOpen, setQteOpen] = useState(false)
 
   const totalAshenvaleKills = Object.entries(world.monsterKillCounts)
     .filter(([id]) => MONSTERS[id]?.zone === 'ashenvale')
@@ -56,12 +52,38 @@ export default function WorldMap() {
     setScreen('zone_view')
   }
 
+  // MAP02 — Traversée de la Blighted Road via QTE
   const handleBlightedRoad = () => {
     if (!blightedRoadUnlocked) return
+    setQteOpen(true)
+  }
+
+  const enterBlightedRoad = () => {
     useGameStore.setState((state) => ({
       world: { ...state.world, currentZone: 'blighted_road', currentHuntingSpot: null },
     }))
     setScreen('zone_view')
+  }
+
+  const handleQteSuccess = () => {
+    setQteOpen(false)
+    // Succès = traversée rapide, entrée immédiate
+    enterBlightedRoad()
+  }
+
+  const handleQteFailure = () => {
+    setQteOpen(false)
+    // Échec = traversée normale + coût HP léger (5% maxHp)
+    useGameStore.setState((state) => ({
+      hero: {
+        ...state.hero,
+        stats: {
+          ...state.hero.stats,
+          hp: Math.max(1, state.hero.stats.hp - Math.round(state.hero.stats.maxHp * 0.05)),
+        },
+      },
+    }))
+    enterBlightedRoad()
   }
 
   const handleGrimspire = () => {
@@ -70,6 +92,59 @@ export default function WorldMap() {
       world: { ...state.world, currentZone: 'grimspire', currentHuntingSpot: null },
     }))
     setScreen('zone_view')
+  }
+
+  // MAP01 — Build nodes pour le canvas (positions, types, callbacks)
+  const canvasNodes = [
+    ...zone.huntingSpots.map(spot => ({
+      id: spot.id,
+      label: spot.name,
+      sublabel: null,
+      icon: spot.icon,
+      x: spot.mapPos.x, y: spot.mapPos.y,
+      type: 'spot',
+      color: '#80c040',
+      locked: false,
+    })),
+    {
+      id: 'ironhaven',
+      label: 'Ironhaven', sublabel: 'Major City', icon: '🏰',
+      x: 44, y: 52, type: 'city', color: '#d4af70', locked: false,
+    },
+    {
+      id: 'millhaven',
+      label: 'Millhaven', sublabel: 'Sir Aldric', icon: '🏘',
+      x: 16, y: 32, type: 'village', color: '#b09060', locked: false,
+    },
+    {
+      id: 'greywatch',
+      label: 'Greywatch', sublabel: 'Village', icon: '🏘',
+      x: 62, y: 68, type: 'village', color: '#808060', locked: false,
+    },
+  ]
+
+  // Donjon Ashenvale : marker "?" tant que non découvert (D02)
+  const ashenvaleDungeon = world.dungeons?.ashenvale
+  const dungeonNode = ashenvaleDungeon?.active ? {
+    x: 78, y: 30,
+    discovered: ashenvaleDungeon.discovered,
+    label: ashenvaleDungeon.discovered ? 'The Hollow Crypt · Lv 12-16' : null,
+  } : null
+
+  const { discoverDungeon } = useGameStore()
+
+  const handleCanvasSelectNode = (node) => {
+    if (node.type === 'city' || node.type === 'village') {
+      handleSafeZone(node.id)
+    } else if (node.type === 'spot') {
+      handleHuntingSpot(node.id)
+    } else if (node.type === 'dungeon') {
+      // D02 — clic sur marker '?' : révéler le donjon (1er clic) ou entrer (futur D01)
+      if (!ashenvaleDungeon?.discovered) {
+        discoverDungeon('ashenvale')
+      }
+      // (futur D01) : sinon, entrer dans le donjon
+    }
   }
 
   return (
@@ -81,125 +156,14 @@ export default function WorldMap() {
           ⚔ ELDENMOOR ⚔
         </h2>
 
-        {/* Conteneur de la carte Ashenvale */}
-        <div
-          className="relative rounded-lg overflow-hidden"
-          style={{
-            background: 'radial-gradient(ellipse at 40% 40%, #111208 0%, #0a0c08 60%, #080a06 100%)',
-            border: '1px solid #2a2818',
-            width: '100%',
-            maxWidth: '780px',
-            aspectRatio: '16/10',
-          }}
-        >
-          {/* Grille de fond subtile */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: 'radial-gradient(circle, #1a1810 1px, transparent 1px)',
-              backgroundSize: '28px 28px',
-              opacity: 0.4,
-            }}
-          />
-
-          {/* Label zone */}
-          <div
-            className="absolute"
-            style={{
-              top: '8px', left: '12px',
-              fontSize: '0.65rem', color: '#3a3020',
-              fontFamily: 'Cinzel, serif', letterSpacing: '0.12em', textTransform: 'uppercase',
-            }}
-          >
-            Ashenvale Region
-          </div>
-
-          {/* SVG des chemins */}
-          <svg
-            className="absolute inset-0 w-full h-full"
-            preserveAspectRatio="none"
-            style={{ pointerEvents: 'none' }}
-          >
-            {MAP_PATHS.map(([a, b]) => {
-              const pa = NODE_POSITIONS[a]
-              const pb = NODE_POSITIONS[b]
-              if (!pa || !pb) return null
-              return (
-                <line
-                  key={`${a}-${b}`}
-                  x1={`${pa.x}%`} y1={`${pa.y}%`}
-                  x2={`${pb.x}%`} y2={`${pb.y}%`}
-                  stroke="#2a2518"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 4"
-                />
-              )
-            })}
-          </svg>
-
-          {/* Nœuds de chasse */}
-          {zone.huntingSpots.map((spot) => (
-            <HuntNode
-              key={spot.id}
-              spot={spot}
-              active={activeNodeId === spot.id}
-              onClick={() => handleHuntingSpot(spot.id)}
-              idleMonsters={getSpotIdleMonsters(world, spot)}
-            />
-          ))}
-
-          {/* Nœud ville — Ironhaven */}
-          <LocationNode
-            id="ironhaven"
-            icon="🏰"
-            label="Ironhaven"
-            sublabel="Major City"
-            color="#d4af70"
-            active={activeNodeId === 'ironhaven'}
-            onClick={() => handleSafeZone('ironhaven')}
-          />
-
-          {/* Nœud village — Millhaven */}
-          <LocationNode
-            id="millhaven"
-            icon="🏘"
-            label="Millhaven"
-            sublabel="Village · Sir Aldric"
-            color="#b09060"
-            active={activeNodeId === 'millhaven'}
-            onClick={() => handleSafeZone('millhaven')}
-          />
-
-          {/* Nœud village — Greywatch */}
-          <LocationNode
-            id="greywatch"
-            icon="🏘"
-            label="Greywatch"
-            sublabel="Village"
-            color="#808060"
-            active={activeNodeId === 'greywatch'}
-            onClick={() => handleSafeZone('greywatch')}
-          />
-
-          {/* Marqueur personnage */}
-          <CharacterMarker nodeId={activeNodeId} />
-
-          {/* Flèche vers Blighted Road */}
-          <div
-            className="absolute flex items-center gap-1 px-2 py-1 rounded cursor-pointer transition-all"
-            style={{
-              right: '2%', top: '45%',
-              background: '#0d0808',
-              border: `1px dashed ${blightedRoadUnlocked ? '#5a2018' : '#1a1410'}`,
-              opacity: blightedRoadUnlocked ? 1 : 0.45,
-            }}
-            onClick={handleBlightedRoad}
-          >
-            <span style={{ color: blightedRoadUnlocked ? '#8a4030' : '#3a2018', fontSize: '0.65rem', fontFamily: 'Cinzel, serif' }}>
-              {blightedRoadUnlocked ? '⚠' : '🔒'} Blighted Road →
-            </span>
-          </div>
-        </div>
+        {/* MAP01 — Canvas 2D animé */}
+        <WorldMapCanvas
+          nodes={canvasNodes}
+          paths={MAP_PATHS}
+          activeNodeId={activeNodeId}
+          dungeonNode={dungeonNode}
+          onSelectNode={handleCanvasSelectNode}
+        />
 
         {/* Zones verrouillées */}
         <div className="flex gap-3 max-w-xl">
@@ -220,123 +184,24 @@ export default function WorldMap() {
 
       {/* ── Sidebar droite ── */}
       <Sidebar world={world} hero={hero} setScreen={setScreen} />
+
+      {/* MAP02 — QTE pour traverser Blighted Road */}
+      <QTEBar
+        open={qteOpen}
+        title="⚠ Cross the Blighted Road"
+        hint="Time your dash through the cursed mist. Hit NOW when the cursor is in the green zone."
+        durationMs={1400}
+        zoneStart={42}
+        zoneEnd={58}
+        timeoutMs={5000}
+        onSuccess={handleQteSuccess}
+        onFailure={handleQteFailure}
+      />
     </div>
   )
 }
 
-// ── Nœud de chasse ────────────────────────────────────────────────────────────
-function HuntNode({ spot, active, onClick, idleMonsters }) {
-  const pos = NODE_POSITIONS[spot.id]
-  if (!pos) return null
-
-  return (
-    <button
-      onClick={onClick}
-      className="absolute flex flex-col items-center gap-0.5 transition-all hover:scale-110"
-      style={{
-        left: `${pos.x}%`, top: `${pos.y}%`,
-        transform: 'translate(-50%, -50%)',
-        zIndex: 10,
-      }}
-      title={`${spot.name} · Lv${spot.levelRange[0]}-${spot.levelRange[1]}`}
-    >
-      <div
-        className="w-9 h-9 rounded-full flex items-center justify-center text-base transition-all"
-        style={{
-          background: active ? '#1a2810' : '#101008',
-          border: `2px solid ${active ? '#80c040' : '#3a3020'}`,
-          boxShadow: active ? '0 0 10px rgba(128,192,64,0.4)' : 'none',
-        }}
-      >
-        {spot.icon}
-      </div>
-      <div
-        className="text-center"
-        style={{
-          fontSize: '0.6rem',
-          color: active ? '#80c040' : '#6a5a3a',
-          fontFamily: 'Cinzel, serif',
-          whiteSpace: 'nowrap',
-          textShadow: '0 0 6px #000',
-        }}
-      >
-        {spot.name}
-      </div>
-      {idleMonsters.length > 0 && (
-        <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#80c040', marginTop: '1px' }} />
-      )}
-    </button>
-  )
-}
-
-// ── Nœud de location safe ─────────────────────────────────────────────────────
-function LocationNode({ id, icon, label, sublabel, color, active, onClick }) {
-  const pos = NODE_POSITIONS[id]
-  if (!pos) return null
-
-  return (
-    <button
-      onClick={onClick}
-      className="absolute flex flex-col items-center gap-0.5 transition-all hover:scale-110"
-      style={{
-        left: `${pos.x}%`, top: `${pos.y}%`,
-        transform: 'translate(-50%, -50%)',
-        zIndex: 10,
-      }}
-      title={label}
-    >
-      <div
-        className="w-9 h-9 rounded-lg flex items-center justify-center text-base transition-all"
-        style={{
-          background: active ? '#1a150a' : '#0f0d08',
-          border: `2px solid ${active ? color : '#2a2018'}`,
-          boxShadow: active ? `0 0 12px ${color}40` : 'none',
-        }}
-      >
-        {icon}
-      </div>
-      <div style={{ fontSize: '0.6rem', color: active ? color : '#6a5a3a', fontFamily: 'Cinzel, serif', whiteSpace: 'nowrap', textShadow: '0 0 6px #000' }}>
-        {label}
-      </div>
-      {sublabel && (
-        <div style={{ fontSize: '0.52rem', color: '#4a3a2a', fontStyle: 'italic', textShadow: '0 0 4px #000', whiteSpace: 'nowrap' }}>
-          {sublabel}
-        </div>
-      )}
-    </button>
-  )
-}
-
-// ── Marqueur personnage ───────────────────────────────────────────────────────
-function CharacterMarker({ nodeId }) {
-  const pos = NODE_POSITIONS[nodeId]
-  if (!pos) return null
-
-  return (
-    <div
-      className="absolute pointer-events-none"
-      style={{
-        left: `${pos.x}%`,
-        top: `${pos.y - 9}%`,
-        transform: 'translate(-50%, -50%)',
-        zIndex: 20,
-        transition: 'left 0.5s ease, top 0.5s ease',
-      }}
-    >
-      <div
-        className="w-5 h-5 rounded-full flex items-center justify-center text-xs animate-pulse"
-        style={{
-          background: '#c04040',
-          border: '2px solid #ff6060',
-          boxShadow: '0 0 8px rgba(192,64,64,0.8)',
-          fontSize: '0.6rem',
-        }}
-      >
-        ⚔
-      </div>
-    </div>
-  )
-}
+// (HuntNode, LocationNode, CharacterMarker retirés — rendu par WorldMapCanvas désormais)
 
 // ── Région verrouillée ────────────────────────────────────────────────────────
 function LockedRegion({ label, hint, unlocked, onClick }) {
@@ -492,6 +357,3 @@ function getLocationName(zoneId, locationId, huntingSpot) {
   return village?.name ?? zone.name
 }
 
-function getSpotIdleMonsters(world, spot) {
-  return spot.monsters.filter(mId => world.idleToggles[mId])
-}

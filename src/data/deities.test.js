@@ -1,11 +1,12 @@
 // Tests divinités : conditions d'éveil + blessing + masquage UX (DV01/DV06/DV08/DV09)
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   DEITIES,
   ACTIVE_DEITIES,
   checkIgnarethAwakening,
   checkSylvaraAwakening,
+  checkVoltarisAwakening,
   applyDeityBlessing,
   getDivineRelation,
   getRelationTier,
@@ -18,7 +19,7 @@ describe('checkIgnarethAwakening — DV01', () => {
   })
 
   it('false si moins de 20 victoires', () => {
-    const wins = Array.from({ length: 19 }, (_, i) => ({ type: 'victory', day: 5 }))
+    const wins = Array.from({ length: 19 }, () => ({ type: 'victory', day: 5 }))
     expect(checkIgnarethAwakening({ battleLog: wins, dayCount: 5 })).toBe(false)
   })
 
@@ -150,10 +151,76 @@ describe('DV06 — conditions d\'éveil masquées (anti-régression)', () => {
 })
 
 // ── Sanity : DEITIES + RELATIONS ─────────────────────────────────────────────
+// ── DV04 — Voltaris ───────────────────────────────────────────────────────────
+describe('checkVoltarisAwakening — DV04', () => {
+  it("false avec moins de 5 victoires sous 30% HP", () => {
+    const log = Array.from({ length: 4 }, () => ({ type: 'victory', hpPercent: 0.20 }))
+    expect(checkVoltarisAwakening({ battleLog: log })).toBe(false)
+  })
+
+  it("true avec 5 victoires sous 30% HP", () => {
+    const log = Array.from({ length: 5 }, () => ({ type: 'victory', hpPercent: 0.25 }))
+    expect(checkVoltarisAwakening({ battleLog: log })).toBe(true)
+  })
+
+  it("ignore les victoires AU-DESSUS de 30% HP", () => {
+    const log = [
+      ...Array.from({ length: 10 }, () => ({ type: 'victory', hpPercent: 0.50 })),
+      ...Array.from({ length: 4 }, () => ({ type: 'victory', hpPercent: 0.20 })),
+    ]
+    expect(checkVoltarisAwakening({ battleLog: log })).toBe(false)
+  })
+
+  it("ignore les défaites même sous 30% HP", () => {
+    const log = Array.from({ length: 5 }, () => ({ type: 'defeat', hpPercent: 0.10 }))
+    expect(checkVoltarisAwakening({ battleLog: log })).toBe(false)
+  })
+
+  it("battleLog manquant → false", () => {
+    expect(checkVoltarisAwakening({})).toBe(false)
+    expect(checkVoltarisAwakening({ battleLog: null })).toBe(false)
+  })
+
+  it("victoire sans hpPercent (legacy) → traitée comme 100% (ignorée)", () => {
+    const log = Array.from({ length: 5 }, () => ({ type: 'victory' }))
+    expect(checkVoltarisAwakening({ battleLog: log })).toBe(false)
+  })
+})
+
+describe('Voltaris — données + relations (DV04)', () => {
+  it("Voltaris existe avec blessing +20% AGI", () => {
+    expect(DEITIES.voltaris).toBeDefined()
+    expect(DEITIES.voltaris.blessing.effect.stat).toBe('agility')
+    expect(DEITIES.voltaris.blessing.effect.multiplier).toBe(0.20)
+  })
+
+  it("Voltaris propose chain_lightning + overclock", () => {
+    expect(DEITIES.voltaris.divineSkillOptions).toContain('chain_lightning')
+    expect(DEITIES.voltaris.divineSkillOptions).toContain('overclock')
+  })
+
+  it("applyDeityBlessing Voltaris → +20% agility", () => {
+    const stats = { agility: 10, strength: 10 }
+    const result = applyDeityBlessing(stats, 'voltaris')
+    expect(result.agility).toBe(Math.round(10 * 1.20))
+    expect(result.strength).toBe(10)  // inchangé
+  })
+
+  it("relations : Ignareth+Voltaris = allié fort (+6)", () => {
+    expect(getDivineRelation('ignareth', 'voltaris')).toBe(6)
+    expect(getRelationTier(6).label).toBe('Strong Ally')
+  })
+
+  it("relations : Sylvara+Voltaris = rival (-4)", () => {
+    expect(getDivineRelation('sylvara', 'voltaris')).toBe(-4)
+  })
+})
+
 describe('Données divinités', () => {
-  it('ACTIVE_DEITIES contient ignareth + sylvara', () => {
+  it('ACTIVE_DEITIES contient ignareth + sylvara + voltaris', () => {
     expect(ACTIVE_DEITIES).toContain('ignareth')
     expect(ACTIVE_DEITIES).toContain('sylvara')
+    expect(ACTIVE_DEITIES).toContain('voltaris')
   })
 
   it('chaque divinité a un blessing avec id, name, description', () => {

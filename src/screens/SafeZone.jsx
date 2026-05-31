@@ -17,7 +17,6 @@ import {
 function generateVillageBuildings(villageId, optionalBuildings) {
   // Seed simple basé sur le nom du village
   const seed = villageId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-  const rng = (n) => ((seed * 9301 + 49297) % 233280) / 233280 < n
 
   const buildings = []
   optionalBuildings.forEach(({ id, chance }, i) => {
@@ -28,7 +27,7 @@ function generateVillageBuildings(villageId, optionalBuildings) {
 }
 
 export default function SafeZone() {
-  const { world, setScreen, hero, sleep, healHero, restoreHeroMana, spendGold, addConsumable, removeResource, addEquipmentToInventory } = useGameStore()
+  const { world, setScreen, hero } = useGameStore()
   const [activeBuilding, setActiveBuilding] = useState(null)
 
   const zone = ZONES[world.currentZone]
@@ -217,12 +216,7 @@ function InnPanel({ onBack }) {
 }
 
 function ChurchPanel({ onBack }) {
-  const { hero, healHero, restoreHeroMana } = useGameStore()
-
-  const handlePray = () => {
-    healHero(Math.round(hero.stats.maxHp * 0.40))
-    restoreHeroMana(Math.round(hero.stats.maxMana * 0.40))
-  }
+  const { hero, prayAtChurch } = useGameStore()
 
   const alreadyFull = hero.stats.hp >= hero.stats.maxHp && hero.stats.mana >= hero.stats.maxMana
 
@@ -236,7 +230,7 @@ function ChurchPanel({ onBack }) {
         <InfoLine label="Mana" value={`${hero.stats.mana} / ${hero.stats.maxMana}`} />
 
         <button
-          onClick={handlePray}
+          onClick={prayAtChurch}
           disabled={alreadyFull}
           className="mt-2 px-4 py-3 rounded transition-all"
           style={{
@@ -250,7 +244,7 @@ function ChurchPanel({ onBack }) {
           🙏 Pray
           <br />
           <span style={{ fontSize: '0.75rem', color: '#7060b0' }}>
-            {alreadyFull ? 'Already at full strength' : 'Restores 40% HP & Mana'}
+            {alreadyFull ? 'Already at full strength' : 'Restores 40% HP & Mana · costs 1 tick'}
           </span>
         </button>
       </div>
@@ -258,13 +252,15 @@ function ChurchPanel({ onBack }) {
   )
 }
 
-function MerchantPanel({ onBack, zoneId }) {
+function MerchantPanel({ onBack }) {
   const { hero, spendGold, addConsumable, addEquipmentToInventory } = useGameStore()
   const [tab, setTab] = useState('potions') // 'potions' | 'equipment'
 
   const potionStock = [
     'hp_potion_small', 'hp_potion_medium',
     'mana_potion_small', 'mana_potion_medium',
+    // Z02 — stock élargi
+    'stamina_ration', 'elixir_minor', 'mana_crystal', 'antidote_basic',
   ]
 
   // Équipements vendus par le marchand : templates avec merchantStock
@@ -515,7 +511,8 @@ function BlacksmithPanel({ onBack }) {
                     const ok = owned >= qty
                     return (
                       <div key={resId} className="flex justify-between items-center"
-                        style={{ fontSize: '0.78rem' }}>
+                        // Z03 — grise les ingrédients manquants
+                        style={{ fontSize: '0.78rem', opacity: ok ? 1 : 0.6 }}>
                         <span style={{ color: ok ? '#80c040' : '#c04040' }}>
                           {ok ? '✓' : '✗'} {res?.name ?? resId}
                         </span>
@@ -562,6 +559,17 @@ function BlacksmithPanel({ onBack }) {
               >
                 🔨 Craft {RARITY_CONFIG[selectedRarity]?.label} {template.name}
               </button>
+
+              {/* Z03 — Raison du blocage explicite */}
+              {recipe && !canDoCraft && (
+                <p data-testid="craft-blocked-reason" style={{ color: '#8a4030', fontSize: '0.72rem', fontStyle: 'italic' }}>
+                  {!hasIngredients && !hasGold
+                    ? 'Missing ingredients and gold.'
+                    : !hasIngredients
+                    ? 'Missing ingredients (see ✗ above).'
+                    : 'Not enough gold.'}
+                </p>
+              )}
 
               {craftMsg && (
                 <p style={{ color: '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>

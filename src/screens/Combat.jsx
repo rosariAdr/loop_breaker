@@ -132,13 +132,15 @@ export default function Combat() {
   const [turnCount, setTurnCount] = useState(1)
   const [animatingEnemyId, setAnimatingEnemyId] = useState(null) // id ennemi qui reçoit un coup
   const [animatingHero, setAnimatingHero] = useState(false)      // héros qui reçoit un coup
+  const [heroAttackAnim, setHeroAttackAnim] = useState(false)    // B13 — héros qui lance une attaque/skill
   const [attackingEnemyId, setAttackingEnemyId] = useState(null) // B02 — ennemi qui frappe
   const [floatingNumbers, setFloatingNumbers] = useState([])     // B07 — [{id, targetId, amount, type}]
   // B08 — stats de combat pour le résumé
   const [combatStats, setCombatStats] = useState({ dmgDealt: 0, dmgTaken: 0, manaSpent: 0, kills: 0 })
 
   const heroStatsRef = useRef(heroStats)
-  heroStatsRef.current = heroStats
+  // Mise à jour du ref hors render (évite l'erreur ESLint react-hooks/refs)
+  useEffect(() => { heroStatsRef.current = heroStats }, [heroStats])
 
   const addLog = useCallback((text, type = 'info') => {
     setLog(prev => [{ text, type, id: Date.now() + Math.random() }, ...prev].slice(0, 25))
@@ -167,6 +169,8 @@ export default function Combat() {
     })
   }, [recentSkillLevelUps, clearSkillLevelUp, addLog])
 
+  // Initialisation au mount du combat — sync activeCombat → state local
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!activeCombat) return
     const initial = activeCombat.enemies
@@ -175,7 +179,8 @@ export default function Combat() {
     setSelectedTargetId(initial[0]?.id ?? null)
     recordCombatEntry()
     addLog(`Battle begins! (${initial.length} ${initial.length > 1 ? 'enemies' : 'enemy'})`, 'system')
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const finishCombat = useCallback((outcome, cause = 'Unknown enemy') => {
     const finalStats = heroStatsRef.current
@@ -294,6 +299,8 @@ export default function Combat() {
     const dmg = calcBaseDamage(heroStats.strength, target.stats.def)
     setIsAnimating(true)
     setAnimatingEnemyId(target.id)
+    setHeroAttackAnim(true)                                             // B13
+    setTimeout(() => setHeroAttackAnim(false), 320)                     // B13 — reset après l'anim 300ms
     pushFloatingNumber(target.id, dmg, 'damage')                        // B07
     setCombatStats(s => ({ ...s, dmgDealt: s.dmgDealt + dmg }))         // B08
     setTimeout(() => {
@@ -317,6 +324,8 @@ export default function Combat() {
     if (aliveEnemies.length === 0) return
     const skillTarget = aliveEnemies.find(e => e.id === selectedTargetId) ?? aliveEnemies[0]
     setIsAnimating(true)
+    setHeroAttackAnim(true)                                             // B13
+    setTimeout(() => setHeroAttackAnim(false), 320)
     setHeroStats(applySkillCost(skill, heroStats))
     // B08 — track la mana dépensée
     setCombatStats(s => ({ ...s, manaSpent: s.manaSpent + (template.cost?.mana ?? 0) }))
@@ -387,6 +396,17 @@ export default function Combat() {
       setHeroStats(prev => ({ ...prev, mana: Math.min(prev.maxMana, prev.mana + manaAmt) }))
       pushFloatingNumber('hero', manaAmt, 'mana')  // B07
       addLog(`Used ${res.name} — restored ${manaAmt} Mana.`, 'mana')
+    } else if (res.effect.type === 'restore_both') {
+      // Z02 — restaure HP + Mana en une fois
+      const healAmt = Math.round(heroStats.maxHp * res.effect.value)
+      const manaAmt = Math.round(heroStats.maxMana * res.effect.value)
+      setHeroStats(prev => ({
+        ...prev,
+        hp: Math.min(prev.maxHp, prev.hp + healAmt),
+        mana: Math.min(prev.maxMana, prev.mana + manaAmt),
+      }))
+      pushFloatingNumber('hero', healAmt, 'heal')  // B07
+      addLog(`Used ${res.name} — restored ${healAmt} HP & ${manaAmt} Mana.`, 'heal')
     }
     useGameStore.setState(state => ({
       hero: {
@@ -457,6 +477,7 @@ export default function Combat() {
             deity={hero.deity}
             hitFlash={heroHitFlash}
             isAnimHit={animatingHero}
+            isAttacking={heroAttackAnim}
             floatingNumbers={floatingNumbers.filter(n => n.targetId === 'hero')}
           />
         </div>
@@ -639,9 +660,11 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
 }
 
 // ── Carte héros ───────────────────────────────────────────────────────────────
-function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, floatingNumbers = [] }) {
+function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking, floatingNumbers = [] }) {
+  // B13 — anim-hero-attack lors d'une attaque ; prend le pas sur anim-flash si actif
+  const animClass = isAttacking ? ' anim-hero-attack' : isAnimHit ? ' anim-flash' : ''
   return (
-    <div className={`flex items-center gap-6 relative${isAnimHit ? ' anim-flash' : ''}`}>
+    <div className={`flex items-center gap-6 relative${animClass}`}>
       {/* B07 — Nombres flottants (dégâts reçus / soins) */}
       <FloatingNumbers numbers={floatingNumbers} />
       {/* Portrait — 96px */}
@@ -810,6 +833,8 @@ function ActionPanel({
             key={tab.id}
             onClick={() => !tab.disabled && onSelectAction(tab.id)}
             disabled={tab.disabled}
+            // B11 — tooltip explicite quand Flee est désactivé sur un boss
+            title={tab.disabled && tab.id === 'flee' ? 'Cannot flee from a boss' : undefined}
             className="flex-1 py-3 flex items-center justify-center gap-2 transition-colors"
             style={{
               fontFamily: 'Cinzel, serif',
@@ -818,6 +843,7 @@ function ActionPanel({
               color: tab.disabled ? '#2a2018' : selectedAction === tab.id ? '#d4af70' : '#6a5a4a',
               borderBottom: selectedAction === tab.id ? '2px solid #d4af70' : '2px solid transparent',
               letterSpacing: '0.05em',
+              cursor: tab.disabled ? 'not-allowed' : 'pointer',
             }}
           >
             <span style={{ fontSize: '1.05rem' }}>{tab.icon}</span>

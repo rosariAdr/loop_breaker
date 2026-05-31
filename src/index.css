@@ -11,16 +11,17 @@
   --color-idle: #80c040;
 }
 
+/* U03 — Font stacks avec fallbacks robustes (Cinzel/Crimson Text + chaîne serif locale) */
 body {
   margin: 0;
   background-color: var(--color-bg);
   color: var(--color-gold);
-  font-family: 'Crimson Text', serif;
+  font-family: 'Crimson Text', Georgia, 'Times New Roman', Times, serif;
   min-height: 100vh;
 }
 
 h1, h2, h3, h4 {
-  font-family: 'Cinzel', serif;
+  font-family: 'Cinzel', 'Trajan Pro', Georgia, 'Times New Roman', serif;
 }
 
 #root {
@@ -69,7 +70,23 @@ h1, h2, h3, h4 {
   100% { transform: translateY(-28px); opacity: 0; }
 }
 
-.anim-shake { animation: shake    0.35s ease; }
-.anim-flash { animation: flash-hit 0.35s ease; }
-.anim-pop   { animation: pop-in   0.28s ease; }
-.anim-float { animation: float-up 0.6s ease forwards; }
+/* B13 — Attaque héros : avance puis revient (lunge animation) */
+@keyframes hero-attack {
+  0%   { transform: translateX(0); }
+  40%  { transform: translateX(18px); }
+  60%  { transform: translateX(18px); }
+  100% { transform: translateX(0); }
+}
+
+/* U04 — Fade transition entre écrans */
+@keyframes screen-fade-in {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.anim-shake       { animation: shake      0.35s ease; }
+.anim-flash       { animation: flash-hit  0.35s ease; }
+.anim-pop         { animation: pop-in     0.28s ease; }
+.anim-float       { animation: float-up   0.6s ease forwards; }
+.anim-hero-attack { animation: hero-attack 0.3s ease; }
+.anim-screen-fade { animation: screen-fade-in 0.15s ease; }

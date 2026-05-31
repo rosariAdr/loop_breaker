@@ -85,11 +85,14 @@ public/
 racine/
 ├── TASKS.md                    # Backlog source de vérité
 ├── ROADMAP.csv                 # Liste originale 60 items (lecture seule)
-├── CONTRIBUTING.md             # [à créer — PROC00] DoD, workflow, conventions
-├── CHANGELOG.md                # [à créer — PROC00] Historique versions
-├── DESIGN.md                   # [à créer — PROC00] ADRs, décisions actées
-├── PLAYTESTS.md                # [à créer — PROC00] Journal playtest
-├── balance/combat_stats.csv    # [à créer — PROC00] Stats monstres × scaling
+├── CONTRIBUTING.md             # ✅ DoD, workflow Git, conventions, checklist fin de session
+├── CHANGELOG.md                # ✅ Historique versions (Keep a Changelog + SemVer)
+├── balance/
+│   └── combat_stats.csv        # ✅ Stats monstres × zone_mult × runCount (115 lignes)
+├── scripts/
+│   └── generate-balance-csv.mjs # ✅ Régénère le CSV après modif data
+├── DESIGN.md                   # [v1] ADRs détaillés (les courts sont dans CONTEXT.md §11)
+├── PLAYTESTS.md                # [PROC05, v0.1 P2] Journal playtest structuré
 ├── README.md                   # Vide — à remplir (pitch + setup + screenshot)
 ├── package.json
 ├── vite.config.js              # vitest globals + jsdom + setupFiles
@@ -171,7 +174,7 @@ racine/
 | Boss | 3 | Crypt Keeper, Lord of the Forsaken, Malachar the Undying |
 | Skills | ~30 | dont 4 divins + 1 suprême (soul_rend) |
 | Quêtes | 8 | 3 sir_aldric, 3 ironhaven_captain, 2 greywatch_elder |
-| Divinités actives | 2 | Ignareth (war/fire, +15% str), Sylvara (nature/calm, regen) |
+| Divinités actives | 3 | Ignareth (war/fire, +15% str), Sylvara (nature/calm, regen), Voltaris (lightning/action, +20% AGI) |
 | Divinités designées | 3 | + Voltaris (foudre/action, +20% AGI), Hepharion (forge/artisanat), Aqualis (eau/continuité) |
 | Articles boutique | 6 | rank_restore(40), bonus_skill(80), bonus_stat(80), skill_levelup(20), starter_kit(10), oracle(15) |
 | Recettes craft | ~10 | weapons + armor à la forge |
@@ -180,16 +183,32 @@ racine/
 
 ---
 
-## 6. Tests (322 total, 7 fichiers, ~3s)
+## 6. Tests (604 total, 23 fichiers, ~6s)
 
 ```
-src/engine/combat.test.js         #  54 tests : damage, drops, scaling, getScaledSkillCost
-src/store/gameStore.test.js       # 143 tests : actions, migration, S04/DV08/T06-T11/DV10
-src/scenarios.test.js             #  27 tests : parties simulées bout en bout
-src/data/quests.test.js           #  14 tests : QUESTS + QUEST_NPCS
-src/data/deities.test.js          #  22 tests : conditions éveil, applyDeityBlessing, DV06
-src/screens/Combat.test.jsx       #  13 tests : rendu, animations, stats combat
-src/screens/screens.test.jsx      #  49 tests : smoke + nav + layouts + flows
+src/engine/combat.test.js                # damage, drops, scaling, getScaledSkillCost, D04 loot, Voltaris awakening
+src/store/gameStore.test.js              # actions, migration, économie, TUT02/TUT03, S03 stack, DV07 solo, T04/W02/W03, I04/Q07 toasts
+src/scenarios.test.js                    # parties simulées bout en bout + BAL01 économie tokens
+src/data/quests.test.js                  # QUESTS + QUEST_NPCS
+src/data/deities.test.js                 # conditions éveil (Ignareth/Sylvara/Voltaris), applyDeityBlessing, DV06, relations
+src/data/resources.test.js               # D04 dungeon_seal + Z02 consommables
+src/data/equipment.test.js               # Z03 canCraft + createEquipmentInstance
+src/data/containers.test.js              # S06 getSkillContainer par univers
+src/screens/Combat.test.jsx              # rendu, animations, B11 boss flee, B13 hero-attack
+src/screens/QuestBoard.test.jsx          # Q02 progress bars, Q06 rank tiers
+src/screens/WorldMapCanvas.test.jsx      # MAP01 helpers + D02 dungeon marker
+src/screens/ZoneView.test.jsx            # S02 SkillDropPreview (flou < 5 kills)
+src/screens/GodsShop.test.jsx            # T07b getBonusSkillPool + sélecteur
+src/screens/DivineCall.test.jsx          # DV03 fidélité inter-run, DV07 refus
+src/screens/screens.test.jsx             # smoke + nav + layouts + UX02/UX05 + W03 + TUT03 + U04 fade
+src/components/ErrorBoundary.test.jsx    # TECH01 fallback UI
+src/components/Tooltip.test.jsx          # UX01 hover/focus/click popover
+src/components/ConfirmDialog.test.jsx    # UX03 destructive/warn variants
+src/components/QTEBar.test.jsx           # MAP02 helpers + smoke
+src/components/DebugPanel.test.jsx       # PROC06 DEV panel + commandes cheat
+src/components/ToastContainer.test.jsx   # U01 rendu toasts
+src/store/toastStore.test.js             # U01 store (addToast/removeToast/auto-dismiss)
+src/utils/manaStones.test.js             # S03 groupManaStones + removeOneManaStone
 ```
 
 **Politique de tests** :
@@ -263,9 +282,10 @@ Pipeline documenté dans `public/monsters/README.md`. Priorité : 6 monstres Ash
 
 ### Git
 ```
-main (stable, taggué) ← dev (intégration) ← feat/ID (features M/L)
+master (stable, taggué) ← dev (intégration) ← feat/ID (features M/L)
 ```
 Convention commits : `type(scope): description` — types : feat/fix/test/refactor/chore/docs/style/perf
+**Important** : après chaque merge `dev → master`, fast-forward `dev` sur `master` (sinon les nouvelles feat sont en retard). Détails dans `CONTRIBUTING.md` §2.
 
 ### Checklist fin de session (obligatoire)
 ```
@@ -337,11 +357,12 @@ Traits pondérés par contexte de recrutement + score de relation. followProbabi
 
 - **`TASKS.md`** — backlog source de vérité (Active / Waiting On / Someday / Done)
 - **`ROADMAP.csv`** — liste originale 60 items (lecture seule)
-- **`CONTRIBUTING.md`** — [à créer PROC00] workflow Git, conventions code, DoD
-- **`CHANGELOG.md`** — [à créer PROC00] historique versions
-- **`DESIGN.md`** — [à créer PROC00] ADRs détaillés, décisions game design
-- **`PLAYTESTS.md`** — [à créer PROC00] journal de playtest structuré
-- **`balance/combat_stats.csv`** — [à créer PROC00] stats monstres × scaling
+- **`CONTRIBUTING.md`** — workflow Git, conventions code, DoD par type, checklist fin de session ✅
+- **`CHANGELOG.md`** — historique versions (Keep a Changelog + SemVer) ✅
+- **`balance/combat_stats.csv`** — stats monstres × zone_mult × runCount (115 lignes) ✅
+- **`scripts/generate-balance-csv.mjs`** — script de régénération du CSV après modif data ✅
+- **`DESIGN.md`** — [v1] ADRs détaillés, décisions game design (les ADRs courts sont dans CONTEXT.md §11)
+- **`PLAYTESTS.md`** — [v0.1 P2 — PROC05] journal de playtest structuré
 - **`public/monsters/README.md`** — guide génération portraits (Gemini + remove.bg)
 - **`vite.config.js`** — config vitest (jsdom, globals, setupFiles)
 

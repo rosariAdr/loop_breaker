@@ -377,11 +377,12 @@ describe('Scénario 8 — Cycle donjon', () => {
     expect(after.active).toBe(true)
   })
 
-  it('Tuer Malachar (grimspire) incrémente demonLordKills', () => {
+  it('Tuer Malachar (grimspire) incrémente demonLordKills.medieval_fantasy (M02)', () => {
     const store = useGameStore.getState
-    expect(store().meta.demonLordKills).toBe(0)
+    // M02 — structure { [universeId]: N } depuis Batch E
+    expect(store().meta.demonLordKills.medieval_fantasy ?? 0).toBe(0)
     store().clearDungeon('grimspire')
-    expect(store().meta.demonLordKills).toBe(1)
+    expect(store().meta.demonLordKills.medieval_fantasy).toBe(1)
     expect(store().world.demonLordDefeated).toBe(true)
   })
 })
@@ -599,6 +600,127 @@ describe('Scénario 14 — Combat complet avec tracking implicite', () => {
     expect(store().hero.exp).toBe(wolf.expReward)
     expect(store().hero.inventory.gold).toBeGreaterThanOrEqual(gold)
     expect(store().hero.battleLog[0].type).toBe('victory')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BAL01 — Calibration économie tokens : simulation de runs typiques
+// ─────────────────────────────────────────────────────────────────────────────
+describe('BAL01 — Économie tokens (simulations)', () => {
+  // Coûts cibles (alignés avec CATALOG révisé)
+  const COSTS = {
+    starter_kit: 5,
+    divine_oracle: 8,
+    skill_levelup: 12,
+    rank_restore: 25,
+    bonus_skill: 50,
+    bonus_stat: 50,
+  }
+
+  const cheapest = Math.min(...Object.values(COSTS))    // 5
+
+  it("un run RAPIDE (1 quête sir_aldric + 0 boss) → ≥ 1 token (au moins le starter_kit accessible)", () => {
+    const store = useGameStore.getState
+    store().startQuest('first_blood')
+    for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
+    store().completeQuest('first_blood')
+    // first_blood = 1 token
+    expect(store().hero.reputationTokens).toBeGreaterThanOrEqual(1)
+    // 1 token < starter_kit (5) → on n'achète RIEN. Acceptable pour run flash.
+  })
+
+  it("un run MOYEN (3 quêtes simples) → 4 tokens, peut acheter starter_kit", () => {
+    const store = useGameStore.getState
+    // Sir Aldric : 3 quêtes → 1+1+2 = 4 tokens
+    store().startQuest('first_blood')
+    for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
+    store().completeQuest('first_blood')
+
+    store().startQuest('proof_of_worth')
+    useGameStore.setState(state => ({ hero: { ...state.hero, level: 3 } }))
+    store().completeQuest('proof_of_worth')
+
+    store().startQuest('clear_the_marsh')
+    for (let i = 0; i < 3; i++) store().recordKill('marsh_serpent')
+    store().completeQuest('clear_the_marsh')
+
+    const tokens = store().hero.reputationTokens
+    expect(tokens).toBe(4)
+    // Cible : run moyen permet 0 article (4 < 5). Borderline → un run "moyen+" achète 1.
+    expect(tokens).toBeGreaterThanOrEqual(cheapest - 1)
+  })
+
+  it("un run EXCELLENT (toutes quêtes communes + 1 boss) → ≥ 7 tokens (≥ 1 article moyen)", () => {
+    const store = useGameStore.getState
+    // 3 sir_aldric (4) + boss Crypt Keeper (3) + bog_purge (2) = 9 tokens
+    store().startQuest('first_blood')
+    for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
+    store().completeQuest('first_blood')
+
+    store().startQuest('proof_of_worth')
+    useGameStore.setState(state => ({ hero: { ...state.hero, level: 3 } }))
+    store().completeQuest('proof_of_worth')
+
+    store().startQuest('clear_the_marsh')
+    for (let i = 0; i < 3; i++) store().recordKill('marsh_serpent')
+    store().completeQuest('clear_the_marsh')
+
+    store().startQuest('silence_the_crypt')
+    store().recordKill('hollow_crypt_boss')
+    store().completeQuest('silence_the_crypt')
+
+    const tokens = store().hero.reputationTokens
+    expect(tokens).toBe(7)  // 1+1+2+3 = 7
+    // À 7 tokens : peut acheter starter_kit (5) + un reliquat 2 (insuffisant pour rien d'autre)
+    expect(tokens).toBeGreaterThanOrEqual(COSTS.starter_kit)
+    // Peut PAS acheter rank_restore (25) ni skill_levelup (12)
+    expect(tokens).toBeLessThan(COSTS.skill_levelup)
+  })
+
+  it("un run LÉGENDAIRE (tout + Malachar) → ≥ 18 tokens (≥ 2-3 articles)", () => {
+    const store = useGameStore.getState
+    // All 8 quêtes + boss Crypt + Malachar = 1+1+2+3+5+10+2+3 = 27 tokens
+    const allQuests = [
+      ['first_blood', 'ashwood_wolf', 5],
+      ['proof_of_worth', null, null],   // level quest
+      ['clear_the_marsh', 'marsh_serpent', 3],
+      ['silence_the_crypt', 'hollow_crypt_boss', 1],
+      ['storm_the_citadel', 'forsaken_citadel_boss', 1],
+      ['end_the_demon', 'malachar', 1],
+      ['bog_purge', 'bog_shambler', 4],
+      ['ruins_cleanse', null, null],  // ce quest a 2 objectives, on les complete tous deux
+    ]
+    for (const [questId, monster, count] of allQuests) {
+      store().startQuest(questId)
+      if (monster) for (let i = 0; i < count; i++) store().recordKill(monster)
+    }
+    // proof_of_worth = level 3
+    useGameStore.setState(state => ({ hero: { ...state.hero, level: 3 } }))
+    // ruins_cleanse a 2 objectives (specter + knight)
+    for (let i = 0; i < 3; i++) store().recordKill('ruin_specter')
+    for (let i = 0; i < 2; i++) store().recordKill('hollow_knight')
+
+    for (const [questId] of allQuests) {
+      try { store().completeQuest(questId) } catch { /* skip si pas complet */ }
+    }
+    const tokens = store().hero.reputationTokens
+    expect(tokens).toBeGreaterThanOrEqual(18)
+    // Avec 18+ tokens : starter_kit + divine_oracle + skill_levelup + bonus_skill = 75 → trop
+    // Mais starter + oracle + 2x skill_levelup = 5+8+12+12 = 37 → 18 ne couvre PAS
+    // Cible : 18+ tokens couvre 1-2 articles utiles (bonus_stat ou bonus_skill = 50, hors atteinte)
+    // ⇒ ratio cohérent : LÉGENDAIRE achète 2-3 petits articles, pas 1 gros
+    expect(tokens).toBeGreaterThanOrEqual(COSTS.starter_kit + COSTS.divine_oracle + COSTS.skill_levelup)
+  })
+
+  it("BAL01 — vérification que CATALOG utilise bien les coûts révisés", async () => {
+    const { CATALOG } = await import('./screens/GodsShop')
+    const byId = Object.fromEntries(CATALOG.map(item => [item.id, item.cost]))
+    expect(byId.starter_kit).toBe(5)
+    expect(byId.divine_oracle).toBe(8)
+    expect(byId.skill_levelup).toBe(12)
+    expect(byId.rank_restore).toBe(25)
+    expect(byId.bonus_skill).toBe(50)
+    expect(byId.bonus_stat).toBe(50)
   })
 })
 

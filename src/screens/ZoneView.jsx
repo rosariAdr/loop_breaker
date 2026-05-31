@@ -2,7 +2,11 @@ import { useGameStore } from '../store/gameStore'
 import { ZONES } from '../data/zones'
 import { MONSTERS, MONSTERS_BY_ZONE, MONSTERS_BY_SPOT } from '../data/monsters'
 import { RESOURCES, RARITY_COLORS } from '../data/resources'
+import { SKILLS } from '../data/skills'
 import { buildEnemy } from '../engine/combat'
+
+// S02 — seuil de kills pour révéler le skill droppable d'un monstre
+const SKILL_REVEAL_THRESHOLD = 5
 
 export default function ZoneView() {
   const { world, setScreen } = useGameStore()
@@ -144,6 +148,9 @@ function MonsterRow({ monsterId }) {
             {idleUnlocked ? '✓ Idle unlocked' : `${killCount}/5 kills`}
           </span>
         </div>
+
+        {/* S02 — Aperçu du skill droppable (flou tant que < 5 kills) */}
+        <SkillDropPreview monster={monster} killCount={killCount} />
       </div>
 
       {/* Boutons */}
@@ -182,8 +189,41 @@ function MonsterRow({ monsterId }) {
   )
 }
 
+// ── S02 — Aperçu du skill droppable ────────────────────────────────────────────
+function SkillDropPreview({ monster, killCount }) {
+  const skillId = monster.skillDrop?.skillId
+  if (!skillId) return null
+  const skill = SKILLS[skillId]
+  if (!skill) return null
+
+  const revealed = killCount >= SKILL_REVEAL_THRESHOLD
+
+  return (
+    <div className="flex items-center gap-1.5 mt-1" data-testid="skill-drop-preview">
+      <span style={{ color: '#5a4a6a', fontSize: '0.68rem', fontFamily: 'Cinzel, serif' }}>
+        ✦ Technique:
+      </span>
+      <span
+        data-testid="skill-drop-name"
+        style={{
+          color: revealed ? '#c084fc' : '#3a3048',
+          fontSize: '0.7rem',
+          fontFamily: 'Cinzel, serif',
+          // S02 — flou tant que pas révélé
+          filter: revealed ? 'none' : 'blur(3px)',
+          userSelect: revealed ? 'auto' : 'none',
+          transition: 'filter 0.3s',
+        }}
+        title={revealed ? skill.name : `Defeat ${SKILL_REVEAL_THRESHOLD} to reveal`}
+      >
+        {revealed ? skill.name : '████████'}
+      </span>
+    </div>
+  )
+}
+
 // ── Section donjon ────────────────────────────────────────────────────────────
-function DungeonSection({ zone, world, setScreen }) {
+function DungeonSection({ zone, world }) {
   const dungeon = world.dungeons[zone.id]
   if (!dungeon) return null
 
@@ -242,7 +282,7 @@ function DungeonSection({ zone, world, setScreen }) {
 }
 
 // ── Section Demon Lord ────────────────────────────────────────────────────────
-function DemonLordSection({ world, setScreen }) {
+function DemonLordSection({ world }) {
   const handleChallenge = () => {
     alert('Demon Lord battle coming soon!')
   }

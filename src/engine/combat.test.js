@@ -54,7 +54,6 @@ describe('calcBaseDamage', () => {
 describe('calcSkillDamage', () => {
   const baseHero = { strength: 10, intelligence: 8, mana: 60, maxMana: 60, hp: 100, maxHp: 100 }
   const skillPhysical = { skillId: 'savage_bite', level: 1, xp: 0, currentCooldown: 0 }
-  const skillMagic    = { skillId: 'flame_burst',  level: 1, xp: 0, currentCooldown: 0 }
 
   it('renvoie 0 pour un skill inconnu', () => {
     expect(calcSkillDamage({ skillId: 'inexistant', level: 1 }, baseHero, 1)).toBe(0)
@@ -187,11 +186,8 @@ describe('applySkillCost — S07 réduction au niveau', () => {
 // ── canUseSkill — B09 cost.hp + S07 ──────────────────────────────────────────
 describe('canUseSkill — B09 cost.hp + S07 niveau', () => {
   it("refuse si cost.hp >= hp courant", () => {
-    // On simule un skill qui coûte 50 hp
-    const fakeSkill = { skillId: 'fake_hp_skill', level: 1, currentCooldown: 0 }
-    // Trick : injecter le template via SKILLS n'est pas possible, alors on mock
-    // En réalité aucun skill du jeu n'a cost.hp > 0 actuellement, donc on prouve la logique en testant la branche
-    // via un cas où le coût scale au niveau et atteint le seuil
+    // En réalité aucun skill du jeu n'a cost.hp > 0 actuellement, donc on prouve
+    // la logique sur un cas où le HP est très bas mais le skill ne coûte pas de HP.
     const heroLowHp = { mana: 60, hp: 5, maxHp: 100, maxMana: 60 }
     const skillWithHp = { skillId: 'savage_bite', level: 1, currentCooldown: 0 }
     // savage_bite cost.hp = 0 → reste utilisable
@@ -261,6 +257,50 @@ describe('calcDrops', () => {
     const ids = drops.resources.map(r => r.id)
     const valid = ids.every(id => ['stone_shard', 'earth_crystal'].includes(id))
     expect(valid).toBe(true)
+  })
+
+  // ── D04 — Loot donjon exclusif ─────────────────────────────────────────────
+  describe('D04 — Loot donjon exclusif (boss + demon lord)', () => {
+    it('hollow_crypt_boss droppe TOUJOURS un crypt_seal', () => {
+      // chance: 1.0 → garanti sur 50 itérations
+      for (let i = 0; i < 50; i++) {
+        const drops = calcDrops('hollow_crypt_boss', 5)
+        const ids = drops.resources.map(r => r.id)
+        expect(ids).toContain('crypt_seal')
+      }
+    })
+
+    it('hollow_crypt_boss droppe TOUJOURS de l\'ancient_bone', () => {
+      for (let i = 0; i < 50; i++) {
+        const drops = calcDrops('hollow_crypt_boss', 5)
+        const ids = drops.resources.map(r => r.id)
+        expect(ids).toContain('ancient_bone')
+      }
+    })
+
+    it('forsaken_citadel_boss droppe TOUJOURS forsaken_seal + void_crystal', () => {
+      for (let i = 0; i < 30; i++) {
+        const drops = calcDrops('forsaken_citadel_boss', 5)
+        const ids = drops.resources.map(r => r.id)
+        expect(ids).toContain('forsaken_seal')
+        expect(ids).toContain('void_crystal')
+      }
+    })
+
+    it('malachar droppe TOUJOURS le demon_lord_heart + void_crystal', () => {
+      for (let i = 0; i < 30; i++) {
+        const drops = calcDrops('malachar', 5)
+        const ids = drops.resources.map(r => r.id)
+        expect(ids).toContain('demon_lord_heart')
+        expect(ids).toContain('void_crystal')
+      }
+    })
+
+    it('malachar a chance de skillDrop = 1.0 (soul_rend toujours obtenu)', () => {
+      for (let i = 0; i < 30; i++) {
+        expect(calcDrops('malachar', 5).skillDrop).toBe('soul_rend')
+      }
+    })
   })
 })
 

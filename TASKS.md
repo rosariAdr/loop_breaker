@@ -13,6 +13,39 @@ _(rien en cours)_
 
 _(aucune dépendance externe bloquante)_
 
+> **Note** : `GIT01` + `X06` ont été clos en parallèle de PROC00 (repo créé sur GitHub `rosariAdr/loop_breaker`, branches `master` + `dev`, première PR mergée).
+
+---
+
+## 🆕 À trier (version & priorité à définir plus tard)
+
+> Ajoutés le 2026-05-04 — idées du dev, non encore groomées ni assignées à une version.
+
+- [ ] **Z07 — Stock d'équipement différencié village vs ville** (S/M) - le marchand vend un stock dépendant de la taille de la localité :
+  - **Village** : équipements **communs** + **1 rare**
+  - **Ville** : que des **rares** + **1 epic**
+  - Implémentation : pondérer `equipStock` du MerchantPanel selon `location.type` (city/village) ; logique de tirage dans `SafeZone.jsx` ou helper data dans `equipment.js`
+  - AC : un village et une ville affichent des stocks distincts cohérents avec ces règles + test du helper de génération
+
+- [ ] **Q09 — Récompenses de quête variées (gold / équipement / ressources)** (S) - étendre le schéma `quest.reward` pour supporter, en plus du skill/gold/tokens actuels :
+  - `equipment: { templateId, rarity }` → ajouté à l'inventaire à la complétion
+  - `resources: { resourceId: qty }` → ajouté aux ressources
+  - Adapter `completeQuest` (gameStore) + l'affichage des RewardBadge dans QuestBoard + le toast Q07
+  - Note : le dev confectionnera ces quêtes-là plus tard (le ticket = juste le support technique)
+  - AC : une quête de test avec récompense équipement + ressources délivre bien les deux ; tests fonctionnels
+
+- [ ] **HOME01 — Système de "chez soi" (foyer)** (L) - établir un foyer où le héros peut s'installer ; hub d'artisanat et de stockage. Sous-features à découper plus tard :
+  - **Coffre de stockage** (illimité pour l'instant) : déplacer items/équipement/ressources entre inventaire et coffre ; persiste entre les runs ? (à décider — probablement non, lié au run actuel, sauf décision méta)
+  - **Atelier de potions** : crafter des consommables sur place (lien avec CRF02 alchimie)
+  - **Forge personnelle** : forger des armes sur place (lien avec CRF03 forge)
+  - Question design : le foyer est-il une **localité spéciale sur la carte** (nouveau type de node) ou un **écran accessible depuis n'importe où** ? Persiste-t-il entre transmigrations (méta) ou est-il par-univers ?
+  - AC : à définir au grooming — gros chantier, sans doute à éclater en HOME01a/b/c
+
+- [ ] **PROC07 — Debug panel : boutons "give stats"** (XS) - ajouter au `DebugPanel.jsx` des commandes pour booster les stats du héros directement :
+  - +5 STR, +5 AGI, +5 INT, +5 Chance, +5 DEF (ou un set complet "God mode stats")
+  - Éventuellement +50 maxHP / +50 maxMana
+  - AC : boutons présents en mode DEV, modifient bien `hero.stats`, tests sur 1-2 commandes
+
 ---
 
 ## Someday
@@ -20,88 +53,45 @@ _(aucune dépendance externe bloquante)_
 ### v0.1 — P1 : Stabilité & fondations (à faire en premier)
 
 #### Process & Git
-- [ ] **GIT01 — Setup Git + stratégie de branches** (XS)
-  - Créer le repo GitHub (`winget install gh` ou création manuelle) ; branches : `main` (stable, taggué), `dev` (intégration), `feat/ID` (features M/L) ; process : feat → dev → PR → main
-  - AC : repo créé, branches main+dev présentes, `.gitignore` correct (node_modules, dist)
-  - Dépend de : X06
-- [ ] **X06 — Push initial sur GitHub** (XS) - `gh` pas installé localement — `winget install gh` ou création manuelle du repo
-- [ ] **PROC00 — Socle de développement** (L)
-  - Créer `CONTRIBUTING.md` à la racine (workflow Git + DoD par type de ticket + conventions de code — contenu : voir `PROC00_ticket.md` généré par Claude Chat)
-  - Créer `CHANGELOG.md` avec entrées rétroactives v0 et v0.1
-  - Adopter la convention de commits `type(scope): description` pour tous les nouveaux commits (types : feat/fix/test/refactor/chore/docs/style/perf)
-  - Appliquer la checklist de fin de session à chaque Claude Code session : tests verts + build OK + lint OK + TASKS.md + CONTEXT.md + commit
-  - Créer `balance/combat_stats.csv` : stats monstres × zone_mult × run_count calculées
-  - AC : `npm run test:run` + `npm run build` + `npm run lint` passent en vert après setup ; checklist utilisée sur le commit suivant ; CONTEXT.md section §10 process à jour
-  - Dépend de : GIT01, X06
 
 #### Robustesse technique
-- [ ] **TECH01 — React Error Boundaries** (S)
-  - Composant `<ErrorBoundary>` dans App.jsx qui catch les erreurs React et affiche un écran propre (message + bouton "Reset save") au lieu du crash blanc
-  - AC : composant créé, wrappé autour des écrans principaux, testé avec un throw simulé, bouton reset fonctionnel
-- [ ] **TECH02 — Save schema versioning** (S)
-  - Ajouter `saveVersion: N` dans le JSON de save ; `loadGame` vérifie la version et applique les migrations en séquence ; incrémenter à chaque ajout de clé dans `INITIAL_*`
-  - AC : champ `saveVersion` présent, migration `v1→v2` exemple écrite, test sur save sans `saveVersion` (migration automatique)
-  - Dépend de : X02
-- [ ] **X02 — Tester migration saves** (S) - vérifier que `loadGame` garantit tous les nouveaux champs après chaque ajout dans `INITIAL_*` ; test dédié dans `gameStore.test.js`
+> ✅ TECH01, TECH02, X02 → fait dans Batch A+B (2026-05-04, voir Done)
 
 #### UX critique
-- [ ] **UX03 — Confirmation avant actions destructives** (XS)
-  - Modal de confirmation avant : vendre un item rare (rarity ≥ Epic), reset de save, abandon de quête
-  - AC : modal présent pour les 3 cas, bouton Annuler fonctionnel, pas de confirmation pour Common/Uncommon
+> ✅ UX03 → fait dans Batch C+D (2026-05-04, voir Done)
 
 #### Balance
-- [ ] **BAL01 — Calibration économie tokens** (S)
-  - Simuler un run typique dans `scenarios.test.js` et vérifier le ratio tokens gagnés / coûts boutique
-  - Coûts cibles : starter_kit=5, skill_levelup=12, rank_restore=25, skill_bonus=50, stat_bonus=50, oracle=8
-  - AC : simulation présente, ratio validé (run moyen = 1 article, run excellent = 2-3), CONTEXT.md §9G mis à jour
+> ✅ BAL01 → fait dans Batch E+F (2026-05-04, voir Done)
 
 ---
 
 ### v0.1 — P2 : Améliorations rapides (XS/S/M)
 
 #### Carte & déplacement
-- [ ] **MAP01 — WorldMap Canvas 2D** (M) - migrer WorldMap.jsx de SVG statique vers Canvas 2D natif (useRef + useEffect + requestAnimationFrame) : héros animé (lerp 0.04), click-to-move, safe zones glow, route animée dashoffset, marker "?" donjon, particles au clic de destination
-- [ ] **MAP02 — QTE mini-jeu de déplacement** (M) - barre qui avance automatiquement, clic dans zone verte = déplacement rapide, raté = déplacement normal + coût énergie ; déclenché sur traversée Blighted Road
-- [ ] **B13 — Keyframe hero-attack sur tour du joueur** (XS) - `@keyframes hero-attack` : translateX(+18px) puis retour 300ms, déclenchée quand le joueur confirme Attack ou Skill
+> ✅ MAP01, MAP02, B13 → fait dans Batch C+D (2026-05-04, voir Done)
 
 #### Calendrier (fusion I05 + I06 + I07)
-- [ ] **CAL01 — Cycle jour/nuit complet** (S) - (1) vérifier tickCount cycle bien sur 24 ; (2) sleep restore HP/mana 100% + déclenche dungeon respawn dans zones cleared ; (3) church pray consomme 1 tick ; 3 tests unitaires correspondants
-  > ~~I05~~, ~~I06~~, ~~I07~~ fusionnés ici — liés et testables ensemble
+> ✅ CAL01 → fait dans Batch A+B (2026-05-04, voir Done)
 
 #### Quêtes & UI
-- [ ] **Q02 — Barres de progression visuelles** (S) - remplacer texte `(3/5)` par barre `<progress>` stylisée dans QuestBoard
-- [ ] **Q06 — Rang aventurier dans Quest Board** (S) - tokens affichés + barre de progression vers le prochain rang
-- [ ] **Q07 — Animation récompense quête** (S) - flash mana stone + toast (dépend U01)
-- [ ] **U03 — Vérifier fonts Cinzel** (XS) - valider rendu Chrome + Firefox ; fallback `serif` si Google Fonts indisponible
-- [ ] **UX01 — Tooltips sur les stats du héros** (S) - hover sur STR/AGI/INT/Chance/HP/Mana → popover expliquant l'effet en jeu
-- [ ] **UX02 — Comparaison équipement au survol** (S) - dans Inventory > Equipment, hover sur un item non équipé → diff avec équipé actuel (↑↓ par stat)
-- [ ] **UX05 — Badge "nouveau loot" dans NavBar** (XS) - point rouge sur icône Bag si item non consulté depuis le dernier combat
+> ✅ Q02, Q06, Q07, UX01, UX02, UX03, UX05, U03 → fait dans Batch A→L (voir Done)
 
 #### Marchands & bâtiments
-- [ ] **Z02 — Marchand : plus de consommables** (S) - compléter : antidote_basic, stamina_ration, elixir_minor, mana_crystal
-- [ ] **Z03 — Forge : recettes lisibles** (S) - griser ingrédients manquants avec quantité disponible/requise
+> ✅ Z02, Z03 → fait dans Batch G (2026-05-04, voir Done)
 
 #### Donjons
-- [ ] **D02 — Découverte donjon** (S) - cliquer '?' sur la carte révèle le nom + niveau recommandé
-- [ ] **D04 — Loot donjon exclusif** (S) - seals/reliques garantis sur le boss (type `dungeon_seal`, non vendable, utilisable comme monnaie alternative en boutique)
-- [ ] **D05 — Warp à la sortie après complétion** (S) - héros warpé hors donjon à la mort du boss, dungeon cleared, position reset à l'entrée de zone
-- [ ] **D07 — Idle interdit dans donjons** (XS) - test : aucun toggle idle accessible en `currentScreen === 'dungeon'`
+> ✅ D02, D04, D05, D07 → fait dans Batch E+F (2026-05-04, voir Done)
 
 #### Combat
-- [ ] **B11 — Boss : fuite désactivée** (XS) - bouton Flee grisé + tooltip "Cannot flee from a boss" en boss combat
-- [ ] **PROC06 — Debug/cheat panel dev** (S) - accessible via `Ctrl+Shift+D` en `import.meta.env.DEV` uniquement ; commandes : give_item, add_tokens, force_deity, skip_day, set_run_count, kill_malachar
+> ✅ B11 → fait dans Batch A+B ; PROC06 → fait dans Batch G
 
 #### Process
-- [ ] **PROC04 — Balance spreadsheet combat** (S) - Google Sheets ou CSV versionné : stats monstres × zone_mult × run_count → HP/ATK résultants ; mis à jour à chaque changement de scaling
-- [ ] **PROC05 — Playtest log structuré** (XS) - fichier `PLAYTESTS.md` : date, durée, run N, jusqu'où, observations, bugs notés, ressenti général
+> ✅ PROC04, PROC05 → fait dans Batch G (2026-05-04, voir Done)
 
 #### Win condition & méta
-- [ ] **T04 — Malachar counter résurrection** (S) - incrémenter `meta.demonLordResurrectionCounter` à chaque transmigration post-kill Malachar, reset à 0 quand il respawn après 4 boucles
-  > W02 fusionné ici
-- [ ] **W03 — Transport vers le prochain monde après kill Malachar** (S) - transport direct ; même socle d'héritage (1 stat + 1 active + 1 passive + boutique) ; bonus automatiques : titre "Slayer of Eldenmoor" + skill Gluttony hors slots (dépend M01 + GLT01)
+> ✅ T04+W02, M02, W03 → fait dans Batch E+F (2026-05-04, voir Done)
 - [ ] **T13 — Titre permanent Demon Lord Slayer** (S) - affiché sur HeroSheet, persistant entre runs (dépend M01)
-- [ ] **M02 — Compteur Demon Lords kills** (XS) - tracker `meta.demonLordKills: { [universeId]: N }` pour win condition globale
-- [ ] **TECH03 — localStorage quota warning** (XS) - détecter `QuotaExceededError` sur `setItem` → toast warning + suggestion export save
+> ✅ TECH03 → fait dans Batch A+B (2026-05-04, voir Done)
 
 ---
 
@@ -109,8 +99,7 @@ _(aucune dépendance externe bloquante)_
 
 #### Tutorial & onboarding
 - [ ] **TUT01 — Premier run guidé : tooltips contextuels** (L) - système de tooltips progressifs via flags `meta.seenHints[]` : J1→expliquer idle, J2→donjons, 1ère mort→transmigration, 1er dieu→divine call ; dismissable, jamais réaffichés
-- [ ] **TUT02 — Hint idle unlock** (XS) - 1ère fois que le kill count atteint 10 sur un mob → toast "Idle combat unlocked for this enemy type!"
-- [ ] **TUT03 — Hint transmigration (1ère mort)** (S) - surbrillance PostMortem au run 1 avec explications sur les 3 choix d'héritage ; flag `meta.firstDeathSeen`
+> ✅ TUT02, TUT03 → fait dans Batch I (2026-05-04, voir Done)
 
 #### Boss unique mechanics
 - [ ] **BSS01 — Crypt Keeper : mécanique invocation** (M) - à 50% HP, invoque 2 Skeleton Adds (HP faible, interrompent les skills si non tués en 2 tours) ; pas de loot sur les Adds
@@ -157,10 +146,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **CRF06 — Antidote craftable chez l'alchimiste** (M) - recette `antidote_minor` dans ALCHEMY_RECIPES, supprime 1 passif négatif permanent — dépend Z04
 
 #### Skills
-- [ ] **S02 — Aperçu skills ennemis** (M) - flou < 5 kills, révélé après ; dans ZoneView au hover
-- [ ] **S03 — Stack mana stones doublons** (S) - `Map<skillId, {count, stone}>` au lieu d'array
-- [ ] **S06 — Contenant cosmétique selon univers** (S) - champ `container: 'mana_stone'|'manuscript'|'chip'` ; affiché dans InventoryCard ; mécanique identique
-- [ ] **T07b — UI sélection skill bonus (pool = skills découverts)** (M) - remplacer `power_strike` hardcodé : sélection dans GodsShop parmi skills des runs précédents ; fallback run 1 = 3 skills Zone 1
+> ✅ S02, S03, S06, T07b → fait dans Batch J (2026-05-04, voir Done)
 
 #### Quêtes
 - [ ] **NPC02 — 10 nouvelles quêtes contenu** (M) - couvrir rangs Cuivre→Argent : élites, donjons, livraison, exploration
@@ -178,9 +164,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **D06 — Donjon spawn la nuit suivante** (M) - cycle sommeil déclenche respawn + position aléatoire + marker "?" — dépend CAL01 + MAP01
 
 #### Divinités
-- [ ] **DV03 — Fidélité inter-run** (M) - au retour dans le même univers, dieu précédent se souvient → pré-sélection dans DivineCall avec message de reconnaissance
-- [ ] **DV04 — Voltaris implémenté** (M) - Foudre+Action, Chaotique ; awakening : 5 combats <30% HP ; blessing +20% AGI ; "Chain Lightning" + "Overclock" ; relations : Ignareth+6, Sylvara−4
-- [ ] **DV07 — Refus de divinité = run solo** (M) - bouton "Refuse" dans DivineCall + flag `hero.soloRun: true` + bonus T11 à la transmigration
+> ✅ DV03, DV04, DV07 → fait dans Batch L (2026-05-04, voir Done)
 
 #### Transmigration & boutique
 - [ ] **T02 — Transmigration animée** (M) - écran de transition animé entre GodsShop et renaissance
@@ -188,10 +172,8 @@ _(aucune dépendance externe bloquante)_
 - [ ] **T12 — Skill suprême Demon Lord ("Soul Rend")** (M) - héritable sans condition ; flag `skill.alwaysInheritable: true`
 
 #### Idle & UI
-- [ ] **I04 — Toast loot idle** (S) - dépend U01
+> ✅ U01, I04, U04 → fait dans Batch H+I (2026-05-04, voir Done)
 - [ ] **I08 — Choix joueur en idle** (M) - config avant lancer idle : zone, monster type, craft en parallèle, seuil HP personnalisable
-- [ ] **U01 — Système de toasts global** (M) - `toastStore.js` Zustand : `{ toasts, addToast(msg, type, duration), removeToast(id) }` ; types : loot/levelup/quest/divine/gluttony/warning/error ; `<ToastContainer>` dans App.jsx ; débloque Q07, I04
-- [ ] **U04 — Transitions écrans** (S) - fade 150ms entre tous les `currentScreen` changes
 - [ ] **U06 — Décor WorldMap Canvas 2D** (M) - arbres/marais/ruines dessinés programmatiquement (positions seedées) — dépend MAP01
 - [ ] **U08 — Vue Carte = écran principal** (M) - WorldMap Canvas 2D comme home, zones cliquables — dépend MAP01
 - [ ] **U09 — Combat à la Pokémon (1 à 3 ennemis)** (M) - hero bottom-left + ennemis top-right 1-3 cards, barres HP/mana, ciblage — dépend B03
@@ -255,6 +237,205 @@ _(aucune dépendance externe bloquante)_
 ---
 
 ## Done
+
+### v0.1/v1 — Batch G+H+I+J+L : Cleanup + Toasts + Tutorial + Skills + Divinités (2026-05-04, uncommitted)
+
+**18 tickets, +143 tests (461 → 604), branche `feat/batch_AB`**
+
+#### Batch G — Fermeture v0.1
+- [x] ~~**Z02** — Marchand : 4 consommables~~ — `stamina_ration`, `elixir_minor`, `mana_crystal`, `antidote_basic` + effet `restore_both` (HP+Mana) géré dans Combat.
+- [x] ~~**Z03** — Forge recettes lisibles~~ — ingrédients manquants grisés (opacity) + message de blocage explicite + tests `canCraft` (nouveau `equipment.test.js`).
+- [x] ~~**PROC04** — Balance CSV enrichi~~ — second CSV `balance/drops_summary.csv` (gold/exp/skill drop/resource drops par monstre).
+- [x] ~~**PROC05** — Playtest log~~ — `PLAYTESTS.md` template + méthodo + grille d'observation.
+- [x] ~~**PROC06** — Debug panel dev~~ — `DebugPanel.jsx` (Ctrl+Shift+D, DEV only via `import.meta.env.DEV`), 17 commandes cheat. 9 tests.
+
+#### Batch H — Toasts (U01 fondation)
+- [x] ~~**U01** — Système de toasts global~~ — `toastStore.js` Zustand séparé (`addToast`/`removeToast`/`clearToasts`, 8 types, auto-dismiss). `ToastContainer.jsx` overlay bas-droit. 16 tests.
+- [x] ~~**Q07** — Toast récompense quête~~ — `completeQuest` pousse un toast `quest` avec gold/tokens/skill.
+- [x] ~~**I04** — Toast loot idle~~ — toasts `levelup` (level-up idle) + `warning` (HP bas) dans `processIdleTick`, non-spammy.
+
+#### Batch I — Transitions + Tutorial
+- [x] ~~**U04** — Transitions écrans~~ — `@keyframes screen-fade-in` 150ms + wrapper `key={currentScreen}` dans App.
+- [x] ~~**TUT02** — Hint idle unlock~~ — toast au 5e kill d'un mob + flag `meta.seenHints` (affiché une seule fois).
+- [x] ~~**TUT03** — Hint transmigration~~ — box explicatif + surbrillance dans PostMortem au 1er run (`meta.firstDeathSeen`), action `markFirstDeathSeen`.
+
+#### Batch J — Skills polish
+- [x] ~~**S02** — Aperçu skills ennemis~~ — `SkillDropPreview` dans ZoneView : skill droppable flouté (blur) tant que < 5 kills, révélé après. Nouveau `ZoneView.test.jsx`.
+- [x] ~~**S03** — Stack mana stones doublons~~ — `utils/manaStones.js` (`groupManaStones`/`removeOneManaStone`) + badge ×N dans Inventory. **Fix bug latent** : `equipActiveSkill`/`equipPassiveSkill` ne retiraient toutes les copies (filter) → maintenant une seule + refus de doublon en slot.
+- [x] ~~**S06** — Contenant cosmétique~~ — `data/containers.js` (`getSkillContainer` par univers : Mana Stones/Manuscripts/Data Chips/Fragments). Label dynamique dans Inventory.
+- [x] ~~**T07b** — UI sélection skill bonus~~ — `getBonusSkillPool(lastRunSummary)` (skills du run précédent ou fallback 3 Zone 1) + sélecteur dans GodsShop, remplace `power_strike` hardcodé.
+
+#### Batch L — Divinités v1
+- [x] ~~**DV04** — Voltaris~~ — 3e divinité (Foudre+Action, Chaotique). Awakening : 5 victoires sous 30% HP (`checkVoltarisAwakening` + `hpPercent` ajouté à `endCombat` battleLog). Blessing +20% AGI. Skills `chain_lightning` (120% INT, AoE) + `overclock` (+80% spd 2T). Relations Ignareth +6, Sylvara -4. 12 tests.
+- [x] ~~**DV03** — Fidélité inter-run~~ — bannière "X remembers you" dans DivineCall si `meta.divineBonds[universe] === deity.id`. Nouveau `DivineCall.test.jsx`.
+- [x] ~~**DV07** — Refus = run solo~~ — `refuseDeity` lève `hero.soloRun`, garantit le bonus T11 (+1 lvl skills) à la transmigration même si une divinité existait.
+
+#### Tests étendus
+- 604 tests total (+143 vs E+F), 23 fichiers (+9)
+- Nouveaux : `equipment.test.js`, `DebugPanel.test.jsx`, `toastStore.test.js`, `ToastContainer.test.jsx`, `manaStones.test.js`, `containers.test.js`, `ZoneView.test.jsx`, `GodsShop.test.jsx`, `DivineCall.test.jsx`
+
+#### Cleanup
+- Override `eslint.config.js` pour GodsShop/ZoneView (helpers co-exportés)
+- Fix bug equip-skill (retirait toutes les copies)
+
+### v0.1 — Batch E+F : Donjons + Balance + Win Condition (2026-05-04, uncommitted)
+
+**8 tickets, +36 tests (461 → 497), branche `feat/batch_AB` (review GitKraken, push différé)**
+
+#### Batch E — Donjons + Balance
+- [x] ~~**D02** — Découverte donjon (clic '?' sur Canvas)~~ (2026-05-04)
+  - Marker '?' dans WorldMapCanvas devient cliquable via node virtuel `__dungeon__` injecté dans le hit-test.
+  - 1er clic → `discoverDungeon('ashenvale')` → marker passe à '!' + label révélé "The Hollow Crypt · Lv 12-16".
+  - 2 tests render dans WorldMapCanvas.test.jsx.
+- [x] ~~**D04** — Loot donjon exclusif~~ (2026-05-04)
+  - Field `category: 'dungeon_seal'` ajouté à `crypt_seal`, `forsaken_seal`, `demon_lord_heart` (monnaie alternative future).
+  - 6 tests dans `combat.test.js` : drops garantis (chance 1.0) sur les 3 boss + skill drop garanti malachar.
+  - 5 tests structure dans nouveau `data/resources.test.js`.
+- [x] ~~**D05** — Warp à la sortie après complétion~~ (2026-05-04)
+  - `clearDungeon(zoneId)` warpe désormais le hero vers la city de la zone (`ironhaven` pour ashenvale, `stonehaven` pour grimspire).
+  - Reset `currentHuntingSpot`, `isIdleActive`, `idleTargetMonster` à la complétion.
+  - 3 tests dédiés.
+- [x] ~~**D07** — Idle interdit dans donjons~~ (2026-05-04)
+  - `toggleIdle` refuse l'activation si :
+    - La zone courante a `idleAllowed === false` (cas Blighted Road, depuis ZONES data).
+    - `currentScreen === 'dungeon'` (anticipation D01).
+  - Import `ZONES` ajouté dans gameStore.js. 3 tests dédiés.
+- [x] ~~**BAL01** — Calibration économie tokens~~ (2026-05-04)
+  - Coûts CATALOG révisés : starter_kit 10→5, oracle 15→8, skill_levelup 20→12, rank_restore 40→25, bonus_skill/stat 80→50.
+  - 5 scénarios dans `scenarios.test.js` : run rapide (1 quête → 1 token), moyen (3 quêtes → 4 tokens), excellent (3+boss → 7 tokens), légendaire (8 quêtes + Malachar → 18+ tokens) + vérif que CATALOG utilise les bons coûts.
+  - Cible validée : run moyen achète 0-1 article, légendaire 2-3 articles cumulés.
+
+#### Batch F — Win Condition
+- [x] ~~**T04 + W02** — Malachar counter résurrection~~ (2026-05-04)
+  - `applyTransmigration` incrémente `world.demonLordResurrectionCounter` à chaque transmigration tant que `demonLordDefeated === true`.
+  - Quand counter atteint 4 (constante `RESURRECTION_CYCLES`) : Malachar respawn (counter=0, defeated=false, donjon grimspire reset cleared/discovered).
+  - 5 tests : compteur reste à 0 sans kill, incrément après kill, respawn après 4 transmigrations, re-kill post-respawn, flag malacharDefeatedThisRun reset.
+- [x] ~~**M02** — Compteur Demon Lords kills~~ (2026-05-04)
+  - `meta.demonLordKills` passé de `0` (number) à `{}` (object indexé par `universeId`) — préparation X08 multi-univers.
+  - `clearDungeon('grimspire')` incrémente `meta.demonLordKills.medieval_fantasy`.
+  - Migration legacy : test existant adapté.
+  - 3 tests : init à 0, incréments multiples, ashenvale ne compte pas.
+- [x] ~~**W03** — Transport prochain monde (version minimale)~~ (2026-05-04)
+  - Flag `meta.malacharDefeatedThisRun` levé par `clearDungeon('grimspire')`, reset par `applyTransmigration`.
+  - Écran dramatique "MALACHAR THE UNDYING ... has fallen" dans PostMortem (overlay si flag levé), avec titre "Slayer of Eldenmoor", texte "To be continued.", bouton "Continue to Transmigration →" qui bascule vers le post-mortem normal.
+  - 3 tests : affichage si flag, absence si pas killed, dismiss → flow normal.
+
+#### Tests étendus
+- 497 tests total (+36 vs Batch C+D), 14 fichiers (+1 `data/resources.test.js`)
+- Tests M02 + D05 + T04/W02 + W03 + BAL01 + D04 + D07
+
+#### Cleanup
+- 2 erreurs lint résolues : `median` unused (scenarios), override `react-refresh` pour GodsShop.jsx (CATALOG exporté pour BAL01)
+- Test legacy `clearDungeon grimspire` adapté à la nouvelle structure object (M02)
+
+### v0.1 — Batch C+D : UX/Tooltips + WorldMap Canvas + QTE (2026-05-04, uncommitted)
+
+**8 tickets, +77 tests (385 → 462), branche `feat/batch_AB` (review GitKraken, push différé)**
+
+#### Batch C — UX & Tooltips
+- [x] ~~**UX01** — Tooltips stats héros~~ (2026-05-04)
+  - `src/components/Tooltip.jsx` (composant réutilisable hover/focus/click) + `Tooltip.test.jsx` (9 tests).
+  - Appliqué dans `HeroSheet.jsx` sur chaque StatRow avec descriptions in-game (`STAT_TOOLTIPS`).
+  - Curseur `help` + border-bottom pointillée sur les stats avec tooltip.
+- [x] ~~**UX02** — Comparaison équipement~~ (2026-05-04)
+  - Diff `↑+N` (vert) / `↓-N` (rouge) / `—` (gris) par stat dans le panneau détail Inventory > Equipment.
+  - Affiche "vs équipé : Iron Sword" pour contexte. 5 tests dédiés.
+- [x] ~~**UX03** — Confirmations destructives~~ (2026-05-04)
+  - `src/components/ConfirmDialog.jsx` réutilisable (3 variants : destructive/warn/info) + 8 tests.
+  - Appliqué sur 3 actions : Sell item rare (rarity ≥ epic), Reset save (PostMortem ↺), Abandon de quête (QuestBoard, bouton "Abandon" + action store `abandonQuest`).
+  - 3 tests `abandonQuest` + 3 tests UI flow Reset complet/annulation.
+- [x] ~~**UX05** — Badge "nouveau loot" NavBar~~ (2026-05-04)
+  - Flag store `unseenLoot` levé par `addResource`/`addEquipmentToInventory`/`addSkillToInventory` (PAS par `addGold`/`addConsumable`).
+  - Action `markLootAsSeen` appelée au mount d'Inventory via `useEffect`.
+  - Badge point rouge avec glow dans NavBar > Bag tab. 8 tests store + 4 tests UI.
+- [x] ~~**U03** — Fonts Cinzel resilientes~~ (2026-05-04)
+  - `<link rel="preconnect">` Google Fonts dans index.html (réduit FOIT/FOUT).
+  - Font stacks étendus : `'Cinzel', 'Trajan Pro', Georgia, ...serif` (fallback robuste).
+- [x] ~~**B13** — Keyframe hero-attack~~ (2026-05-04)
+  - `@keyframes hero-attack` (translateX +18px ping-pong 300ms) dans `index.css`.
+  - State `heroAttackAnim` dans Combat.jsx, déclenché par handleAttack et handleUseSkill. Classe `.anim-hero-attack` sur HeroCard. 2 tests.
+
+#### Batch D — Carte Canvas 2D
+- [x] ~~**MAP01** — WorldMap Canvas 2D~~ (2026-05-04)
+  - Nouveau `src/screens/WorldMapCanvas.jsx` — composant Canvas avec requestAnimationFrame loop + ResizeObserver pour DPR/responsive.
+  - Helpers purs exportés : `lerp(a, b, t)`, `pctToPx(pctX, pctY, w, h)`, `getNodeAtPosition(x, y, nodes, hitRadius)` — 13 tests unitaires.
+  - Features : nodes cliquables (city/spot/village), paths animés (dashoffset), héros lerp 0.04 vers nodeId actif, marker "?" donjon (couleur selon `discovered`), particles dorées au clic destination, cursor pointer sur hover.
+  - WorldMap.jsx refactoré : SVG/HTML supprimé (HuntNode, LocationNode, CharacterMarker, NODE_POSITIONS, getSpotIdleMonsters), remplacé par `<WorldMapCanvas>` qui prend les nodes en props.
+  - 3 smoke tests RTL : monte, canvas présent, aspect-ratio 16:10, onClick handler attaché.
+- [x] ~~**MAP02** — QTE mini-jeu déplacement~~ (2026-05-04)
+  - Nouveau `src/components/QTEBar.jsx` — modal full-screen avec barre ping-pong + zone verte + bouton NOW.
+  - Helpers purs : `isInGreenZone(cursor, start, end)`, `cursorPositionAt(elapsed, duration)` (11 tests).
+  - Intégré dans WorldMap pour traverser Blighted Road : succès = entrée immédiate, échec/timeout = entrée mais coût -5% maxHp.
+  - 8 smoke tests composant : rendu, position zone, NOW success/failure, timeout, no-op après resolution.
+
+#### Tests étendus
+- 461 tests total (+77 vs Batch A+B), 13 fichiers (+4)
+- Nouveaux fichiers tests : `Tooltip.test.jsx` (9), `ConfirmDialog.test.jsx` (8), `WorldMapCanvas.test.jsx` (16), `QTEBar.test.jsx` (19)
+- Tests UX05 / UX02 / UX03 / B13 ajoutés dans `screens.test.jsx`, `gameStore.test.js`, `Combat.test.jsx`
+
+#### Cleanup
+- 2 erreurs lint `react-refresh` résolues via overrides ciblés dans `eslint.config.js` pour `WorldMapCanvas.jsx` + `QTEBar.jsx` (helpers purs co-exportés)
+- Refactor `draw` rAF self-reference → boucle `loop` séparée (évite `react-hooks/immutability`)
+- Variable `nodesById` morte retirée
+
+### v0.1 — Batch A+B : Robustesse + Calendar + Quest UI (2026-05-04)
+
+**8 tickets, +63 tests (322 → 385), TDD strict, 0 commit (branche `feat/batch_AB` pour review GitKraken)**
+
+#### Batch A — Robustesse technique
+- [x] ~~**TECH01** — React Error Boundaries~~ (2026-05-04)
+  - Nouveau `src/components/ErrorBoundary.jsx` (class component, seul moyen en React) wrappé autour de `<main>` dans App.jsx.
+  - Fallback UI : message d'erreur abrégé + boutons "Reload page" et "Reset save (last resort)" avec confirm().
+  - 8 tests dans `ErrorBoundary.test.jsx` (rendu normal, throw → fallback, message affiché, reload, reset save avec/sans confirm, log via componentDidCatch).
+  - eslint.config.js : override `react-refresh/only-export-components: off` pour ce fichier (incompat class components).
+- [x] ~~**TECH02** — Save schema versioning~~ (2026-05-04)
+  - Constante exportée `SAVE_VERSION = 2` en haut de `gameStore.js`.
+  - Helper `runMigrations(save)` exporté + `migrateV1ToV2(save)` interne séquentiel.
+  - `saveGame` inclut `saveVersion` dans le JSON. `loadGame` lit la version et applique les migrations en chaîne.
+  - 5 tests dédiés (saveVersion écrit, constant exportée, legacy v1 sans saveVersion, save explicite v1 → v2, runMigrations testable directement).
+- [x] ~~**X02** — Tests migration saves (battery)~~ (2026-05-04)
+  - 18 tests anti-régression dans `gameStore.test.js` couvrant `inventory.equipment/manaStones/consumables/resources` absents, `equipped`, `activeSkills/passiveSkills`, `battleLog/combatEntryLog/titles`, `world.completedQuests=0` (legacy number), `world.dungeons/monsterKillCounts`, `meta.divineBonds`, save vide, hero/world/meta absent.
+  - Pattern factorisé `buildSaveMissing(path, value)` pour faciliter l'ajout de tests futurs.
+- [x] ~~**TECH03** — localStorage quota warning~~ (2026-05-04)
+  - Try/catch autour de `localStorage.setItem` dans `saveGame`. Sur erreur (`QuotaExceededError` ou autre) : `console.error` + flag `saveQuotaExceeded: true` dans le store.
+  - Flag reset à `false` au prochain save réussi et au `resetGame`.
+  - 4 tests : flag par défaut, mock setItem qui throw, succès reset, resetGame reset.
+
+#### Batch B — Calendar + Quêtes UI
+- [x] ~~**CAL01** — Cycle jour/nuit complet~~ (2026-05-04)
+  - Nouvelle action `prayAtChurch()` dans gameStore.js : restaure 40% HP/Mana ET consomme 1 tick (avec rollover jour si tickCount=23).
+  - `ChurchPanel` (SafeZone.jsx) utilise `prayAtChurch` au lieu de `healHero`+`restoreHeroMana`. Sous-titre "Restores 40% HP & Mana · costs 1 tick".
+  - 4 tests CAL01 + complément test cycle 24 ticks.
+- [x] ~~**Q02** — Barres de progression visuelles~~ (2026-05-04)
+  - Dans `QuestBoard.jsx` chaque objectif affiche maintenant : ligne texte `(current/target)` + barre `<div role="progressbar">` en dessous (gold sur dark, vert quand complété).
+  - 4 tests : présence des barres, `aria-valuenow` correct, saturation à valuemax si over-kill, pas de barre sur quêtes complétées.
+- [x] ~~**Q06** — Rang aventurier dans Quest Board~~ (2026-05-04)
+  - Helper `getRankInfo(tokens)` exporté + constante `RANK_TIERS` (Copper 0-9, Silver 10-29, Gold 30-69, Platinum 70-149, Diamond 150+).
+  - Composant `<RankBanner>` affiché en haut de QuestBoard : tier coloré + barre de progression vers le tier suivant + label "X/Y to next tier" ou "MAX".
+  - 14 tests : seuils tiers, edge cases (négatif/undefined), rendu UI avec aria, MAX label.
+- [x] ~~**B11** — Boss : fuite désactivée~~ (2026-05-04)
+  - Tab "Flee" disabled (déjà existant) + ajout d'un `title="Cannot flee from a boss"` (tooltip natif) + `cursor: not-allowed`.
+  - 5 tests explicites dans `Combat.test.jsx` : tab disabled sur boss/elite/demon_lord, tooltip présent, tab actif sur common.
+
+#### Cleanup lint
+- 2 erreurs `Unused eslint-disable directive` retirées (gameStore.js + ErrorBoundary.jsx)
+- Override `eslint.config.js` pour autoriser exports non-composants dans `ErrorBoundary.jsx` et `QuestBoard.jsx`
+
+### v0.1 — Process & socle développement (2026-04-25)
+
+- [x] ~~**GIT01** — Setup Git + stratégie de branches~~ (2026-04-25)
+  - Repo créé sur GitHub : `rosariAdr/loop_breaker`
+  - Branches : `master` (stable, taggable) et `dev` (intégration)
+  - `.gitignore` correct (node_modules, dist, .claude/, public/monsters/*.png)
+- [x] ~~**X06** — Push initial sur GitHub~~ (2026-04-25)
+  - PR #1 `dev → master` mergée — 30+ fichiers source + 322 tests + docs
+  - Convention de commits adoptée dès ce premier commit (`chore: initial codebase import — v0.1.2`)
+- [x] ~~**PROC00** — Socle de développement~~ (2026-04-25)
+  - `CONTRIBUTING.md` (~280 lignes) : workflow Git, convention commits, DoD par type, conventions code, checklist fin de session, règle save, process PR, règle de sync `dev` ↔ `master`
+  - `CHANGELOG.md` : Keep a Changelog + SemVer ; entrées rétroactives v0.0.1 / v0.0.2 / v0.1.0 / v0.1.1 / v0.1.2 + section [Unreleased]
+  - `balance/combat_stats.csv` (115 lignes : 23 monstres × 5 niveaux de scaling) + `scripts/generate-balance-csv.mjs` pour régénérer après modif data
+  - `CONTEXT.md` §3, §10 et §12 mis à jour (main → master, références PROC00)
+  - AC : `npm run test:run` + `npm run build` + `npm run lint` verts ; checklist appliquée sur le commit de clôture
 
 ### v0 — Base jouable (clôturée — avril 2026)
 

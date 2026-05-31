@@ -2,6 +2,18 @@ import { useGameStore } from '../store/gameStore'
 import { SKILLS } from '../data/skills'
 import { DEITIES } from '../data/deities'
 import { RARITY_CONFIG, calcEquippedStatBonuses } from '../data/equipment'
+import Tooltip from '../components/Tooltip'
+
+// UX01 — Descriptions in-game des stats du héros
+const STAT_TOOLTIPS = {
+  HP: "Points de vie. À 0 → mort + transmigration.",
+  Mana: "Énergie magique. Coût des skills actifs (réduit de 10% par niveau de skill).",
+  Strength: "Augmente les dégâts d'attaque basique et des skills physiques. +1/level-up.",
+  Agility: "Vitesse au tour de combat (ordre d'action). Augmente le %fuite.",
+  Intelligence: "Augmente les dégâts des skills magiques.",
+  Chance: "Augmente la fréquence et la qualité des drops de loot (skills, ressources).",
+  Defense: "Réduit les dégâts subis : dmg = max(1, atk - DEF/2).",
+}
 
 export default function HeroSheet() {
   const { hero, setScreen, unequipItem, unequipActiveSkill, unequipPassiveSkill } = useGameStore()
@@ -293,9 +305,20 @@ function Section({ title, children }) {
 }
 
 function StatRow({ label, value, color }) {
+  const tooltip = STAT_TOOLTIPS[label]
   return (
     <div className="flex justify-between items-center p-2 rounded" style={{ background: '#0f0c08', border: '1px solid #1a1410' }}>
-      <span style={{ color: '#6a5a4a', fontSize: '0.8rem', fontFamily: 'Cinzel, serif' }}>{label}</span>
+      <Tooltip content={tooltip}>
+        <span
+          style={{
+            color: '#6a5a4a', fontSize: '0.8rem', fontFamily: 'Cinzel, serif',
+            cursor: tooltip ? 'help' : 'default',
+            borderBottom: tooltip ? '1px dotted #3a2818' : 'none',
+          }}
+        >
+          {label}
+        </span>
+      </Tooltip>
       <span style={{ color, fontSize: '0.9rem', fontWeight: 600 }}>{value}</span>
     </div>
   )

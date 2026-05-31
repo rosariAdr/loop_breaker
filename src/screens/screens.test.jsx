@@ -34,6 +34,11 @@ describe('Smoke tests — montage de chaque écran', () => {
     expect(() => render(<App />)).not.toThrow()
   })
 
+  it('U04 — App wrappe le screen courant dans un conteneur anim-screen-fade', () => {
+    const { container } = render(<App />)
+    expect(container.querySelector('.anim-screen-fade')).not.toBeNull()
+  })
+
   it('HeroSheet monte', () => {
     render(<HeroSheet />)
     expect(screen.getByText(useGameStore.getState().hero.name)).toBeInTheDocument()
@@ -310,6 +315,117 @@ describe('Inventory — flow équipement item', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
+// UX05 — Badge "nouveau loot" NavBar
+// ─────────────────────────────────────────────────────────────────────────────
+describe('UX05 — Badge unseen loot dans NavBar', () => {
+  it("PAS de badge si unseenLoot = false par défaut", () => {
+    render(<App />)
+    expect(screen.queryByTestId('unseen-loot-badge')).toBeNull()
+  })
+
+  it("badge présent si unseenLoot = true et on n'est pas sur l'écran inventory", () => {
+    useGameStore.setState({ unseenLoot: true, currentScreen: 'world_map' })
+    render(<App />)
+    expect(screen.getByTestId('unseen-loot-badge')).toBeInTheDocument()
+  })
+
+  it("badge masqué quand on est SUR l'écran inventory (déjà vu)", () => {
+    useGameStore.setState({ unseenLoot: true, currentScreen: 'inventory' })
+    render(<App />)
+    // Inventory monté → useEffect appelle markLootAsSeen → flag passe à false
+    // Aussi : showBadge condition exclut currentScreen === 'inventory'
+    expect(screen.queryByTestId('unseen-loot-badge')).toBeNull()
+  })
+
+  it("clic sur Bag depuis world_map masque le badge", () => {
+    useGameStore.setState({ unseenLoot: true, currentScreen: 'world_map' })
+    render(<App />)
+    expect(screen.getByTestId('unseen-loot-badge')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Bag'))
+    // markLootAsSeen est appelé via useEffect d'Inventory
+    expect(useGameStore.getState().unseenLoot).toBe(false)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UX02 — Diff comparée équipement au survol/click
+// ─────────────────────────────────────────────────────────────────────────────
+describe('UX02 — Diff comparée équipement', () => {
+  beforeEach(() => {
+    // Équipement actuel : Iron Sword (+5 str)
+    useGameStore.setState(state => ({
+      hero: {
+        ...state.hero,
+        equipped: {
+          ...state.hero.equipped,
+          weapon: { instanceId: 'equipped_sword', name: 'Iron Sword', slot: 'weapon', rarity: 'common', stats: { strength: 5 }, sellPrice: 20 },
+        },
+        inventory: {
+          ...state.hero.inventory,
+          equipment: [
+            { instanceId: 'new_sword', templateId: 'steel_sword', name: 'Steel Sword', slot: 'weapon', rarity: 'rare', stats: { strength: 12 }, sellPrice: 80 },
+            { instanceId: 'weak_sword', templateId: 'tin_sword', name: 'Tin Sword', slot: 'weapon', rarity: 'common', stats: { strength: 2 }, sellPrice: 5 },
+          ],
+        },
+      },
+    }))
+  })
+
+  it("affiche un ↑ vert quand le nouvel item est meilleur", () => {
+    render(<Inventory />)
+    fireEvent.click(screen.getByText(/Equipment/))
+    fireEvent.click(screen.getByText('Steel Sword'))
+    const diff = screen.getByTestId('diff-strength')
+    expect(diff.textContent).toContain('↑+7')  // 12 - 5 = +7
+  })
+
+  it("affiche un ↓ rouge quand le nouvel item est pire", () => {
+    render(<Inventory />)
+    fireEvent.click(screen.getByText(/Equipment/))
+    fireEvent.click(screen.getByText('Tin Sword'))
+    const diff = screen.getByTestId('diff-strength')
+    expect(diff.textContent).toContain('↓-3')  // 2 - 5 = -3
+  })
+
+  it("affiche le nom de l'item équipé pour comparaison", () => {
+    render(<Inventory />)
+    fireEvent.click(screen.getByText(/Equipment/))
+    fireEvent.click(screen.getByText('Steel Sword'))
+    expect(screen.getByText(/vs équipé : Iron Sword/)).toBeInTheDocument()
+  })
+
+  it("n'affiche PAS de diff quand l'item est l'équipement actuel", () => {
+    // Ajoute le sword équipé aussi à l'inventaire (cas où on l'a sélectionné)
+    useGameStore.setState(state => ({
+      hero: {
+        ...state.hero,
+        inventory: {
+          ...state.hero.inventory,
+          equipment: [...state.hero.inventory.equipment, state.hero.equipped.weapon],
+        },
+      },
+    }))
+    render(<Inventory />)
+    fireEvent.click(screen.getByText(/Equipment/))
+    // Click sur l'Iron Sword (équipé) — il y aura 2 matches → on prend le dernier (l'item de l'inventaire)
+    const swords = screen.getAllByText('Iron Sword')
+    fireEvent.click(swords[swords.length - 1])
+    // Pas de diff puisque alreadyEquipped
+    expect(screen.queryByTestId('diff-strength')).toBeNull()
+  })
+
+  it("n'affiche PAS de diff si aucun item équipé dans le slot", () => {
+    useGameStore.setState(state => ({
+      hero: { ...state.hero, equipped: { ...state.hero.equipped, weapon: null } },
+    }))
+    render(<Inventory />)
+    fireEvent.click(screen.getByText(/Equipment/))
+    fireEvent.click(screen.getByText('Steel Sword'))
+    expect(screen.queryByTestId('diff-strength')).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Régression : Inventory ne doit pas crasher avec une vieille save (sans equipment/equipped)
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Inventory — régression vieille save (bug user)', () => {
@@ -479,15 +595,105 @@ describe('PostMortem — actions', () => {
     expect(screen.getByText('Stone Golem')).toBeInTheDocument()
   })
 
+  // TUT03 — Hint première transmigration
+  it("TUT03 — affiche le hint si firstDeathSeen=false et totalDeaths<=1", () => {
+    useGameStore.setState(state => ({
+      meta: { ...state.meta, firstDeathSeen: false, totalDeaths: 1 },
+    }))
+    render(<PostMortem />)
+    expect(screen.getByTestId('first-death-hint')).toBeInTheDocument()
+    expect(screen.getByText(/First Transmigration/)).toBeInTheDocument()
+  })
+
+  it("TUT03 — PAS de hint si déjà vu (firstDeathSeen=true)", () => {
+    useGameStore.setState(state => ({
+      meta: { ...state.meta, firstDeathSeen: true, totalDeaths: 1 },
+    }))
+    render(<PostMortem />)
+    expect(screen.queryByTestId('first-death-hint')).toBeNull()
+  })
+
+  it("TUT03 — PAS de hint après plusieurs morts (totalDeaths>1)", () => {
+    useGameStore.setState(state => ({
+      meta: { ...state.meta, firstDeathSeen: false, totalDeaths: 5 },
+    }))
+    render(<PostMortem />)
+    expect(screen.queryByTestId('first-death-hint')).toBeNull()
+  })
+
+  it("TUT03 — clic sur 'Got it' marque le hint comme vu", () => {
+    useGameStore.setState(state => ({
+      meta: { ...state.meta, firstDeathSeen: false, totalDeaths: 1 },
+    }))
+    render(<PostMortem />)
+    fireEvent.click(screen.getByText('Got it'))
+    expect(useGameStore.getState().meta.firstDeathSeen).toBe(true)
+  })
+
   it('affiche le bouton "↺ New Run"', () => {
     render(<PostMortem />)
     expect(screen.getByText(/New Run/)).toBeInTheDocument()
   })
 
-  it('clic sur "New Run" reset le jeu', () => {
+  it('clic sur "New Run" ouvre une confirmation (UX03) — ne reset PAS directement', () => {
     useGameStore.getState().addGold(500)
     render(<PostMortem />)
     fireEvent.click(screen.getByText(/New Run/))
+    // UX03 ajoute désormais une confirmation : le gold n'est PAS reset tant que non confirmé
+    expect(useGameStore.getState().hero.inventory.gold).toBe(500)
+    // Le dialog de confirmation est visible
+    expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument()
+  })
+
+  it('clic sur "New Run" → "Reset everything" reset le jeu (UX03 flow complet)', () => {
+    useGameStore.getState().addGold(500)
+    render(<PostMortem />)
+    fireEvent.click(screen.getByText(/New Run/))
+    // Le dialog s'ouvre avec un bouton "Reset everything"
+    fireEvent.click(screen.getByText(/Reset everything/))
     expect(useGameStore.getState().hero.inventory.gold).toBe(0)
+  })
+
+  it('"New Run" → "Keep my save" annule (gold préservé)', () => {
+    useGameStore.getState().addGold(500)
+    render(<PostMortem />)
+    fireEvent.click(screen.getByText(/New Run/))
+    fireEvent.click(screen.getByText(/Keep my save/))
+    expect(useGameStore.getState().hero.inventory.gold).toBe(500)
+    // Dialog fermé
+    expect(screen.queryByTestId('confirm-dialog')).toBeNull()
+  })
+
+  // W03 — Bannière Malachar defeated
+  describe('W03 — Bannière Malachar slain', () => {
+    it("affiche la bannière 'MALACHAR THE UNDYING' si meta.malacharDefeatedThisRun=true", () => {
+      useGameStore.setState(state => ({
+        meta: { ...state.meta, malacharDefeatedThisRun: true },
+      }))
+      render(<PostMortem />)
+      expect(screen.getByTestId('malachar-defeated-banner')).toBeInTheDocument()
+      expect(screen.getByText(/MALACHAR THE UNDYING/)).toBeInTheDocument()
+      expect(screen.getByText(/Slayer of Eldenmoor/)).toBeInTheDocument()
+      expect(screen.getByText(/To be continued/)).toBeInTheDocument()
+    })
+
+    it("PAS de bannière si Malachar pas killed ce run", () => {
+      useGameStore.setState(state => ({
+        meta: { ...state.meta, malacharDefeatedThisRun: false },
+      }))
+      render(<PostMortem />)
+      expect(screen.queryByTestId('malachar-defeated-banner')).toBeNull()
+    })
+
+    it("clic sur 'Continue to Transmigration' bascule vers le PostMortem normal", () => {
+      useGameStore.setState(state => ({
+        meta: { ...state.meta, malacharDefeatedThisRun: true },
+      }))
+      render(<PostMortem />)
+      fireEvent.click(screen.getByText(/Continue to Transmigration/))
+      // La bannière disparaît, ☠ Fallen apparaît
+      expect(screen.queryByTestId('malachar-defeated-banner')).toBeNull()
+      expect(screen.getByText(/Fallen/)).toBeInTheDocument()
+    })
   })
 })

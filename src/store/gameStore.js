@@ -1,9 +1,20 @@
 import { create } from 'zustand'
 import { MONSTERS } from '../data/monsters'
 import { QUESTS } from '../data/quests'
+import { SKILLS } from '../data/skills'
+import { RESOURCES } from '../data/resources'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
+import { ZONES } from '../data/zones'
+import { useToastStore } from './toastStore'
+import { removeOneManaStone } from '../utils/manaStones'
+
+// ── TECH02 — Save schema versioning ──────────────────────────────────────────
+// Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
+// nécessite une migration. Ajouter la migration correspondante dans `runMigrations`.
+export const SAVE_VERSION = 2
 
 // ── État initial du héros ─────────────────────────────────────────────────────
+// (les migrations sont définies plus bas, après les INITIAL_*)
 const INITIAL_HERO = {
   name: 'The Wanderer',
 
@@ -65,6 +76,9 @@ const INITIAL_HERO = {
 
   // Flag : le joueur a-t-il choisi son nom ? (faux = CharacterCreation à afficher)
   heroNamed: false,
+
+  // DV07 — Le joueur a-t-il refusé une divinité ce run ? (→ bonus solo T11)
+  soloRun: false,
 }
 
 // ── État initial du monde ─────────────────────────────────────────────────────
@@ -121,9 +135,18 @@ const INITIAL_WORLD = {
 const INITIAL_META = {
   totalDeaths: 0,
   totalPlaytime: 0,
-  demonLordKills: 0,
+  // M02 — Compteur Demon Lords kills par univers : { [universeId]: count }
+  // Préparation X08 multi-univers. Pour le POC : un seul univers 'medieval_fantasy'.
+  demonLordKills: {},
   titlesEarned: [],
   totalRepTokensEarned: 0,
+
+  // W03 — Flag levé si Malachar killed durant ce run (consommé au PostMortem)
+  malacharDefeatedThisRun: false,
+
+  // TUT02/TUT03 — Hints d'onboarding déjà vus (ne se réaffichent jamais)
+  seenHints: [],        // ['idle_unlock', ...]
+  firstDeathSeen: false, // TUT03 — surbrillance PostMortem au 1er run
 
   // Héritage en attente (rempli à la mort, consommé à la renaissance)
   pendingInheritance: null, // { stat, activeSkill, passiveSkill, bonuses }
@@ -163,6 +186,90 @@ function applyLevelUps(exp, level, expToNext, stats) {
   return { exp, level, expToNext, stats, levelsGained }
 }
 
+// ── TECH02 — Migrations save (séquentielles) ─────────────────────────────────
+
+/**
+ * Migration v1 → v2 : structure complète des champs hero/world/meta.
+ * Reprend toute la logique de robustesse anti-crash sur vieilles saves.
+ */
+function migrateV1ToV2(save) {
+  const { hero = {}, world = {}, meta = {} } = save
+
+  // ── World ──
+  const migratedWorld = {
+    ...INITIAL_WORLD,
+    ...world,
+    completedQuests: Array.isArray(world.completedQuests) ? world.completedQuests : [],
+    activeQuests: Array.isArray(world.activeQuests) ? world.activeQuests : [],
+    currentHuntingSpot: world.currentHuntingSpot ?? null,
+    monsterKillCounts: world.monsterKillCounts ?? {},
+    idleToggles: world.idleToggles ?? {},
+    idleLog: Array.isArray(world.idleLog) ? world.idleLog : [],
+    generatedVillages: world.generatedVillages ?? {},
+    dungeons: world.dungeons ?? { ...INITIAL_WORLD.dungeons },
+  }
+
+  // ── Hero ──
+  const inventory = hero.inventory ?? {}
+  const migratedInventory = {
+    resources:   inventory.resources   ?? {},
+    consumables: inventory.consumables ?? {},
+    manaStones:  Array.isArray(inventory.manaStones) ? inventory.manaStones : [],
+    equipment:   Array.isArray(inventory.equipment)  ? inventory.equipment  : [],
+    gold:        inventory.gold ?? 0,
+  }
+  const migratedEquipped = {
+    weapon: null, helmet: null, armor: null, boots: null,
+    ...(hero.equipped ?? {}),
+  }
+
+  // Migration DV02 rétroactive : si divineSkill existe mais pas dans activeSkills, l'ajouter
+  const baseActive = Array.isArray(hero.activeSkills) ? hero.activeSkills : []
+  const divineInActive = hero.divineSkill && !baseActive.some(s => s.skillId === hero.divineSkill.skillId)
+  const migratedActiveSkills = divineInActive && baseActive.length < 6
+    ? [...baseActive, hero.divineSkill]
+    : baseActive
+
+  const migratedHero = {
+    ...INITIAL_HERO,
+    ...hero,
+    heroNamed: hero.heroNamed ?? (hero.name && hero.name !== 'The Wanderer' ? true : false),
+    reputationTokens: hero.reputationTokens ?? 0,
+    inventory: migratedInventory,
+    equipped: migratedEquipped,
+    activeSkills: migratedActiveSkills,
+    passiveSkills: Array.isArray(hero.passiveSkills) ? hero.passiveSkills : [],
+    battleLog: Array.isArray(hero.battleLog) ? hero.battleLog : [],
+    combatEntryLog: Array.isArray(hero.combatEntryLog) ? hero.combatEntryLog : [],
+    titles: Array.isArray(hero.titles) ? hero.titles : [],
+  }
+
+  // ── Meta ──
+  const migratedMeta = {
+    ...INITIAL_META,
+    ...meta,
+    divineBonds: meta.divineBonds ?? {},
+    titlesEarned: Array.isArray(meta.titlesEarned) ? meta.titlesEarned : [],
+  }
+
+  return { hero: migratedHero, world: migratedWorld, meta: migratedMeta, saveVersion: 2 }
+}
+
+/**
+ * Applique toutes les migrations nécessaires en séquence pour amener
+ * une save à la version courante (SAVE_VERSION).
+ */
+export function runMigrations(save) {
+  let current = save
+  const fromVersion = current.saveVersion ?? 1  // pas de saveVersion = v1 (legacy)
+
+  if (fromVersion < 2) current = migrateV1ToV2(current)
+  // Ajouter les futures migrations ici :
+  // if (fromVersion < 3) current = migrateV2ToV3(current)
+
+  return current
+}
+
 // ── Store Zustand ─────────────────────────────────────────────────────────────
 export const useGameStore = create((set, get) => ({
   // ── State ──────────────────────────────────────────────────────────────────
@@ -184,6 +291,12 @@ export const useGameStore = create((set, get) => ({
 
   // S04 — Level-ups de skills récents (consommés par Combat.jsx pour afficher une notif)
   recentSkillLevelUps: [], // [{ id, skillId, fromLevel, toLevel, timestamp }]
+
+  // TECH03 — Flag levé si le dernier saveGame a échoué (quota localStorage dépassé, etc.)
+  saveQuotaExceeded: false,
+
+  // UX05 — Flag levé à chaque drop de loot (combat/idle), reset au passage sur Inventory
+  unseenLoot: false,
 
   // ── Naviguer entre écrans ──────────────────────────────────────────────────
   setScreen: (screen) => set({ currentScreen: screen }),
@@ -219,6 +332,27 @@ export const useGameStore = create((set, get) => ({
       }
     }),
 
+  // CAL01 — Prier à l'église : restaure 40% HP/mana ET consomme 1 tick (rollover si tickCount=23)
+  prayAtChurch: () =>
+    set((state) => {
+      const { hp, maxHp, mana, maxMana } = state.hero.stats
+      const newHp = Math.min(hp + Math.round(maxHp * 0.40), maxHp)
+      const newMana = Math.min(mana + Math.round(maxMana * 0.40), maxMana)
+      const newTick = state.world.tickCount + 1
+      const rolloverDay = newTick >= 24
+      return {
+        hero: {
+          ...state.hero,
+          stats: { ...state.hero.stats, hp: newHp, mana: newMana },
+        },
+        world: {
+          ...state.world,
+          tickCount: rolloverDay ? 0 : newTick,
+          dayCount: rolloverDay ? state.world.dayCount + 1 : state.world.dayCount,
+        },
+      }
+    }),
+
   // ── Gestion de l'équipement ───────────────────────────────────────────────
   addEquipmentToInventory: (item) =>
     set((state) => ({
@@ -229,6 +363,7 @@ export const useGameStore = create((set, get) => ({
           equipment: [...state.hero.inventory.equipment, item],
         },
       },
+      unseenLoot: true,  // UX05
     })),
 
   equipItem: (instanceId) =>
@@ -309,20 +444,25 @@ export const useGameStore = create((set, get) => ({
           manaStones: [...state.hero.inventory.manaStones, skillData],
         },
       },
+      unseenLoot: true,  // UX05
     })),
+
+  // UX05 — Marque le loot comme vu (appelé à l'ouverture de l'écran Inventory)
+  markLootAsSeen: () => set({ unseenLoot: false }),
 
   equipActiveSkill: (skillData) =>
     set((state) => {
       if (state.hero.activeSkills.length >= 6) return state
+      // Refuse si le skill est déjà équipé (évite les doublons en slot)
+      if (state.hero.activeSkills.some((s) => s.skillId === skillData.skillId)) return state
       return {
         hero: {
           ...state.hero,
           activeSkills: [...state.hero.activeSkills, { ...skillData, currentCooldown: 0 }],
           inventory: {
             ...state.hero.inventory,
-            manaStones: state.hero.inventory.manaStones.filter(
-              (s) => s.skillId !== skillData.skillId
-            ),
+            // S03 — ne retire QU'UNE copie (removeOneManaStone), pas toutes
+            manaStones: removeOneManaStone(state.hero.inventory.manaStones, skillData.skillId),
           },
         },
       }
@@ -331,15 +471,15 @@ export const useGameStore = create((set, get) => ({
   equipPassiveSkill: (skillData) =>
     set((state) => {
       if (state.hero.passiveSkills.length >= 4) return state
+      if (state.hero.passiveSkills.some((s) => s.skillId === skillData.skillId)) return state
       return {
         hero: {
           ...state.hero,
           passiveSkills: [...state.hero.passiveSkills, skillData],
           inventory: {
             ...state.hero.inventory,
-            manaStones: state.hero.inventory.manaStones.filter(
-              (s) => s.skillId !== skillData.skillId
-            ),
+            // S03 — ne retire QU'UNE copie
+            manaStones: removeOneManaStone(state.hero.inventory.manaStones, skillData.skillId),
           },
         },
       }
@@ -418,6 +558,7 @@ export const useGameStore = create((set, get) => ({
             resources: { ...state.hero.inventory.resources, [resourceId]: current + qty },
           },
         },
+        unseenLoot: true,  // UX05
       }
     }),
 
@@ -494,14 +635,29 @@ export const useGameStore = create((set, get) => ({
   recordKill: (monsterId) =>
     set((state) => {
       const current = state.world.monsterKillCounts[monsterId] || 0
+      const newCount = current + 1
+
+      // TUT02 — Hint idle unlock : 1ère fois qu'un mob atteint 5 kills (seuil idle)
+      let newSeenHints = state.meta.seenHints
+      if (newCount >= 5 && !state.meta.seenHints.includes('idle_unlock')) {
+        const monsterName = MONSTERS[monsterId]?.name ?? monsterId
+        useToastStore.getState().addToast(
+          `Idle combat unlocked for ${monsterName}! Toggle it from the zone view.`,
+          'info',
+          4000,
+        )
+        newSeenHints = [...state.meta.seenHints, 'idle_unlock']
+      }
+
       return {
         world: {
           ...state.world,
           monsterKillCounts: {
             ...state.world.monsterKillCounts,
-            [monsterId]: current + 1,
+            [monsterId]: newCount,
           },
         },
+        meta: { ...state.meta, seenHints: newSeenHints },
       }
     }),
 
@@ -509,6 +665,12 @@ export const useGameStore = create((set, get) => ({
     set((state) => {
       const kills = state.world.monsterKillCounts[monsterId] || 0
       if (kills < 5) return state // pas encore débloqué
+
+      // D07 — Idle interdit dans certaines zones (Blighted Road) et écrans (dungeon)
+      const zone = ZONES[state.world.currentZone]
+      if (zone?.idleAllowed === false) return state
+      if (state.currentScreen === 'dungeon') return state
+
       const current = state.world.idleToggles[monsterId] || false
       return {
         world: {
@@ -543,7 +705,9 @@ export const useGameStore = create((set, get) => ({
   endCombat: (result) =>
     set((state) => {
       // Enregistrer dans le battleLog pour les conditions d'éveil
-      const entry = { type: result, day: state.world.dayCount, turn: state.world.tickCount }
+      // DV04 — hpPercent à la fin du combat (pour Voltaris : victoires sous 30% HP)
+      const hpPercent = state.hero.stats.hp / state.hero.stats.maxHp
+      const entry = { type: result, day: state.world.dayCount, turn: state.world.tickCount, hpPercent }
       const newBattleLog = [...state.hero.battleLog, entry].slice(-100)
 
       return {
@@ -603,11 +767,13 @@ export const useGameStore = create((set, get) => ({
       }
     }),
 
+  // DV07 — Refuser la divinité = run solo (flag pour le bonus T11 à la transmigration)
   refuseDeity: () =>
-    set({
+    set((state) => ({
       pendingDivineCall: null,
       currentScreen: 'world_map',
-    }),
+      hero: { ...state.hero, soloRun: true },
+    })),
 
   // ── Mort & transmigration ─────────────────────────────────────────────────
   heroDeath: (cause = 'Unknown enemy') =>
@@ -635,6 +801,10 @@ export const useGameStore = create((set, get) => ({
         currentScreen: 'post_mortem',
       }
     }),
+
+  // TUT03 — Marque le hint de transmigration comme vu (1ère mort)
+  markFirstDeathSeen: () =>
+    set((state) => ({ meta: { ...state.meta, firstDeathSeen: true } })),
 
   // Confirmer l'héritage et passer à la boutique des dieux
   confirmInheritance: (chosenStat, chosenActiveSkill, chosenPassiveSkill) =>
@@ -679,8 +849,8 @@ export const useGameStore = create((set, get) => ({
         }
       }
 
-      // T11 — Compensation solo : run précédent sans divinité
-      const wasSolo = !state.hero.deity
+      // T11 + DV07 — Compensation solo : run précédent sans divinité OU refus explicite
+      const wasSolo = !state.hero.deity || state.hero.soloRun === true
       const soloLevelBonus = wasSolo ? 1 : 0
 
       // T09 — Skill level ups boutique (au-dessus du niveau actuel)
@@ -718,6 +888,31 @@ export const useGameStore = create((set, get) => ({
         ? Math.round((state.hero.reputationTokens ?? 0) * 0.80)
         : 0
 
+      // T04 + W02 — Malachar resurrection counter
+      // Incrémenté à CHAQUE transmigration tant que Malachar est défait.
+      // Quand le counter atteint 4 → Malachar respawn (reset counter + flag defeated)
+      const RESURRECTION_CYCLES = 4
+      const wasDemonLordDefeated = state.world.demonLordDefeated
+      let newCounter = state.world.demonLordResurrectionCounter ?? 0
+      let nextDemonLordDefeated = wasDemonLordDefeated
+      let nextDungeons = { ...INITIAL_WORLD.dungeons }
+
+      if (wasDemonLordDefeated) {
+        newCounter += 1
+        if (newCounter >= RESURRECTION_CYCLES) {
+          // Malachar respawn
+          newCounter = 0
+          nextDemonLordDefeated = false
+          // Le donjon grimspire est aussi reset (cleared → false)
+          nextDungeons = {
+            ...nextDungeons,
+            grimspire: { ...nextDungeons.grimspire, cleared: false, discovered: false },
+          }
+        }
+      } else {
+        newCounter = 0  // pas de défaite encore : counter à 0
+      }
+
       return {
         hero: {
           ...INITIAL_HERO,
@@ -731,10 +926,18 @@ export const useGameStore = create((set, get) => ({
           name: state.hero.name,
           heroNamed: state.hero.heroNamed,
         },
-        world: { ...INITIAL_WORLD },
+        world: {
+          ...INITIAL_WORLD,
+          dungeons: nextDungeons,
+          // T04 — Malachar resurrection counter persiste à travers le nouveau monde
+          demonLordDefeated: nextDemonLordDefeated,
+          demonLordResurrectionCounter: newCounter,
+        },
         meta: {
           ...state.meta,
           pendingInheritance: null,
+          // W03 — Flag malacharDefeatedThisRun reset après transmigration (consommé)
+          malacharDefeatedThisRun: false,
         },
         currentScreen: 'world_map',
         pendingLevelUp: 0,
@@ -773,6 +976,8 @@ export const useGameStore = create((set, get) => ({
       const maxHp = state.hero.stats.maxHp
       if (currentHp / maxHp < 0.2) {
         const entry = { text: `[Idle] HP trop bas — combat suspendu.`, type: 'info', timestamp: Date.now() }
+        // I04 — toast warning (événement rare, non-spammy)
+        useToastStore.getState().addToast('Idle paused — HP too low. Rest before continuing.', 'warning')
         return {
           world: {
             ...state.world,
@@ -837,6 +1042,15 @@ export const useGameStore = create((set, get) => ({
         timestamp: Date.now(),
       }
 
+      // I04 — toast sur level-up en idle (événement marquant, non-spammy)
+      if (levelsGained > 0) {
+        useToastStore.getState().addToast(`Level up! You reached level ${level} (idle).`, 'levelup')
+      }
+      // I04 — toast si idle s'arrête pour HP bas après ce combat
+      if (isLowHp) {
+        useToastStore.getState().addToast('Idle stopped — HP critically low.', 'warning')
+      }
+
       return {
         hero: {
           ...state.hero,
@@ -880,6 +1094,19 @@ export const useGameStore = create((set, get) => ({
       return { world: { ...state.world, activeQuests: [...activeQuests, questId] } }
     }),
 
+  // UX03 — Abandonner une quête active (perte de progression, mais retirable des actives)
+  abandonQuest: (questId) =>
+    set((state) => {
+      const { activeQuests } = state.world
+      if (!activeQuests.includes(questId)) return state
+      return {
+        world: {
+          ...state.world,
+          activeQuests: activeQuests.filter((q) => q !== questId),
+        },
+      }
+    }),
+
   isQuestComplete: (questId) => {
     const { hero, world } = get()
     const quest = QUESTS[questId]
@@ -904,6 +1131,20 @@ export const useGameStore = create((set, get) => ({
       }
       if (quest.reward.gold) newGold += quest.reward.gold
       const repTokens = quest.reward.reputationTokens ?? 1
+
+      // Q07 — Toast récompense de quête
+      const rewardParts = []
+      if (quest.reward.gold) rewardParts.push(`+${quest.reward.gold}g`)
+      if (repTokens) rewardParts.push(`+${repTokens} 🪙`)
+      if (quest.reward.skill) {
+        const skillName = SKILLS[quest.reward.skill.skillId]?.name ?? quest.reward.skill.skillId
+        rewardParts.push(skillName)
+      }
+      useToastStore.getState().addToast(
+        `Quest complete: ${quest.name} — ${rewardParts.join(' · ')}`,
+        'quest',
+      )
+
       return {
         world: {
           ...state.world,
@@ -945,60 +1186,25 @@ export const useGameStore = create((set, get) => ({
   // ── Persistence localStorage ──────────────────────────────────────────────
   saveGame: () => {
     const { hero, world, meta } = get()
-    localStorage.setItem('roguelite_save', JSON.stringify({ hero, world, meta }))
+    const payload = JSON.stringify({ hero, world, meta, saveVersion: SAVE_VERSION })
+    try {
+      localStorage.setItem('roguelite_save', payload)
+      // Reset le flag si une sauvegarde précédente a échoué
+      if (get().saveQuotaExceeded) set({ saveQuotaExceeded: false })
+    } catch (e) {
+      // TECH03 — quota exceeded ou autre erreur de persistance
+      console.error('[save] localStorage write failed:', e?.name, e?.message)
+      set({ saveQuotaExceeded: true })
+    }
   },
 
   loadGame: () => {
     const raw = localStorage.getItem('roguelite_save')
     if (!raw) return false
     try {
-      const { hero, world, meta } = JSON.parse(raw)
-
-      // ── Migration : normaliser les anciens formats de sauvegarde ──────
-      const migratedWorld = {
-        ...INITIAL_WORLD,   // valeurs par défaut pour les champs nouveaux
-        ...world,
-        // completedQuests était un nombre (0) dans l'ancienne version
-        completedQuests: Array.isArray(world.completedQuests) ? world.completedQuests : [],
-        activeQuests: Array.isArray(world.activeQuests) ? world.activeQuests : [],
-        // currentHuntingSpot absent des anciennes sauvegardes
-        currentHuntingSpot: world.currentHuntingSpot ?? null,
-      }
-
-      // ── Migration hero : garantir tous les champs (anti-crash old saves) ──
-      const inventory = hero.inventory ?? {}
-      const migratedInventory = {
-        resources:   inventory.resources   ?? {},
-        consumables: inventory.consumables ?? {},
-        manaStones:  Array.isArray(inventory.manaStones) ? inventory.manaStones : [],
-        equipment:   Array.isArray(inventory.equipment)  ? inventory.equipment  : [],
-        gold:        inventory.gold ?? 0,
-      }
-      const migratedEquipped = {
-        weapon: null, helmet: null, armor: null, boots: null,
-        ...(hero.equipped ?? {}),
-      }
-      // Migration DV02 rétroactive : si divineSkill existe mais pas dans activeSkills, l'ajouter
-      const baseActive = Array.isArray(hero.activeSkills) ? hero.activeSkills : []
-      const divineInActive = hero.divineSkill && !baseActive.some(s => s.skillId === hero.divineSkill.skillId)
-      const migratedActiveSkills = divineInActive && baseActive.length < 6
-        ? [...baseActive, hero.divineSkill]
-        : baseActive
-
-      const migratedHero = {
-        ...INITIAL_HERO,                 // socle complet (anti-crash sur tout nouveau champ)
-        ...hero,
-        heroNamed: hero.heroNamed ?? (hero.name !== 'The Wanderer'),
-        reputationTokens: hero.reputationTokens ?? 0,
-        inventory: migratedInventory,
-        equipped: migratedEquipped,
-        activeSkills: migratedActiveSkills,
-        passiveSkills: Array.isArray(hero.passiveSkills) ? hero.passiveSkills : [],
-        battleLog: Array.isArray(hero.battleLog) ? hero.battleLog : [],
-        combatEntryLog: Array.isArray(hero.combatEntryLog) ? hero.combatEntryLog : [],
-        titles: Array.isArray(hero.titles) ? hero.titles : [],
-      }
-      set({ hero: migratedHero, world: migratedWorld, meta })
+      const parsed = JSON.parse(raw)
+      const migrated = runMigrations(parsed)
+      set({ hero: migrated.hero, world: migrated.world, meta: migrated.meta })
       return true
     } catch {
       return false
@@ -1025,6 +1231,25 @@ export const useGameStore = create((set, get) => ({
     set((state) => {
       const dungeon = state.world.dungeons[zoneId]
       if (!dungeon) return state
+
+      // D05 — warp à la sortie : héros téléporté à la ville principale de la zone,
+      // sortie du spot de chasse, idle stop (cohérence D07).
+      const zoneData = ZONES[zoneId]
+      const safeCityId = zoneData?.city?.id ?? state.world.currentLocation
+
+      // M02 — incrément du compteur Demon Lords kills par univers
+      // Pour l'instant un seul univers : 'medieval_fantasy'. Préparation X08.
+      const universeId = 'medieval_fantasy'
+      const isDemonLordKill = zoneId === 'grimspire'
+      const updatedDemonLordKills = isDemonLordKill
+        ? {
+            ...(typeof state.meta.demonLordKills === 'object' ? state.meta.demonLordKills : {}),
+            [universeId]: ((typeof state.meta.demonLordKills === 'object'
+              ? state.meta.demonLordKills[universeId]
+              : state.meta.demonLordKills) ?? 0) + 1,
+          }
+        : state.meta.demonLordKills
+
       return {
         world: {
           ...state.world,
@@ -1032,14 +1257,18 @@ export const useGameStore = create((set, get) => ({
             ...state.world.dungeons,
             [zoneId]: { ...dungeon, cleared: true },
           },
-          demonLordDefeated: zoneId === 'grimspire' ? true : state.world.demonLordDefeated,
-          demonLordResurrectionCounter: zoneId === 'grimspire'
-            ? state.world.demonLordResurrectionCounter + 1
-            : state.world.demonLordResurrectionCounter,
+          demonLordDefeated: isDemonLordKill ? true : state.world.demonLordDefeated,
+          // D05 — warp
+          currentLocation: safeCityId,
+          currentHuntingSpot: null,
+          isIdleActive: false,
+          idleTargetMonster: null,
         },
         meta: {
           ...state.meta,
-          demonLordKills: zoneId === 'grimspire' ? state.meta.demonLordKills + 1 : state.meta.demonLordKills,
+          demonLordKills: updatedDemonLordKills,
+          // W03 — flag levé pour le post-mortem si Malachar killed ce run
+          malacharDefeatedThisRun: isDemonLordKill ? true : (state.meta.malacharDefeatedThisRun ?? false),
         },
       }
     }),
@@ -1054,5 +1283,7 @@ export const useGameStore = create((set, get) => ({
       pendingDivineCall: null,
       pendingLevelUp: 0,
       recentSkillLevelUps: [],
+      saveQuotaExceeded: false,
+      unseenLoot: false,
     }),
 }))

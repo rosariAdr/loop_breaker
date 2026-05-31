@@ -2,15 +2,23 @@ import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { SKILLS, isDivineSkillInheritable } from '../data/skills'
 import { ZONES } from '../data/zones'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function PostMortem() {
-  const { meta, confirmInheritance, hero, resetGame } = useGameStore()
+  const { meta, confirmInheritance, resetGame, markFirstDeathSeen } = useGameStore()
   const summary = meta.lastRunSummary
+  // TUT03 — hint au tout 1er run/1ère mort
+  const showFirstDeathHint = !meta.firstDeathSeen && meta.totalDeaths <= 1
 
   // Sélection de l'héritage
   const [chosenStat, setChosenStat] = useState(null)
   const [chosenActive, setChosenActive] = useState(null)
+  // UX03 — confirmation reset
+  const [pendingReset, setPendingReset] = useState(false)
   const [chosenPassive, setChosenPassive] = useState(null)
+  // W03 — bannière "to be continued" si Malachar killed ce run
+  const [continueBannerDismissed, setContinueBannerDismissed] = useState(false)
+  const showContinueBanner = meta.malacharDefeatedThisRun && !continueBannerDismissed
 
   if (!summary) return null
 
@@ -31,10 +39,62 @@ export default function PostMortem() {
   })
 
   const statKeys = ['strength', 'agility', 'intelligence', 'chance', 'def']
-  const canConfirm = chosenStat && chosenActive !== undefined && chosenPassive !== undefined
 
   const handleConfirm = () => {
     confirmInheritance(chosenStat, chosenActive, chosenPassive)
+  }
+
+  // W03 — Bannière "to be continued" overlay si Malachar killed
+  if (showContinueBanner) {
+    return (
+      <div
+        data-testid="malachar-defeated-banner"
+        className="flex flex-col items-center justify-center min-h-screen p-8"
+        style={{ background: 'radial-gradient(ellipse at center, #2a0808 0%, #0a0a0f 60%, #000 100%)' }}
+      >
+        <div className="w-full max-w-xl flex flex-col gap-8 items-center text-center anim-pop">
+          <p style={{
+            fontFamily: 'Cinzel, serif',
+            color: '#e04040',
+            fontSize: '3rem',
+            letterSpacing: '0.15em',
+            textShadow: '0 0 24px rgba(224,64,64,0.5)',
+          }}>
+            ☠ MALACHAR THE UNDYING
+          </p>
+          <p style={{ color: '#c04040', fontSize: '1.4rem', fontFamily: 'Cinzel, serif' }}>
+            …has fallen.
+          </p>
+          <div className="border-t border-b py-6 px-4" style={{ borderColor: '#5a2020' }}>
+            <p style={{ color: '#d4af70', fontSize: '1rem', fontFamily: 'Cinzel, serif', letterSpacing: '0.08em' }}>
+              ⚜ Slayer of Eldenmoor ⚜
+            </p>
+            <p style={{ color: '#8a6a4a', fontSize: '0.85rem', fontStyle: 'italic', marginTop: '0.5rem' }}>
+              The Demon Lord is slain. The medieval realm trembles.
+              <br />
+              Your soul drifts beyond, toward the next universe…
+            </p>
+          </div>
+          <p style={{ color: '#5a4030', fontSize: '0.95rem', fontStyle: 'italic', letterSpacing: '0.05em' }}>
+            To be continued.
+          </p>
+          <button
+            onClick={() => setContinueBannerDismissed(true)}
+            className="mt-4 px-6 py-3 rounded transition-all hover:opacity-90"
+            style={{
+              fontFamily: 'Cinzel, serif',
+              fontSize: '0.9rem',
+              background: '#1a0808',
+              color: '#e04040',
+              border: '1px solid #5a2020',
+              letterSpacing: '0.08em',
+            }}
+          >
+            Continue to Transmigration →
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -74,8 +134,41 @@ export default function PostMortem() {
           </div>
         </div>
 
+        {/* TUT03 — Hint première transmigration */}
+        {showFirstDeathHint && (
+          <div
+            data-testid="first-death-hint"
+            className="p-4 rounded border anim-pop"
+            style={{ background: '#0a0f18', borderColor: '#2a4060' }}
+          >
+            <p style={{ fontFamily: 'Cinzel, serif', color: '#60a0d0', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+              ✦ First Transmigration
+            </p>
+            <p style={{ color: '#7a8a9a', fontSize: '0.78rem', lineHeight: 1.5 }}>
+              Death is not the end. You may carry <strong>one stat</strong>, <strong>one active skill</strong> and
+              <strong> one passive skill</strong> into your next life. Choose wisely — these become the foundation
+              of a stronger run. The Gods' Shop awaits after.
+            </p>
+            <button
+              onClick={markFirstDeathSeen}
+              className="mt-3 px-4 py-1.5 rounded text-xs"
+              style={{ fontFamily: 'Cinzel, serif', background: '#0a1828', color: '#60a0d0', border: '1px solid #2a4060' }}
+            >
+              Got it
+            </button>
+          </div>
+        )}
+
         {/* Choisir l'héritage */}
-        <div className="p-4 rounded border" style={{ background: '#0a0c08', borderColor: '#1a2810' }}>
+        <div
+          className="p-4 rounded border"
+          style={{
+            background: '#0a0c08',
+            // TUT03 — surbrillance pendant le 1er run
+            borderColor: showFirstDeathHint ? '#3a5070' : '#1a2810',
+            boxShadow: showFirstDeathHint ? '0 0 16px rgba(60,80,112,0.3)' : 'none',
+          }}
+        >
           <p className="mb-1 text-xs uppercase tracking-widest" style={{ color: '#4a3a2a', fontFamily: 'Cinzel, serif' }}>
             Transmigration — Choose what to carry
           </p>
@@ -119,7 +212,7 @@ export default function PostMortem() {
                 Skip (no active skills)
               </button>
             )}
-            {activeSkills.map((s, i) => {
+            {activeSkills.map((s) => {
               const t = SKILLS[s.skillId]
               return (
                 <button
@@ -188,9 +281,9 @@ export default function PostMortem() {
             Enter the Gods' Shop →
           </button>
 
-          {/* Reset complet */}
+          {/* Reset complet — UX03 avec confirmation */}
           <button
-            onClick={resetGame}
+            onClick={() => setPendingReset(true)}
             className="w-full py-2 rounded mt-1 text-xs transition-all hover:opacity-80"
             style={{
               fontFamily: 'Cinzel, serif',
@@ -204,6 +297,17 @@ export default function PostMortem() {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingReset}
+        title="Reset all progress?"
+        message="Your entire save will be deleted: hero, world, meta. This cannot be undone."
+        confirmLabel="Reset everything"
+        cancelLabel="Keep my save"
+        variant="destructive"
+        onConfirm={() => { resetGame(); setPendingReset(false) }}
+        onCancel={() => setPendingReset(false)}
+      />
     </div>
   )
 }

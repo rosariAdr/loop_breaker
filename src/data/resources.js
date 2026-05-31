@@ -247,6 +247,7 @@ export const RESOURCES = {
     zone: 'ashenvale',
     rarity: 'epic',
     sellPrice: 100,
+    category: 'dungeon_seal',  // D04 — monnaie alternative future
   },
   ancient_bone: {
     id: 'ancient_bone',
@@ -271,6 +272,7 @@ export const RESOURCES = {
     zone: 'grimspire',
     rarity: 'epic',
     sellPrice: 250,
+    category: 'dungeon_seal',  // D04
   },
   void_crystal: {
     id: 'void_crystal',
@@ -295,6 +297,7 @@ export const RESOURCES = {
     zone: 'grimspire',
     rarity: 'legendary',
     sellPrice: 2000,
+    category: 'dungeon_seal',  // D04 — relique ultime (sceau Demon Lord)
   },
 
   // ── Consommables (achetables chez le marchand) ────────────────────────
@@ -336,6 +339,48 @@ export const RESOURCES = {
     sellPrice: 12,
     buyPrice: 28,
     effect: { type: 'mana_restore_percent', value: 0.60 },
+    isConsumable: true,
+  },
+
+  // ── Z02 — Consommables additionnels du marchand ──────────────────────────
+  stamina_ration: {
+    id: 'stamina_ration',
+    name: 'Stamina Ration',
+    description: 'A hearty meal. Restores 25% HP and 25% Mana.',
+    rarity: 'common',
+    sellPrice: 6,
+    buyPrice: 16,
+    effect: { type: 'restore_both', value: 0.25 },
+    isConsumable: true,
+  },
+  elixir_minor: {
+    id: 'elixir_minor',
+    name: 'Minor Elixir',
+    description: 'A potent brew. Restores 50% HP and 50% Mana.',
+    rarity: 'uncommon',
+    sellPrice: 18,
+    buyPrice: 42,
+    effect: { type: 'restore_both', value: 0.50 },
+    isConsumable: true,
+  },
+  mana_crystal: {
+    id: 'mana_crystal',
+    name: 'Mana Crystal',
+    description: 'A condensed shard of arcane energy. Fully restores Mana.',
+    rarity: 'rare',
+    sellPrice: 30,
+    buyPrice: 70,
+    effect: { type: 'mana_restore_percent', value: 1.0 },
+    isConsumable: true,
+  },
+  antidote_basic: {
+    id: 'antidote_basic',
+    name: 'Basic Antidote',
+    description: 'Cleanses minor afflictions. Restores 15% HP and clears light debuffs.',
+    rarity: 'common',
+    sellPrice: 4,
+    buyPrice: 10,
+    effect: { type: 'heal_percent', value: 0.15, cureDebuffs: true },
     isConsumable: true,
   },
 }

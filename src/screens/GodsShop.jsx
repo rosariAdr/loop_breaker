@@ -2,12 +2,41 @@ import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { SKILLS } from '../data/skills'
 
-const CATALOG = [
+// T07b — Skills basiques de Zone 1 (fallback si pas de run précédent)
+const FALLBACK_BONUS_SKILLS = ['power_strike', 'shield_stance', 'savage_bite']
+
+/**
+ * T07b — Calcule la pool de skills disponibles pour le bonus.
+ * Priorité : skills du run précédent (lastRunSummary). Fallback : skills basiques Zone 1.
+ * @returns {Array<{ skillId, level, type }>}
+ */
+export function getBonusSkillPool(lastRunSummary) {
+  const fromRun = lastRunSummary?.skills ?? []
+  const source = fromRun.length > 0
+    ? fromRun
+    : FALLBACK_BONUS_SKILLS.map((skillId) => ({ skillId, level: 1, xp: 0 }))
+
+  // Dédoublonner par skillId, enrichir avec le type depuis SKILLS
+  const seen = new Set()
+  const pool = []
+  for (const s of source) {
+    if (seen.has(s.skillId)) continue
+    const template = SKILLS[s.skillId]
+    if (!template) continue
+    seen.add(s.skillId)
+    pool.push({ skillId: s.skillId, level: s.level ?? 1, type: template.type })
+  }
+  return pool
+}
+
+// BAL01 — Coûts révisés (calibration économie tokens : run typique = ~8-12 tokens)
+// Cible : run moyen = 1 article achetable, run excellent = 2-3 articles.
+export const CATALOG = [
   {
     id: 'rank_restore',
     label: 'Adventurer Rank Restoration',
     description: 'Restore up to 80% of the rank you reached this run.',
-    cost: 40,
+    cost: 25,  // BAL01 : 40 → 25
     icon: '⚜',
     color: '#d4af70',
   },
@@ -15,7 +44,7 @@ const CATALOG = [
     id: 'bonus_skill',
     label: 'Bonus Skill Slot',
     description: 'Carry one additional skill (active or passive) beyond the base three.',
-    cost: 80,
+    cost: 50,  // BAL01 : 80 → 50
     icon: '✨',
     color: '#c084fc',
   },
@@ -23,7 +52,7 @@ const CATALOG = [
     id: 'bonus_stat',
     label: 'Bonus Stat Slot',
     description: 'Carry one additional stat beyond the base three.',
-    cost: 80,
+    cost: 50,  // BAL01 : 80 → 50
     icon: '📈',
     color: '#60a5fa',
   },
@@ -31,7 +60,7 @@ const CATALOG = [
     id: 'skill_levelup',
     label: 'Skill Level Up',
     description: 'Advance one of your inherited skills by one level.',
-    cost: 20,
+    cost: 12,  // BAL01 : 20 → 12
     icon: '⬆',
     color: '#40c080',
   },
@@ -39,7 +68,7 @@ const CATALOG = [
     id: 'starter_kit',
     label: 'Starter Kit',
     description: '3× Minor Healing Potion + 3× Minor Mana Potion to begin the next run.',
-    cost: 10,
+    cost: 5,   // BAL01 : 10 → 5
     icon: '🧪',
     color: '#80c040',
   },
@@ -47,22 +76,31 @@ const CATALOG = [
     id: 'divine_oracle',
     label: 'Divine Oracle',
     description: 'Reveals the relation score of deities in the next universe before you arrive.',
-    cost: 15,
+    cost: 8,   // BAL01 : 15 → 8
     icon: '🔮',
     color: '#c0a060',
   },
 ]
 
 export default function GodsShop() {
-  const { hero, meta, spendReputationTokens, applyTransmigration, addConsumable } = useGameStore()
+  const { hero, meta, applyTransmigration, addConsumable } = useGameStore()
   const [purchases, setPurchases] = useState([])
   const [tokens, setTokens] = useState(hero.reputationTokens + (meta.lastRunSummary?.reputationTokens ?? 0))
+  // T07b — skill bonus sélectionné
+  const [bonusSkillId, setBonusSkillId] = useState(null)
+
+  const bonusSkillPool = getBonusSkillPool(meta.lastRunSummary)
+  const bonusSkillBought = purchases.includes('bonus_skill')
 
   const spend = (item) => {
     if (tokens < item.cost) return
     if (purchases.includes(item.id) && item.id !== 'skill_levelup' && item.id !== 'starter_kit') return
     setTokens(t => t - item.cost)
     setPurchases(p => [...p, item.id])
+    // T07b — à l'achat du bonus skill, pré-sélectionner le 1er de la pool
+    if (item.id === 'bonus_skill' && !bonusSkillId && bonusSkillPool.length > 0) {
+      setBonusSkillId(bonusSkillPool[0].skillId)
+    }
   }
 
   const handleConfirm = () => {
@@ -72,10 +110,13 @@ export default function GodsShop() {
       addConsumable('hp_potion_small', 3 * starterKitCount)
       addConsumable('mana_potion_small', 3 * starterKitCount)
     }
-    // T07 — Bonus skill : un skill actif basique offert (power_strike Lv 1)
-    const extraSkills = purchases.includes('bonus_skill')
-      ? [{ type: 'active', skillId: 'power_strike', level: 1, xp: 0 }]
-      : []
+    // T07b — Bonus skill : le skill choisi par le joueur (ou 1er de la pool par défaut)
+    let extraSkills = []
+    if (bonusSkillBought) {
+      const chosenId = bonusSkillId ?? bonusSkillPool[0]?.skillId ?? 'power_strike'
+      const template = SKILLS[chosenId]
+      extraSkills = [{ type: template?.type ?? 'active', skillId: chosenId, level: 1, xp: 0 }]
+    }
     const shopPurchases = {
       extraSkills,
       rankRestored: purchases.includes('rank_restore'),
@@ -178,6 +219,41 @@ export default function GodsShop() {
             )
           })}
         </div>
+
+        {/* T07b — Sélecteur de skill bonus (visible si bonus_skill acheté) */}
+        {bonusSkillBought && (
+          <div
+            data-testid="bonus-skill-selector"
+            className="p-3 rounded border"
+            style={{ background: '#0a0810', borderColor: '#3a2858' }}
+          >
+            <p style={{ fontFamily: 'Cinzel, serif', color: '#c084fc', fontSize: '0.82rem', marginBottom: '0.5rem' }}>
+              ✨ Choose your bonus skill
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {bonusSkillPool.map((s) => {
+                const template = SKILLS[s.skillId]
+                const chosen = bonusSkillId === s.skillId
+                return (
+                  <button
+                    key={s.skillId}
+                    onClick={() => setBonusSkillId(s.skillId)}
+                    className="px-3 py-1.5 rounded text-xs transition-all"
+                    style={{
+                      fontFamily: 'Cinzel, serif',
+                      background: chosen ? '#1a1028' : '#0f0c18',
+                      color: chosen ? '#c084fc' : '#6a5a7a',
+                      border: `1px solid ${chosen ? '#5040a0' : '#2a2040'}`,
+                    }}
+                  >
+                    {template?.name ?? s.skillId}
+                    <span style={{ color: '#5a4a6a', marginLeft: '0.4rem' }}>[{s.type}]</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Confirmer */}
         <button
