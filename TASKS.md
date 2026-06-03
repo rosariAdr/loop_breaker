@@ -31,27 +31,38 @@ _(aucune dépendance externe bloquante)_
 
 ## v1.1 — UI parchemin, sprites & QoL (release présentable)
 
-> Objectif : transformer le POC fonctionnel en jeu **présentable**. S'appuie sur le handoff Claude Design (`design_handoff_loop_breaker`) — design system parchmin diégétique, stage 1920×1080, tokens CSS fournis. Stratégie de migration progressive : coquille d'abord, écran par écran ensuite, sprites en dernier.
+> Objectif : transformer le POC fonctionnel en jeu **présentable**. **Spec complète : `UI_HANDOFF.md`** (design system parchemin diégétique « table en bois », stage 1920×1080, tokens CSS canoniques, 6 écrans, 2 couches d'assets, animations). Esthétique : joyeuse/héroïque type overworld Dragon Quest, **PAS** sombre/gothique. Stratégie : **coquille d'abord → écran par écran → sprites en dernier**. À faire d'un bloc pour la cohérence visuelle.
+>
+> **Décisions actées (2026-06-03)** :
+> - **Stats** : mapper l'UI sur les stats actuelles du jeu (pas de refonte data).
+> - **Canvas fixe 1920×1080 + scaler** confirmé (PC-first ; Tailwind conservé + tokens CSS).
+> - **Écrans plein-écran** (Combat/GodsShop/DivineCall/PostMortem) : **mixte au cas par cas** (Combat probablement en takeover, les autres possiblement dans la coquille — choix documentés à l'implémentation).
+> - **Assets** : **hybride** — le dev fournit certaines sprites au fil de l'eau ; le reste en placeholder/art-slot (emoji), swap progressif (CONT01/CONT06). UI-A/UI-B ne bloquent pas sur les assets.
+> - **UI05 dialogue** : coquille vide / placeholder en v1.1 ; contenu en v1.5.
 
-### Batch UI — migration parchmin (à faire d'un bloc pour la cohérence visuelle)
+### Batch UI — migration parchemin
 
-- [ ] **UI01 — Design system parchmin : tokens + fonts + shell** (M)
-  - Injecter les CSS custom properties du handoff dans `index.css` (`--parchment`, `--ink`, `--forest`, `--gold`, `--amber`, etc.) ; importer Cinzel + Crimson Text ; créer le shell : stage 1920×1080 + scaler `transform: scale(min(vw/1920,vh/1080))`, table bois, topbar plank, breadcrumb, scroll-panel sidebar
-  - AC : tokens en place, shell rendu, écrans existants tournent dedans sans régression, build OK
-- [ ] **UI02 — WorldMap → style parchmin** (M) - médaillons de lieux (3px ink, art slots), trails dashés, hero avatar chibi avec glow, marker donjon pulsant, zones locked désaturées + tooltip ; conserver la logique Canvas/nodes existante (MAP01)
-- [ ] **UI03 — SafeZone → Village parchmin** (M) - square + well, bâtiments illustrés avec hanging signs, paths de terre, clic bâtiment → overlay NPC ; remplace l'actuel SafeZone sombre
-- [ ] **UI04 — ZoneView → Forest parchmin** (M) - clearings circulaires (monstre + terrain), killbars, glow vert si idle actif, lock si <5 kills ; conserver Fight/Idle (B03, S02)
-- [ ] **UI05 — NPC overlay (portrait + dialogue + actions)** (M) - panneau bas sur scrim, portrait woodgrain, dialogue Crimson italic, boutons d'action parchmin ; branché sur NPC04 (v1.5) côté contenu
-- [ ] **UI06 — HeroSheet → sheet parchmin** (S) - restyle en feuille parchmin (portrait, equipment grid, stat bars, sections) ; conserver Active Debuffs (CRF05) + Titles (M01) + Gluttony (GLT03)
-- [ ] **UI07 — Inventory → sheet parchmin** (S) - bag grid 6 colonnes, gold pill, equipped grid ; conserver les 4 onglets + stack mana stones (S03)
-- [ ] **UI08 — Intégration sprites (remplacer art slots)** (L) - remplacer les `art slots` rayés par de vraies sprites (hero, bâtiments, monstres, NPC portraits) — dépend CONT01
-- [ ] **UI09 — Étendre le style parchmin aux écrans hors handoff** (M) - Combat, GodsShop, DivineCall, PostMortem (existants fonctionnellement) restylés au même langage visuel ; vérifier d'abord ce qui est déjà couvert par U09-U12 historiques
+- [ ] **UI01 — Coquille parchemin : scène + topbar + breadcrumb + sidebar + tokens** (M/L) — *`UI_HANDOFF.md` §IDENTITÉ + §LA SCÈNE*
+  - **Tokens** : toutes les CSS custom properties (`--parchment`, `--ink`, `--forest`, `--gold`, `--amber`, jauges HP/MP/XP…) dans `index.css` ; fonts **Cinzel + Crimson Text** ; texture parchemin (grain de bruit + liseré vieilli).
+  - **Scène** : stage fixe 1920×1080 centré + scaler `transform: scale(min(vw/1920,vh/1080))`, letterbox sur radial `#1c140d→#3a2a1c`, fond table en planches de bois. **DÉCIDÉ : on part sur le canvas fixe** (PC-first ; responsive mobile reporté à U02/v2). Tailwind conservé pour l'utilitaire + tokens CSS/classes custom pour les pièces bespoke (parchemin/bois).
+  - **Topbar 64px** : Run#/Lv + barre XP ; jauges HP + MP (anim largeur .5s) ; groupe stats `☀ Day · T x/24 · 🪙` (**DayBar fusionnée dans la topbar — plus de ligne jour/nuit séparée**) ; onglets pills `Map · Hero · Bag · Save`.
+  - **Breadcrumb 30px** (chemin de région, fil courant en `--gold`) + **sidebar journal 286px** (Location/Deity/Demon Lord/Reputation + zone Actions épinglée en bas) + **système de boutons** parchemin (`.primary` ambre).
+  - AC : la coquille rend, les écrans existants tournent dedans **sans régression de logique**, build OK.
+- [ ] **UI02 — World Map parchemin** (M) — *§Écran 01*. Cadre boussole, champs de zone organiques (Ashenvale vert / **Grimspire verrouillé désaturé + tooltip niveau**), trails pointillés à l'encre + **Blighted Road** danger rouge, 8 nodes médaillons (positions dans le handoff), **node donjon** violet `?` + aura, **avatar héros chibi** + halo or (transition marche `.6s`). Conserve la logique Canvas/nodes (MAP01).
+- [ ] **UI03 — Village parchemin** (M) — *§Écran 02*. Cadre « vine », place + **puits**, chemins de terre rayonnants, **4 bâtiments** (sprite encadré + enseigne suspendue + sous-titre) → clic = overlay PNJ, déco (hens/barrels), avatar près du puits. Remplace le SafeZone sombre actuel.
+- [ ] **UI04 — Hunting Forest parchemin** (M) — *§Écran 03*. Cadre vine, **clearings** = disques verts (sprite monstre + terrain + plaque + **kill bar** + statut) ; états *disponible* / *idle actif* (anneau safe-green + badge `◆ IDLE`) / *verrouillé* (`🔒`, "Fight 10× to unlock idle") ; idle log en sidebar. Conserve Fight/Idle (B03, S02).
+- [ ] **UI05 — Overlay dialogue PNJ** (M) — *§Écran 04*. Panneau ancré bas sur scrim, **colonne portrait** (cadre woodgrain + portrait pixel, **6 émotions** Talk/Calm/Smile/Sadness/Aggression/Special selon le ton) + **colonne corps** (eyebrow + dialogue Crimson italic 26px + boutons d'action). **DÉCIDÉ : coquille vide / dialogues placeholder en v1.1** (le contenu et l'arbre de dialogue NPC01/NPC04 viennent en v1.5 ; on en rediscute).
+- [ ] **UI06 — Hero Sheet overlay parchemin** (S/M) — *§Écran 05*. Modale centrée, portrait woodgrain, grille équipement 6 slots, **Vitals & Attributes** (cartes + barres), Derived, Skills, Allegiance. Conserve Active Debuffs (CRF05) + Titles (M01) + Gluttony (GLT03). **DÉCIDÉ : mapper l'UI sur les stats actuelles** (strength/agility/intelligence/chance/def + hp/mana) — pas de refonte data ni de migration. On reprend la mise en page du handoff mais avec les stats du jeu (les labels Vitality/Dexterity/Faith/Luck du handoff sont indicatifs).
+- [ ] **UI07 — Inventory overlay parchemin** (S) — *§Écran 06*. Modale, **Carried Items** grille 6 colonnes + pastille d'or, **Equipped** grille 6 slots. Conserve les onglets + stack mana stones (S03).
+- [ ] **UI08 — Intégration sprites (couches A + B)** (L) — *§ASSETS*. **Couche A** chibi cartoon (carte/combat : héros, façades de bâtiments, monstres, Malachar) + **Couche B** portraits pixel 128×128 à 6 émotions (overlays dialogue). **Règle stricte : jamais mélanger chibi et portrait pixel à la même échelle dans un même cadre.** Héros placeholder = chibi "Necromancer of the Shadow" (Idle/Walking/Dying). Dépend CONT01/CONT06.
+- [ ] **UI09 — Transition parchemin + toasts + écrans hors handoff** (M) — **Échange de parchemin** à l'entrée/sortie de zone (enroule monde / déroule zone, **≤350ms, skippable après le 1er run** — la navigation arrive des dizaines de fois/session) ; **toasts** parchemin (bulle sombre bas-centre, bordure dorée, italique, ~2.6s) ; restyle des écrans **hors handoff** (Combat, GodsShop, DivineCall, PostMortem) au même langage.
 
 ### Sprites, assets & contenu visuel
 
-- [ ] **CONT01 — Portraits monstres restants** (S) - 18/23 PNG manquants ; pipeline `public/monsters/README.md` ; priorité : 6 communs d'Ashenvale
+- [ ] **CONT01 — Sprites de carte/combat chibi (couche A)** (M) — *§ASSETS*. Héros chibi héroïque (remplace le nécromancien placeholder), **façades de bâtiments**, **18/23 monstres** manquants, **boss Malachar**, déco (well/hens/barrels). Pipeline `public/monsters/README.md`. Priorité : 6 communs d'Ashenvale.
+- [ ] **CONT06 — Portraits PNJ pixel (couche B, 128×128, 6 émotions)** (S) — *§ASSETS*. `NPC_1` Sir Aldric (maître guerrier), `NPC_2` Maître forgeron, `NPC_3` Marta/Alchimiste, `NPC_4` Marchand/maître de Guilde, `Queen` maître mage (Académie)/divinité. À compléter : prêtre, chef de village, divinités.
 - [ ] **CONT04 — Noms propres donjons Zone 2** (XS) - remplacer placeholders par noms définitifs
-- [ ] **CONT05 — ASSETS.md + sourcing licences** (S) - fichier listant chaque asset : source, licence (CC0/CC BY…), attribution requise. Sécurité juridique + crédits. Sources retenues : Kenney (CC0), game-icons.net (CC BY), CraftPix, IA pour pièces uniques
+- [ ] **CONT05 — ASSETS.md + sourcing licences** (S) - chaque asset : source, licence (CC0/CC BY…), attribution. Sources : Kenney (CC0), game-icons.net (CC BY), CraftPix, IA pour pièces uniques. Prévoir un vrai set d'icônes SVG recolorées (remplace les emoji stand-in)
 - [ ] **C03 — Portraits personnage** (S) - 8 icônes au choix en CharCreation (warrior/rogue/mage/ranger/monk/knight/witch/bard)
 
 ### QoL essentiel (shippabilité)

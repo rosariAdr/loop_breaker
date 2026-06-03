@@ -217,7 +217,7 @@ racine/        scenarios.test.js (parties simulées + BAL01)
 Le POC est **complet et gagnable**. Reste : **BAL02** (difficulté boss + playtest), **BAL03** (rythme idle), **TECH04** (60fps Canvas), **TECH05** (JSDoc engine). Voir `PLAYTESTS.md`.
 
 ### 🅱️ v1.1 — UI parchemin, sprites & QoL (rendre présentable)
-Gros chantier visuel s'appuyant sur un **handoff Claude Design** (design system "parchemin" diégétique, stage 1920×1080, tokens CSS). À faire d'un bloc pour la cohérence :
+Gros chantier visuel — **spec complète dans `UI_HANDOFF.md`** (design system "parchemin" diégétique type Dragon Quest, stage 1920×1080, tokens CSS canoniques, 6 écrans, 2 couches d'assets, animations). À faire d'un bloc pour la cohérence :
 - **UI01-09** : design system + shell, puis WorldMap / SafeZone / ZoneView / NPC overlay / HeroSheet / Inventory restylés, sprites en dernier (absorbe les anciens U06/U08-U12).
 - **Assets** : CONT01 (portraits monstres), CONT05 (ASSETS.md + licences), C03 (portraits perso).
 - **QoL** : IDLE-OFF (progression hors-ligne), SET01 (menu options), TECH07 (export/import save), PROC07 (debug give-stats).
@@ -306,6 +306,7 @@ Quand le dev demande d'**analyser**, ne pas corriger directement. Regrouper bugs
 - **`CONTRIBUTING.md`** — workflow Git, DoD, conventions, règle save, checklist
 - **`CHANGELOG.md`** — historique (Keep a Changelog + SemVer)
 - **`DESIGN.md`** — specs de design validées (§B05-SPEC)
+- **`UI_HANDOFF.md`** — spec complète du design system UI parchemin (v1.1) : tokens, 6 écrans, assets, animations
 - **`PLAYTESTS.md`** — journal de playtest (PROC05) pour BAL02/BAL03
 - **`balance/*.csv`** + `scripts/generate-balance-csv.mjs` — équilibrage
 - **`public/monsters/README.md`** — pipeline portraits
