@@ -2,6 +2,9 @@ import { useGameStore } from '../store/gameStore'
 import { SKILLS } from '../data/skills'
 import { DEITIES } from '../data/deities'
 import { RARITY_CONFIG, calcEquippedStatBonuses } from '../data/equipment'
+import { DEBUFFS } from '../data/debuffs'
+import { TITLES } from '../data/titles'
+import { hasGluttony, isGluttonyReady, gluttonyDaysRemaining } from '../engine/gluttony'
 import Tooltip from '../components/Tooltip'
 
 // UX01 — Descriptions in-game des stats du héros
@@ -16,8 +19,13 @@ const STAT_TOOLTIPS = {
 }
 
 export default function HeroSheet() {
-  const { hero, setScreen, unequipItem, unequipActiveSkill, unequipPassiveSkill } = useGameStore()
+  const { hero, meta, world, setScreen, unequipItem, unequipActiveSkill, unequipPassiveSkill } = useGameStore()
   const equippedBonuses = calcEquippedStatBonuses(hero.equipped ?? {})
+  const earnedTitles = (meta?.titlesEarned ?? []).map(id => TITLES[id]).filter(Boolean) // M01
+  // GLT03 — statut Gluttony
+  const gluttonyEquipped = hasGluttony(hero.passiveSkills ?? [])
+  const gluttonyReady = isGluttonyReady(world?.dayCount ?? 0, meta?.gluttonyLastUsed)
+  const gluttonyDays = gluttonyDaysRemaining(world?.dayCount ?? 0, meta?.gluttonyLastUsed)
 
   return (
     <div className="flex h-full" style={{ minHeight: 'calc(100vh - 48px)' }}>
@@ -53,6 +61,48 @@ export default function HeroSheet() {
             <StatRow label="Defense" value={hero.stats.def} color="#6080a0" bonus={equippedBonuses.def} />
           </div>
         </Section>
+
+        {/* CRF05 — Debuffs actifs */}
+        {(hero.activeDebuffs?.length ?? 0) > 0 && (
+          <Section title="Active Debuffs">
+            <div className="flex flex-col gap-2" data-testid="active-debuffs">
+              {hero.activeDebuffs.map((d, i) => {
+                const def = DEBUFFS[d.debuffId]
+                if (!def) return null
+                const remaining = d.duration?.remaining
+                return (
+                  <div
+                    key={`${d.debuffId}_${i}`}
+                    className="flex items-center gap-3 p-2 rounded"
+                    style={{ background: '#140a0a', border: `1px solid ${d.permanent ? '#6a2020' : '#3a2018'}` }}
+                  >
+                    <span style={{ fontSize: '1.1rem' }}>{def.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p style={{ fontFamily: 'Cinzel, serif', color: '#d08060', fontSize: '0.82rem' }}>
+                        {def.name}
+                        <span style={{ color: '#8a5a4a', fontSize: '0.72rem', marginLeft: '0.4rem' }}>
+                          −{Math.round(def.reduction * 100)}% {def.stat}
+                        </span>
+                      </p>
+                      <p style={{ color: '#6a5a4a', fontSize: '0.7rem' }}>{def.description}</p>
+                    </div>
+                    <span
+                      className="px-2 py-0.5 rounded text-xs flex-shrink-0"
+                      style={{
+                        background: d.permanent ? '#2a0808' : '#1a1208',
+                        color: d.permanent ? '#e05050' : '#c0a060',
+                        border: `1px solid ${d.permanent ? '#6a2020' : '#3a2818'}`,
+                        fontFamily: 'Cinzel, serif',
+                      }}
+                    >
+                      {d.permanent ? 'Cure needed' : `${remaining}d left`}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </Section>
+        )}
 
         {/* Équipement */}
         <Section title="Equipment">
@@ -138,15 +188,52 @@ export default function HeroSheet() {
           )}
         </Section>
 
-        {/* Titres */}
-        {hero.titles.length > 0 && (
+        {/* GLT03 — Statut Gluttony */}
+        {gluttonyEquipped && (
+          <Section title="Gluttony">
+            <div
+              className="flex items-center justify-between p-2.5 rounded"
+              data-testid="gluttony-status"
+              style={{ background: '#160a08', border: '1px solid #5a2818' }}
+            >
+              <span style={{ color: '#e08060', fontSize: '0.85rem', fontFamily: 'Cinzel, serif' }}>
+                👹 Gluttony
+              </span>
+              <span
+                className="px-2 py-0.5 rounded text-xs"
+                style={{
+                  background: gluttonyReady ? '#0e1808' : '#1a1208',
+                  color: gluttonyReady ? '#80c040' : '#a08050',
+                  border: `1px solid ${gluttonyReady ? '#2a5018' : '#3a2818'}`,
+                  fontFamily: 'Cinzel, serif',
+                }}
+              >
+                {gluttonyReady ? 'Ready' : `${gluttonyDays}d remaining`}
+              </span>
+            </div>
+          </Section>
+        )}
+
+        {/* M01 — Titres permanents (persistent entre runs) */}
+        {(earnedTitles.length > 0 || hero.titles.length > 0) && (
           <Section title="Titles">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-testid="permanent-titles">
+              {earnedTitles.map(t => (
+                <Tooltip key={t.id} content={t.description}>
+                  <span
+                    className="px-3 py-1 rounded text-xs inline-flex items-center gap-1"
+                    style={{ background: '#1a0f08', color: '#d4af70', border: '1px solid #5a3818', fontFamily: 'Cinzel, serif', cursor: 'help' }}
+                  >
+                    <span>{t.icon}</span> {t.name}
+                  </span>
+                </Tooltip>
+              ))}
+              {/* Titres legacy par-run (chaînes brutes) */}
               {hero.titles.map(t => (
                 <span
                   key={t}
                   className="px-3 py-1 rounded text-xs"
-                  style={{ background: '#1a0f08', color: '#d4af70', border: '1px solid #5a3818', fontFamily: 'Cinzel, serif' }}
+                  style={{ background: '#140c08', color: '#a08050', border: '1px solid #3a2818', fontFamily: 'Cinzel, serif' }}
                 >
                   {t}
                 </span>

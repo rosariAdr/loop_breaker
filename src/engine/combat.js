@@ -4,7 +4,7 @@
 import { MONSTERS } from '../data/monsters'
 import { SKILLS } from '../data/skills'
 import { RESOURCES } from '../data/resources'
-import { scaleMonsterStats, ZONE_MULTS } from '../data/zones'
+import { scaleMonsterStats, ZONE_MULTS, ZONE_ORDER } from '../data/zones'
 import { checkIgnarethAwakening, checkSylvaraAwakening, checkVoltarisAwakening } from '../data/deities'
 
 // ── Calcul de dégâts ──────────────────────────────────────────────────────────
@@ -87,41 +87,136 @@ export function canUseSkill(skill, heroStats) {
 
 /**
  * Applique le coût d'un skill au héros et retourne les nouvelles stats.
+ * B10 — applique aussi un éventuel `cost.stat_sacrifice` (réduction d'une stat).
  */
 export function applySkillCost(skill, heroStats) {
   const template = SKILLS[skill.skillId]
   if (!template) return heroStats
   const cost = getScaledSkillCost(template, skill.level)
-  return {
+  const next = {
     ...heroStats,
     mana: heroStats.mana - cost.mana,
     hp: heroStats.hp - cost.hp,
   }
+  const sac = getStatSacrifice(template)
+  if (sac && typeof next[sac.stat] === 'number') {
+    next[sac.stat] = Math.max(0, next[sac.stat] - sac.amount)
+  }
+  return next
 }
 
-// ── Application des effets de statut ─────────────────────────────────────────
+/**
+ * B10 — Retourne le sacrifice de stat d'un skill `{ stat, amount, permanent }`, ou null.
+ */
+export function getStatSacrifice(template) {
+  return template?.cost?.stat_sacrifice ?? null
+}
+
+// ── Effets de statut (B05) ───────────────────────────────────────────────────
+// Spec complète : DESIGN.md §B05-SPEC.
+// Catégories : DoT (poison, burn), contrôle (stun), stat (slow, *_down, *_break).
+
+const DOT_TYPES = ['poison', 'burn']
+const MAX_ACTIVE_EFFECTS = 2
+
+// Quelles stats chaque effet de catégorie "stat" multiplie par (1 - reduction).
+const STAT_EFFECT_TARGETS = {
+  slow: ['agility', 'spd'],
+  defense_break: ['def'],
+  atk_down: ['atk', 'strength'],
+  max_hp_reduction: ['maxHp'],
+  all_stats_down: ['strength', 'intelligence', 'agility', 'def', 'atk', 'spd'],
+}
+const DEFAULT_REDUCTION = { slow: 0.5 }
 
 /**
- * Applique les effets de statut actifs (poison, etc.) au début du tour.
- * Retourne { newStats, expiredEffects, log }.
+ * Applique en début de tour les DoT, décrémente les durées, retire les expirés.
+ * Ne mute ni `stats` ni `activeEffects`.
+ * Retourne { newStats, remainingEffects, log, flags: { skipTurn, noHeal } }.
  */
-export function applyStatusEffects(stats, activeEffects) {
-  let newStats = { ...stats }
-  const expiredEffects = []
+export function tickStatusEffects(stats, activeEffects = []) {
+  const newStats = { ...stats }
   const log = []
+  const flags = { skipTurn: false, noHeal: false }
 
   activeEffects.forEach(effect => {
-    if (effect.type === 'poison') {
-      const dmg = effect.tickDamage
-      newStats.hp = Math.max(0, newStats.hp - dmg)
-      log.push({ text: `Poison deals ${dmg} damage!`, type: 'status' })
+    if (DOT_TYPES.includes(effect.type)) {
+      const dmg = effect.tickDamage ?? 0
+      newStats.hp = Math.max(0, (newStats.hp ?? 0) - dmg)
+      const label = effect.type === 'burn' ? 'Burn' : 'Poison'
+      log.push({ text: `${label} deals ${dmg} damage!`, type: 'status' })
     }
-    if (effect.duration <= 1) {
-      expiredEffects.push(effect.id)
-    }
+    if (effect.type === 'burn') flags.noHeal = true
+    if (effect.type === 'stun') flags.skipTurn = true
   })
 
-  return { newStats, expiredEffects, log }
+  // Décrémente les durées et retire les effets arrivés à expiration.
+  const remainingEffects = activeEffects
+    .map(e => ({ ...e, duration: e.duration - 1 }))
+    .filter(e => e.duration > 0)
+
+  return { newStats, remainingEffects, log, flags }
+}
+
+/**
+ * Ajoute un effet de statut en respectant le plafond (MAX_ACTIVE_EFFECTS).
+ * - même type présent → refresh (durée = max, valeurs = plus fortes), pas d'empilement
+ * - sinon, si plafond atteint → nouvel effet ignoré
+ * Retourne un nouveau tableau.
+ */
+export function applyStatusEffect(activeEffects = [], newEffect, max = MAX_ACTIVE_EFFECTS) {
+  const existing = activeEffects.find(e => e.type === newEffect.type)
+  if (existing) {
+    return activeEffects.map(e => {
+      if (e.type !== newEffect.type) return e
+      return {
+        ...e,
+        duration: Math.max(e.duration, newEffect.duration),
+        tickDamage: Math.max(e.tickDamage ?? 0, newEffect.tickDamage ?? 0) || undefined,
+        reduction: Math.max(e.reduction ?? 0, newEffect.reduction ?? 0) || undefined,
+      }
+    })
+  }
+  if (activeEffects.length >= max) return [...activeEffects]
+  return [...activeEffects, { ...newEffect }]
+}
+
+/**
+ * Calcule les stats effectives en appliquant les modificateurs des effets "stat".
+ * Réductions multiplicatives (cumul → multiplication, jamais addition).
+ * Ne mute pas `baseStats`.
+ */
+export function getEffectiveStats(baseStats, activeEffects = []) {
+  const stats = { ...baseStats }
+  activeEffects.forEach(effect => {
+    const targets = STAT_EFFECT_TARGETS[effect.type]
+    if (!targets) return
+    const reduction = effect.reduction ?? DEFAULT_REDUCTION[effect.type] ?? 0
+    targets.forEach(key => {
+      if (typeof stats[key] === 'number') {
+        stats[key] = Math.max(0, Math.round(stats[key] * (1 - reduction)))
+      }
+    })
+  })
+  return stats
+}
+
+/** Le soin est interdit tant qu'un effet `burn` est actif. */
+export function canHeal(activeEffects = []) {
+  return !activeEffects.some(e => e.type === 'burn')
+}
+
+/** Vrai si un effet `stun` est présent (la cible saute son tour). */
+export function isStunned(activeEffects = []) {
+  return activeEffects.some(e => e.type === 'stun')
+}
+
+/**
+ * B12 — Vrai si un ennemi est trop fort pour être affronté en idle :
+ * son niveau dépasse celui du héros de plus de `gap` (défaut 5).
+ */
+export function isEnemyTooStrong(enemyLevel, heroLevel, gap = 5) {
+  return enemyLevel > heroLevel + gap
 }
 
 // ── Drops ─────────────────────────────────────────────────────────────────────
@@ -194,20 +289,33 @@ export function buildEnemy(monsterId, zoneId, runCount) {
     resourceDrops: monster.resourceDrops,
     goldReward: monster.goldReward,
     expReward: monster.expReward,
+    bossMechanics: monster.bossMechanics ?? null, // BSS01/02/03
   }
 }
 
 /**
- * Génère 1 à 3 ennemis pour un combat normal en zone.
- * Les boss sont toujours seuls.
+ * B03 — Nombre d'ennemis pour un combat, selon le rang et la zone.
+ * - élite / boss / demon_lord → toujours 1
+ * - zone 1 (index 0) → 1 à 2 ; zone 2+ → 1 à 3
+ * `rng` injectable pour les tests (défaut Math.random).
+ */
+export function getEnemyCount(monster, zoneId, rng = Math.random) {
+  if (!monster) return 0
+  if (['elite', 'boss', 'demon_lord'].includes(monster.rank)) return 1
+  const zoneIndex = ZONE_ORDER.indexOf(zoneId)
+  const max = zoneIndex <= 0 ? 2 : 3   // zone 1 → max 2, zone 2+ → max 3
+  return 1 + Math.floor(rng() * max)   // 1..max
+}
+
+/**
+ * Génère les ennemis d'un combat normal en zone (B03 — 1 à 3 selon zone/rang).
+ * Les boss/élites sont toujours seuls.
  */
 export function generateEnemies(monsterId, zoneId, runCount) {
   const monster = MONSTERS[monsterId]
   if (!monster) return []
 
-  const isBoss = monster.rank === 'boss' || monster.rank === 'demon_lord' || monster.rank === 'elite'
-  const count = isBoss ? 1 : Math.floor(Math.random() * 3) + 2
-
+  const count = getEnemyCount(monster, zoneId)
   return Array.from({ length: count }, () => buildEnemy(monsterId, zoneId, runCount))
 }
 

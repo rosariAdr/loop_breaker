@@ -154,6 +154,30 @@ describe('Navigation entre écrans', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CRF05 — Affichage des debuffs actifs sur HeroSheet
+// ─────────────────────────────────────────────────────────────────────────────
+describe('CRF05 — HeroSheet debuffs', () => {
+  it("pas de section debuffs si aucun debuff actif", () => {
+    render(<HeroSheet />)
+    expect(screen.queryByTestId('active-debuffs')).toBeNull()
+  })
+
+  it("affiche un debuff temporaire avec sa durée restante", () => {
+    useGameStore.getState().addHeroDebuff('fatigue', 5)
+    render(<HeroSheet />)
+    expect(screen.getByTestId('active-debuffs')).toBeInTheDocument()
+    expect(screen.getByText('Fatigue')).toBeInTheDocument()
+    expect(screen.getByText('5d left')).toBeInTheDocument()
+  })
+
+  it("marque un debuff permanent 'Cure needed'", () => {
+    useGameStore.getState().addHeroDebuff('black_smoke', 7, true)
+    render(<HeroSheet />)
+    expect(screen.getByText('Cure needed')).toBeInTheDocument()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
 // HeroSheet : layout (BUG largeur signalé)
 // ─────────────────────────────────────────────────────────────────────────────
 describe('HeroSheet — layout', () => {

@@ -4,9 +4,13 @@ import { QUESTS } from '../data/quests'
 import { SKILLS } from '../data/skills'
 import { RESOURCES } from '../data/resources'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
-import { ZONES } from '../data/zones'
+import { ZONES, getMonsterLevel } from '../data/zones'
+import { isEnemyTooStrong, buildEnemy } from '../engine/combat'
 import { useToastStore } from './toastStore'
 import { removeOneManaStone } from '../utils/manaStones'
+import { addDebuff, tickDebuffsOneDay } from '../utils/debuffs'
+import { TITLES } from '../data/titles'
+import { pickGluttonyStat, gluttonyAbsorbAmount } from '../engine/gluttony'
 
 // ── TECH02 — Save schema versioning ──────────────────────────────────────────
 // Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
@@ -46,6 +50,9 @@ const INITIAL_HERO = {
 
   // Titres gagnés
   titles: [],         // ['Slayer of Eldenmoor', ...]
+
+  // CRF01 — Debuffs passifs actifs (malus temporaires en jours, ou permanents)
+  activeDebuffs: [],  // [{ debuffId, permanent, duration: { type: 'days', remaining } }]
 
   // Équipement porté (null = slot vide)
   equipped: {
@@ -156,6 +163,10 @@ const INITIAL_META = {
 
   // Liens divins par univers (mémorisés même après la mort)
   divineBonds: {}, // { universeId: deityId }
+
+  // GLT01 — Gluttony : boosts de stats permanents cumulés (appliqués à chaque run)
+  permanentStatBoosts: {}, // { strength: N, ... }
+  gluttonyLastUsed: null,  // jour de la dernière absorption (cooldown 5 jours)
 }
 
 // ── Helpers purs (hors store) ─────────────────────────────────────────────────
@@ -242,6 +253,7 @@ function migrateV1ToV2(save) {
     battleLog: Array.isArray(hero.battleLog) ? hero.battleLog : [],
     combatEntryLog: Array.isArray(hero.combatEntryLog) ? hero.combatEntryLog : [],
     titles: Array.isArray(hero.titles) ? hero.titles : [],
+    activeDebuffs: Array.isArray(hero.activeDebuffs) ? hero.activeDebuffs : [], // CRF01
   }
 
   // ── Meta ──
@@ -250,6 +262,8 @@ function migrateV1ToV2(save) {
     ...meta,
     divineBonds: meta.divineBonds ?? {},
     titlesEarned: Array.isArray(meta.titlesEarned) ? meta.titlesEarned : [],
+    permanentStatBoosts: meta.permanentStatBoosts ?? {}, // GLT01
+    gluttonyLastUsed: meta.gluttonyLastUsed ?? null,      // GLT01
   }
 
   return { hero: migratedHero, world: migratedWorld, meta: migratedMeta, saveVersion: 2 }
@@ -620,6 +634,8 @@ export const useGameStore = create((set, get) => ({
             hp: state.hero.stats.maxHp,
             mana: state.hero.stats.maxMana,
           },
+          // CRF01 — un jour passe : les debuffs temporaires décrémentent
+          activeDebuffs: tickDebuffsOneDay(state.hero.activeDebuffs ?? []),
         },
         world: {
           ...state.world,
@@ -630,6 +646,52 @@ export const useGameStore = create((set, get) => ({
         },
       }
     }),
+
+  // GLT01/GLT02/GLT04 — Gluttony absorbe une stat (proc passif aléatoire ou assassinat choisi)
+  absorbGluttony: ({ monsterId, stat = null }) =>
+    set((state) => {
+      const monster = MONSTERS[monsterId]
+      if (!monster) return state
+      const chosenStat = stat ?? pickGluttonyStat()
+      const amount = gluttonyAbsorbAmount(monster)
+      useToastStore.getState().addToast(
+        `Gluttony — Absorbed +${amount} ${chosenStat.toUpperCase()} from ${monster.name}`,
+        'gluttony'
+      )
+      return {
+        hero: {
+          ...state.hero,
+          stats: { ...state.hero.stats, [chosenStat]: (state.hero.stats[chosenStat] ?? 0) + amount },
+        },
+        meta: {
+          ...state.meta,
+          permanentStatBoosts: {
+            ...(state.meta.permanentStatBoosts ?? {}),
+            [chosenStat]: ((state.meta.permanentStatBoosts ?? {})[chosenStat] ?? 0) + amount,
+          },
+          gluttonyLastUsed: state.world.dayCount,
+        },
+      }
+    }),
+
+  // M01 — Attribue un titre permanent (dédup, persistant entre runs). Toast si nouveau.
+  awardTitle: (titleId) =>
+    set((state) => {
+      if (!TITLES[titleId]) return state
+      const earned = state.meta.titlesEarned ?? []
+      if (earned.includes(titleId)) return state
+      useToastStore.getState().addToast(`Title earned: ${TITLES[titleId].name}`, 'info')
+      return { meta: { ...state.meta, titlesEarned: [...earned, titleId] } }
+    }),
+
+  // CRF01 — Applique un debuff au héros (utilisé par les ratés de crafting CRF02/03)
+  addHeroDebuff: (debuffId, days = 7, permanent = false) =>
+    set((state) => ({
+      hero: {
+        ...state.hero,
+        activeDebuffs: addDebuff(state.hero.activeDebuffs ?? [], debuffId, days, permanent),
+      },
+    })),
 
   // ── Kill count & idle ─────────────────────────────────────────────────────
   recordKill: (monsterId) =>
@@ -839,6 +901,11 @@ export const useGameStore = create((set, get) => ({
       newStats.hp = newStats.maxHp = 100
       newStats.mana = newStats.maxMana = 60
 
+      // GLT01 — réapplique les boosts permanents de Gluttony (cumulés entre runs)
+      Object.entries(state.meta.permanentStatBoosts ?? {}).forEach(([stat, amt]) => {
+        if (stat in newStats) newStats[stat] = (newStats[stat] ?? 0) + amt
+      })
+
       // T08 — stat bonus (slot supplémentaire)
       if (shopPurchases.bonusStatSlot) {
         const statKeys = ['strength', 'agility', 'intelligence', 'chance', 'def']
@@ -970,6 +1037,34 @@ export const useGameStore = create((set, get) => ({
       const monsterId = state.world.idleTargetMonster
       const monster = MONSTERS[monsterId]
       if (!monster) return state
+
+      // B12 — ennemi trop fort pour l'idle (niveau > hero +5) :
+      // on stoppe l'idle et on force un combat manuel (pas d'auto-grind suicidaire).
+      const monsterLevel = getMonsterLevel(monsterId)
+      if (isEnemyTooStrong(monsterLevel, state.hero.level)) {
+        useToastStore.getState().addToast(
+          `${monster.name} (Lv ${monsterLevel}) is too strong to grind — fight it manually!`,
+          'warning'
+        )
+        const entry = {
+          text: `[Idle] ${monster.name} too strong (Lv ${monsterLevel}) — forced into manual combat.`,
+          type: 'info',
+          timestamp: Date.now(),
+        }
+        const forcedEnemy = buildEnemy(monsterId, state.world.currentZone, state.hero.runNumber)
+        return {
+          activeCombat: forcedEnemy
+            ? { enemies: [forcedEnemy], turn: 0, log: [], phase: 'player', isOver: false, result: null }
+            : state.activeCombat,
+          currentScreen: forcedEnemy ? 'combat' : state.currentScreen,
+          world: {
+            ...state.world,
+            isIdleActive: false,
+            idleTargetMonster: null,
+            idleLog: [entry, ...state.world.idleLog].slice(0, 10),
+          },
+        }
+      }
 
       // Auto-disable si HP < 20% avant même de commencer
       const currentHp = state.hero.stats.hp
@@ -1250,7 +1345,16 @@ export const useGameStore = create((set, get) => ({
           }
         : state.meta.demonLordKills
 
+      // W01 — récompense de victoire sur le Demon Lord : +200 tokens de réputation
+      const tokenReward = isDemonLordKill ? 200 : 0
+      if (isDemonLordKill) {
+        useToastStore.getState().addToast('Demon Lord vanquished! +200 reputation tokens.', 'divine')
+      }
+
       return {
+        hero: tokenReward > 0
+          ? { ...state.hero, reputationTokens: (state.hero.reputationTokens ?? 0) + tokenReward }
+          : state.hero,
         world: {
           ...state.world,
           dungeons: {
@@ -1269,6 +1373,10 @@ export const useGameStore = create((set, get) => ({
           demonLordKills: updatedDemonLordKills,
           // W03 — flag levé pour le post-mortem si Malachar killed ce run
           malacharDefeatedThisRun: isDemonLordKill ? true : (state.meta.malacharDefeatedThisRun ?? false),
+          // T13 — titres permanents gagnés en tuant un Demon Lord (dépend M01)
+          titlesEarned: isDemonLordKill
+            ? Array.from(new Set([...(state.meta.titlesEarned ?? []), 'demon_lord_slayer', 'malachar_bane']))
+            : (state.meta.titlesEarned ?? []),
         },
       }
     }),

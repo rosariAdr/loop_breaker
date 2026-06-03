@@ -399,6 +399,8 @@ export const MONSTERS = {
       { resourceId: 'ancient_bone', chance: 1.0, qty: { min: 2, max: 4 } },
       { resourceId: 'cursed_gem', chance: 0.50, qty: { min: 1, max: 1 } },
     ],
+    // BSS01 (léger) — enrage à 50% HP (stand-in invocation ; BSS01b = vraie invocation de 2 adds)
+    bossMechanics: { type: 'enrage', triggerHp: 0.5 },
   },
 
   forsaken_citadel_boss: {
@@ -418,6 +420,8 @@ export const MONSTERS = {
       { resourceId: 'void_crystal', chance: 1.0, qty: { min: 1, max: 2 } },
       { resourceId: 'dark_lord_relic', chance: 0.40, qty: { min: 1, max: 1 } },
     ],
+    // BSS02 (léger) — Cursed Strike (STR−20%, 2 tours) ; BSS02b = couche d'armure régénérante
+    bossMechanics: { type: 'cursed_strike', chance: 0.4 },
   },
 
   // ── Demon Lord ────────────────────────────────────────────────────────
@@ -440,6 +444,8 @@ export const MONSTERS = {
     isBoss: true,
     isDemonLord: true,
     resurrectionCycles: 4, // ressuscite après 4 transmigrations
+    // BSS03 — combat en 3 phases (cf. engine/bossMechanics.getMalacharPhase)
+    bossMechanics: { type: 'phases' },
   },
 }
 

@@ -3,7 +3,7 @@ import { ZONES } from '../data/zones'
 import { MONSTERS, MONSTERS_BY_ZONE, MONSTERS_BY_SPOT } from '../data/monsters'
 import { RESOURCES, RARITY_COLORS } from '../data/resources'
 import { SKILLS } from '../data/skills'
-import { buildEnemy } from '../engine/combat'
+import { generateEnemies } from '../engine/combat'
 
 // S02 — seuil de kills pour révéler le skill droppable d'un monstre
 const SKILL_REVEAL_THRESHOLD = 5
@@ -103,9 +103,10 @@ function MonsterRow({ monsterId }) {
   const isElite = monster.rank === 'elite'
 
   const handleFight = () => {
-    const enemy = buildEnemy(monsterId, world.currentZone, hero.runNumber)
-    if (!enemy) return
-    startCombat([enemy])
+    // B03 — 1 à 3 ennemis selon la zone et le rang (élite/boss → 1)
+    const enemies = generateEnemies(monsterId, world.currentZone, hero.runNumber)
+    if (enemies.length === 0) return
+    startCombat(enemies)
   }
 
   return (
