@@ -50,3 +50,6 @@ public/monsters/*.webp
 public/monsters/*.jpg
 public/monsters/*.jpeg
 public/
+
+# Design reference (local-only)
+design/
