@@ -59,10 +59,10 @@ _(aucune dépendance externe bloquante)_
 
 ### Sprites, assets & contenu visuel
 
-- [ ] **CONT01 — Sprites de carte/combat chibi (couche A)** (M) — *§ASSETS*. Héros chibi héroïque (remplace le nécromancien placeholder), **façades de bâtiments**, **18/23 monstres** manquants, **boss Malachar**, déco (well/hens/barrels). Pipeline `public/monsters/README.md`. Priorité : 6 communs d'Ashenvale.
-- [ ] **CONT06 — Portraits PNJ pixel (couche B, 128×128, 6 émotions)** (S) — *§ASSETS*. `NPC_1` Sir Aldric (maître guerrier), `NPC_2` Maître forgeron, `NPC_3` Marta/Alchimiste, `NPC_4` Marchand/maître de Guilde, `Queen` maître mage (Académie)/divinité. À compléter : prêtre, chef de village, divinités.
+- [ ] **CONT01 — Sprites de carte/combat chibi (couche A)** (M) — *§ASSETS*. **✅ Héros placeholder en place** (`public/sprites/hero/{idle,walking,dying}` — Necromancer chibi CraftPix, à remplacer par un chibi héroïque). **Reste** : façades de bâtiments, **18/23 monstres**, **boss Malachar**, déco (well/hens/barrels). Pipeline `public/monsters/README.md`.
+- [x] ~~**CONT06 — Portraits PNJ pixel (couche B)**~~ — **✅ 5 portraits en place** (`public/portraits/{aldric,smith,marta,merchant,mage}`, 6 émotions, CraftPix) + manifeste `src/data/portraits.js`. **Reste à sourcer** : prêtre (church), chef de village, divinités → fallback emoji en attendant.
 - [ ] **CONT04 — Noms propres donjons Zone 2** (XS) - remplacer placeholders par noms définitifs
-- [ ] **CONT05 — ASSETS.md + sourcing licences** (S) - chaque asset : source, licence (CC0/CC BY…), attribution. Sources : Kenney (CC0), game-icons.net (CC BY), CraftPix, IA pour pièces uniques. Prévoir un vrai set d'icônes SVG recolorées (remplace les emoji stand-in)
+- [ ] **CONT05 — ASSETS.md + sourcing licences** (S) — **✅ `ASSETS.md` créé** (crédits + inventaire + règle anti-clash). Assets **gitignorés (local-only)** → pas de problème de redistribution. ⚠️ **Reste** : prévoir la **livraison des assets au déploiement** (script de copie / release séparée, car absents du repo) + un set d'icônes SVG (remplace emoji).
 - [ ] **C03 — Portraits personnage** (S) - 8 icônes au choix en CharCreation (warrior/rogue/mage/ranger/monk/knight/witch/bard)
 
 ### QoL essentiel (shippabilité)

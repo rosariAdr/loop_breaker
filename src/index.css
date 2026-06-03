@@ -1,14 +1,49 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
 :root {
+  /* ── Legacy (écrans v1 pas encore migrés) ── */
   --color-bg: #0a0a0f;
   --color-surface: #161210;
   --color-gold: #d4af70;
   --color-hp: #c04040;
   --color-mana: #3060c0;
   --color-idle: #80c040;
+
+  /* ── UI01 — Design system parchemin (UI_HANDOFF.md §Identité) ── */
+  --parchment:        #F2E0B6; /* papier carte vieilli — fond principal */
+  --parchment-2:      #EAD49C; /* pli secondaire */
+  --parchment-shadow: #C9A96E; /* bords, bordures, profondeur */
+  --scroll-paper:     #F6E8C4; /* parchemin clair — panneaux scroll/fiches */
+  --ink:              #3D2B1F; /* texte, contours */
+  --ink-soft:         #5C4632; /* texte secondaire */
+  --forest:           #4A7C2F; /* Ashenvale / nature */
+  --forest-deep:      #2D5216; /* arbres denses, bordures vertes */
+  --gold:             #D4A017; /* halo héros, accents, XP */
+  --sky:              #7DB9DE; /* eau, mana */
+  --danger:           #C0392B; /* blight, verrouillé, HP, demon lord */
+  --stone:            #9B9080; /* Grimspire, désactivé */
+  --amber:            #E8A020; /* boutons, CTA (haut du dégradé) */
+  --amber-deep:       #B97A12; /* bordures/actif boutons, labels eyebrow */
+  --safe-green:       #50C050; /* villes sûres, idle actif */
+  --sage:             #70A070; /* villages */
+  --dungeon:          #7B3FA0; /* mystère des donjons */
+  --parchment-dark:   #8B6914; /* accents bois topbar/sidebar */
+  --wood:             #3D2B1F; /* base planche topbar */
+  --wood-2:           #5A3E29; /* reflet planche topbar */
+
+  /* Jauges */
+  --hp-from: #e05a4c; --hp-to: #C0392B;
+  --mp-from: #a4d2ee; --mp-to: #7DB9DE;
+  --xp-from: #f0c64a; --xp-to: #D4A017;
+
+  /* Fond de scène (letterbox derrière le canevas) */
+  --scene-from: #1c140d; --scene-to: #3a2a1c;
+
+  /* Stage de référence (canvas fixe) */
+  --stage-w: 1920px;
+  --stage-h: 1080px;
 }
 
 /* U03 — Font stacks avec fallbacks robustes (Cinzel/Crimson Text + chaîne serif locale) */
@@ -90,3 +125,105 @@ h1, h2, h3, h4 {
 .anim-float       { animation: float-up   0.6s ease forwards; }
 .anim-hero-attack { animation: hero-attack 0.3s ease; }
 .anim-screen-fade { animation: screen-fade-in 0.15s ease; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UI01 — Coquille parchemin (UI_HANDOFF.md §LA SCÈNE)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Scène : fond sombre plein écran, le stage 1920×1080 centré + mis à l'échelle */
+.lb-scene {
+  position: fixed; inset: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, var(--scene-from) 0%, var(--scene-to) 100%);
+}
+.lb-stage {
+  position: relative; flex: none;
+  width: var(--stage-w); height: var(--stage-h);
+  transform: scale(var(--lb-scale, 1)); /* --lb-scale calculé en JS (App.jsx) */
+  transform-origin: center center;
+  /* Table en planches de bois (verticales) + vignette de bord */
+  background:
+    radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.45) 100%),
+    repeating-linear-gradient(90deg, #4a331f 0px, #4a331f 116px, #3d2a18 118px, #43301c 120px, #4a331f 122px);
+  box-shadow: inset 0 0 120px rgba(0,0,0,.5);
+  display: flex; flex-direction: column;
+  font-family: 'Crimson Text', Georgia, serif;
+  color: var(--ink);
+}
+
+/* Topbar — planche de bois (fusionne NavBar + DayBar) */
+.lb-topbar {
+  height: 64px; flex: none;
+  display: flex; align-items: center; gap: 18px;
+  padding: 0 18px;
+  background: linear-gradient(180deg, var(--wood-2) 0%, var(--wood) 100%);
+  border-bottom: 2px solid #2a1c10;
+  box-shadow: 0 3px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,220,160,.08);
+  color: var(--parchment);
+}
+.lb-topbar .sep { width: 1px; height: 34px; background: rgba(0,0,0,.35); box-shadow: 1px 0 0 rgba(255,220,160,.06); }
+.lb-eyebrow {
+  font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; color: #e7d3a4;
+}
+.lb-gauge-track {
+  height: 13px; border-radius: 7px; overflow: hidden;
+  background: #1c120a; box-shadow: inset 0 1px 3px rgba(0,0,0,.6);
+}
+.lb-gauge-fill { height: 100%; border-radius: 7px; transition: width .5s cubic-bezier(.4,.8,.4,1); }
+
+/* Onglets (pills) */
+.lb-tab {
+  font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600;
+  padding: 7px 16px; border-radius: 7px; cursor: pointer;
+  background: rgba(20,12,6,.55); color: var(--parchment);
+  border: 1px solid rgba(0,0,0,.3); transition: all .14s ease;
+}
+.lb-tab:hover { transform: translateY(-1px); }
+.lb-tab.active {
+  background: linear-gradient(180deg, var(--amber) 0%, var(--amber-deep) 100%);
+  color: #2a1c08; box-shadow: 0 0 12px rgba(232,160,32,.4);
+}
+
+/* Breadcrumb — bande de bois plus sombre */
+.lb-breadcrumb {
+  height: 30px; flex: none;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  background: linear-gradient(180deg, #322014 0%, #281a0f 100%);
+  border-bottom: 1px solid #1c1209;
+  font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--parchment);
+}
+.lb-breadcrumb .sep { opacity: .4; margin: 0 7px; }
+.lb-breadcrumb .current { color: var(--gold); }
+
+/* Zone centrale (feuille de parchemin où s'affiche l'écran courant) */
+.lb-sheet-area { position: relative; flex: 1 1 auto; min-height: 0; }
+
+/* Panneau / fiche parchemin générique */
+.lb-parchment {
+  background: var(--scroll-paper);
+  border: 1.5px solid var(--parchment-shadow);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(61,43,31,.25), inset 0 0 0 3px rgba(242,224,182,.4);
+  color: var(--ink);
+}
+
+/* Bouton parchemin diégétique */
+.lb-btn {
+  font-family: 'Cinzel', serif; font-size: 14px; font-weight: 600;
+  padding: 10px 16px; border-radius: 7px; cursor: pointer;
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--parchment) 0%, var(--parchment-2) 100%);
+  border: 1.5px solid var(--amber-deep);
+  box-shadow: 0 2px 0 rgba(61,43,31,.25), 0 3px 6px rgba(61,43,31,.18);
+  transition: transform .12s ease, filter .12s ease;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.lb-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.lb-btn:active { transform: translateY(1px); }
+.lb-btn.primary {
+  background: linear-gradient(180deg, var(--amber) 0%, var(--amber-deep) 100%);
+  color: #2a1c08;
+}

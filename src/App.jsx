@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useGameStore } from './store/gameStore'
+import { ZONES } from './data/zones'
 
 import WorldMap from './screens/WorldMap'
 import ZoneView from './screens/ZoneView'
@@ -17,6 +18,9 @@ import ErrorBoundary from './components/ErrorBoundary'
 import DebugPanel from './components/DebugPanel'
 import ToastContainer from './components/ToastContainer'
 
+// UI01 — écrans qui prennent tout le stage (takeover, sans topbar/breadcrumb)
+const FULLSCREEN = ['combat', 'post_mortem', 'gods_shop', 'divine_call']
+
 function App() {
   const {
     currentScreen, loadGame, saveGame,
@@ -25,12 +29,20 @@ function App() {
     hero,
   } = useGameStore()
 
-  // Charger la sauvegarde au démarrage
+  useEffect(() => { loadGame() }, [])
+
+  // UI01 — scaler du stage 1920×1080 (ratio calculé en JS car scale() veut un nombre)
   useEffect(() => {
-    loadGame()
+    const apply = () => {
+      const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080)
+      document.documentElement.style.setProperty('--lb-scale', String(s))
+    }
+    apply()
+    window.addEventListener('resize', apply)
+    return () => window.removeEventListener('resize', apply)
   }, [])
 
-  // Boucle idle : 1 combat toutes les 3 secondes si idle actif
+  // Boucle idle : 1 combat toutes les 3s si idle actif
   useEffect(() => {
     const interval = setInterval(() => {
       const { world, activeCombat } = useGameStore.getState()
@@ -41,7 +53,7 @@ function App() {
     return () => clearInterval(interval)
   }, [])
 
-  // Tick calendrier : 1 tick toutes les 30 secondes (1 journée = 12 min)
+  // Tick calendrier : 1 tick / 30s
   useEffect(() => {
     const interval = setInterval(() => {
       const { activeCombat, currentScreen: cs } = useGameStore.getState()
@@ -51,7 +63,7 @@ function App() {
     return () => clearInterval(interval)
   }, [])
 
-  // Auto-save toutes les 30 secondes
+  // Auto-save / 30s
   useEffect(() => {
     const interval = setInterval(() => saveGame(), 30000)
     return () => clearInterval(interval)
@@ -59,63 +71,61 @@ function App() {
 
   const renderScreen = () => {
     switch (currentScreen) {
-      case 'world_map':     return <WorldMap />
-      case 'zone_view':     return <ZoneView />
-      case 'combat':        return <Combat />
-      case 'hero_sheet':    return <HeroSheet />
-      case 'inventory':     return <Inventory />
-      case 'safe_zone':     return <SafeZone />
-      case 'post_mortem':   return <PostMortem />
-      case 'gods_shop':     return <GodsShop />
-      case 'divine_call':   return <WorldMap /> // fond derrière le modal
-      case 'quest_board':   return <QuestBoard />
-      default:              return <WorldMap />
+      case 'world_map':   return <WorldMap />
+      case 'zone_view':   return <ZoneView />
+      case 'combat':      return <Combat />
+      case 'hero_sheet':  return <HeroSheet />
+      case 'inventory':   return <Inventory />
+      case 'safe_zone':   return <SafeZone />
+      case 'post_mortem': return <PostMortem />
+      case 'gods_shop':   return <GodsShop />
+      case 'divine_call': return <WorldMap /> // fond derrière le modal
+      case 'quest_board': return <QuestBoard />
+      default:            return <WorldMap />
     }
   }
 
-  // C01 — CharacterCreation : run #1 et nom non choisi
   const showCharCreation = hero.runNumber === 1 && !hero.heroNamed
-
-  // C02 — LevelUpModal : niveaux gagnés non confirmés
   const showLevelUp = pendingLevelUp > 0 && !showCharCreation
+  const fullscreen = FULLSCREEN.includes(currentScreen)
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: '#0a0a0f' }}>
-      <NavBar />
-      <DayBar />
-      <main className="flex-1">
-        <ErrorBoundary>
-          {/* U04 — key={currentScreen} force le remount → re-déclenche le fade */}
-          <div key={currentScreen} className="anim-screen-fade h-full">
-            {renderScreen()}
-          </div>
-        </ErrorBoundary>
-      </main>
-      {/* Modals — par ordre de priorité */}
-      {pendingDivineCall && <DivineCall />}
-      {showLevelUp && <LevelUpModal />}
-      {showCharCreation && <CharacterCreation />}
-      {/* U01 — Toasts globaux */}
+    <div className="lb-scene">
+      <div className="lb-stage">
+        {!fullscreen && <Topbar />}
+        {!fullscreen && <Breadcrumb />}
+        <main className="lb-sheet-area">
+          <ErrorBoundary>
+            {/* U04 — key={currentScreen} → re-déclenche le fade */}
+            <div key={currentScreen} className="anim-screen-fade" style={{ position: 'absolute', inset: 0 }}>
+              {renderScreen()}
+            </div>
+          </ErrorBoundary>
+        </main>
+
+        {/* Modals (au-dessus du stage) */}
+        {pendingDivineCall && <DivineCall />}
+        {showLevelUp && <LevelUpModal />}
+        {showCharCreation && <CharacterCreation />}
+      </div>
+
+      {/* U01 — Toasts globaux + PROC06 Debug panel (hors stage, plein écran) */}
       <ToastContainer />
-      {/* PROC06 — Debug panel (DEV only, Ctrl+Shift+D) */}
       <DebugPanel />
     </div>
   )
 }
 
-// ── NavBar ─────────────────────────────────────────────────────────────────────
-function NavBar() {
+// ── Topbar (UI01 — planche de bois, fusionne run/XP, HP/MP, jour, onglets) ─────
+function Topbar() {
   const { setScreen, currentScreen, hero, world, saveGame, unseenLoot } = useGameStore()
   const [saveFlash, setSaveFlash] = useState(false)
 
-  const hideNav = ['post_mortem', 'gods_shop', 'divine_call'].includes(currentScreen)
-
   const handleSave = () => {
-    saveGame()
-    setSaveFlash(true)
-    setTimeout(() => setSaveFlash(false), 1500)
+    saveGame(); setSaveFlash(true); setTimeout(() => setSaveFlash(false), 1500)
   }
 
+  const xpPct = Math.min(100, (hero.exp / hero.expToNext) * 100)
   const tabs = [
     { id: 'world_map', label: 'Map' },
     { id: 'hero_sheet', label: 'Hero' },
@@ -123,148 +133,107 @@ function NavBar() {
   ]
 
   return (
-    <header
-      className="flex items-center justify-between px-4 py-2 border-b"
-      style={{ borderColor: '#2a2018', background: '#0f0c08' }}
-    >
-      {/* Infos run + XP bar */}
-      <div className="flex items-center gap-4 text-sm" style={{ color: '#d4af70' }}>
-        <span style={{ fontFamily: 'Cinzel, serif' }}>Run #{hero.runNumber}</span>
-        <div className="flex items-center gap-1">
-          <span style={{ color: '#6a5a4a', fontSize: '0.78rem' }}>Lv{hero.level}</span>
-          <div className="w-16 h-1.5 rounded overflow-hidden" style={{ background: '#1a1410' }}>
-            <div
-              className="h-full rounded transition-all duration-300"
-              style={{ width: `${Math.min(100, (hero.exp / hero.expToNext) * 100)}%`, background: '#60d0ff' }}
-            />
-          </div>
-          <span style={{ color: '#3a6a8a', fontSize: '0.7rem' }}>{hero.exp}/{hero.expToNext}</span>
+    <header className="lb-topbar">
+      {/* Run / Lv + XP */}
+      <div className="flex flex-col" style={{ gap: '3px', minWidth: '128px' }}>
+        <span className="lb-eyebrow">Run #{hero.runNumber} · Lv {hero.level}</span>
+        <div className="lb-gauge-track" style={{ width: '120px', height: '8px' }}>
+          <div className="lb-gauge-fill" style={{ width: `${xpPct}%`, background: 'linear-gradient(90deg, var(--xp-from), var(--xp-to))' }} />
         </div>
-        <span style={{ color: '#4a4030', fontSize: '0.78rem' }}>Day {world.dayCount}</span>
-        {/* U07 — Tokens de réputation */}
-        {hero.reputationTokens > 0 && (
-          <span style={{ color: '#c084fc', fontSize: '0.75rem' }}>
-            🪙 {hero.reputationTokens}
-          </span>
-        )}
       </div>
 
-      {/* Barres HP / MP */}
-      <div className="flex items-center gap-4">
-        <Bar value={hero.stats.hp} max={hero.stats.maxHp} color="#c04040" label="HP" />
-        <Bar value={hero.stats.mana} max={hero.stats.maxMana} color="#3060c0" label="MP" />
+      <div className="sep" />
+
+      {/* Jauges HP / MP */}
+      <Gauge label="HP" value={hero.stats.hp} max={hero.stats.maxHp} from="var(--hp-from)" to="var(--hp-to)" />
+      <Gauge label="MP" value={hero.stats.mana} max={hero.stats.maxMana} from="var(--mp-from)" to="var(--mp-to)" />
+
+      <div style={{ flex: 1 }} />
+
+      {/* Groupe stats (DayBar fusionnée) */}
+      <div className="flex items-center" style={{ gap: '14px', fontFamily: 'Cinzel, serif', fontSize: '14px', fontWeight: 600, color: '#f0dcae' }}>
+        <span>{world.isNight ? '🌙' : '☀'} Day {world.dayCount}</span>
+        <span style={{ opacity: .85 }}>T {world.tickCount}/24</span>
+        <span>🪙 {hero.reputationTokens ?? 0}</span>
       </div>
 
-      {/* Nav + Save */}
-      {!hideNav && (
-        <div className="flex items-center gap-2">
-          <nav className="flex gap-2">
-            {tabs.map(tab => {
-              const showBadge = tab.id === 'inventory' && unseenLoot && currentScreen !== 'inventory'
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setScreen(tab.id)}
-                  className="relative px-3 py-1 text-sm rounded"
-                  style={{
-                    fontFamily: 'Cinzel, serif',
-                    background: currentScreen === tab.id ? '#d4af70' : '#1a1410',
-                    color: currentScreen === tab.id ? '#0a0a0f' : '#d4af70',
-                    border: '1px solid #2a2018',
-                  }}
-                >
-                  {tab.label}
-                  {/* UX05 — Badge point rouge sur Bag si nouveau loot non consulté */}
-                  {showBadge && (
-                    <span
-                      data-testid="unseen-loot-badge"
-                      aria-label="new loot"
-                      className="absolute rounded-full"
-                      style={{
-                        top: '-3px',
-                        right: '-3px',
-                        width: '8px',
-                        height: '8px',
-                        background: '#e04040',
-                        border: '1px solid #1a0808',
-                        boxShadow: '0 0 6px #e04040',
-                      }}
-                    />
-                  )}
-                </button>
-              )
-            })}
-          </nav>
-          <button
-            onClick={handleSave}
-            className="px-2 py-1 text-xs rounded transition-all"
-            style={{
-              fontFamily: 'Cinzel, serif',
-              background: saveFlash ? '#0f2010' : '#0f0c08',
-              color: saveFlash ? '#80c040' : '#4a4030',
-              border: `1px solid ${saveFlash ? '#406030' : '#2a2018'}`,
-            }}
-          >
-            {saveFlash ? '✓ Saved' : '💾 Save'}
-          </button>
-        </div>
-      )}
+      <div className="sep" />
+
+      {/* Onglets */}
+      <nav className="flex items-center" style={{ gap: '6px' }}>
+        {tabs.map(tab => {
+          const showBadge = tab.id === 'inventory' && unseenLoot && currentScreen !== 'inventory'
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setScreen(tab.id)}
+              className={`lb-tab${currentScreen === tab.id ? ' active' : ''}`}
+              style={{ position: 'relative' }}
+            >
+              {tab.label}
+              {showBadge && (
+                <span data-testid="unseen-loot-badge" aria-label="new loot"
+                  style={{ position: 'absolute', top: '-3px', right: '-3px', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--danger)', border: '1px solid #1a0808', boxShadow: '0 0 6px var(--danger)' }} />
+              )}
+            </button>
+          )
+        })}
+        <button onClick={handleSave} className={`lb-tab${saveFlash ? ' active' : ''}`}>
+          {saveFlash ? '✓ Saved' : 'Save'}
+        </button>
+      </nav>
     </header>
   )
 }
 
-// ── DayBar — I03 ──────────────────────────────────────────────────────────────
-function DayBar() {
-  const { world, sleep, currentScreen } = useGameStore()
-
-  // Masquer pendant les écrans fullscreen ou le combat
-  const hide = ['post_mortem', 'gods_shop', 'divine_call', 'combat'].includes(currentScreen)
-  if (hide) return null
-
-  const pct = Math.min(100, (world.tickCount / 24) * 100)
-  const isNight = world.isNight
-
+function Gauge({ label, value, max, from, to }) {
+  const pct = Math.max(0, Math.min(100, (value / max) * 100))
   return (
-    <div
-      className="flex items-center gap-3 px-4 py-1 border-b"
-      style={{ borderColor: '#1a1410', background: '#060604' }}
-    >
-      <span style={{ color: isNight ? '#4a4060' : '#4a4030', fontSize: '0.68rem', fontFamily: 'Cinzel, serif', whiteSpace: 'nowrap' }}>
-        {isNight ? '🌙' : '☀️'} Day {world.dayCount} · T{world.tickCount}/24
-      </span>
-      <div className="flex-1 h-1 rounded overflow-hidden" style={{ background: '#1a1410' }}>
-        <div
-          className="h-full rounded transition-all duration-500"
-          style={{
-            width: `${pct}%`,
-            background: isNight ? '#302858' : '#4a3818',
-          }}
-        />
+    <div className="flex flex-col" style={{ gap: '2px', width: '150px' }}>
+      <div className="flex items-center justify-between" style={{ fontSize: '10px', color: '#e7d3a4', fontFamily: 'Cinzel, serif' }}>
+        <span style={{ fontWeight: 700, letterSpacing: '.06em' }}>{label}</span>
+        <span style={{ opacity: .85 }}>{value}/{max}</span>
       </div>
-      <button
-        onClick={sleep}
-        className="text-xs px-2 py-0.5 rounded"
-        style={{ fontFamily: 'Cinzel, serif', color: '#4a3a2a', border: '1px solid #2a1a10', background: 'transparent' }}
-      >
-        💤
-      </button>
+      <div className="lb-gauge-track">
+        <div className="lb-gauge-fill" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${from}, ${to})` }} />
+      </div>
     </div>
   )
 }
 
-// ── Bar ───────────────────────────────────────────────────────────────────────
-function Bar({ value, max, color, label }) {
-  const percent = Math.max(0, Math.min(100, (value / max) * 100))
+// ── Breadcrumb (UI01 — chemin de région) ──────────────────────────────────────
+function Breadcrumb() {
+  const { world, currentScreen } = useGameStore()
+  const zone = ZONES[world.currentZone]
+  const zoneName = zone?.name ?? world.currentZone
+
+  // Chemin selon l'écran
+  const parts = ['Eldenmoor']
+  if (currentScreen === 'world_map') {
+    parts.push(zoneName)
+  } else if (currentScreen === 'safe_zone') {
+    const loc = zone?.city?.id === world.currentLocation
+      ? zone?.city
+      : zone?.villages?.find(v => v.id === world.currentLocation)
+    parts.push(zoneName, loc?.name ?? 'Settlement')
+  } else if (currentScreen === 'zone_view') {
+    const spot = zone?.huntingSpots?.find(s => s.id === world.currentHuntingSpot)
+    parts.push(zoneName, spot?.name ?? 'Wilds')
+  } else {
+    parts.push(zoneName)
+  }
+
   return (
-    <div className="flex items-center gap-1">
-      <span className="text-xs w-6" style={{ color: '#7a6a5a' }}>{label}</span>
-      <div className="w-24 h-2 rounded overflow-hidden" style={{ background: '#1a1410' }}>
-        <div
-          className="h-full rounded transition-all duration-300"
-          style={{ width: `${percent}%`, background: color }}
-        />
-      </div>
-      <span className="text-xs" style={{ color: '#7a6a5a' }}>{value}/{max}</span>
+    <div className="lb-breadcrumb">
+      <span>
+        {parts.map((p, i) => (
+          <span key={i}>
+            <span className={i === parts.length - 1 ? 'current' : ''}>{p}</span>
+            {i < parts.length - 1 && <span className="sep">›</span>}
+          </span>
+        ))}
+      </span>
+      <span style={{ opacity: .35, letterSpacing: '.3em' }}>· · · · · ·</span>
     </div>
   )
 }
