@@ -1,5 +1,7 @@
 // Définition des zones du monde médiéval fantasy
 
+import { MONSTERS } from './monsters'
+
 export const ZONES = {
   ashenvale: {
     id: 'ashenvale',
@@ -73,6 +75,7 @@ export const ZONES = {
           { id: 'merchant', chance: 0.65 },
           { id: 'alchemy', chance: 0.40 },
           { id: 'blacksmith', chance: 0.20 },
+          { id: 'master_smith', chance: 0.10 }, // Z06 — maître forgeron, rare
         ],
       },
       {
@@ -85,6 +88,7 @@ export const ZONES = {
           { id: 'merchant', chance: 0.65 },
           { id: 'alchemy', chance: 0.40 },
           { id: 'blacksmith', chance: 0.20 },
+          { id: 'master_smith', chance: 0.10 }, // Z06 — maître forgeron, rare
         ],
       },
     ],
@@ -139,6 +143,7 @@ export const ZONES = {
           { id: 'merchant', chance: 0.65 },
           { id: 'alchemy', chance: 0.40 },
           { id: 'blacksmith', chance: 0.20 },
+          { id: 'master_smith', chance: 0.10 }, // Z06 — maître forgeron, rare
         ],
       },
       {
@@ -150,6 +155,7 @@ export const ZONES = {
           { id: 'merchant', chance: 0.65 },
           { id: 'alchemy', chance: 0.40 },
           { id: 'blacksmith', chance: 0.20 },
+          { id: 'master_smith', chance: 0.10 }, // Z06 — maître forgeron, rare
         ],
       },
     ],
@@ -180,4 +186,18 @@ export function scaleMonsterStats(baseStats, zoneId, runCount) {
     def: Math.round(baseStats.def * scale),
     spd: baseStats.spd, // la vitesse ne scale pas
   }
+}
+
+// B12 — Niveau nominal d'un monstre, dérivé du levelRange (min) de son spot de chasse.
+// Sert à juger si un ennemi est trop fort pour l'idle. Retourne 1 par défaut.
+export function getMonsterLevel(monsterId) {
+  const monster = MONSTERS[monsterId]
+  if (!monster) return 1
+  for (const zone of Object.values(ZONES)) {
+    const spot = zone.huntingSpots?.find(s => s.id === monster.huntingSpot)
+    if (spot?.levelRange) return spot.levelRange[0]
+  }
+  const zone = ZONES[monster.zone]
+  if (zone?.levelRange) return zone.levelRange[0]
+  return 1
 }

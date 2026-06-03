@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Batch O — Gluttony & Malachar, POC bouclé)
+- **GLT01** — Skill passif Gluttony : absorption permanente de stats (proc 10%, cooldown 5j), réappliquée à chaque run
+- **GLT02** — Assassinat (kill en 1 coup depuis HP max) → absorption garantie + choix de la stat (modal)
+- **GLT03** — Statut Gluttony sur HeroSheet (Ready / jours restants)
+- **GLT04** — Toast d'absorption (type `gluttony`)
+- **W01** — Malachar POC : phases + Soul Rend garanti + 200 tokens + titres → **win condition bouclée**
+
+### Added (Batch N — Boss mechanics & titres)
+- **M01** — Titres permanents (`meta.titlesEarned`) : registre, `awardTitle`, affichage HeroSheet
+- **T13** — Titre "Demon Lord Slayer" (+ "Malachar's Bane") gagné en tuant le Demon Lord
+- **BSS03** — Malachar en 3 phases (Rage +50% ATK, Soul Drain 15% maxHP/tour)
+- **BSS01** *(léger)* — Crypt Keeper : enrage +40% ATK à 50% HP (vraie invocation → BSS01b backlog)
+- **BSS02** *(léger)* — Lord of the Forsaken : Cursed Strike STR−20% (armure régénérante → BSS02b backlog)
+
+### Added (Batch P — Crafting & artisans)
+- **CRF01** — Debuffs passifs temporaires (Burnt Hands/Poisoned/Fatigue/Black Smoke), décrément au sommeil, réduction de stats en combat
+- **CRF02/CRF03** — Mini-jeux de crafting (alchimie : dosage ; forge : 3 frappes rythmées) — composant `CraftingMinigame`
+- **CRF04** — Issue du craft selon le score : rareté +2/+1/base, ou raté/catastrophe avec debuff
+- **CRF05** — Section "Active Debuffs" sur HeroSheet (durée / "Cure needed")
+- **Z04** — Alchimiste : 6 recettes de potions, brassage via mini-jeu (qualité = quantité)
+- **Z06** — Maître forgeron : 5 recettes Rare/Epic, mini-jeu forge, spawn 10% au village
+
+### Added (Batch M — Profondeur de combat)
+- **B05-SPEC** — `DESIGN.md` : spec complète des effets de statut (DoT/contrôle/stat, plafond 2, interactions, valeurs par niveau)
+- **B05** — Effets de statut opérationnels en combat : poison/burn (DoT), stun (saut de tour), slow/defense_break/atk_down/max_hp_reduction/all_stats_down (modificateurs de stats). Icônes d'effets actifs sur les cartes ennemi/héros. Moteur pur : `tickStatusEffects`, `applyStatusEffect`, `getEffectiveStats`, `canHeal`, `isStunned`
+- **B10** — Sacrifice de stat (`cost.stat_sacrifice`) + skill `reckless_blow` (220% STR contre −3 AGI). Permanent persisté, temporaire récupéré au combat suivant
+- **B12** — Combat manuel forcé quand un monstre idle dépasse le niveau du héros de +5 (`getMonsterLevel`, `isEnemyTooStrong`)
+- **B03** — Multi-ennemis 1-3 selon zone/rang (`getEnemyCount`/`generateEnemies`), branché dans ZoneView
+
+### Fixed (Batch M)
+- `applyStatusEffects` était défini mais jamais appelé — les effets de statut étaient inertes en combat
+- Skills de pur debuff (`abyss_howl`, `forsaken_curse`) provoquaient un soft-lock du combat (animation jamais relâchée)
+
 ### Added (Batch G — Fermeture v0.1)
 - **Z02** — 4 consommables marchand (`stamina_ration`, `elixir_minor`, `mana_crystal`, `antidote_basic`) + effet `restore_both` (HP+Mana)
 - **Z03** — Forge : ingrédients manquants grisés + message de blocage explicite + tests `canCraft`

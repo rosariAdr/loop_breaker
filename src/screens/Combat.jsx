@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { SKILLS } from '../data/skills'
 import { RESOURCES } from '../data/resources'
+import { MONSTERS } from '../data/monsters'
 import {
   calcBaseDamage,
   calcSkillDamage,
@@ -13,8 +14,67 @@ import {
   isDefeated,
   checkAwakeningConditions,
   getScaledSkillCost,
+  tickStatusEffects,
+  applyStatusEffect,
+  getEffectiveStats,
+  canHeal,
+  getStatSacrifice,
 } from '../engine/combat'
+import { getMalacharPhase, getCryptKeeperEnrage, rollCursedStrike, CURSED_STRIKE_EFFECT } from '../engine/bossMechanics'
+import { hasGluttony, isGluttonyReady, rollGluttonyProc, GLUTTONY_STATS } from '../engine/gluttony'
+
+// B05 — icône + libellé par type d'effet de statut (cf. DESIGN.md §B05-SPEC)
+const STATUS_META = {
+  poison:           { icon: '🟢', label: 'Poison' },
+  burn:             { icon: '🔥', label: 'Burn' },
+  stun:             { icon: '💫', label: 'Stun' },
+  slow:             { icon: '🐌', label: 'Slow' },
+  defense_break:    { icon: '🛡️', label: 'Defense Break' },
+  atk_down:         { icon: '⬇️', label: 'Attack Down' },
+  max_hp_reduction: { icon: '💔', label: 'Max HP Down' },
+  all_stats_down:   { icon: '🌀', label: 'All Stats Down' },
+}
+
+// B05 — construit l'instance d'effet à appliquer depuis le template d'un skill,
+// en intégrant les bonus de niveau (tickDamageBonus, etc.).
+function buildStatusEffectInstance(statusEffect, level = 1, levelBonuses = {}) {
+  const bonus = levelBonuses[level] ?? {}
+  return {
+    id: `${statusEffect.type}_${Date.now()}_${Math.random()}`,
+    type: statusEffect.type,
+    duration: statusEffect.duration + (bonus.durationBonus ?? 0),
+    ...(statusEffect.tickDamage != null && {
+      tickDamage: statusEffect.tickDamage + (bonus.tickDamageBonus ?? 0),
+    }),
+    ...(statusEffect.reduction != null && {
+      reduction: statusEffect.reduction + (bonus.reductionBonus ?? 0),
+    }),
+  }
+}
+
+// B05 — petite rangée d'icônes d'effets actifs (cartes ennemi/héros)
+function StatusIcons({ effects = [] }) {
+  if (!effects || effects.length === 0) return null
+  return (
+    <div className="flex gap-1 justify-center" data-testid="status-icons">
+      {effects.map(e => {
+        const meta = STATUS_META[e.type] ?? { icon: '❓', label: e.type }
+        return (
+          <span
+            key={e.id ?? e.type}
+            title={`${meta.label} · ${e.duration} turn${e.duration > 1 ? 's' : ''}`}
+            style={{ fontSize: '0.8rem', lineHeight: 1 }}
+          >
+            {meta.icon}
+            <span style={{ fontSize: '0.55rem', color: '#8a7a6a', marginLeft: '1px' }}>{e.duration}</span>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
 import { calcEquippedStatBonuses } from '../data/equipment'
+import { applyDebuffsToStats } from '../utils/debuffs'
 
 // Emoji par type de monstre
 const MONSTER_EMOJI = {
@@ -107,19 +167,24 @@ export default function Combat() {
     recordCombatEntry,
     recentSkillLevelUps,
     clearSkillLevelUp,
+    meta,
+    absorbGluttony,
   } = useGameStore()
 
   const equipBonuses = calcEquippedStatBonuses(hero.equipped ?? {})
-  const effectiveBaseStats = { ...hero.stats }
+  const equippedStats = { ...hero.stats }
   Object.entries(equipBonuses).forEach(([stat, bonus]) => {
-    if (stat in effectiveBaseStats) effectiveBaseStats[stat] = (effectiveBaseStats[stat] ?? 0) + bonus
+    if (stat in equippedStats) equippedStats[stat] = (equippedStats[stat] ?? 0) + bonus
   })
+  // CRF01 — les debuffs passifs réduisent les stats de combat
+  const effectiveBaseStats = applyDebuffsToStats(equippedStats, hero.activeDebuffs ?? [])
 
   const [enemies, setEnemies] = useState(activeCombat?.enemies ?? [])
   const [heroStats, setHeroStats] = useState(effectiveBaseStats)
   const [heroSkills, setHeroSkills] = useState(
     hero.activeSkills.map(s => ({ ...s, currentCooldown: 0 }))
   )
+  const [heroEffects, setHeroEffects] = useState([]) // B05 — effets de statut sur le héros
   const [phase, setPhase] = useState('player')
   const [result, setResult] = useState(null)
   const [selectedAction, setSelectedAction] = useState('attack')
@@ -138,6 +203,9 @@ export default function Combat() {
   // B08 — stats de combat pour le résumé
   const [combatStats, setCombatStats] = useState({ dmgDealt: 0, dmgTaken: 0, manaSpent: 0, kills: 0 })
 
+  const bossStateRef = useRef({ enraged: false, lastPhase: 1 }) // BSS01/03
+  const assassinatedRef = useRef(new Set()) // GLT02 — ennemis tués en 1 coup depuis HP max
+  const [gluttonyChoice, setGluttonyChoice] = useState(null) // GLT02 — { monsterId } pour le modal de choix
   const heroStatsRef = useRef(heroStats)
   // Mise à jour du ref hors render (évite l'erreur ESLint react-hooks/refs)
   useEffect(() => { heroStatsRef.current = heroStats }, [heroStats])
@@ -199,40 +267,6 @@ export default function Combat() {
     setPhase('result')
   }, [addLog])
 
-  const enemyTurn = useCallback((aliveEnemies) => {
-    aliveEnemies.forEach((enemy, i) => {
-      setTimeout(() => {
-        const action = enemyAI(enemy, heroStatsRef.current)
-        if (!action) {
-          if (i === aliveEnemies.length - 1) setTimeout(() => setPhase('player'), 400)
-          return
-        }
-        addLog(action.log, 'enemy')
-        // B02 — flash sur l'ennemi qui attaque
-        setAttackingEnemyId(enemy.id)
-        setTimeout(() => setAttackingEnemyId(null), 400)
-        // B07 — dégâts flottants sur le héros
-        pushFloatingNumber('hero', action.damage, 'damage')
-        // B08 — track les dégâts pris
-        setCombatStats(s => ({ ...s, dmgTaken: s.dmgTaken + action.damage }))
-        setHeroStats(prev => {
-          const newHp = Math.max(0, prev.hp - action.damage)
-          if (newHp <= 0) setTimeout(() => finishCombat('defeat', enemy.name), 300)
-          return { ...prev, hp: newHp }
-        })
-        setHeroHitFlash(true)
-        setAnimatingHero(true)
-        setTimeout(() => { setHeroHitFlash(false); setAnimatingHero(false) }, 400)
-        if (i === aliveEnemies.length - 1) {
-          setTimeout(() => {
-            setTurnCount(t => t + 1)
-            setPhase('player')
-          }, 400)
-        }
-      }, i * 500)
-    })
-  }, [addLog, finishCombat, pushFloatingNumber])
-
   const handleVictory = useCallback((defeatedEnemies) => {
     addLog('Victory!', 'victory')
     setCombatStats(s => ({ ...s, kills: defeatedEnemies.length }))  // B08
@@ -267,6 +301,18 @@ export default function Combat() {
     useGameStore.setState(state => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, hp: finalStats.hp, mana: finalStats.mana } },
     }))
+    // GLT01/GLT02 — Gluttony : absorption sur kill si passif équipé + prêt (cooldown 5j)
+    if (hasGluttony(hero.passiveSkills) && isGluttonyReady(world.dayCount, meta?.gluttonyLastUsed)) {
+      const assassinated = defeatedEnemies.find(e => assassinatedRef.current.has(e.id))
+      if (assassinated) {
+        addLog('Gluttony stirs — an assassination! Choose what to devour.', 'gluttony')
+        setGluttonyChoice({ monsterId: assassinated.monsterId }) // GLT02 — choix du joueur
+      } else if (rollGluttonyProc()) {
+        absorbGluttony({ monsterId: defeatedEnemies[0].monsterId }) // GLT01 — stat aléatoire
+      }
+    }
+    assassinatedRef.current.clear()
+
     const divineCall = checkAwakeningConditions(
       { ...hero, battleLog: [...hero.battleLog, { type: 'victory', day: world.dayCount }] },
       world
@@ -274,7 +320,126 @@ export default function Combat() {
     setResult('victory')
     setPhase('result')
     if (divineCall) setTimeout(() => triggerDivineCall(divineCall), 1500)
-  }, [addLog, addResource, addGold, addSkillToInventory, recordKill, gainExp, triggerDivineCall, hero, world])
+  }, [addLog, addResource, addGold, addSkillToInventory, recordKill, gainExp, triggerDivineCall, hero, world, meta, absorbGluttony])
+
+  const enemyTurn = useCallback((aliveEnemies) => {
+    // B05 — tick des effets de statut (DoT + stun) au début du tour ennemi
+    const ticked = aliveEnemies.map(enemy => {
+      const { newStats, remainingEffects, log, flags } = tickStatusEffects(
+        { hp: enemy.currentHp }, enemy.activeEffects ?? []
+      )
+      const dotDmg = enemy.currentHp - newStats.hp
+      if (dotDmg > 0) {
+        pushFloatingNumber(enemy.id, dotDmg, 'skill')
+        log.forEach(l => addLog(`${enemy.name}: ${l.text}`, 'skill'))
+      }
+      return { ...enemy, currentHp: newStats.hp, activeEffects: remainingEffects, _skipTurn: flags.skipTurn }
+    })
+
+    // Reflète HP + effets décrémentés dans l'état
+    setEnemies(prev => prev.map(e => {
+      const t = ticked.find(x => x.id === e.id)
+      return t ? { ...e, currentHp: t.currentHp, activeEffects: t.activeEffects } : e
+    }))
+
+    const survivors = ticked.filter(e => !isDefeated(e))
+
+    // Tous les ennemis tués par le DoT → victoire directe
+    if (survivors.length === 0) {
+      setTimeout(() => handleVictory(aliveEnemies), 300)
+      return
+    }
+
+    // Retour au tour du héros : tick de ses propres effets (DoT)
+    const goToPlayer = () => {
+      setHeroEffects(prevFx => {
+        const { newStats, remainingEffects, log } = tickStatusEffects(
+          { hp: heroStatsRef.current.hp }, prevFx
+        )
+        const dotDmg = heroStatsRef.current.hp - newStats.hp
+        if (dotDmg > 0) {
+          setHeroStats(p => ({ ...p, hp: Math.max(0, p.hp - dotDmg) }))
+          pushFloatingNumber('hero', dotDmg, 'damage')
+          log.forEach(l => addLog(l.text, 'skill'))
+        }
+        return remainingEffects
+      })
+      setTurnCount(t => t + 1)
+      setPhase('player')
+    }
+
+    survivors.forEach((enemy, i) => {
+      const isLast = i === survivors.length - 1
+      setTimeout(() => {
+        // B05 — stun : l'ennemi saute son tour
+        if (enemy._skipTurn) {
+          addLog(`${enemy.name} is stunned and skips its turn!`, 'skill')
+          if (isLast) setTimeout(goToPlayer, 400)
+          return
+        }
+        // B05 — stats effectives (atk_down / all_stats_down réduisent l'attaque)
+        const enemyEff = getEffectiveStats(enemy.stats, enemy.activeEffects ?? [])
+        const action = enemyAI({ ...enemy, stats: enemyEff }, heroStatsRef.current)
+        if (!action) {
+          if (isLast) setTimeout(goToPlayer, 400)
+          return
+        }
+        // BSS01/02/03 — mécaniques de boss : module les dégâts, soul drain, debuffs
+        let dmg = action.damage
+        const mech = enemy.bossMechanics
+        if (mech) {
+          const hpPct = enemy.currentHp / enemy.stats.hp
+          if (mech.type === 'phases') {
+            const ph = getMalacharPhase(hpPct)
+            if (ph.phase !== bossStateRef.current.lastPhase) {
+              addLog(`⚠ ${enemy.name} enters Phase ${ph.phase} — ${ph.label}!`, 'skill')
+              bossStateRef.current.lastPhase = ph.phase
+            }
+            dmg = Math.round(dmg * ph.atkMult)
+            if (ph.soulDrainPct > 0) {
+              const drain = Math.round(heroStatsRef.current.maxHp * ph.soulDrainPct)
+              pushFloatingNumber('hero', drain, 'damage')
+              addLog(`${enemy.name} drains ${drain} HP with Soul Drain!`, 'skill')
+              setHeroStats(prev => {
+                const hp = Math.max(0, prev.hp - drain)
+                if (hp <= 0) setTimeout(() => finishCombat('defeat', enemy.name), 300)
+                return { ...prev, hp }
+              })
+            }
+          } else if (mech.type === 'enrage') {
+            const en = getCryptKeeperEnrage(hpPct, bossStateRef.current.enraged)
+            if (en.trigger) {
+              bossStateRef.current.enraged = true
+              addLog(`⚠ ${enemy.name} summons skeletal minions and enrages!`, 'skill')
+            }
+            dmg = Math.round(dmg * en.atkMult)
+          } else if (mech.type === 'cursed_strike') {
+            if (rollCursedStrike(mech.chance)) {
+              setHeroEffects(prev => applyStatusEffect(prev, { ...CURSED_STRIKE_EFFECT, id: `curse_${Date.now()}_${i}` }))
+              addLog(`${enemy.name} lands a Cursed Strike — your Strength is weakened!`, 'skill')
+            }
+          }
+        }
+        addLog(action.log, 'enemy')
+        // B02 — flash sur l'ennemi qui attaque
+        setAttackingEnemyId(enemy.id)
+        setTimeout(() => setAttackingEnemyId(null), 400)
+        // B07 — dégâts flottants sur le héros
+        pushFloatingNumber('hero', dmg, 'damage')
+        // B08 — track les dégâts pris
+        setCombatStats(s => ({ ...s, dmgTaken: s.dmgTaken + dmg }))
+        setHeroStats(prev => {
+          const newHp = Math.max(0, prev.hp - dmg)
+          if (newHp <= 0) setTimeout(() => finishCombat('defeat', enemy.name), 300)
+          return { ...prev, hp: newHp }
+        })
+        setHeroHitFlash(true)
+        setAnimatingHero(true)
+        setTimeout(() => { setHeroHitFlash(false); setAnimatingHero(false) }, 400)
+        if (isLast) setTimeout(goToPlayer, 400)
+      }, i * 500)
+    })
+  }, [addLog, finishCombat, pushFloatingNumber, handleVictory])
 
   const afterPlayerAction = useCallback((currentEnemies) => {
     const alive = currentEnemies.filter(e => !isDefeated(e))
@@ -296,13 +461,21 @@ export default function Combat() {
     const aliveEnemies = enemies.filter(e => !isDefeated(e))
     if (aliveEnemies.length === 0) return
     const target = aliveEnemies.find(e => e.id === selectedTargetId) ?? aliveEnemies[0]
-    const dmg = calcBaseDamage(heroStats.strength, target.stats.def)
+    // B05 — DEF effective (defense_break / all_stats_down réduisent la défense)
+    const targetEff = getEffectiveStats(target.stats, target.activeEffects ?? [])
+    // BSS02 — la Force du héros est réduite par les debuffs actifs (ex. Cursed Strike)
+    const heroEff = getEffectiveStats(heroStats, heroEffects)
+    const dmg = calcBaseDamage(heroEff.strength, targetEff.def)
     setIsAnimating(true)
     setAnimatingEnemyId(target.id)
     setHeroAttackAnim(true)                                             // B13
     setTimeout(() => setHeroAttackAnim(false), 320)                     // B13 — reset après l'anim 300ms
     pushFloatingNumber(target.id, dmg, 'damage')                        // B07
     setCombatStats(s => ({ ...s, dmgDealt: s.dmgDealt + dmg }))         // B08
+    // GLT02 — assassinat : kill en 1 coup depuis HP max
+    if (target.currentHp >= target.stats.hp && target.currentHp - dmg <= 0) {
+      assassinatedRef.current.add(target.id)
+    }
     setTimeout(() => {
       const updatedEnemies = enemies.map(e =>
         e.id === target.id ? { ...e, currentHp: Math.max(0, e.currentHp - dmg) } : e
@@ -327,6 +500,24 @@ export default function Combat() {
     setHeroAttackAnim(true)                                             // B13
     setTimeout(() => setHeroAttackAnim(false), 320)
     setHeroStats(applySkillCost(skill, heroStats))
+    // B10 — sacrifice de stat : log + persistance au store si permanent
+    // (le sacrifice temporaire se récupère automatiquement au combat suivant,
+    //  car heroStats est ré-initialisé depuis le store à chaque combat)
+    const sacrifice = getStatSacrifice(template)
+    if (sacrifice) {
+      addLog(`${template.name} — sacrificed ${sacrifice.amount} ${sacrifice.stat.toUpperCase()}${sacrifice.permanent ? ' (permanent)' : ''}!`, 'enemy')
+      if (sacrifice.permanent) {
+        useGameStore.setState(state => ({
+          hero: {
+            ...state.hero,
+            stats: {
+              ...state.hero.stats,
+              [sacrifice.stat]: Math.max(0, (state.hero.stats[sacrifice.stat] ?? 0) - sacrifice.amount),
+            },
+          },
+        }))
+      }
+    }
     // B08 — track la mana dépensée
     setCombatStats(s => ({ ...s, manaSpent: s.manaSpent + (template.cost?.mana ?? 0) }))
     if (template.effect?.damage) {
@@ -343,14 +534,29 @@ export default function Combat() {
         ? dmg * enemies.filter(e => !isDefeated(e)).length
         : dmg
       setCombatStats(s => ({ ...s, dmgDealt: s.dmgDealt + totalDmgDealt }))
+      // GLT02 — assassinat au skill mono-cible : kill en 1 coup depuis HP max
+      if (!isAoe && skillTarget.currentHp >= skillTarget.stats.hp && skillTarget.currentHp - dmg <= 0) {
+        assassinatedRef.current.add(skillTarget.id)
+      }
+      const statusEffect = template.effect.statusEffect  // B05 — peut être absent
       setTimeout(() => {
         const updatedEnemies = enemies.map(e => {
           if (isDefeated(e)) return e
           if (!isAoe && e.id !== skillTarget.id) return e
-          return { ...e, currentHp: Math.max(0, e.currentHp - dmg) }
+          let updated = { ...e, currentHp: Math.max(0, e.currentHp - dmg) }
+          // B05 — applique le statut aux cibles encore vivantes
+          if (statusEffect && !isDefeated(updated)) {
+            const inst = buildStatusEffectInstance(statusEffect, skill.level, template.levelBonuses ?? {})
+            updated = { ...updated, activeEffects: applyStatusEffect(updated.activeEffects ?? [], inst) }
+          }
+          return updated
         })
         setEnemies(updatedEnemies)
         addLog(`${template.name} hits ${isAoe ? 'all enemies' : skillTarget.name} for ${dmg} damage!`, 'skill')
+        if (statusEffect) {
+          const meta = STATUS_META[statusEffect.type]
+          addLog(`${isAoe ? 'Enemies' : skillTarget.name} afflicted: ${meta?.label ?? statusEffect.type}!`, 'skill')
+        }
         setHeroSkills(prev => prev.map(s =>
           s.skillId === skill.skillId ? { ...s, currentCooldown: template.cooldown } : s
         ))
@@ -359,10 +565,15 @@ export default function Combat() {
         afterPlayerAction(updatedEnemies)
       }, 300)
     } else if (template.effect?.heal) {
-      const healAmt = Math.round(heroStats.maxHp * template.effect.heal.value)
-      setHeroStats(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt) }))
-      pushFloatingNumber('hero', healAmt, 'heal')  // B07 — flottant de soin
-      addLog(`${template.name} restores ${healAmt} HP!`, 'heal')
+      // B05 — un burn actif empêche les soins
+      if (!canHeal(heroEffects)) {
+        addLog('The flames prevent healing!', 'enemy')
+      } else {
+        const healAmt = Math.round(heroStats.maxHp * template.effect.heal.value)
+        setHeroStats(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmt) }))
+        pushFloatingNumber('hero', healAmt, 'heal')  // B07 — flottant de soin
+        addLog(`${template.name} restores ${healAmt} HP!`, 'heal')
+      }
       setHeroSkills(prev => prev.map(s =>
         s.skillId === skill.skillId ? { ...s, currentCooldown: template.cooldown } : s
       ))
@@ -377,6 +588,25 @@ export default function Combat() {
       gainSkillXp(skill.skillId, 1)
       setIsAnimating(false)
       afterPlayerAction(enemies)
+    } else if (template.effect?.statusEffect) {
+      // B05 — skill de pur debuff (sans dégâts), ex. abyss_howl / forsaken_curse
+      const debuff = template.effect.statusEffect
+      const isAoe = template.effect.aoe
+      const updatedEnemies = enemies.map(e => {
+        if (isDefeated(e)) return e
+        if (!isAoe && e.id !== skillTarget.id) return e
+        const inst = buildStatusEffectInstance(debuff, skill.level, template.levelBonuses ?? {})
+        return { ...e, activeEffects: applyStatusEffect(e.activeEffects ?? [], inst) }
+      })
+      setEnemies(updatedEnemies)
+      const meta = STATUS_META[debuff.type]
+      addLog(`${template.name} — ${isAoe ? 'all enemies' : skillTarget.name} afflicted: ${meta?.label ?? debuff.type}!`, 'skill')
+      setHeroSkills(prev => prev.map(s =>
+        s.skillId === skill.skillId ? { ...s, currentCooldown: template.cooldown } : s
+      ))
+      gainSkillXp(skill.skillId, 1)
+      setIsAnimating(false)
+      afterPlayerAction(updatedEnemies)
     }
   }
 
@@ -479,6 +709,7 @@ export default function Combat() {
             isAnimHit={animatingHero}
             isAttacking={heroAttackAnim}
             floatingNumbers={floatingNumbers.filter(n => n.targetId === 'hero')}
+            heroEffects={heroEffects}
           />
         </div>
       </div>
@@ -505,8 +736,55 @@ export default function Combat() {
         <ResultPanel result={result} loot={loot} combatStats={combatStats} onLeave={handleLeave} />
       )}
 
+      {/* GLT02 — choix de la stat à dévorer (assassinat) */}
+      {gluttonyChoice && (
+        <GluttonyChoiceModal
+          monsterId={gluttonyChoice.monsterId}
+          onChoose={(stat) => {
+            absorbGluttony({ monsterId: gluttonyChoice.monsterId, stat })
+            setGluttonyChoice(null)
+          }}
+        />
+      )}
+
       {/* ── Log de combat ── */}
       <CombatLog log={log} />
+    </div>
+  )
+}
+
+// ── GLT02 — Modal de choix Gluttony (assassinat) ──────────────────────────────
+function GluttonyChoiceModal({ monsterId, onChoose }) {
+  const monster = MONSTERS[monsterId]
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      data-testid="gluttony-choice"
+      className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ background: 'rgba(0,0,0,0.82)' }}
+    >
+      <div className="w-full max-w-sm mx-4 rounded-xl p-6 anim-pop" style={{ background: '#120808', border: '1px solid #6a3020' }}>
+        <p style={{ fontFamily: 'Cinzel, serif', fontSize: '1.1rem', color: '#e08060', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+          👹 Gluttony — Assassination!
+        </p>
+        <p style={{ color: '#9a7060', fontSize: '0.8rem', marginBottom: '1.1rem' }}>
+          You devour the essence of {monster?.name ?? 'the slain foe'}. Choose a stat to absorb — permanently.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {GLUTTONY_STATS.map(stat => (
+            <button
+              key={stat}
+              data-testid={`gluttony-stat-${stat}`}
+              onClick={() => onChoose(stat)}
+              className="py-2.5 rounded text-sm transition-all hover:opacity-90"
+              style={{ fontFamily: 'Cinzel, serif', background: '#1a0c08', color: '#e0a070', border: '1px solid #6a3020', textTransform: 'capitalize' }}
+            >
+              {stat}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -654,13 +932,20 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
             {Math.max(0, enemy.currentHp)}/{enemy.stats.hp}
           </span>
         </div>
+
+        {/* B05 — effets de statut actifs */}
+        {!dead && (enemy.activeEffects?.length > 0) && (
+          <div className="mt-1.5">
+            <StatusIcons effects={enemy.activeEffects} />
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 // ── Carte héros ───────────────────────────────────────────────────────────────
-function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking, floatingNumbers = [] }) {
+function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking, floatingNumbers = [], heroEffects = [] }) {
   // B13 — anim-hero-attack lors d'une attaque ; prend le pas sur anim-flash si actif
   const animClass = isAttacking ? ' anim-hero-attack' : isAnimHit ? ' anim-flash' : ''
   return (
@@ -697,6 +982,8 @@ function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking
           {deity && (
             <span style={{ color: '#c084fc', fontSize: '0.75rem' }}>✦ {deity}</span>
           )}
+          {/* B05 — effets de statut sur le héros */}
+          {heroEffects?.length > 0 && <StatusIcons effects={heroEffects} />}
         </div>
         <StatBar
           value={heroStats.hp}
@@ -886,6 +1173,7 @@ function ActionPanel({
               const onCD = skill.currentCooldown > 0
               // S07 — coût scalé au niveau (lecture des stats affichées)
               const scaledCost = getScaledSkillCost(template, skill.level)
+              const sacrifice = getStatSacrifice(template)  // B10
               return (
                 <button
                   key={skill.skillId}
@@ -907,6 +1195,12 @@ function ActionPanel({
                     Lv{skill.level}
                     {scaledCost.mana > 0 && ` · ${scaledCost.mana}MP`}
                     {scaledCost.hp > 0 && ` · ${scaledCost.hp}HP`}
+                    {/* B10 — sacrifice de stat */}
+                    {sacrifice && (
+                      <span style={{ color: '#e08040' }}>
+                        {` · −${sacrifice.amount} ${sacrifice.stat.slice(0, 3).toUpperCase()}`}
+                      </span>
+                    )}
                   </p>
                   {/* S05 — Cooldown overlay : grand compteur centré */}
                   {onCD && (

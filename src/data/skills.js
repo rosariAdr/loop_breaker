@@ -39,6 +39,28 @@ export const SKILLS = {
     },
   },
 
+  // B10 — skill à sacrifice de stat : gros dégâts contre une perte d'Agility
+  // pour le reste du combat (temporaire : récupérée au combat suivant).
+  reckless_blow: {
+    id: 'reckless_blow',
+    name: 'Reckless Blow',
+    description: 'A wild all-out swing for massive physical damage — but you sacrifice 3 Agility for the rest of the fight.',
+    type: 'active',
+    cost: { mana: 10, hp: 0, stat_sacrifice: { stat: 'agility', amount: 3, permanent: false } },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'physical', multiplier: 2.2 }, // 220% STR
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null, // pas encore dans une table de drop — obtenable via boutique des dieux / futur
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+    },
+  },
+
   putrid_slam: {
     id: 'putrid_slam',
     name: 'Putrid Slam',
@@ -622,6 +644,22 @@ export const SKILLS = {
       2: { multiplierBonus: 0.50, costReduction: 0.10 },
       3: { multiplierBonus: 1.00, costReduction: 0.20 },
     },
+  },
+
+  // GLT01 — Skill signature : passif d'absorption permanente de stats
+  gluttony: {
+    id: 'gluttony',
+    name: 'Gluttony',
+    description: 'A forbidden hunger. On kill (10% chance, 5-day cooldown) permanently absorb a fraction of the slain foe\'s power. Assassinations guarantee it — and let you choose the stat.',
+    type: 'passive',
+    cost: { mana: 0, hp: 0, stat_sacrifice: null },
+    cooldown: 0,
+    effect: { gluttony: true },
+    xpToNext: [20, 50],
+    sourceMonster: null,
+    container: 'supreme',
+    inheritable: false,
+    levelBonuses: {},
   },
 }
 

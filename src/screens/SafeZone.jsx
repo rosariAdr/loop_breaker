@@ -11,6 +11,9 @@ import {
   canCraft,
   createEquipmentInstance,
 } from '../data/equipment'
+import { resolveCraftOutcome, alchemyQuantity } from '../utils/crafting'
+import { ALCHEMY_RECIPES, MASTER_RECIPES } from '../data/recipes'
+import CraftingMinigame from '../components/CraftingMinigame'
 
 // Génère les bâtiments d'un village de façon déterministe
 // (basé sur l'id du village pour que ça soit stable entre les sessions)
@@ -70,6 +73,7 @@ export default function SafeZone() {
     merchant: { icon: '🛒', name: "Merchant's Stall", color: '#60c080' },
     alchemy: { icon: '⚗️', name: 'Alchemy Workshop', color: '#8060c0' },
     blacksmith: { icon: '🔨', name: "Blacksmith's Forge", color: '#808080' },
+    master_smith: { icon: '🛠', name: 'Master Smith', color: '#c0a060' }, // Z06
     knight_trainer: { icon: '⚔', name: 'Sir Aldric — Knight Trainer', color: '#c08040' },
   }
 
@@ -137,6 +141,9 @@ export default function SafeZone() {
         )}
         {activeBuilding === 'blacksmith' && (
           <BlacksmithPanel onBack={() => setActiveBuilding(null)} zoneId={world.currentZone} />
+        )}
+        {activeBuilding === 'master_smith' && (
+          <MasterSmithPanel onBack={() => setActiveBuilding(null)} />
         )}
         {activeBuilding === 'knight_trainer' && (
           <KnightTrainerPanel onBack={() => setActiveBuilding(null)} />
@@ -381,24 +388,217 @@ function MerchantPanel({ onBack }) {
   )
 }
 
+// Z04 + CRF02 — Alchimiste : brassage de potions via mini-jeu de dosage
 function AlchemyPanel({ onBack }) {
+  const { hero, spendGold, removeResource, addConsumable, addHeroDebuff } = useGameStore()
+  const [selected, setSelected] = useState(null)
+  const [msg, setMsg] = useState(null)
+  const [minigameOpen, setMinigameOpen] = useState(false)
+
+  const recipe = ALCHEMY_RECIPES.find(r => r.id === selected)
+  const hasIngredients = recipe
+    ? Object.entries(recipe.ingredients).every(([id, q]) => (hero.inventory.resources[id] ?? 0) >= q)
+    : false
+  const hasGold = recipe ? hero.inventory.gold >= recipe.gold : false
+  const canBrew = hasIngredients && hasGold
+
+  const handleBrew = () => {
+    if (!canBrew || !recipe) return
+    Object.entries(recipe.ingredients).forEach(([id, q]) => removeResource(id, q))
+    spendGold(recipe.gold)
+    setMsg(null)
+    setMinigameOpen(true)
+  }
+
+  const handleComplete = ({ tier }) => {
+    setMinigameOpen(false)
+    const qty = alchemyQuantity(tier)
+    if (qty > 0) {
+      addConsumable(recipe.output, qty)
+      const flair = tier === 'perfect' ? ' (Perfect!)' : tier === 'good' ? ' (Good!)' : ''
+      setMsg(`✓ Brewed ${qty}× ${recipe.name}${flair}`)
+    } else {
+      const permanent = tier === 'catastrophe'
+      addHeroDebuff('poisoned', 7, permanent)
+      setMsg(permanent
+        ? '✗ Catastrophe! The brew turns toxic — Poisoned (permanent).'
+        : '✗ Botched brew — Poisoned (7 days).')
+    }
+    setTimeout(() => setMsg(null), 3500)
+  }
+
   return (
     <Panel title="⚗️ Alchemy Workshop" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', fontStyle: 'italic' }}>
-        "The alchemist squints at your ingredients."
+      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+        "The alchemist gestures at the bubbling tubes. 'Steady hands, steady brew.'"
       </p>
-      <p style={{ color: '#4a3a2a', fontSize: '0.82rem', marginTop: '1rem' }}>
-        Crafting system coming in a future update.
+      <div className="flex flex-col gap-1.5" style={{ maxWidth: '460px' }}>
+        {ALCHEMY_RECIPES.map(r => {
+          const ok = Object.entries(r.ingredients).every(([id, q]) => (hero.inventory.resources[id] ?? 0) >= q)
+            && hero.inventory.gold >= r.gold
+          return (
+            <button
+              key={r.id}
+              onClick={() => { setSelected(r.id); setMsg(null) }}
+              data-testid={`alchemy-recipe-${r.id}`}
+              className="text-left px-3 py-2 rounded text-xs"
+              style={{
+                background: selected === r.id ? '#160f1c' : '#0f0c10',
+                border: `1px solid ${selected === r.id ? '#5a40b0' : '#1a1620'}`,
+                opacity: ok ? 1 : 0.55,
+                fontFamily: 'Cinzel, serif',
+              }}
+            >
+              <span style={{ color: '#b090e0' }}>{r.name}</span>
+              <span style={{ color: '#6a5a7a', marginLeft: '0.5rem' }}>
+                {Object.entries(r.ingredients).map(([id, q]) => `${RESOURCES[id]?.name ?? id}×${q}`).join(', ')} · {r.gold}g
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {recipe && (
+        <button
+          onClick={handleBrew}
+          disabled={!canBrew}
+          className="mt-3 px-4 py-2 rounded text-sm"
+          style={{
+            fontFamily: 'Cinzel, serif',
+            background: canBrew ? '#160f1c' : '#0f0c10',
+            color: canBrew ? '#b090e0' : '#4a3a5a',
+            border: `1px solid ${canBrew ? '#5a40b0' : '#1a1620'}`,
+            cursor: canBrew ? 'pointer' : 'not-allowed',
+          }}
+        >
+          ⚗️ Brew {recipe.name}
+        </button>
+      )}
+      {msg && (
+        <p style={{ color: msg.startsWith('✗') ? '#c06040' : '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
+          {msg}
+        </p>
+      )}
+
+      <CraftingMinigame
+        open={minigameOpen}
+        mode="alchemy"
+        title={`Brew — ${recipe?.name ?? ''}`}
+        onComplete={handleComplete}
+      />
+    </Panel>
+  )
+}
+
+// Z06 — Maître forgeron : recettes Rare/Epic via mini-jeu de forge
+function MasterSmithPanel({ onBack }) {
+  const { hero, spendGold, removeResource, addEquipmentToInventory, addHeroDebuff } = useGameStore()
+  const [selected, setSelected] = useState(null)
+  const [msg, setMsg] = useState(null)
+  const [minigameOpen, setMinigameOpen] = useState(false)
+
+  const recipe = MASTER_RECIPES.find(r => r.id === selected)
+  const hasIngredients = recipe
+    ? Object.entries(recipe.ingredients).every(([id, q]) => (hero.inventory.resources[id] ?? 0) >= q)
+    : false
+  const hasGold = recipe ? hero.inventory.gold >= recipe.gold : false
+  const canForge = hasIngredients && hasGold
+
+  const handleForge = () => {
+    if (!canForge || !recipe) return
+    Object.entries(recipe.ingredients).forEach(([id, q]) => removeResource(id, q))
+    spendGold(recipe.gold)
+    setMsg(null)
+    setMinigameOpen(true)
+  }
+
+  const handleComplete = ({ tier }) => {
+    setMinigameOpen(false)
+    const outcome = resolveCraftOutcome(recipe.rarity, tier)
+    if (outcome.success) {
+      const item = createEquipmentInstance(recipe.templateId, outcome.rarity)
+      addEquipmentToInventory(item)
+      const bonus = outcome.rarity !== recipe.rarity ? ` (${tier}! → ${outcome.rarity})` : ''
+      setMsg(`✓ ${item.name} forged!${bonus}`)
+    } else {
+      addHeroDebuff('burnt_hands', 7, outcome.permanentDebuff)
+      setMsg(outcome.severity === 'catastrophe'
+        ? '✗ Catastrophe! The masterwork shatters — Burnt Hands (permanent).'
+        : '✗ Botched! Burnt Hands (7 days).')
+    }
+    setTimeout(() => setMsg(null), 3500)
+  }
+
+  return (
+    <Panel title="🛠 Master Smith" onBack={onBack}>
+      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+        "A master at the anvil eyes your materials. 'Only the worthy leave with steel.'"
       </p>
+      <div className="flex flex-col gap-1.5" style={{ maxWidth: '500px' }}>
+        {MASTER_RECIPES.map(r => {
+          const rc = RARITY_CONFIG[r.rarity]
+          const ok = Object.entries(r.ingredients).every(([id, q]) => (hero.inventory.resources[id] ?? 0) >= q)
+            && hero.inventory.gold >= r.gold
+          return (
+            <button
+              key={r.id}
+              onClick={() => { setSelected(r.id); setMsg(null) }}
+              data-testid={`master-recipe-${r.id}`}
+              className="text-left px-3 py-2 rounded text-xs"
+              style={{
+                background: selected === r.id ? '#161210' : '#0f0c08',
+                border: `1px solid ${selected === r.id ? rc.color : '#1a1410'}`,
+                opacity: ok ? 1 : 0.55,
+                fontFamily: 'Cinzel, serif',
+              }}
+            >
+              <span style={{ color: rc.color }}>{r.name}</span>
+              <span style={{ color: '#6a5a4a', marginLeft: '0.5rem' }}>
+                {Object.entries(r.ingredients).map(([id, q]) => `${RESOURCES[id]?.name ?? id}×${q}`).join(', ')} · {r.gold}g
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {recipe && (
+        <button
+          onClick={handleForge}
+          disabled={!canForge}
+          className="mt-3 px-4 py-2 rounded text-sm"
+          style={{
+            fontFamily: 'Cinzel, serif',
+            background: canForge ? '#1a1208' : '#0f0c08',
+            color: canForge ? '#d4af70' : '#4a3a2a',
+            border: `1px solid ${canForge ? '#6a5018' : '#1a1410'}`,
+            cursor: canForge ? 'pointer' : 'not-allowed',
+          }}
+        >
+          🛠 Forge {recipe.name}
+        </button>
+      )}
+      {msg && (
+        <p style={{ color: msg.startsWith('✗') ? '#c06040' : '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
+          {msg}
+        </p>
+      )}
+
+      <CraftingMinigame
+        open={minigameOpen}
+        mode="forge"
+        title={`Master Forge — ${recipe?.name ?? ''}`}
+        onComplete={handleComplete}
+      />
     </Panel>
   )
 }
 
 function BlacksmithPanel({ onBack }) {
-  const { hero, spendGold, removeResource, addEquipmentToInventory } = useGameStore()
+  const { hero, spendGold, removeResource, addEquipmentToInventory, addHeroDebuff } = useGameStore()
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [selectedRarity, setSelectedRarity] = useState('common')
   const [craftMsg, setCraftMsg] = useState(null)
+  const [minigameOpen, setMinigameOpen] = useState(false) // CRF03
 
   // Templates disponibles au forgeron
   const smithTemplates = Object.values(EQUIPMENT_TEMPLATES).filter(t =>
@@ -412,15 +612,32 @@ function BlacksmithPanel({ onBack }) {
   const hasGold = recipe ? hero.inventory.gold >= recipe.gold : false
   const canDoCraft = hasIngredients && hasGold
 
+  // CRF03 — lance le mini-jeu de forge ; les ingrédients sont consommés à l'engagement
   const handleCraft = () => {
     if (!canDoCraft || !recipe) return
-    // Consommer les ingrédients
     Object.entries(recipe.ingredients).forEach(([resId, qty]) => removeResource(resId, qty))
     spendGold(recipe.gold)
-    const item = createEquipmentInstance(selectedTemplate, selectedRarity)
-    addEquipmentToInventory(item)
-    setCraftMsg(`✓ ${item.name} crafted!`)
-    setTimeout(() => setCraftMsg(null), 2500)
+    setCraftMsg(null)
+    setMinigameOpen(true)
+  }
+
+  // CRF03 + CRF04 — issue du mini-jeu : succès = rareté ajustée, échec = debuff
+  const handleMinigameComplete = ({ tier }) => {
+    setMinigameOpen(false)
+    const outcome = resolveCraftOutcome(selectedRarity, tier)
+    if (outcome.success) {
+      const item = createEquipmentInstance(selectedTemplate, outcome.rarity)
+      addEquipmentToInventory(item)
+      const bonus = outcome.rarity !== selectedRarity ? ` (${tier}! → ${outcome.rarity})` : ''
+      setCraftMsg(`✓ ${item.name} forged!${bonus}`)
+    } else {
+      // raté → Burnt Hands 7j ; catastrophe → permanent
+      addHeroDebuff('burnt_hands', 7, outcome.permanentDebuff)
+      setCraftMsg(outcome.severity === 'catastrophe'
+        ? '✗ Catastrophe! The forge backfires — Burnt Hands (permanent).'
+        : '✗ Botched! The metal cracks — Burnt Hands (7 days).')
+    }
+    setTimeout(() => setCraftMsg(null), 3500)
   }
 
   // Rarités disponibles pour le template sélectionné
@@ -572,7 +789,7 @@ function BlacksmithPanel({ onBack }) {
               )}
 
               {craftMsg && (
-                <p style={{ color: '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>
+                <p style={{ color: craftMsg.startsWith('✗') ? '#c06040' : '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>
                   {craftMsg}
                 </p>
               )}
@@ -580,6 +797,14 @@ function BlacksmithPanel({ onBack }) {
           )}
         </div>
       </div>
+
+      {/* CRF03 — mini-jeu de forge */}
+      <CraftingMinigame
+        open={minigameOpen}
+        mode="forge"
+        title={`Forge — ${template?.name ?? ''}`}
+        onComplete={handleMinigameComplete}
+      />
     </Panel>
   )
 }
