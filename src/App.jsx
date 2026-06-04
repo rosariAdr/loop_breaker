@@ -17,6 +17,7 @@ import CharacterCreation from './screens/CharacterCreation'
 import ErrorBoundary from './components/ErrorBoundary'
 import DebugPanel from './components/DebugPanel'
 import ToastContainer from './components/ToastContainer'
+import { Sidebar } from './components/parchment'
 
 // Écrans en takeover plein-canvas (sans topbar/breadcrumb)
 const FULLSCREEN = ['combat', 'post_mortem', 'gods_shop', 'divine_call']
@@ -26,7 +27,7 @@ function App() {
     currentScreen, loadGame, saveGame,
     pendingDivineCall, pendingLevelUp,
     processIdleTick, advanceTick,
-    hero,
+    hero, world, setScreen, sleep,
   } = useGameStore()
 
   useEffect(() => { loadGame() }, [])
@@ -86,6 +87,23 @@ function App() {
   const showLevelUp = pendingLevelUp > 0 && !showCharCreation
   const fullscreen = FULLSCREEN.includes(currentScreen)
 
+  // Sidebar partagée (réf design) — pour l'instant sur le world_map (autres écrans à porter)
+  const zone = ZONES[world.currentZone]
+  const locName = zone?.city?.id === world.currentLocation ? zone.city.name
+    : zone?.villages?.find(v => v.id === world.currentLocation)?.name ?? zone?.name ?? 'Eldenmoor'
+  const showSidebar = currentScreen === 'world_map'
+  const sbProps = {
+    location: locName, zone: zone?.name ?? 'Ashenvale',
+    deity: hero.deity ? hero.deity[0].toUpperCase() + hero.deity.slice(1) : null,
+    demonLord: world.demonLordDefeated ? 'Malachar (defeated)' : 'Malachar the Undying',
+    tokens: hero.reputationTokens ?? 0,
+    actions: [
+      { ico: '🌙', label: 'Sleep', primary: true, onClick: () => sleep() },
+      { ico: '⚔', label: 'Hero Sheet', onClick: () => setScreen('hero_sheet') },
+      { ico: '🎒', label: 'Inventory', onClick: () => setScreen('inventory') },
+    ],
+  }
+
   return (
     <div className="lb-stage">
       <div className="lb-canvas">
@@ -105,6 +123,8 @@ function App() {
             </ErrorBoundary>
           </div>
         )}
+
+        {showSidebar && <Sidebar {...sbProps} />}
 
         {/* Modals */}
         {pendingDivineCall && <DivineCall />}
@@ -204,7 +224,10 @@ function Breadcrumb() {
     const spot = zone?.huntingSpots?.find(s => s.id === world.currentHuntingSpot)
     trail.push(zoneName, spot?.name ?? 'Wilds')
   } else {
-    trail.push(zoneName)
+    // world_map : Eldenmoor › <lieu courant>
+    const loc = zone?.city?.id === world.currentLocation ? zone?.city
+      : zone?.villages?.find(v => v.id === world.currentLocation)
+    trail.push(loc?.name ?? zoneName)
   }
 
   return (
