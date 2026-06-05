@@ -112,6 +112,22 @@ racine/
 
 ## 4. Systèmes de jeu — état détaillé
 
+### WorldMap — carte illustrée & coordonnées des nodes (UI02)
+- Le fond de la WorldMap est une **carte illustrée** : `public/map/eldenmoor.png` (16:9, `object-fit: cover`), avec un voile sombre radial léger par-dessus pour le contraste. *(asset local-only — `public/` gitignoré.)*
+- **Les positions des 9 lieux sont en COORDONNÉES RELATIVES (%)** du conteneur de carte (table `POS` dans `src/screens/WorldMap.jsx`), calées sur l'illustration. Le scaler 1920×1080 étant uniforme, les % restent alignés à toute échelle.
+- **Si la carte de fond est remplacée**, il suffit de réajuster **ce seul tableau de 9 coordonnées** — aucune autre logique n'est impactée (navigation, déblocages, héros, trails dérivent tous de `POS` + du graphe d'adjacence `EDGES`).
+
+  | Lieu | x% | y% | | Lieu | x% | y% |
+  |---|---|---|---|---|---|---|
+  | Greywatch | 13 | 16 | | Thornmarsh | 34 | 79 |
+  | Ashenvale Forest | 43 | 16 | | Barrow Hills | 49 | 86 |
+  | Millhaven | 41 | 41 | | Hollow Crypt (donjon) | 64 | 81 |
+  | Ironhaven | 60 | 56 | | Grimspire (locked) | 90 | 45 |
+  | Crumbled Ruins | 17 | 55 | | | | |
+
+- **Trails** : tracés selon le **graphe d'adjacence** `EDGES` (source de vérité, indépendant des chemins dessinés sur l'image), en SVG à coordonnées %. La Blighted Road (Ironhaven → Grimspire) reste un liseré rouge avec QTE.
+- **Marqueurs** : discrets (anneau + plaque de nom) pour ne pas masquer l'illustration ; états préservés — locked (désaturé + cadenas), donjon (glow violet pulsant), safe (halo vert ville / sage village).
+
 ### Combat (tour par tour)
 - **Implémenté** : multi-ennemis 1-3 (B03, count par zone/rang), attaque + skills + items + flee, animations, floating numbers, cooldown overlay, ciblage.
 - **Effets de statut (B05)** : poison/burn (DoT), stun (saut de tour), slow + *_down (modificateurs de stats) ; max 2 actifs ; icônes sur cartes ; burn bloque le soin. Moteur pur dans `combat.js`.
