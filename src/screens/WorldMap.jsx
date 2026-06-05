@@ -14,10 +14,10 @@ const POS = {
   ashenvale_forest: { x: 43, y: 16 },
   millhaven:        { x: 41, y: 41 },
   ironhaven:        { x: 60, y: 56 },
-  crumbled_ruins:   { x: 17, y: 55 },
+  crumbled_ruins:   { x: 21, y: 59 },
   thornmarsh:       { x: 34, y: 79 },
-  barrow_hills:     { x: 49, y: 86 },
-  crypt:            { x: 64, y: 81 }, // donjon
+  barrow_hills:     { x: 51, y: 89 },
+  crypt:            { x: 68, y: 83 }, // donjon (grotte)
   grimspire:        { x: 90, y: 45 }, // locked (marqueur en overlay sur les montagnes)
 }
 

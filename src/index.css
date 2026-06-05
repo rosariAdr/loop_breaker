@@ -366,7 +366,10 @@ h1, h2, h3, h4 { font-family: var(--font-head); }
 
 /* ── WorldMap : carte illustrée + marqueurs discrets ───────────────────────── */
 .wm-map { position: absolute; inset: 0; overflow: hidden; }
-.wm-bg { position: absolute; inset: 0; background: #d9c79a url('/map/eldenmoor.png') center / cover no-repeat; }
+/* background-size: 100% 100% (fill) → l'image remplit exactement le conteneur,
+   donc les coordonnées % des nodes (mesurées sur l'image) restent alignées 1:1
+   quel que soit le ratio du conteneur (pas de rognage cover qui décalait le Y). */
+.wm-bg { position: absolute; inset: 0; background: #d9c79a url('/map/eldenmoor.png') 0 0 / 100% 100% no-repeat; }
 .wm-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 5;
   background: radial-gradient(ellipse at 50% 48%, rgba(24,16,9,.12) 42%, rgba(20,13,7,.5) 100%); }
 .wm-trails { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; overflow: visible; }

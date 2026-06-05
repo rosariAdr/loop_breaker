@@ -120,10 +120,12 @@ racine/
   | Lieu | x% | y% | | Lieu | x% | y% |
   |---|---|---|---|---|---|---|
   | Greywatch | 13 | 16 | | Thornmarsh | 34 | 79 |
-  | Ashenvale Forest | 43 | 16 | | Barrow Hills | 49 | 86 |
-  | Millhaven | 41 | 41 | | Hollow Crypt (donjon) | 64 | 81 |
+  | Ashenvale Forest | 43 | 16 | | Barrow Hills | 51 | 89 |
+  | Millhaven | 41 | 41 | | Hollow Crypt (donjon) | 68 | 83 |
   | Ironhaven | 60 | 56 | | Grimspire (locked) | 90 | 45 |
-  | Crumbled Ruins | 17 | 55 | | | | |
+  | Crumbled Ruins | 21 | 59 | | | | |
+
+  > Note : le fond utilise `background-size: 100% 100%` (l'image **remplit** le conteneur, pas `cover`) → les % de `POS` correspondent **1:1 à l'image**, alignés quel que soit le ratio. Léger étirement vertical (~10%) assumé sur la carte dessinée.
 
 - **Trails** : tracés selon le **graphe d'adjacence** `EDGES` (source de vérité, indépendant des chemins dessinés sur l'image), en SVG à coordonnées %. La Blighted Road (Ironhaven → Grimspire) reste un liseré rouge avec QTE.
 - **Marqueurs** : discrets (anneau + plaque de nom) pour ne pas masquer l'illustration ; états préservés — locked (désaturé + cadenas), donjon (glow violet pulsant), safe (halo vert ville / sage village).
