@@ -13,9 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **UI01** — Shell parchemin : canvas fixe 1920×1080 mis à l'échelle (`--lb-scale`), topbar bois (HP/MP/run/XP/day/tokens + onglets), breadcrumb, sidebar/journal partagés
 - **UI02** — WorldMap : carte illustrée en fond (`public/map/eldenmoor.png`), nodes en marqueurs discrets (%), trails SVG par graphe d'adjacence, Blighted Road + QTE
 - **UI03** — Village (SafeZone) : carte parchemin (place + puits + chemins + bâtiments façon référence), panneaux de bâtiment fonctionnels en modale sombre par-dessus
-- **UI04** — Forêt (ZoneView) : décor parchemin, monstres en cartes-clairières (killbar, idle/fight, aperçu de skill drop conservé), journal idle en panneau parchemin
+- **UI04** — Forêt (ZoneView) : décor parchemin, monstres en cartes-clairières (killbar, idle/fight, aperçu de skill drop conservé), journal idle en panneau parchemin ; header dissocié (Map / titre / desc espacés)
+- **UI06** — Hero Sheet : layout sheet parchemin 2 colonnes (portrait + équipement | vitals + attributs + skills + allégeance) ; debuffs/gluttony/titres conservés
+- **UI05** — Dialogue PNJ à l'entrée des bâtiments du village : portrait pixel (couche B : marta/smith/aldric/merchant/mage) + réplique + action → ouvre le panneau fonctionnel (Back ramène au dialogue)
+- **UI07** — Inventory : sheet parchemin à onglets (mana stones / équipement / consommables / ressources), cartes + panneaux détail recolorés ; equip/sell/diff/confirm intacts
 - Avatar héros chibi affiché ×2 (sprite 76×112, halo 80×20)
-- *Reste à porter : NPC overlay (UI05), Hero Sheet (UI06), Inventory (UI07), écrans takeover Combat/GodsShop/DivineCall/PostMortem (UI09)*
+- *Reste à porter : écrans takeover Combat/GodsShop/DivineCall/PostMortem (UI09)*
 
 ### Added (Batch O — Gluttony & Malachar, POC bouclé)
 - **GLT01** — Skill passif Gluttony : absorption permanente de stats (proc 10%, cooldown 5j), réappliquée à chaque run
