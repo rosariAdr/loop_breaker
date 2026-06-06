@@ -21,8 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **PostMortem** : parchemin « chronique de l'âme » sur fond ténébreux (récap + transmigration), bannière Malachar conservée
   - **GodsShop** : boutique divine polie (violet éthéré premium, fond takeover partagé)
   - **DivineCall** : conservé en sombre/mystique thématisé par dieu (déjà conforme à l'esthétique takeover)
-- Avatar héros chibi affiché ×2 (sprite 76×112, halo 80×20)
-- *Reste à porter : **Combat** (1446 l., cœur du jeu) — passe dédiée*
+- Avatar héros chibi affiché ×2 (sprite 76×112, halo 80×20) **+ idle animé** (18 frames, ~9 fps, préchargées) sur WorldMap & Village
+- **DEV01** — Harnais de test : bouton flottant `⚙ DEV` + panneau Navigate (sauts d'écran) / Triggers (combat, appel divin, mort→PostMortem, boutique) / Cheats — permet de tester tous les écrans sans jouer le run
+- **Assets** — sprites chibi des monstres sur les cartes-clairières de la forêt (Combat les utilisait déjà)
+- *Combat : déjà une UI sombre/dramatique aboutie et sur-thème (Cinzel, accents gold/violet) — pas de refonte nécessaire ; polish ciblé si besoin*
 
 ### Added (Batch O — Gluttony & Malachar, POC bouclé)
 - **GLT01** — Skill passif Gluttony : absorption permanente de stats (proc 10%, cooldown 5j), réappliquée à chaque run

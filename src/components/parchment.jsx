@@ -1,6 +1,8 @@
 // Kit de composants UI « parchemin » partagé (design ref UI of Loop Breaker).
 // ArtSlot affiche une vraie sprite (src) ou un placeholder pointillé légendé.
 
+import { useState, useEffect } from 'react'
+
 export function ArtSlot({ caption, src, w, h, round, glow, style, className = '' }) {
   return (
     <div
@@ -14,13 +16,30 @@ export function ArtSlot({ caption, src, w, h, round, glow, style, className = ''
   )
 }
 
-// Avatar héros chibi + halo doré + plaque de nom
-export function HeroAvatar({ x, y, name = 'Kael', src }) {
+// Avatar héros chibi (idle animé) + halo doré + plaque de nom.
+// idleFrames > 1 → cycle /sprites/hero/idle/NN.png ; sinon sprite statique `src`.
+export function HeroAvatar({ x, y, name = 'Kael', src, idleFrames = 18, fps = 9 }) {
+  const animated = idleFrames > 1
+  const [frame, setFrame] = useState(0)
+
+  useEffect(() => {
+    if (!animated) return undefined
+    // Préchargement pour éviter le scintillement au 1er cycle
+    for (let i = 0; i < idleFrames; i++) {
+      const im = new Image()
+      im.src = `/sprites/hero/idle/${String(i).padStart(2, '0')}.png`
+    }
+    const id = setInterval(() => setFrame(f => (f + 1) % idleFrames), Math.round(1000 / fps))
+    return () => clearInterval(id)
+  }, [animated, idleFrames, fps])
+
+  const frameSrc = animated ? `/sprites/hero/idle/${String(frame).padStart(2, '0')}.png` : src
+
   return (
     <div className="hero-avatar" style={{ left: x, top: y }}>
       <div className="hero-sprite">
-        {src
-          ? <img src={src} alt="" draggable={false} />
+        {frameSrc
+          ? <img src={frameSrc} alt="" draggable={false} />
           : <span className="as-cap" style={{ fontSize: 9 }}>hero</span>}
       </div>
       <div className="hero-glow" />
