@@ -70,26 +70,27 @@ _(aucune dépendance externe bloquante)_
 - [ ] **IMM02 — Sous-UI fonctionnelles rendues DANS le panneau (suppression `.lb-modal`)** (L) — *dépend IMM01.*
   - Bâtiments à UI riche (Marchand, Forge, Alchimie, Maître-forgeron, Entraîneur, Église) : leur contenu s'affiche **dans le corps du panneau PNJ** (body remplacé/scrollable), pas dans une modale séparée. Bouton `◄ Back` revient au dialogue, `✕ Leave` ferme.
   - Implique : retirer la modale `.lb-modal` du Village ; reparenter `InnPanel/MerchantPanel/BlacksmithPanel/AlchemyPanel/MasterSmithPanel/KnightTrainerPanel/ChurchPanel` dans le panneau.
+  - **DÉCIDÉ (2026-06-06)** : le cas des **mini-jeux** (forge/alchimie) inline-vs-fenêtre est **différé** (on tranchera au retravail des mini-jeux). Ce batch reparente les panneaux non-minijeu ; forge/alchimie peuvent rester en fenêtre temporairement.
 - [ ] **IMM03 — Restyle parchemin des panneaux fonctionnels** (M) — *dépend IMM02.* Les panneaux ne sont plus sur fond sombre → recolorer leur intérieur (texte `--ink`, cartes parchemin, boutons ambre) pour lisibilité/cohérence sur le panneau clair.
 - [ ] **IMM04 — Hero Sheet & Inventory en overlay immersif (sur l'écran courant)** (M) — *Aujourd'hui Hero/Bag = écrans takeover → on « quitte » le monde.*
   - Les afficher en **overlay au-dessus de l'écran courant** (monde estompé derrière, scrim) façon fenêtre de bâtiment ; les onglets topbar **basculent l'overlay** au lieu de changer `currentScreen`.
   - Implique : flags `heroSheetOpen`/`inventoryOpen` rendus par-dessus la scène ; `.sheet-scrim` couvre l'écran courant.
-  - **Décision proposée** : garder le format « sheet centré » (juste rendu en overlay) ; alternative = panneau ancré bas façon PNJ. *(à acter)*
+  - **DÉCIDÉ (2026-06-06)** : garder le format **« sheet centré »** (juste rendu en overlay au-dessus du monde), pas de panneau ancré bas.
 
-### Batch MAP-TRAVEL — déplacement sur la World Map (retours playtest 2026-06-06)
+### Batch TRV — déplacement diégétique sur la World Map (retours playtest 2026-06-06)
 
-> Rendre le déplacement diégétique : on **marche** d'un node à l'autre le long du réseau, à un coût en temps.
+> On **marche** d'un node à l'autre le long du réseau, à un coût en temps. *(Renommé de MAP03-05 → TRV01-03 pour éviter la collision avec le `MAP03` PixiJS de v2.)*
 
-- [ ] **MAP03 — Logique de voyage entre nodes (entrer vs voyager)** (M)
+- [ ] **TRV01 — Logique de voyage entre nodes (entrer vs voyager)** (M)
   - Clic **node courant** (où est le héros) → **entrer** dans la zone (safe_zone/zone_view, instantané, sans coût).
   - Clic **node adjacent** (graphe `EDGES`) → **voyager** : héros marche A→B, **+3 tics**, puis arrivée (maj `currentLocation`).
   - Clic node **non adjacent** → non navigable direct (feedback / grisé).
   - AC : depuis un node, seuls les voisins `EDGES` sont voyageables ; entrer dans la zone courante reste gratuit/instantané.
-- [ ] **MAP04 — Animation de marche le long du trail (sprites walking)** (M) — *dépend MAP03.*
+- [ ] **TRV02 — Animation de marche le long du trail (sprites walking)** (M) — *dépend TRV01.*
   - Animer le sprite **walking** (24 frames, `public/sprites/hero/walking/`) interpolé le long du segment A→B (~1–1.5 s), puis retour idle à l'arrivée ; input verrouillé + trail surligné pendant la marche.
-- [ ] **MAP05 — Coût en temps du voyage (+3 tics) + rollover** (S/M) — *dépend MAP03.*
-  - Voyage = **+3 tics** (`advanceTick` ×3 ou coût dédié) ; gérer le rollover de jour (>24 tics).
-  - **Décision proposée** : les 3 tics passent par le pipeline idle normal (on farm pendant le trajet). *(à acter)*
+- [ ] **TRV03 — Coût en temps du voyage (+3 tics) + rollover** (S/M) — *dépend TRV01.*
+  - Voyage = **+3 tics** ; gérer le rollover de jour (>24 tics).
+  - **DÉCIDÉ (2026-06-06)** : le voyage **ne déclenche PAS** les tics idle (on ne farme pas en marchant — ça n'a pas de sens). Le voyage **avance seulement le temps** (jour/nuit, horaires de bâtiments, respawn donjon) sans crédit de kills/loot.
 
 ### Sprites, assets & contenu visuel
 
