@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { ZONES } from '../data/zones'
 import { MONSTERS, MONSTERS_BY_ZONE, MONSTERS_BY_SPOT } from '../data/monsters'
@@ -80,6 +81,13 @@ export default function ZoneView() {
   )
 }
 
+// Sprite chibi du monstre (couche A) avec repli emoji si l'asset manque
+function MonsterSprite({ id, elite }) {
+  const [err, setErr] = useState(false)
+  if (err) return <span className="ms-emoji">{elite ? '👹' : '🐾'}</span>
+  return <img className="ms-img" src={`/monsters/${id}.png`} alt="" draggable={false} onError={() => setErr(true)} />
+}
+
 // ── Clairière d'un monstre ────────────────────────────────────────────────────
 function MonsterRow({ monsterId }) {
   const { world, hero, toggleIdle, startCombat } = useGameStore()
@@ -100,6 +108,7 @@ function MonsterRow({ monsterId }) {
 
   return (
     <div className={`mcard ${isElite ? 'elite' : ''} ${isIdleActive ? 'idle-on' : ''}`}>
+      <div className="mcard-sprite"><MonsterSprite id={monsterId} elite={isElite} /></div>
       <div className="mcard-head">
         <span className="mcard-name">{monster.name}</span>
         {isElite && <span className="mcard-elite">ELITE</span>}
