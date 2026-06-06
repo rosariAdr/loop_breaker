@@ -112,6 +112,24 @@ racine/
 
 ## 4. Systèmes de jeu — état détaillé
 
+### WorldMap — carte illustrée & coordonnées des nodes (UI02)
+- Le fond de la WorldMap est une **carte illustrée** : `public/map/eldenmoor.png` (16:9, `object-fit: cover`), avec un voile sombre radial léger par-dessus pour le contraste. *(asset local-only — `public/` gitignoré.)*
+- **Les positions des 9 lieux sont en COORDONNÉES RELATIVES (%)** du conteneur de carte (table `POS` dans `src/screens/WorldMap.jsx`), calées sur l'illustration. Le scaler 1920×1080 étant uniforme, les % restent alignés à toute échelle.
+- **Si la carte de fond est remplacée**, il suffit de réajuster **ce seul tableau de 9 coordonnées** — aucune autre logique n'est impactée (navigation, déblocages, héros, trails dérivent tous de `POS` + du graphe d'adjacence `EDGES`).
+
+  | Lieu | x% | y% | | Lieu | x% | y% |
+  |---|---|---|---|---|---|---|
+  | Greywatch | 13 | 16 | | Thornmarsh | 34 | 79 |
+  | Ashenvale Forest | 43 | 16 | | Barrow Hills | 51 | 89 |
+  | Millhaven | 41 | 41 | | Hollow Crypt (donjon) | 68 | 83 |
+  | Ironhaven | 60 | 56 | | Grimspire (locked) | 90 | 45 |
+  | Crumbled Ruins | 21 | 59 | | | | |
+
+  > Note : le fond utilise `background-size: 100% 100%` (l'image **remplit** le conteneur, pas `cover`) → les % de `POS` correspondent **1:1 à l'image**, alignés quel que soit le ratio. Léger étirement vertical (~10%) assumé sur la carte dessinée.
+
+- **Trails** : tracés selon le **graphe d'adjacence** `EDGES` (source de vérité, indépendant des chemins dessinés sur l'image), en SVG à coordonnées %. La Blighted Road (Ironhaven → Grimspire) reste un liseré rouge avec QTE.
+- **Marqueurs** : discrets (anneau + plaque de nom) pour ne pas masquer l'illustration ; états préservés — locked (désaturé + cadenas), donjon (glow violet pulsant), safe (halo vert ville / sage village).
+
 ### Combat (tour par tour)
 - **Implémenté** : multi-ennemis 1-3 (B03, count par zone/rang), attaque + skills + items + flee, animations, floating numbers, cooldown overlay, ciblage.
 - **Effets de statut (B05)** : poison/burn (DoT), stun (saut de tour), slow + *_down (modificateurs de stats) ; max 2 actifs ; icônes sur cartes ; burn bloque le soin. Moteur pur dans `combat.js`.
@@ -217,7 +235,7 @@ racine/        scenarios.test.js (parties simulées + BAL01)
 Le POC est **complet et gagnable**. Reste : **BAL02** (difficulté boss + playtest), **BAL03** (rythme idle), **TECH04** (60fps Canvas), **TECH05** (JSDoc engine). Voir `PLAYTESTS.md`.
 
 ### 🅱️ v1.1 — UI parchemin, sprites & QoL (rendre présentable)
-Gros chantier visuel s'appuyant sur un **handoff Claude Design** (design system "parchemin" diégétique, stage 1920×1080, tokens CSS). À faire d'un bloc pour la cohérence :
+Gros chantier visuel — **spec complète dans `UI_HANDOFF.md`** (design system "parchemin" diégétique type Dragon Quest, stage 1920×1080, tokens CSS canoniques, 6 écrans, 2 couches d'assets, animations). À faire d'un bloc pour la cohérence :
 - **UI01-09** : design system + shell, puis WorldMap / SafeZone / ZoneView / NPC overlay / HeroSheet / Inventory restylés, sprites en dernier (absorbe les anciens U06/U08-U12).
 - **Assets** : CONT01 (portraits monstres), CONT05 (ASSETS.md + licences), C03 (portraits perso).
 - **QoL** : IDLE-OFF (progression hors-ligne), SET01 (menu options), TECH07 (export/import save), PROC07 (debug give-stats).
@@ -306,6 +324,7 @@ Quand le dev demande d'**analyser**, ne pas corriger directement. Regrouper bugs
 - **`CONTRIBUTING.md`** — workflow Git, DoD, conventions, règle save, checklist
 - **`CHANGELOG.md`** — historique (Keep a Changelog + SemVer)
 - **`DESIGN.md`** — specs de design validées (§B05-SPEC)
+- **`UI_HANDOFF.md`** — spec complète du design system UI parchemin (v1.1) : tokens, 6 écrans, assets, animations
 - **`PLAYTESTS.md`** — journal de playtest (PROC05) pour BAL02/BAL03
 - **`balance/*.csv`** + `scripts/generate-balance-csv.mjs` — équilibrage
 - **`public/monsters/README.md`** — pipeline portraits
