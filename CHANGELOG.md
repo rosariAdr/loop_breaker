@@ -17,8 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **UI06** — Hero Sheet : layout sheet parchemin 2 colonnes (portrait + équipement | vitals + attributs + skills + allégeance) ; debuffs/gluttony/titres conservés
 - **UI05** — Dialogue PNJ à l'entrée des bâtiments du village : portrait pixel (couche B : marta/smith/aldric/merchant/mage) + réplique + action → ouvre le panneau fonctionnel (Back ramène au dialogue)
 - **UI07** — Inventory : sheet parchemin à onglets (mana stones / équipement / consommables / ressources), cartes + panneaux détail recolorés ; equip/sell/diff/confirm intacts
+- **UI09 (partiel)** — écrans takeover (mode plein écran dramatique, choix « Mixte ») :
+  - **PostMortem** : parchemin « chronique de l'âme » sur fond ténébreux (récap + transmigration), bannière Malachar conservée
+  - **GodsShop** : boutique divine polie (violet éthéré premium, fond takeover partagé)
+  - **DivineCall** : conservé en sombre/mystique thématisé par dieu (déjà conforme à l'esthétique takeover)
 - Avatar héros chibi affiché ×2 (sprite 76×112, halo 80×20)
-- *Reste à porter : écrans takeover Combat/GodsShop/DivineCall/PostMortem (UI09)*
+- *Reste à porter : **Combat** (1446 l., cœur du jeu) — passe dédiée*
 
 ### Added (Batch O — Gluttony & Malachar, POC bouclé)
 - **GLT01** — Skill passif Gluttony : absorption permanente de stats (proc 10%, cooldown 5j), réappliquée à chaque run

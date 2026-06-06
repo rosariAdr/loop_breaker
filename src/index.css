@@ -468,6 +468,25 @@ h1, h2, h3, h4 { font-family: var(--font-head); }
 .inv-btn.sell { background: rgba(192,57,43,.1); border-color: rgba(192,57,43,.45); color: var(--danger); }
 .inv-card { padding: 11px 13px; border-radius: 8px; background: rgba(246,232,196,.55); border: 1.5px solid var(--parchment-shadow); }
 
+/* ── Écrans takeover (combat-flow) : fond ténébreux + parchemin dramatique ── */
+.takeover-void { position: absolute; inset: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 46px 24px; background: radial-gradient(ellipse at 50% 18%, #1c0f0a 0%, #0b0a0f 55%, #060507 100%); }
+.pm-scroll { width: 100%; max-width: 640px; background: linear-gradient(180deg, rgba(255,255,255,.3), transparent 28%), var(--parchment); border: 3px solid var(--parchment-shadow); border-radius: 8px; box-shadow: 0 24px 70px rgba(0,0,0,.6), inset 0 0 0 5px rgba(242,224,182,.5); padding: 26px 30px; color: var(--ink); }
+.pm-title { font-family: var(--font-head); font-weight: 800; letter-spacing: .14em; text-align: center; }
+.pm-section { font-family: var(--font-head); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--amber-deep); border-bottom: 1px solid var(--parchment-shadow); padding-bottom: 6px; margin-bottom: 14px; }
+.pm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+.pm-line .k { font-family: var(--font-head); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.pm-line .v { font-family: var(--font-head); font-weight: 700; font-size: 15px; color: var(--ink); }
+.pm-chip { font-family: var(--font-head); font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer; background: rgba(246,232,196,.55); border: 1.5px solid var(--parchment-shadow); color: var(--ink); text-transform: capitalize; transition: all .12s ease; }
+.pm-chip:hover { background: var(--parchment); }
+.pm-chip.sel { background: linear-gradient(180deg, var(--amber), var(--amber-deep)); border-color: var(--amber-deep); color: #2a1c0e; }
+.pm-row { width: 100%; text-align: left; font-family: var(--font-head); font-size: 13px; padding: 9px 13px; border-radius: 7px; cursor: pointer; background: rgba(246,232,196,.5); border: 1.5px solid var(--parchment-shadow); color: var(--ink); transition: all .12s ease; }
+.pm-row:hover { background: var(--parchment); }
+.pm-row.sel { background: rgba(212,160,23,.2); border-color: var(--amber-deep); }
+.pm-reset { width: 100%; margin-top: 8px; font-family: var(--font-head); font-size: 12px; padding: 9px; border-radius: 7px; cursor: pointer; background: transparent; border: 1.5px solid rgba(192,57,43,.4); color: rgba(192,57,43,.85); transition: all .12s ease; }
+.pm-reset:hover { background: rgba(192,57,43,.1); color: var(--danger); }
+.pm-hint { border-radius: 8px; padding: 14px 16px; background: rgba(47,127,184,.1); border: 1.5px solid rgba(47,127,184,.4); }
+.pm-label { font-family: var(--font-head); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber-deep); margin-bottom: 7px; }
+
 /* ── WorldMap : carte illustrée + marqueurs discrets ───────────────────────── */
 .wm-map { position: absolute; inset: 0; overflow: hidden; }
 /* background-size: 100% 100% (fill) → l'image remplit exactement le conteneur,
