@@ -15,7 +15,7 @@ const PROTECTED_RARITIES = new Set(['epic', 'legendary', 'mythic', 'ex', 'exx'])
 
 const TABS = ['skills', 'equipment', 'consumables', 'resources']
 
-export default function Inventory() {
+export default function Inventory({ onClose }) {
   const { hero, setScreen, equipActiveSkill, equipPassiveSkill, equipItem, sellEquipment, markLootAsSeen } = useGameStore()
   const [activeTab, setActiveTab] = useState('skills')
   const [selected, setSelected] = useState(null)
@@ -25,7 +25,7 @@ export default function Inventory() {
     markLootAsSeen()
   }, [markLootAsSeen])
 
-  const back = () => setScreen('world_map')
+  const back = onClose ?? (() => setScreen('world_map'))
 
   return (
     <div className="sheet-scrim" onClick={back}>

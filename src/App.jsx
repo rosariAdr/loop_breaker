@@ -17,10 +17,13 @@ import CharacterCreation from './screens/CharacterCreation'
 import ErrorBoundary from './components/ErrorBoundary'
 import DebugPanel from './components/DebugPanel'
 import ToastContainer from './components/ToastContainer'
+import OfflineRecapModal from './components/OfflineRecapModal'
 import { Sidebar } from './components/parchment'
 
 // Écrans en takeover plein-canvas (sans topbar/breadcrumb)
 const FULLSCREEN = ['combat', 'post_mortem', 'gods_shop', 'divine_call']
+// IMM04 — écrans rendus en overlay AU-DESSUS du monde (immersion : on ne quitte pas la scène)
+const OVERLAY_SCREENS = ['hero_sheet', 'inventory']
 
 function App() {
   const {
@@ -30,7 +33,11 @@ function App() {
     hero, world, setScreen, sleep,
   } = useGameStore()
 
-  useEffect(() => { loadGame() }, [])
+  useEffect(() => {
+    loadGame()
+    // IDLE-OFF — créditer les gains accumulés hors-ligne après le chargement
+    useGameStore.getState().applyOfflineProgress()
+  }, [])
 
   // Scaler du canvas 1920×1080 (ratio en JS car scale() veut un nombre sans unité)
   useEffect(() => {
@@ -67,13 +74,26 @@ function App() {
     return () => clearInterval(interval)
   }, [])
 
-  const renderScreen = () => {
-    switch (currentScreen) {
+  // IMM04 — mémorise le dernier écran-monde (pattern React : setState gardé pendant le render)
+  // pour rendre Hero/Bag en overlay PAR-DESSUS lui et y revenir à la fermeture.
+  const isOverlay = OVERLAY_SCREENS.includes(currentScreen)
+  const fullscreen = FULLSCREEN.includes(currentScreen)
+  const [underScreen, setUnderScreen] = useState('world_map')
+  const [prevScreen, setPrevScreen] = useState(currentScreen)
+  if (currentScreen !== prevScreen) {
+    setPrevScreen(currentScreen)
+    if (!isOverlay && !fullscreen) setUnderScreen(currentScreen)
+  }
+  const baseScreen = isOverlay ? underScreen : currentScreen
+  const overlayClose = () => setScreen(underScreen)
+
+  const renderScreen = (screen = currentScreen) => {
+    switch (screen) {
       case 'world_map':   return <WorldMap />
       case 'zone_view':   return <ZoneView />
       case 'combat':      return <Combat />
-      case 'hero_sheet':  return <HeroSheet />
-      case 'inventory':   return <Inventory />
+      case 'hero_sheet':  return <HeroSheet onClose={overlayClose} />
+      case 'inventory':   return <Inventory onClose={overlayClose} />
       case 'safe_zone':   return <SafeZone />
       case 'post_mortem': return <PostMortem />
       case 'gods_shop':   return <GodsShop />
@@ -85,13 +105,12 @@ function App() {
 
   const showCharCreation = hero.runNumber === 1 && !hero.heroNamed
   const showLevelUp = pendingLevelUp > 0 && !showCharCreation
-  const fullscreen = FULLSCREEN.includes(currentScreen)
 
   // Sidebar partagée (réf design) — pour l'instant sur le world_map (autres écrans à porter)
   const zone = ZONES[world.currentZone]
   const locName = zone?.city?.id === world.currentLocation ? zone.city.name
     : zone?.villages?.find(v => v.id === world.currentLocation)?.name ?? zone?.name ?? 'Eldenmoor'
-  const showSidebar = currentScreen === 'world_map'
+  const showSidebar = baseScreen === 'world_map'
   const sbProps = {
     location: locName, zone: zone?.name ?? 'Ashenvale',
     deity: hero.deity ? hero.deity[0].toUpperCase() + hero.deity.slice(1) : null,
@@ -117,9 +136,16 @@ function App() {
         ) : (
           <div className="map-area parch-sheet">
             <ErrorBoundary>
-              <div key={currentScreen} className="anim-screen-fade fill" style={{ overflow: 'auto' }}>
-                {renderScreen()}
+              {/* Écran-monde sous-jacent (reste visible/estompé derrière l'overlay) */}
+              <div key={baseScreen} className="anim-screen-fade fill" style={{ overflow: 'auto' }}>
+                {renderScreen(baseScreen)}
               </div>
+              {/* IMM04 — Hero Sheet / Inventory en overlay par-dessus le monde */}
+              {isOverlay && (
+                <div key={currentScreen} className="fill">
+                  {renderScreen(currentScreen)}
+                </div>
+              )}
             </ErrorBoundary>
           </div>
         )}
@@ -130,6 +156,7 @@ function App() {
         {pendingDivineCall && <DivineCall />}
         {showLevelUp && <LevelUpModal />}
         {showCharCreation && <CharacterCreation />}
+        <OfflineRecapModal />
       </div>
 
       <ToastContainer />

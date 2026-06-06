@@ -37,10 +37,41 @@ const NPCS = {
     line: "Mind the dosage — a hair too much and the draught turns to poison. Shall we brew?" },
 }
 
+// IMM01 — actions par bâtiment. L'auberge s'exécute INLINE (repos + feedback,
+// pas de 2e fenêtre). Les autres bâtiments ouvrent encore leur panneau via
+// onEnter (kind 'panel') — migration vers le corps du panneau en IMM02.
+function buildingActions(building, npc) {
+  switch (building) {
+    case 'inn':
+      return [
+        { ico: '🛏', label: 'Rest at the Inn', kind: 'rest', primary: true },
+        { ico: '📜', label: 'Quest Board', kind: 'nav', screen: 'quest_board' },
+      ]
+    default:
+      return [{ ico: npc.icon, label: npc.cta, kind: 'panel', primary: true }]
+  }
+}
+
 function NpcOverlay({ building, onClose, onEnter }) {
   const npc = NPCS[building]
+  const { sleep, setScreen } = useGameStore()
+  const [flash, setFlash] = useState(null)
   if (!npc) return null
   const src = npc.role ? portraitSrc(npc.role, 'talk') : null
+  const actions = buildingActions(building, npc)
+
+  const run = (a) => {
+    if (a.kind === 'rest') {
+      sleep()
+      const d = useGameStore.getState().world.dayCount
+      setFlash(`You rest by the hearth — HP and Mana fully restored. Dawn breaks: it is now Day ${d}.`)
+    } else if (a.kind === 'nav') {
+      setScreen(a.screen)
+    } else if (a.kind === 'panel') {
+      onEnter()
+    }
+  }
+
   return (
     <div className="npc-scrim" onClick={onClose}>
       <div className="npc-panel" onClick={e => e.stopPropagation()}>
@@ -55,9 +86,13 @@ function NpcOverlay({ building, onClose, onEnter }) {
         </div>
         <div className="npc-body">
           <div className="npc-eyebrow">{npc.name} — {npc.title}</div>
-          <div className="npc-dialogue">“{npc.line}”</div>
+          <div className="npc-dialogue">“{flash || npc.line}”</div>
           <div className="npc-actions">
-            <button className="pbtn primary" onClick={onEnter}><span className="pbtn-ico">{npc.icon}</span>{npc.cta}</button>
+            {actions.map((a, i) => (
+              <button key={i} className={`pbtn ${a.primary ? 'primary' : ''}`} onClick={() => run(a)}>
+                <span className="pbtn-ico">{a.ico}</span>{a.label}
+              </button>
+            ))}
             <button className="pbtn" onClick={onClose}><span className="pbtn-ico">✕</span>Leave</button>
           </div>
         </div>

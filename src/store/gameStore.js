@@ -11,6 +11,7 @@ import { removeOneManaStone } from '../utils/manaStones'
 import { addDebuff, tickDebuffsOneDay } from '../utils/debuffs'
 import { TITLES } from '../data/titles'
 import { pickGluttonyStat, gluttonyAbsorbAmount } from '../engine/gluttony'
+import { elapsedIdleTicks, canGrind, computeOfflineGains } from '../engine/offlineProgress'
 
 // ── TECH02 — Save schema versioning ──────────────────────────────────────────
 // Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
@@ -93,6 +94,7 @@ const INITIAL_WORLD = {
   currentZone: 'ashenvale',
   currentLocation: 'ironhaven', // ville/village où se trouve le héros
   currentHuntingSpot: null,     // spot de chasse actif (ashenvale_forest | thornmarsh | crumbled_ruins | barrow_hills)
+  currentNode: 'ironhaven',     // TRV01 — position du héros sur la World Map (node)
 
   // Calendrier
   dayCount: 1,
@@ -167,6 +169,10 @@ const INITIAL_META = {
   // GLT01 — Gluttony : boosts de stats permanents cumulés (appliqués à chaque run)
   permanentStatBoosts: {}, // { strength: N, ... }
   gluttonyLastUsed: null,  // jour de la dernière absorption (cooldown 5 jours)
+
+  // IDLE-OFF — progression hors-ligne
+  lastSeen: null,        // timestamp (ms) de la dernière sauvegarde
+  offlineSummary: null,  // { monsterName, kills, gold, xp, resources } — affiché au retour puis effacé
 }
 
 // ── Helpers purs (hors store) ─────────────────────────────────────────────────
@@ -218,6 +224,7 @@ function migrateV1ToV2(save) {
     idleLog: Array.isArray(world.idleLog) ? world.idleLog : [],
     generatedVillages: world.generatedVillages ?? {},
     dungeons: world.dungeons ?? { ...INITIAL_WORLD.dungeons },
+    currentNode: world.currentNode ?? world.currentLocation ?? 'ironhaven', // TRV01
   }
 
   // ── Hero ──
@@ -1180,6 +1187,22 @@ export const useGameStore = create((set, get) => ({
       return { world: { ...state.world, tickCount: newTick } }
     }),
 
+  // TRV01/TRV03 — Voyage vers un node adjacent : déplace le héros sur la carte et
+  // avance le temps de 3 tics (avec rollover de jour). N'exécute PAS l'idle
+  // (on ne farme pas en marchant — décision 2026-06-06).
+  travelTo: (nodeId, ticks = 3) =>
+    set((state) => {
+      const total = state.world.tickCount + ticks
+      return {
+        world: {
+          ...state.world,
+          currentNode: nodeId,
+          tickCount: total % 24,
+          dayCount: state.world.dayCount + Math.floor(total / 24),
+        },
+      }
+    }),
+
   // ── Système de quêtes ────────────────────────────────────────────────────
   startQuest: (questId) =>
     set((state) => {
@@ -1280,6 +1303,8 @@ export const useGameStore = create((set, get) => ({
 
   // ── Persistence localStorage ──────────────────────────────────────────────
   saveGame: () => {
+    // IDLE-OFF — horodate la sauvegarde (base du calcul hors-ligne au retour)
+    set((s) => ({ meta: { ...s.meta, lastSeen: Date.now() } }))
     const { hero, world, meta } = get()
     const payload = JSON.stringify({ hero, world, meta, saveVersion: SAVE_VERSION })
     try {
@@ -1305,6 +1330,45 @@ export const useGameStore = create((set, get) => ({
       return false
     }
   },
+
+  // IDLE-OFF — au retour, créditer les gains accumulés pendant l'absence si l'idle
+  // était actif. Calcul en batch (valeurs espérées). nowMs injectable pour les tests.
+  applyOfflineProgress: (nowMs = Date.now()) => {
+    const { hero, world, meta } = get()
+    if (!world.isIdleActive || !world.idleTargetMonster || !meta.lastSeen) return
+    const monsterId = world.idleTargetMonster
+    const monster = MONSTERS[monsterId]
+    if (!monster || !canGrind(hero, monster)) return
+    // Idle se serait arrêté si l'ennemi est trop fort (B12) → pas de gains hors-ligne
+    if (isEnemyTooStrong(getMonsterLevel(monsterId), hero.level)) return
+
+    const ticks = elapsedIdleTicks(meta.lastSeen, nowMs)
+    if (ticks <= 0) return
+
+    const gains = computeOfflineGains({ monster, ticks, chance: hero.stats.chance })
+
+    // Crédit via les actions canoniques (gère les level-ups proprement)
+    get().addGold(gains.gold)
+    for (const [id, qty] of Object.entries(gains.resources)) get().addResource(id, qty)
+    if (gains.xp > 0) get().gainExp(gains.xp)
+
+    set((s) => ({
+      world: {
+        ...s.world,
+        monsterKillCounts: {
+          ...s.world.monsterKillCounts,
+          [monsterId]: (s.world.monsterKillCounts[monsterId] || 0) + gains.kills,
+        },
+      },
+      meta: {
+        ...s.meta,
+        lastSeen: nowMs, // évite le double-comptage si on recharge
+        offlineSummary: { monsterName: monster.name, ...gains },
+      },
+    }))
+  },
+
+  clearOfflineSummary: () => set((s) => ({ meta: { ...s.meta, offlineSummary: null } })),
 
   // ── Donjons ───────────────────────────────────────────────────────────────
   discoverDungeon: (zoneId) =>
@@ -1364,6 +1428,7 @@ export const useGameStore = create((set, get) => ({
           demonLordDefeated: isDemonLordKill ? true : state.world.demonLordDefeated,
           // D05 — warp
           currentLocation: safeCityId,
+          currentNode: safeCityId, // TRV01 — garde la position carte synchronisée au warp
           currentHuntingSpot: null,
           isIdleActive: false,
           idleTargetMonster: null,

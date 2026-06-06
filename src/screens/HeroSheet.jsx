@@ -30,7 +30,7 @@ const ATTR_DEFS = [
   { key: 'def', label: 'Defense' },
 ]
 
-export default function HeroSheet() {
+export default function HeroSheet({ onClose }) {
   const { hero, meta, world, setScreen, unequipItem, unequipActiveSkill, unequipPassiveSkill } = useGameStore()
   const equippedBonuses = calcEquippedStatBonuses(hero.equipped ?? {})
   const earnedTitles = (meta?.titlesEarned ?? []).map(id => TITLES[id]).filter(Boolean) // M01
@@ -39,7 +39,7 @@ export default function HeroSheet() {
   const gluttonyReady = isGluttonyReady(world?.dayCount ?? 0, meta?.gluttonyLastUsed)
   const gluttonyDays = gluttonyDaysRemaining(world?.dayCount ?? 0, meta?.gluttonyLastUsed)
 
-  const back = () => setScreen('world_map')
+  const back = onClose ?? (() => setScreen('world_map'))
 
   return (
     <div className="sheet-scrim" onClick={back}>
