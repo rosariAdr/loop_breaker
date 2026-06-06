@@ -14,6 +14,31 @@ import {
 import { resolveCraftOutcome, alchemyQuantity } from '../utils/crafting'
 import { ALCHEMY_RECIPES, MASTER_RECIPES } from '../data/recipes'
 import CraftingMinigame from '../components/CraftingMinigame'
+import { ArtSlot, HeroAvatar, ParchmentFrame } from '../components/parchment'
+
+const HERO_SPRITE = '/sprites/hero/idle/00.png'
+
+// Positions (%) des bâtiments autour de la place du village
+const BLD_POS = {
+  inn:            { x: 28, y: 30 },
+  church:         { x: 72, y: 30 },
+  blacksmith:     { x: 20, y: 58 },
+  merchant:       { x: 80, y: 58 },
+  knight_trainer: { x: 30, y: 82 },
+  alchemy:        { x: 70, y: 82 },
+  master_smith:   { x: 50, y: 88 },
+}
+
+function VilBuilding({ id, info, onClick }) {
+  const p = BLD_POS[id]
+  if (!p || !info) return null
+  return (
+    <div className="bld" style={{ left: `${p.x}%`, top: `${p.y}%` }} onClick={onClick}>
+      <div className="bld-frame"><ArtSlot caption={info.name} w={120} h={80} /></div>
+      <div className="bld-sign"><span>{info.icon}</span>{info.name}</div>
+    </div>
+  )
+}
 
 // Génère les bâtiments d'un village de façon déterministe
 // (basé sur l'id du village pour que ça soit stable entre les sessions)
@@ -78,90 +103,62 @@ export default function SafeZone() {
   }
 
   return (
-    <div className="flex h-full" style={{ minHeight: 'calc(100vh - 48px)' }}>
-      {/* Panneau principal */}
-      <div className="flex-1 flex flex-col p-6 gap-5">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => { setActiveBuilding(null); setScreen('world_map') }}
-            style={{ color: '#6a5a4a', fontSize: '0.85rem', fontFamily: 'Cinzel, serif' }}
-          >
-            ← Map
-          </button>
-          <div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '1.3rem' }}>
-              {location.name}
-            </h2>
-            <p style={{ color: '#6a5a4a', fontSize: '0.78rem' }}>
-              {isCity ? '🏰 Major City' : '🏘 Village'} · {zone.name}
-            </p>
-          </div>
+    <>
+      {/* ── Carte du village (parchemin) ─────────────────────────────── */}
+      <div className="parchment fill village">
+        <ParchmentFrame variant="vine" />
+
+        <button className="back-btn" onClick={() => { setActiveBuilding(null); setScreen('world_map') }}>
+          ← Map
+        </button>
+
+        <div className="zone-header vil-header">
+          <div className="t-zone zh-title">{location.name}</div>
+          <div className="t-sub zh-sub">{isCity ? '🏰 Major City' : '🏘 Village'} · {zone.name}</div>
         </div>
 
-        {/* Grille des bâtiments */}
-        {!activeBuilding && (
-          <div className="grid grid-cols-2 gap-3 max-w-lg">
-            {buildings.map(buildingId => {
-              const info = BUILDING_INFO[buildingId]
-              if (!info) return null
-              return (
-                <button
-                  key={buildingId}
-                  onClick={() => setActiveBuilding(buildingId)}
-                  className="p-4 rounded text-left transition-all hover:opacity-90"
-                  style={{
-                    background: '#0f0c08',
-                    border: `1px solid #2a2018`,
-                    borderLeft: `3px solid ${info.color}`,
-                  }}
-                >
-                  <p style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>{info.icon}</p>
-                  <p style={{ fontFamily: 'Cinzel, serif', color: info.color, fontSize: '0.85rem' }}>
-                    {info.name}
-                  </p>
-                </button>
-              )
-            })}
-          </div>
-        )}
+        {/* Place centrale en terre battue */}
+        <div className="vil-square" />
 
-        {/* Contenu du bâtiment sélectionné */}
-        {activeBuilding === 'inn' && (
-          <InnPanel onBack={() => setActiveBuilding(null)} />
-        )}
-        {activeBuilding === 'church' && (
-          <ChurchPanel onBack={() => setActiveBuilding(null)} />
-        )}
-        {activeBuilding === 'merchant' && (
-          <MerchantPanel onBack={() => setActiveBuilding(null)} zoneId={world.currentZone} />
-        )}
-        {activeBuilding === 'alchemy' && (
-          <AlchemyPanel onBack={() => setActiveBuilding(null)} />
-        )}
-        {activeBuilding === 'blacksmith' && (
-          <BlacksmithPanel onBack={() => setActiveBuilding(null)} zoneId={world.currentZone} />
-        )}
-        {activeBuilding === 'master_smith' && (
-          <MasterSmithPanel onBack={() => setActiveBuilding(null)} />
-        )}
-        {activeBuilding === 'knight_trainer' && (
-          <KnightTrainerPanel onBack={() => setActiveBuilding(null)} />
-        )}
+        {/* Chemins du puits vers chaque bâtiment */}
+        <svg className="vil-paths" preserveAspectRatio="none">
+          {buildings.map(id => {
+            const p = BLD_POS[id]
+            if (!p) return null
+            return <line key={id} x1="50%" y1="50%" x2={`${p.x}%`} y2={`${p.y}%`}
+              stroke="#c9b083" strokeWidth="11" strokeLinecap="round" opacity="0.55" />
+          })}
+        </svg>
+
+        {/* Puits au centre */}
+        <div className="vil-well">
+          <ArtSlot caption="village well" w={84} h={66} />
+        </div>
+
+        {/* Bâtiments */}
+        {buildings.map(id => (
+          <VilBuilding key={id} id={id} info={BUILDING_INFO[id]} onClick={() => setActiveBuilding(id)} />
+        ))}
+
+        {/* Héros près du puits */}
+        <HeroAvatar x="50%" y="40%" name={hero.name} src={HERO_SPRITE} />
       </div>
 
-      {/* Mini sidebar */}
-      <aside
-        className="w-48 p-4 border-l flex flex-col gap-4"
-        style={{ borderColor: '#2a2018', background: '#0a0805' }}
-      >
-        <SidebarStat label="HP" value={`${hero.stats.hp}/${hero.stats.maxHp}`} color="#c04040" />
-        <SidebarStat label="Mana" value={`${hero.stats.mana}/${hero.stats.maxMana}`} color="#3060c0" />
-        <SidebarStat label="Gold" value={`${hero.inventory.gold}g`} color="#d4af70" />
-        <SidebarStat label="Tokens" value={`${hero.reputationTokens}`} color="#c084fc" />
-        <SidebarStat label="Day" value={world.dayCount} color="#6a5a4a" />
-      </aside>
-    </div>
+      {/* ── Panneau du bâtiment (modale sombre par-dessus le village) ── */}
+      {activeBuilding && (
+        <div className="lb-modal-scrim" onClick={() => setActiveBuilding(null)}>
+          <div className="lb-modal" onClick={e => e.stopPropagation()}>
+            {activeBuilding === 'inn' && <InnPanel onBack={() => setActiveBuilding(null)} />}
+            {activeBuilding === 'church' && <ChurchPanel onBack={() => setActiveBuilding(null)} />}
+            {activeBuilding === 'merchant' && <MerchantPanel onBack={() => setActiveBuilding(null)} zoneId={world.currentZone} />}
+            {activeBuilding === 'alchemy' && <AlchemyPanel onBack={() => setActiveBuilding(null)} />}
+            {activeBuilding === 'blacksmith' && <BlacksmithPanel onBack={() => setActiveBuilding(null)} zoneId={world.currentZone} />}
+            {activeBuilding === 'master_smith' && <MasterSmithPanel onBack={() => setActiveBuilding(null)} />}
+            {activeBuilding === 'knight_trainer' && <KnightTrainerPanel onBack={() => setActiveBuilding(null)} />}
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
