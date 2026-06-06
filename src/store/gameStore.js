@@ -173,6 +173,9 @@ const INITIAL_META = {
   // IDLE-OFF — progression hors-ligne
   lastSeen: null,        // timestamp (ms) de la dernière sauvegarde
   offlineSummary: null,  // { monsterName, kills, gold, xp, resources } — affiché au retour puis effacé
+
+  // SET01 — réglages joueur (persistés avec meta)
+  settings: { animations: true },
 }
 
 // ── Helpers purs (hors store) ─────────────────────────────────────────────────
@@ -1369,6 +1372,30 @@ export const useGameStore = create((set, get) => ({
   },
 
   clearOfflineSummary: () => set((s) => ({ meta: { ...s.meta, offlineSummary: null } })),
+
+  // SET01 — modifier un réglage joueur
+  setSetting: (key, value) =>
+    set((s) => ({ meta: { ...s.meta, settings: { ...(s.meta.settings ?? {}), [key]: value } } })),
+
+  // TECH07 — Export / Import de save (fichier). Filet de sécurité + portabilité.
+  exportSave: () => {
+    const { hero, world, meta } = get()
+    return JSON.stringify({ hero, world, meta, saveVersion: SAVE_VERSION }, null, 2)
+  },
+
+  /** Charge une save depuis une chaîne JSON (avec migrations). @returns {boolean} succès */
+  importSave: (json) => {
+    try {
+      const parsed = JSON.parse(json)
+      if (!parsed || !parsed.hero || !parsed.world) return false
+      const migrated = runMigrations(parsed)
+      set({ hero: migrated.hero, world: migrated.world, meta: migrated.meta })
+      get().saveGame()
+      return true
+    } catch {
+      return false
+    }
+  },
 
   // ── Donjons ───────────────────────────────────────────────────────────────
   discoverDungeon: (zoneId) =>

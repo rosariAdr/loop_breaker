@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
+import { useToastStore } from '../store/toastStore'
 import { ZONES } from '../data/zones'
 import { RESOURCES } from '../data/resources'
 import { SKILLS } from '../data/skills'
@@ -52,7 +53,7 @@ function buildingActions(building, npc) {
   }
 }
 
-function NpcOverlay({ building, onClose, onEnter }) {
+function NpcOverlay({ building, onClose, onEnter, showPanel, panel }) {
   const npc = NPCS[building]
   const { sleep, setScreen } = useGameStore()
   const [flash, setFlash] = useState(null)
@@ -74,7 +75,7 @@ function NpcOverlay({ building, onClose, onEnter }) {
 
   return (
     <div className="npc-scrim" onClick={onClose}>
-      <div className="npc-panel" onClick={e => e.stopPropagation()}>
+      <div className={`npc-panel ${showPanel ? 'has-panel' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="npc-portrait">
           <div className="pframe" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             {src
@@ -85,16 +86,23 @@ function NpcOverlay({ building, onClose, onEnter }) {
           <div className="t-label">{npc.title}</div>
         </div>
         <div className="npc-body">
-          <div className="npc-eyebrow">{npc.name} — {npc.title}</div>
-          <div className="npc-dialogue">“{flash || npc.line}”</div>
-          <div className="npc-actions">
-            {actions.map((a, i) => (
-              <button key={i} className={`pbtn ${a.primary ? 'primary' : ''}`} onClick={() => run(a)}>
-                <span className="pbtn-ico">{a.ico}</span>{a.label}
-              </button>
-            ))}
-            <button className="pbtn" onClick={onClose}><span className="pbtn-ico">✕</span>Leave</button>
-          </div>
+          {showPanel ? (
+            // IMM02 — panneau fonctionnel rendu DANS la même fenêtre (plus de 2e fenêtre)
+            <div className="npc-panel-host">{panel}</div>
+          ) : (
+            <>
+              <div className="npc-eyebrow">{npc.name} — {npc.title}</div>
+              <div className="npc-dialogue">“{flash || npc.line}”</div>
+              <div className="npc-actions">
+                {actions.map((a, i) => (
+                  <button key={i} className={`pbtn ${a.primary ? 'primary' : ''}`} onClick={() => run(a)}>
+                    <span className="pbtn-ico">{a.ico}</span>{a.label}
+                  </button>
+                ))}
+                <button className="pbtn" onClick={onClose}><span className="pbtn-ico">✕</span>Leave</button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -231,24 +239,23 @@ export default function SafeZone() {
         <HeroAvatar x="50%" y="40%" name={hero.name} src={HERO_SPRITE} />
       </div>
 
-      {/* ── UI05 — Dialogue PNJ (portrait pixel) à l'entrée d'un bâtiment ── */}
-      {activeBuilding && !showPanel && (
-        <NpcOverlay building={activeBuilding} onClose={closeBuilding} onEnter={() => setShowPanel(true)} />
-      )}
-
-      {/* ── Panneau fonctionnel du bâtiment (modale par-dessus le village) ── */}
-      {activeBuilding && showPanel && (
-        <div className="lb-modal-scrim" onClick={() => setShowPanel(false)}>
-          <div className="lb-modal" onClick={e => e.stopPropagation()}>
-            {activeBuilding === 'inn' && <InnPanel onBack={() => setShowPanel(false)} />}
-            {activeBuilding === 'church' && <ChurchPanel onBack={() => setShowPanel(false)} />}
-            {activeBuilding === 'merchant' && <MerchantPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />}
-            {activeBuilding === 'alchemy' && <AlchemyPanel onBack={() => setShowPanel(false)} />}
-            {activeBuilding === 'blacksmith' && <BlacksmithPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />}
-            {activeBuilding === 'master_smith' && <MasterSmithPanel onBack={() => setShowPanel(false)} />}
-            {activeBuilding === 'knight_trainer' && <KnightTrainerPanel onBack={() => setShowPanel(false)} />}
-          </div>
-        </div>
+      {/* ── UI05/IMM02 — Dialogue PNJ + panneau fonctionnel DANS LA MÊME fenêtre ── */}
+      {activeBuilding && (
+        <NpcOverlay
+          building={activeBuilding}
+          showPanel={showPanel}
+          onEnter={() => setShowPanel(true)}
+          onClose={closeBuilding}
+          panel={showPanel ? (
+            activeBuilding === 'church' ? <ChurchPanel onBack={() => setShowPanel(false)} />
+              : activeBuilding === 'merchant' ? <MerchantPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />
+              : activeBuilding === 'alchemy' ? <AlchemyPanel onBack={() => setShowPanel(false)} />
+              : activeBuilding === 'blacksmith' ? <BlacksmithPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />
+              : activeBuilding === 'master_smith' ? <MasterSmithPanel onBack={() => setShowPanel(false)} />
+              : activeBuilding === 'knight_trainer' ? <KnightTrainerPanel onBack={() => setShowPanel(false)} />
+              : <InnPanel onBack={() => setShowPanel(false)} />
+          ) : null}
+        />
       )}
     </>
   )
@@ -266,7 +273,7 @@ function InnPanel({ onBack }) {
 
   return (
     <Panel title="🍺 The Hearth Inn" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
         "Rest your bones, traveler. The road is long."
       </p>
       <div className="flex flex-col gap-3 max-w-sm">
@@ -278,8 +285,8 @@ function InnPanel({ onBack }) {
           className="mt-2 px-4 py-3 rounded transition-all hover:opacity-90"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: '#0f1a0f',
-            color: '#80c040',
+            background: 'rgba(74,124,47,.14)',
+            color: 'var(--forest-deep)',
             border: '1px solid #406030',
           }}
         >
@@ -295,7 +302,7 @@ function InnPanel({ onBack }) {
           className="px-4 py-3 rounded transition-all hover:opacity-90"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: '#0a0818',
+            background: 'rgba(160,110,220,.12)',
             color: '#c084fc',
             border: '1px solid #3a1c60',
           }}
@@ -318,7 +325,7 @@ function ChurchPanel({ onBack }) {
 
   return (
     <Panel title="⛪ Church of the Old Gods" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
         "The gods hear those who kneel."
       </p>
       <div className="flex flex-col gap-3 max-w-sm">
@@ -331,7 +338,7 @@ function ChurchPanel({ onBack }) {
           className="mt-2 px-4 py-3 rounded transition-all"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: alreadyFull ? '#0a0a0a' : '#0f0f1a',
+            background: alreadyFull ? 'rgba(201,169,110,.1)' : 'rgba(160,110,220,.12)',
             color: alreadyFull ? '#3a3a4a' : '#c0a0ff',
             border: `1px solid ${alreadyFull ? '#1a1a2a' : '#5040a0'}`,
             cursor: alreadyFull ? 'not-allowed' : 'pointer',
@@ -371,17 +378,22 @@ function MerchantPanel({ onBack }) {
     if (!res || hero.inventory.gold < res.buyPrice) return
     spendGold(res.buyPrice)
     addConsumable(id, 1)
+    // MRC01 — feedback d'achat
+    useToastStore.getState().addToast(`🛒 Bought ${res.name} · −${res.buyPrice}🪙`, 'info')
   }
 
   const buyEquipment = (templateId, rarity, price) => {
     if (hero.inventory.gold < price) return
     spendGold(price)
-    addEquipmentToInventory(createEquipmentInstance(templateId, rarity))
+    const item = createEquipmentInstance(templateId, rarity)
+    addEquipmentToInventory(item) // lève déjà le badge unseen-loot (UX05)
+    // MRC01 — feedback d'achat
+    useToastStore.getState().addToast(`🛒 Bought ${item.name} · −${price}🪙`, 'loot')
   }
 
   return (
     <Panel title="🛒 Merchant's Stall" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "Quality goods at honest prices. Mostly."
       </p>
       <div className="flex flex-col gap-2" style={{ maxWidth: '480px' }}>
@@ -396,9 +408,9 @@ function MerchantPanel({ onBack }) {
               className="px-3 py-1 rounded text-xs capitalize"
               style={{
                 fontFamily: 'Cinzel, serif',
-                background: tab === t ? '#1a1408' : '#0f0c08',
-                color: tab === t ? '#d4af70' : '#4a3a2a',
-                border: `1px solid ${tab === t ? '#3a2818' : '#1a1410'}`,
+                background: tab === t ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                color: tab === t ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                border: `1px solid ${tab === t ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
               }}
             >
               {t === 'potions' ? '🧪 Potions' : '⚔ Equipment'}
@@ -413,10 +425,10 @@ function MerchantPanel({ onBack }) {
           const owned = hero.inventory.consumables[id] || 0
           return (
             <div key={id} className="flex items-center justify-between p-2 rounded"
-              style={{ background: '#0f0c08', border: '1px solid #1a1410' }}>
+              style={{ background: 'rgba(201,169,110,.18)', border: '1px solid var(--parchment-shadow)' }}>
               <div>
-                <p style={{ color: '#d4af70', fontSize: '0.85rem' }}>{res.name}</p>
-                <p style={{ color: '#6a5a4a', fontSize: '0.75rem' }}>{res.description} · Owned: {owned}</p>
+                <p style={{ color: 'var(--amber-deep)', fontSize: '0.85rem' }}>{res.name}</p>
+                <p style={{ color: 'var(--ink-soft)', fontSize: '0.75rem' }}>{res.description} · Owned: {owned}</p>
               </div>
               <button
                 onClick={() => buyPotion(id)}
@@ -424,9 +436,9 @@ function MerchantPanel({ onBack }) {
                 className="px-3 py-1 rounded text-xs ml-3"
                 style={{
                   fontFamily: 'Cinzel, serif',
-                  background: canAfford ? '#1a1408' : '#0f0c08',
-                  color: canAfford ? '#d4af70' : '#4a3a2a',
-                  border: `1px solid ${canAfford ? '#3a2818' : '#1a1410'}`,
+                  background: canAfford ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                  color: canAfford ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                  border: `1px solid ${canAfford ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
                   cursor: canAfford ? 'pointer' : 'not-allowed',
                   whiteSpace: 'nowrap',
                 }}
@@ -443,12 +455,12 @@ function MerchantPanel({ onBack }) {
           const canAfford = hero.inventory.gold >= price
           return (
             <div key={`${templateId}_${rarity}`} className="flex items-center justify-between p-2 rounded"
-              style={{ background: '#0f0c08', border: '1px solid #1a1410', borderLeft: `3px solid ${rc.color}` }}>
+              style={{ background: 'rgba(201,169,110,.18)', border: '1px solid var(--parchment-shadow)', borderLeft: `3px solid ${rc.color}` }}>
               <div>
                 <p style={{ color: rc.color, fontSize: '0.85rem', fontFamily: 'Cinzel, serif' }}>
                   {rc.label} {t.name}
                 </p>
-                <p style={{ color: '#6a5a4a', fontSize: '0.73rem' }}>
+                <p style={{ color: 'var(--ink-soft)', fontSize: '0.73rem' }}>
                   {Object.entries(t.baseStats).map(([s, v]) =>
                     `+${Math.round(v * rc.mult)} ${s}`
                   ).join(' · ')}
@@ -460,9 +472,9 @@ function MerchantPanel({ onBack }) {
                 className="px-3 py-1 rounded text-xs ml-3"
                 style={{
                   fontFamily: 'Cinzel, serif',
-                  background: canAfford ? '#1a1408' : '#0f0c08',
-                  color: canAfford ? '#d4af70' : '#4a3a2a',
-                  border: `1px solid ${canAfford ? '#3a2818' : '#1a1410'}`,
+                  background: canAfford ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                  color: canAfford ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                  border: `1px solid ${canAfford ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
                   cursor: canAfford ? 'pointer' : 'not-allowed',
                   whiteSpace: 'nowrap',
                 }}
@@ -518,7 +530,7 @@ function AlchemyPanel({ onBack }) {
 
   return (
     <Panel title="⚗️ Alchemy Workshop" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "The alchemist gestures at the bubbling tubes. 'Steady hands, steady brew.'"
       </p>
       <div className="flex flex-col gap-1.5" style={{ maxWidth: '460px' }}>
@@ -532,7 +544,7 @@ function AlchemyPanel({ onBack }) {
               data-testid={`alchemy-recipe-${r.id}`}
               className="text-left px-3 py-2 rounded text-xs"
               style={{
-                background: selected === r.id ? '#160f1c' : '#0f0c10',
+                background: selected === r.id ? 'rgba(160,110,220,.16)' : 'rgba(201,169,110,.12)',
                 border: `1px solid ${selected === r.id ? '#5a40b0' : '#1a1620'}`,
                 opacity: ok ? 1 : 0.55,
                 fontFamily: 'Cinzel, serif',
@@ -554,7 +566,7 @@ function AlchemyPanel({ onBack }) {
           className="mt-3 px-4 py-2 rounded text-sm"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: canBrew ? '#160f1c' : '#0f0c10',
+            background: canBrew ? 'rgba(160,110,220,.16)' : 'rgba(201,169,110,.12)',
             color: canBrew ? '#b090e0' : '#4a3a5a',
             border: `1px solid ${canBrew ? '#5a40b0' : '#1a1620'}`,
             cursor: canBrew ? 'pointer' : 'not-allowed',
@@ -564,7 +576,7 @@ function AlchemyPanel({ onBack }) {
         </button>
       )}
       {msg && (
-        <p style={{ color: msg.startsWith('✗') ? '#c06040' : '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
+        <p style={{ color: msg.startsWith('✗') ? '#c06040' : 'var(--forest-deep)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
           {msg}
         </p>
       )}
@@ -620,7 +632,7 @@ function MasterSmithPanel({ onBack }) {
 
   return (
     <Panel title="🛠 Master Smith" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "A master at the anvil eyes your materials. 'Only the worthy leave with steel.'"
       </p>
       <div className="flex flex-col gap-1.5" style={{ maxWidth: '500px' }}>
@@ -635,14 +647,14 @@ function MasterSmithPanel({ onBack }) {
               data-testid={`master-recipe-${r.id}`}
               className="text-left px-3 py-2 rounded text-xs"
               style={{
-                background: selected === r.id ? '#161210' : '#0f0c08',
-                border: `1px solid ${selected === r.id ? rc.color : '#1a1410'}`,
+                background: selected === r.id ? 'rgba(212,160,23,.2)' : 'rgba(201,169,110,.18)',
+                border: `1px solid ${selected === r.id ? rc.color : 'var(--parchment-shadow)'}`,
                 opacity: ok ? 1 : 0.55,
                 fontFamily: 'Cinzel, serif',
               }}
             >
               <span style={{ color: rc.color }}>{r.name}</span>
-              <span style={{ color: '#6a5a4a', marginLeft: '0.5rem' }}>
+              <span style={{ color: 'var(--ink-soft)', marginLeft: '0.5rem' }}>
                 {Object.entries(r.ingredients).map(([id, q]) => `${RESOURCES[id]?.name ?? id}×${q}`).join(', ')} · {r.gold}g
               </span>
             </button>
@@ -657,9 +669,9 @@ function MasterSmithPanel({ onBack }) {
           className="mt-3 px-4 py-2 rounded text-sm"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: canForge ? '#1a1208' : '#0f0c08',
-            color: canForge ? '#d4af70' : '#4a3a2a',
-            border: `1px solid ${canForge ? '#6a5018' : '#1a1410'}`,
+            background: canForge ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+            color: canForge ? 'var(--amber-deep)' : 'var(--ink-soft)',
+            border: `1px solid ${canForge ? '#6a5018' : 'var(--parchment-shadow)'}`,
             cursor: canForge ? 'pointer' : 'not-allowed',
           }}
         >
@@ -667,7 +679,7 @@ function MasterSmithPanel({ onBack }) {
         </button>
       )}
       {msg && (
-        <p style={{ color: msg.startsWith('✗') ? '#c06040' : '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
+        <p style={{ color: msg.startsWith('✗') ? '#c06040' : 'var(--forest-deep)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
           {msg}
         </p>
       )}
@@ -736,14 +748,14 @@ function BlacksmithPanel({ onBack }) {
 
   return (
     <Panel title="🔨 Blacksmith's Forge" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "The forge roars. The smith nods at you."
       </p>
 
       <div className="flex gap-4" style={{ maxWidth: '580px' }}>
         {/* Liste des templates */}
         <div className="flex flex-col gap-1" style={{ width: '180px', flexShrink: 0 }}>
-          <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
             Items
           </p>
           {['weapon', 'helmet', 'armor', 'boots'].map(slot => (
@@ -757,9 +769,9 @@ function BlacksmithPanel({ onBack }) {
                   onClick={() => { setSelectedTemplate(t.id); setSelectedRarity('common'); setCraftMsg(null) }}
                   className="w-full text-left px-2 py-1.5 rounded text-xs mb-0.5"
                   style={{
-                    background: selectedTemplate === t.id ? '#1a1208' : '#0f0c08',
-                    color: selectedTemplate === t.id ? '#d4af70' : '#6a5a4a',
-                    border: `1px solid ${selectedTemplate === t.id ? '#3a2818' : '#1a1410'}`,
+                    background: selectedTemplate === t.id ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                    color: selectedTemplate === t.id ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                    border: `1px solid ${selectedTemplate === t.id ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
                     fontFamily: 'Cinzel, serif',
                   }}
                 >
@@ -773,14 +785,14 @@ function BlacksmithPanel({ onBack }) {
         {/* Détail du craft */}
         <div className="flex-1 flex flex-col gap-3">
           {!template ? (
-            <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
+            <p style={{ color: 'var(--ink-soft)', fontSize: '0.82rem', fontStyle: 'italic' }}>
               Select an item to craft.
             </p>
           ) : (
             <>
               <div>
-                <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.95rem' }}>{template.name}</p>
-                <p style={{ color: '#6a5a4a', fontSize: '0.75rem', marginTop: '0.2rem' }}>{template.description}</p>
+                <p style={{ fontFamily: 'Cinzel, serif', color: 'var(--amber-deep)', fontSize: '0.95rem' }}>{template.name}</p>
+                <p style={{ color: 'var(--ink-soft)', fontSize: '0.75rem', marginTop: '0.2rem' }}>{template.description}</p>
               </div>
 
               {/* Sélecteur de rareté */}
@@ -795,8 +807,8 @@ function BlacksmithPanel({ onBack }) {
                       style={{
                         fontFamily: 'Cinzel, serif',
                         color: rc.color,
-                        background: selectedRarity === r ? '#1a1210' : '#0f0c08',
-                        border: `1px solid ${selectedRarity === r ? rc.color : '#2a2018'}`,
+                        background: selectedRarity === r ? 'rgba(212,160,23,.2)' : 'rgba(201,169,110,.18)',
+                        border: `1px solid ${selectedRarity === r ? rc.color : 'var(--parchment-shadow)'}`,
                       }}
                     >
                       {rc.label}
@@ -808,7 +820,7 @@ function BlacksmithPanel({ onBack }) {
               {/* Recette */}
               {recipe && (
                 <div className="flex flex-col gap-1">
-                  <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Recipe
                   </p>
                   {Object.entries(recipe.ingredients).map(([resId, qty]) => {
@@ -819,7 +831,7 @@ function BlacksmithPanel({ onBack }) {
                       <div key={resId} className="flex justify-between items-center"
                         // Z03 — grise les ingrédients manquants
                         style={{ fontSize: '0.78rem', opacity: ok ? 1 : 0.6 }}>
-                        <span style={{ color: ok ? '#80c040' : '#c04040' }}>
+                        <span style={{ color: ok ? 'var(--forest-deep)' : '#c04040' }}>
                           {ok ? '✓' : '✗'} {res?.name ?? resId}
                         </span>
                         <span style={{ color: ok ? '#6a9a4a' : '#8a3a2a' }}>
@@ -829,7 +841,7 @@ function BlacksmithPanel({ onBack }) {
                     )
                   })}
                   <div className="flex justify-between items-center mt-1" style={{ fontSize: '0.78rem' }}>
-                    <span style={{ color: hasGold ? '#80c040' : '#c04040' }}>
+                    <span style={{ color: hasGold ? 'var(--forest-deep)' : '#c04040' }}>
                       {hasGold ? '✓' : '✗'} Gold
                     </span>
                     <span style={{ color: hasGold ? '#6a9a4a' : '#8a3a2a' }}>
@@ -841,7 +853,7 @@ function BlacksmithPanel({ onBack }) {
 
               {/* Stat preview */}
               {recipe && (
-                <div style={{ fontSize: '0.75rem', color: '#6a5a4a' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
                   {Object.entries(template.baseStats).map(([s, v]) => (
                     <span key={s} style={{ marginRight: '0.75rem', color: RARITY_CONFIG[selectedRarity].color }}>
                       +{Math.round(v * RARITY_CONFIG[selectedRarity].mult)} {s}
@@ -857,9 +869,9 @@ function BlacksmithPanel({ onBack }) {
                 className="px-4 py-2 rounded text-sm transition-all"
                 style={{
                   fontFamily: 'Cinzel, serif',
-                  background: canDoCraft ? '#1a1208' : '#0f0c08',
-                  color: canDoCraft ? '#d4af70' : '#4a3a2a',
-                  border: `1px solid ${canDoCraft ? '#6a5018' : '#1a1410'}`,
+                  background: canDoCraft ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                  color: canDoCraft ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                  border: `1px solid ${canDoCraft ? '#6a5018' : 'var(--parchment-shadow)'}`,
                   cursor: canDoCraft ? 'pointer' : 'not-allowed',
                 }}
               >
@@ -878,7 +890,7 @@ function BlacksmithPanel({ onBack }) {
               )}
 
               {craftMsg && (
-                <p style={{ color: craftMsg.startsWith('✗') ? '#c06040' : '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>
+                <p style={{ color: craftMsg.startsWith('✗') ? '#c06040' : 'var(--forest-deep)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>
                   {craftMsg}
                 </p>
               )}
@@ -928,7 +940,7 @@ function KnightTrainerPanel({ onBack }) {
   const activeQuests = Array.isArray(world.activeQuests) ? world.activeQuests : []
   const completedQuests = Array.isArray(world.completedQuests) ? world.completedQuests : []
 
-  const flash = (text, color = '#80c040') => {
+  const flash = (text, color = 'var(--forest-deep)') => {
     setMsg({ text, color })
     setTimeout(() => setMsg(null), 2500)
   }
@@ -960,7 +972,7 @@ function KnightTrainerPanel({ onBack }) {
 
   return (
     <Panel title="⚔ Sir Aldric — Knight of Millhaven" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.83rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.83rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "I have fought for twenty years. Let me spare you the worst of the lessons."
       </p>
 
@@ -973,9 +985,9 @@ function KnightTrainerPanel({ onBack }) {
             className="px-3 py-1 rounded text-xs capitalize"
             style={{
               fontFamily: 'Cinzel, serif',
-              background: tab === t ? '#1a1408' : '#0f0c08',
-              color: tab === t ? '#d4af70' : '#4a3a2a',
-              border: `1px solid ${tab === t ? '#3a2818' : '#1a1410'}`,
+              background: tab === t ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+              color: tab === t ? 'var(--amber-deep)' : 'var(--ink-soft)',
+              border: `1px solid ${tab === t ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
             }}
           >
             {t === 'quests' ? '📜 Quests' : '⚔ Techniques'}
@@ -998,10 +1010,10 @@ function KnightTrainerPanel({ onBack }) {
             const isDone = completedQuests.includes(questId)
             const canComplete = isActive && isQuestComplete(questId)
 
-            let statusColor = '#4a3a2a'
+            let statusColor = 'var(--ink-soft)'
             let statusLabel = 'Not started'
-            if (isDone) { statusColor = '#80c040'; statusLabel = 'Completed ✓' }
-            else if (canComplete) { statusColor = '#d4af70'; statusLabel = 'Ready to claim!' }
+            if (isDone) { statusColor = 'var(--forest-deep)'; statusLabel = 'Completed ✓' }
+            else if (canComplete) { statusColor = 'var(--amber-deep)'; statusLabel = 'Ready to claim!' }
             else if (isActive) { statusColor = '#6a9a4a'; statusLabel = 'In progress' }
 
             return (
@@ -1009,17 +1021,17 @@ function KnightTrainerPanel({ onBack }) {
                 key={questId}
                 className="p-3 rounded"
                 style={{
-                  background: '#0f0c08',
-                  border: `1px solid ${isDone ? '#2a3a18' : canComplete ? '#4a3a18' : '#1a1410'}`,
+                  background: 'rgba(201,169,110,.18)',
+                  border: `1px solid ${isDone ? 'rgba(74,124,47,.16)' : canComplete ? '#4a3a18' : 'var(--parchment-shadow)'}`,
                   opacity: isDone ? 0.6 : 1,
                 }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
-                    <p style={{ fontFamily: 'Cinzel, serif', color: isDone ? '#4a5a2a' : '#d4af70', fontSize: '0.88rem' }}>
+                    <p style={{ fontFamily: 'Cinzel, serif', color: isDone ? '#4a5a2a' : 'var(--amber-deep)', fontSize: '0.88rem' }}>
                       {quest.name}
                     </p>
-                    <p style={{ color: '#5a4a3a', fontSize: '0.75rem', marginTop: '0.2rem', fontStyle: 'italic' }}>
+                    <p style={{ color: 'var(--ink-soft)', fontSize: '0.75rem', marginTop: '0.2rem', fontStyle: 'italic' }}>
                       {quest.flavorText}
                     </p>
                     {/* Objectifs */}
@@ -1036,14 +1048,14 @@ function KnightTrainerPanel({ onBack }) {
                         }
                         const done = current >= target
                         return (
-                          <p key={obj.id} style={{ color: done ? '#80c040' : '#6a5a3a', fontSize: '0.72rem' }}>
+                          <p key={obj.id} style={{ color: done ? 'var(--forest-deep)' : 'var(--ink-soft)', fontSize: '0.72rem' }}>
                             {done ? '✓' : '○'} {obj.label} ({Math.min(current, target)}/{target})
                           </p>
                         )
                       })}
                     </div>
                     {/* Récompense */}
-                    <p style={{ color: '#6a5a3a', fontSize: '0.7rem', marginTop: '0.4rem' }}>
+                    <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', marginTop: '0.4rem' }}>
                       Reward: {quest.reward.skill && `${SKILLS[quest.reward.skill.skillId]?.name ?? quest.reward.skill.skillId}`}
                       {quest.reward.gold && ` · ${quest.reward.gold}g`}
                     </p>
@@ -1056,7 +1068,7 @@ function KnightTrainerPanel({ onBack }) {
                       <button
                         onClick={() => { startQuest(questId); flash(`Quest accepted: ${quest.name}`) }}
                         className="px-2 py-0.5 rounded text-xs"
-                        style={{ fontFamily: 'Cinzel, serif', background: '#0f1808', color: '#80c040', border: '1px solid #2a4020' }}
+                        style={{ fontFamily: 'Cinzel, serif', background: 'rgba(74,124,47,.16)', color: 'var(--forest-deep)', border: '1px solid rgba(74,124,47,.4)' }}
                       >
                         Accept
                       </button>
@@ -1065,7 +1077,7 @@ function KnightTrainerPanel({ onBack }) {
                       <button
                         onClick={() => { completeQuest(questId); flash(`Quest complete! Reward claimed.`) }}
                         className="px-2 py-0.5 rounded text-xs"
-                        style={{ fontFamily: 'Cinzel, serif', background: '#1a1408', color: '#d4af70', border: '1px solid #4a3a18' }}
+                        style={{ fontFamily: 'Cinzel, serif', background: 'rgba(212,160,23,.18)', color: 'var(--amber-deep)', border: '1px solid #4a3a18' }}
                       >
                         Claim
                       </button>
@@ -1108,22 +1120,22 @@ function KnightTrainerPanel({ onBack }) {
                   key={trade.skillId}
                   className="flex items-center justify-between p-3 rounded"
                   style={{
-                    background: '#0f0c08',
-                    border: `1px solid ${alreadyOwns ? '#2a3a18' : '#1a1410'}`,
+                    background: 'rgba(201,169,110,.18)',
+                    border: `1px solid ${alreadyOwns ? 'rgba(74,124,47,.16)' : 'var(--parchment-shadow)'}`,
                     opacity: alreadyOwns ? 0.55 : 1,
                   }}
                 >
                   <div className="flex-1">
-                    <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.88rem' }}>
+                    <p style={{ fontFamily: 'Cinzel, serif', color: 'var(--amber-deep)', fontSize: '0.88rem' }}>
                       {skill.name}
                       <span className="ml-2 text-xs" style={{ color: skill.type === 'active' ? '#60c0a0' : '#c084fc' }}>
                         [{skill.type}]
                       </span>
                     </p>
-                    <p style={{ color: '#5a4a3a', fontSize: '0.73rem', fontStyle: 'italic', marginTop: '0.15rem' }}>
+                    <p style={{ color: 'var(--ink-soft)', fontSize: '0.73rem', fontStyle: 'italic', marginTop: '0.15rem' }}>
                       {trade.description}
                     </p>
-                    <p style={{ color: '#6a5a3a', fontSize: '0.7rem', marginTop: '0.2rem' }}>
+                    <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', marginTop: '0.2rem' }}>
                       Cost: {costLabel}
                     </p>
                   </div>
@@ -1133,9 +1145,9 @@ function KnightTrainerPanel({ onBack }) {
                     className="ml-3 px-3 py-1 rounded text-xs shrink-0"
                     style={{
                       fontFamily: 'Cinzel, serif',
-                      background: alreadyOwns ? '#0f0c08' : canBuy ? '#1a1208' : '#0f0c08',
-                      color: alreadyOwns ? '#3a4a2a' : canBuy ? '#d4af70' : '#4a3a2a',
-                      border: `1px solid ${alreadyOwns ? '#2a3a18' : canBuy ? '#3a2818' : '#1a1410'}`,
+                      background: alreadyOwns ? 'rgba(201,169,110,.18)' : canBuy ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                      color: alreadyOwns ? '#3a4a2a' : canBuy ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                      border: `1px solid ${alreadyOwns ? 'rgba(74,124,47,.16)' : canBuy ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
                       cursor: canBuy ? 'pointer' : 'not-allowed',
                     }}
                   >
@@ -1159,11 +1171,11 @@ function Panel({ title, onBack, children }) {
       <div className="flex items-center gap-3 mb-4">
         <button
           onClick={onBack}
-          style={{ color: '#6a5a4a', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}
+          style={{ color: 'var(--ink-soft)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}
         >
           ← Back
         </button>
-        <h3 style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '1rem' }}>
+        <h3 style={{ fontFamily: 'Cinzel, serif', color: 'var(--amber-deep)', fontSize: '1rem' }}>
           {title}
         </h3>
       </div>
@@ -1174,9 +1186,9 @@ function Panel({ title, onBack, children }) {
 
 function InfoLine({ label, value }) {
   return (
-    <div className="flex justify-between items-center py-1 border-b" style={{ borderColor: '#1a1410' }}>
-      <span style={{ color: '#6a5a4a', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>{label}</span>
-      <span style={{ color: '#d4af70', fontSize: '0.85rem' }}>{value}</span>
+    <div className="flex justify-between items-center py-1 border-b" style={{ borderColor: 'var(--parchment-shadow)' }}>
+      <span style={{ color: 'var(--ink-soft)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>{label}</span>
+      <span style={{ color: 'var(--amber-deep)', fontSize: '0.85rem' }}>{value}</span>
     </div>
   )
 }
@@ -1184,7 +1196,7 @@ function InfoLine({ label, value }) {
 function SidebarStat({ label, value, color }) {
   return (
     <div>
-      <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {label}
       </p>
       <p style={{ color, fontSize: '0.9rem' }}>{value}</p>

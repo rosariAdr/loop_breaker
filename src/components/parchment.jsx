@@ -16,24 +16,28 @@ export function ArtSlot({ caption, src, w, h, round, glow, style, className = ''
   )
 }
 
-// Avatar héros chibi (idle animé) + halo doré + plaque de nom.
-// idleFrames > 1 → cycle /sprites/hero/idle/NN.png ; sinon sprite statique `src`.
-export function HeroAvatar({ x, y, name = 'Kael', src, idleFrames = 18, fps = 9 }) {
+// Avatar héros chibi (idle animé, ou walking pendant un voyage) + halo + plaque.
+// idleFrames > 1 → cycle /sprites/hero/<idle|walking>/NN.png ; sinon sprite statique `src`.
+export function HeroAvatar({ x, y, name = 'Kael', src, idleFrames = 18, fps = 9, walking = false, walkFrames = 24, walkFps = 14 }) {
   const animated = idleFrames > 1
   const [frame, setFrame] = useState(0)
+
+  const dir = walking ? 'walking' : 'idle'
+  const frames = walking ? walkFrames : idleFrames
+  const animFps = walking ? walkFps : fps
 
   useEffect(() => {
     if (!animated) return undefined
     // Préchargement pour éviter le scintillement au 1er cycle
-    for (let i = 0; i < idleFrames; i++) {
+    for (let i = 0; i < frames; i++) {
       const im = new Image()
-      im.src = `/sprites/hero/idle/${String(i).padStart(2, '0')}.png`
+      im.src = `/sprites/hero/${dir}/${String(i).padStart(2, '0')}.png`
     }
-    const id = setInterval(() => setFrame(f => (f + 1) % idleFrames), Math.round(1000 / fps))
+    const id = setInterval(() => setFrame(f => (f + 1) % frames), Math.round(1000 / animFps))
     return () => clearInterval(id)
-  }, [animated, idleFrames, fps])
+  }, [animated, dir, frames, animFps])
 
-  const frameSrc = animated ? `/sprites/hero/idle/${String(frame).padStart(2, '0')}.png` : src
+  const frameSrc = animated ? `/sprites/hero/${dir}/${String(frame % frames).padStart(2, '0')}.png` : src
 
   return (
     <div className="hero-avatar" style={{ left: x, top: y }}>

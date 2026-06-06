@@ -32,6 +32,7 @@ export default function WorldMap() {
   const { world, hero, setScreen, discoverDungeon, travelTo } = useGameStore()
   const [tip, setTip] = useState(null)
   const [qteOpen, setQteOpen] = useState(false)
+  const [walking, setWalking] = useState(false) // TRV02 — animation de marche pendant un voyage
 
   const totalAshenvaleKills = Object.entries(world.monsterKillCounts)
     .filter(([id]) => MONSTERS[id]?.zone === 'ashenvale')
@@ -53,11 +54,16 @@ export default function WorldMap() {
   }
   // TRV01 — clic node : entrer (node courant) · voyager (adjacent, +3 tics) · bloqué (sinon)
   const onNode = (node) => {
+    if (walking) return // TRV02 — input verrouillé pendant la marche
     if (node.id === heroNode) {
       if (node.kind === 'city' || node.kind === 'village') goSafe(node.id)
       else if (node.kind === 'spot') goHunt(node.id)
     } else if (areAdjacent(heroNode, node.id)) {
+      // TRV02 — marche animée : le héros glisse A→B (transition CSS) en jouant les
+      // frames walking, puis arrivée (travelTo applique la position + le coût de tics).
+      setWalking(true)
       travelTo(node.id)
+      setTimeout(() => setWalking(false), 700)
     } else {
       const p = POS[node.id]
       setTip(p ? { x: p.x, y: p.y - 8, text: 'Too far — travel via connected paths first.' } : null)
@@ -136,7 +142,7 @@ export default function WorldMap() {
       </div>
 
       {/* Héros (légèrement au-dessus du node courant) */}
-      <HeroAvatar x={`${heroPos.x}%`} y={`${heroPos.y - 1.5}%`} name={hero.name} src={HERO_SPRITE} />
+      <HeroAvatar x={`${heroPos.x}%`} y={`${heroPos.y - 1.5}%`} name={hero.name} src={HERO_SPRITE} walking={walking} />
 
       {/* Tooltip */}
       {tip && <div className="lb-tip" style={{ left: `${tip.x}%`, top: `${tip.y}%` }}>{tip.text}</div>}

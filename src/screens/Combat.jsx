@@ -224,6 +224,7 @@ export default function Combat() {
 
   const bossStateRef = useRef({ enraged: false, lastPhase: 1 }) // BSS01/03
   const assassinatedRef = useRef(new Set()) // GLT02 — ennemis tués en 1 coup depuis HP max
+  const resolvedRef = useRef(false) // garde anti-double résolution (victoire/défaite)
   const [gluttonyChoice, setGluttonyChoice] = useState(null) // GLT02 — { monsterId } pour le modal de choix
   const heroStatsRef = useRef(heroStats)
   // Mise à jour du ref hors render (évite l'erreur ESLint react-hooks/refs)
@@ -260,6 +261,7 @@ export default function Combat() {
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!activeCombat) return
+    resolvedRef.current = false
     const initial = activeCombat.enemies
     setEnemies(initial)
     setIsBoss(initial.some(e => ['boss', 'demon_lord', 'elite'].includes(e.rank)))
@@ -270,6 +272,8 @@ export default function Combat() {
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const finishCombat = useCallback((outcome, cause = 'Unknown enemy') => {
+    if (resolvedRef.current) return
+    resolvedRef.current = true
     const finalStats = heroStatsRef.current
     useGameStore.setState(state => ({
       hero: {
@@ -287,6 +291,8 @@ export default function Combat() {
   }, [addLog])
 
   const handleVictory = useCallback((defeatedEnemies) => {
+    if (resolvedRef.current) return // évite double-comptage si déclenché plusieurs fois
+    resolvedRef.current = true
     addLog('Victory!', 'victory')
     setCombatStats(s => ({ ...s, kills: defeatedEnemies.length }))  // B08
     const allLoot = []
@@ -340,6 +346,18 @@ export default function Combat() {
     setPhase('result')
     if (divineCall) setTimeout(() => triggerDivineCall(divineCall), 1500)
   }, [addLog, addResource, addGold, addSkillToInventory, recordKill, gainExp, triggerDivineCall, hero, world, meta, absorbGluttony])
+
+  // Filet de sécurité anti-combat-bloqué : si on se retrouve au tour du joueur
+  // (non animé) avec TOUS les ennemis vaincus — ex. course entre les setTimeout du
+  // combat — déclencher la victoire au lieu de rester coincé. Idempotent (resolvedRef).
+  useEffect(() => {
+    if (phase === 'player' && !isAnimating && enemies.length > 0
+        && enemies.every(isDefeated) && !resolvedRef.current) {
+      const t = setTimeout(() => handleVictory(enemies), 0)
+      return () => clearTimeout(t)
+    }
+    return undefined
+  }, [phase, isAnimating, enemies, handleVictory])
 
   const enemyTurn = useCallback((aliveEnemies) => {
     // B05 — tick des effets de statut (DoT + stun) au début du tour ennemi
