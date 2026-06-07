@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { MONSTERS } from '../data/monsters'
 import { QUESTS } from '../data/quests'
-import { SKILLS } from '../data/skills'
+import { SKILLS, SKILL_MAX_LEVEL, skillXpForLevel } from '../data/skills'
 import { RESOURCES } from '../data/resources'
 import { createEquipmentInstance } from '../data/equipment'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
@@ -577,8 +577,9 @@ export const useGameStore = create((set, get) => ({
         skills.map((s) => {
           if (s.skillId !== skillId) return s
           const newXp = s.xp + xpAmount
-          const xpNeeded = s.level === 1 ? 20 : 50
-          if (newXp >= xpNeeded && s.level < 3) {
+          // SKL01 — paliers d'XP jusqu'au niveau 5 (était 3) via skillXpForLevel.
+          const xpNeeded = skillXpForLevel(s.level)
+          if (newXp >= xpNeeded && s.level < SKILL_MAX_LEVEL) {
             const toLevel = s.level + 1
             levelUps.push({
               id: `${skillId}_${Date.now()}_${Math.random()}`,
@@ -945,12 +946,15 @@ export const useGameStore = create((set, get) => ({
       const { pendingInheritance } = state.meta
       if (!pendingInheritance) return state
 
-      // Stats de base + héritage (+10% sur la stat choisie)
+      // Stats de base + héritage de stat (TRM01)
       const newStats = { ...INITIAL_HERO.stats }
       if (pendingInheritance.stat) {
-        newStats[pendingInheritance.stat] = Math.round(
-          INITIAL_HERO.stats[pendingInheritance.stat] * 1.10
-        )
+        const stat = pendingInheritance.stat
+        const base = INITIAL_HERO.stats[stat] ?? 0
+        // TRM01 — « ramener davantage » : 40% de la valeur ATTEINTE pendant le run
+        // (lastRunSummary), avec plancher = base (jamais sous la stat de départ).
+        const runValue = state.meta.lastRunSummary?.stats?.[stat] ?? base
+        newStats[stat] = Math.max(base, Math.round(runValue * 0.4))
       }
       newStats.hp = newStats.maxHp = 100
       newStats.mana = newStats.maxMana = 60

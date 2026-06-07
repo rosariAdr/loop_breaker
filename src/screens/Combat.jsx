@@ -22,6 +22,7 @@ import {
 } from '../engine/combat'
 import { getMalacharPhase, getCryptKeeperEnrage, rollCursedStrike, CURSED_STRIKE_EFFECT } from '../engine/bossMechanics'
 import { hasGluttony, isGluttonyReady, rollGluttonyProc, GLUTTONY_STATS } from '../engine/gluttony'
+import { getPassiveModifiers, PASSIVE_XP_PER_HIT } from '../engine/passives'
 
 // B05 — icône + libellé par type d'effet de statut (cf. DESIGN.md §B05-SPEC)
 const STATUS_META = {
@@ -38,7 +39,10 @@ const STATUS_META = {
 // B05 — construit l'instance d'effet à appliquer depuis le template d'un skill,
 // en intégrant les bonus de niveau (tickDamageBonus, etc.).
 function buildStatusEffectInstance(statusEffect, level = 1, levelBonuses = {}) {
-  const bonus = levelBonuses[level] ?? {}
+  // SKL01 — anti-régression au-delà du dernier palier défini (skills jusqu'à Lv5)
+  const _defined = Object.keys(levelBonuses).map(Number)
+  const _lvKey = _defined.length && level > Math.max(..._defined) ? Math.max(..._defined) : level
+  const bonus = levelBonuses[_lvKey] ?? {}
   return {
     id: `${statusEffect.type}_${Date.now()}_${Math.random()}`,
     type: statusEffect.type,
@@ -209,9 +213,14 @@ export default function Combat() {
   })
   // CRF01 — les debuffs passifs réduisent les stats de combat
   const effectiveBaseStats = applyDebuffsToStats(equippedStats, hero.activeDebuffs ?? [])
+  // SKL-PASS — les passifs équipés boostent les PV max en combat (ex. Veteran's Resolve +20%)
+  const passiveMods = getPassiveModifiers(hero.passiveSkills)
+  const combatBaseStats = passiveMods.maxHpBonus > 0
+    ? { ...effectiveBaseStats, maxHp: Math.round(effectiveBaseStats.maxHp * (1 + passiveMods.maxHpBonus)) }
+    : effectiveBaseStats
 
   const [enemies, setEnemies] = useState(activeCombat?.enemies ?? [])
-  const [heroStats, setHeroStats] = useState(effectiveBaseStats)
+  const [heroStats, setHeroStats] = useState(combatBaseStats)
   const [heroSkills, setHeroSkills] = useState(
     hero.activeSkills.map(s => ({ ...s, currentCooldown: 0 }))
   )
@@ -486,7 +495,11 @@ export default function Combat() {
             }
           }
         }
-        addLog(action.log, 'enemy')
+        // SKL-PASS — réduction de dégâts des passifs équipés (Stone Skin, Thick Hide, Stoneskin…)
+        const pMods = getPassiveModifiers(useGameStore.getState().hero.passiveSkills)
+        if (pMods.damageReduction > 0) dmg = Math.max(0, Math.round(dmg * (1 - pMods.damageReduction)))
+        // Log reconstruit avec les dégâts FINAUX (cohérent avec réduction + mécaniques de boss)
+        addLog(`${enemy.name} attacks for ${dmg} damage!`, 'enemy')
         // B02 — flash sur l'ennemi qui attaque
         setAttackingEnemyId(enemy.id)
         setTimeout(() => setAttackingEnemyId(null), 400)
@@ -499,6 +512,11 @@ export default function Combat() {
           if (newHp <= 0) setTimeout(() => finishCombat('defeat', enemy.name), 300)
           return { ...prev, hp: newHp }
         })
+        // SKL-PASS — chaque passif équipé gagne de l'XP à chaque coup encaissé (impact passif)
+        if (dmg > 0) {
+          const ps = useGameStore.getState().hero.passiveSkills
+          ps.forEach(p => useGameStore.getState().gainSkillXp(p.skillId, PASSIVE_XP_PER_HIT))
+        }
         setHeroHitFlash(true)
         setAnimatingHero(true)
         setTimeout(() => { setHeroHitFlash(false); setAnimatingHero(false) }, 400)
@@ -748,7 +766,8 @@ export default function Combat() {
       style={{ minHeight: 'calc(100vh - 48px)', background: arenaBg }}
     >
       {/* ── Arène ── */}
-      <div className="flex flex-col flex-1">
+      {/* ANIM01 — screen shake léger quand le héros encaisse un coup */}
+      <div className={`flex flex-col flex-1${animatingHero ? ' anim-arena-shake' : ''}`}>
 
         {/* Zone ennemis — haut, centré */}
         <div className="flex justify-center items-end gap-10 px-8 pt-6 pb-4" style={{ minHeight: '200px' }}>
@@ -909,7 +928,7 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
 
   return (
     <div
-      className={`flex flex-col items-center gap-2.5 transition-all duration-300 relative${isHit ? ' anim-shake' : ''}${isAttacking ? ' anim-flash' : ''}`}
+      className={`flex flex-col items-center gap-2.5 transition-all duration-300 relative${isHit ? ' anim-hit-react' : ''}${isAttacking ? ' anim-enemy-attack' : ''}`}
       style={{ opacity: dead ? 0.22 : 1, cursor: dead ? 'default' : 'pointer' }}
       onClick={onSelect}
     >
@@ -930,6 +949,8 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
 
       {/* Portrait — 128px, badge en overlay */}
       <div className="relative">
+        {/* ANIM01 — étincelle d'impact au coup reçu */}
+        {isHit && !dead && <span className="impact-spark" data-testid="impact-spark" />}
         <div
           className="flex items-center justify-center transition-all duration-200 overflow-hidden"
           style={{
@@ -1021,8 +1042,8 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
 
 // ── Carte héros ───────────────────────────────────────────────────────────────
 function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking, floatingNumbers = [], heroEffects = [] }) {
-  // B13 — anim-hero-attack lors d'une attaque ; prend le pas sur anim-flash si actif
-  const animClass = isAttacking ? ' anim-hero-attack' : isAnimHit ? ' anim-flash' : ''
+  // B13 — anim-hero-attack lors d'une attaque ; ANIM01 — hit-react quand le héros encaisse
+  const animClass = isAttacking ? ' anim-hero-attack' : isAnimHit ? ' anim-hit-react' : ''
   return (
     <div className={`flex items-center gap-6 relative${animClass}`}>
       {/* B07 — Nombres flottants (dégâts reçus / soins) */}
@@ -1031,6 +1052,7 @@ function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking
       <div
         className="flex items-center justify-center flex-shrink-0"
         style={{
+          position: 'relative',
           width: '96px',
           height: '96px',
           fontSize: '2.8rem',
@@ -1045,6 +1067,8 @@ function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking
           transition: 'all 0.15s ease',
         }}
       >
+        {/* ANIM01 — étincelle d'impact quand le héros encaisse */}
+        {isAnimHit && <span className="impact-spark" data-testid="impact-spark-hero" />}
         <HeroBattleSprite />
       </div>
 

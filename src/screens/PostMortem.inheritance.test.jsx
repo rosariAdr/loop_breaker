@@ -27,10 +27,12 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('PostMortem — héritage', () => {
-  it('le bouton "Enter the Gods\' Shop" est inactif tant qu\'aucune stat choisie', () => {
+  it('le bouton "Enter the Gods\' Shop" est actif par défaut (stat présélectionnée — TRM01)', () => {
     render(<PostMortem />)
+    // TRM01 — une stat (la plus haute du run) est présélectionnée → le joueur ne peut plus
+    // « oublier » d'hériter une stat ; le bouton est donc actif d'emblée.
     const btn = screen.getByText(/Enter the Gods' Shop/).closest('button')
-    expect(btn.disabled).toBe(true)
+    expect(btn.disabled).toBe(false)
   })
 
   it('choisir une stat active le bouton', () => {

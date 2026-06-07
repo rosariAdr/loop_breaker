@@ -5,6 +5,7 @@ import { ZONES } from '../data/zones'
 import { RESOURCES } from '../data/resources'
 import { SKILLS } from '../data/skills'
 import { QUESTS } from '../data/quests'
+import { isBuildingOpen, nextOpenHour } from '../data/buildingHours'
 import {
   EQUIPMENT_TEMPLATES,
   RARITY_TIERS,
@@ -136,13 +137,18 @@ const BLD_POS = {
   master_smith:   { x: 50, y: 88 },
 }
 
-function VilBuilding({ id, info, onClick }) {
+function VilBuilding({ id, info, onClick, closed = false }) {
   const p = BLD_POS[id]
   if (!p || !info) return null
   return (
-    <div className="bld" style={{ left: `${p.x}%`, top: `${p.y}%` }} onClick={onClick}>
+    <div
+      className="bld"
+      style={{ left: `${p.x}%`, top: `${p.y}%`, opacity: closed ? 0.55 : 1, filter: closed ? 'grayscale(0.5)' : 'none' }}
+      onClick={onClick}
+      title={closed ? 'Closed' : undefined}
+    >
       <div className="bld-frame"><ArtSlot caption={info.name} w={120} h={80} /></div>
-      <div className="bld-sign"><span>{info.icon}</span>{info.name}</div>
+      <div className="bld-sign"><span>{info.icon}</span>{info.name}{closed && <span style={{ marginLeft: 4, fontSize: '0.7em', opacity: 0.8 }}>🔒</span>}</div>
     </div>
   )
 }
@@ -166,7 +172,17 @@ export default function SafeZone() {
   const [activeBuilding, setActiveBuilding] = useState(null)
   const [showPanel, setShowPanel] = useState(false)
 
-  const openBuilding = (id) => { setActiveBuilding(id); setShowPanel(false) }
+  const openBuilding = (id) => {
+    // BLD01 — un bâtiment fermé refuse l'entrée + indique son heure d'ouverture (inn = 24/24).
+    if (!isBuildingOpen(id, world.tickCount)) {
+      useToastStore.getState().addToast(
+        `${BUILDING_INFO[id]?.name ?? id} is closed — opens at ${nextOpenHour(id)}:00.`,
+        'warning',
+      )
+      return
+    }
+    setActiveBuilding(id); setShowPanel(false)
+  }
   const closeBuilding = () => { setActiveBuilding(null); setShowPanel(false) }
 
   const zone = ZONES[world.currentZone]
@@ -258,7 +274,7 @@ export default function SafeZone() {
 
         {/* Bâtiments */}
         {buildings.map(id => (
-          <VilBuilding key={id} id={id} info={BUILDING_INFO[id]} onClick={() => openBuilding(id)} />
+          <VilBuilding key={id} id={id} info={BUILDING_INFO[id]} closed={!isBuildingOpen(id, world.tickCount)} onClick={() => openBuilding(id)} />
         ))}
 
         {/* Héros près du puits */}

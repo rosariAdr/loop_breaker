@@ -11,7 +11,13 @@ export default function PostMortem() {
   const showFirstDeathHint = !meta.firstDeathSeen && meta.totalDeaths <= 1
 
   // Sélection de l'héritage
-  const [chosenStat, setChosenStat] = useState(null)
+  // TRM01 — présélectionner la stat la plus haute du run (sinon, si le joueur ne clique
+  // rien, AUCUNE stat n'était héritée → « ma stat n'a pas été ramenée »).
+  const [chosenStat, setChosenStat] = useState(() => {
+    const keys = ['strength', 'agility', 'intelligence', 'chance', 'def']
+    const stats = summary?.stats ?? {}
+    return keys.reduce((best, k) => ((stats[k] ?? 0) > (stats[best] ?? 0) ? k : best), keys[0])
+  })
   const [chosenActive, setChosenActive] = useState(null)
   // UX03 — confirmation reset
   const [pendingReset, setPendingReset] = useState(false)

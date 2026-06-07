@@ -84,7 +84,9 @@ describe('Scénario 1 — Premier run complet', () => {
     expect(store().hero.runNumber).toBe(2)
     expect(store().hero.deathCount).toBe(1)
     expect(store().hero.activeSkills.some(s => s.skillId === 'counter_strike')).toBe(true)
-    expect(store().hero.stats.strength).toBeGreaterThan(10) // +10% sur la stat héritée (base=10 → 11)
+    // TRM01 — héritage = max(base, round(stat_du_run × 0.4)). Le run 1 (mort Lv1) n'a pas fait
+    // monter la force → plancher = base (10). Plus de bonus +10% systématique.
+    expect(store().hero.stats.strength).toBeGreaterThanOrEqual(10)
     expect(store().world.dayCount).toBe(1) // nouveau run, jour 1
     expect(store().currentScreen).toBe('world_map')
   })

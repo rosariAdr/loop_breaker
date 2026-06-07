@@ -928,12 +928,37 @@ export const SKILLS = {
 }
 
 // Utilitaire : calculer les stats d'un skill selon son niveau actuel
+// SKL01 — les skills montent désormais jusqu'au niveau 5 (était 3).
+export const SKILL_MAX_LEVEL = 5
+// Seuils d'XP cumulés par palier : 1→2, 2→3, 3→4, 4→5.
+export const SKILL_XP_THRESHOLDS = [20, 50, 90, 140]
+/** XP nécessaire pour passer de `level` au suivant (Infinity si déjà au max). */
+export function skillXpForLevel(level) {
+  return SKILL_XP_THRESHOLDS[level - 1] ?? Infinity
+}
+
+/**
+ * SKL01 — bonus de niveau d'un skill, AVEC garde anti-régression au-delà du dernier
+ * niveau défini dans `levelBonuses` (les skills ne déclarent que {2,3}). Pour les
+ * niveaux 4-5 on conserve le dernier bonus défini (pas de retour aux stats de base).
+ * Les dégâts, eux, continuent de scaler linéairement via `calcSkillDamage` (+30%/niveau).
+ */
+export function getLevelBonus(template, level) {
+  const lb = template?.levelBonuses
+  if (!lb) return {}
+  if (lb[level]) return lb[level]
+  const defined = Object.keys(lb).map(Number)
+  if (!defined.length) return {}
+  const maxDef = Math.max(...defined)
+  return level > maxDef ? (lb[maxDef] ?? {}) : {}
+}
+
 export function getSkillStats(skillId, level) {
   const base = SKILLS[skillId]
   if (!base) return null
   if (level === 1) return { ...base }
 
-  const bonuses = base.levelBonuses[level] || {}
+  const bonuses = getLevelBonus(base, level)
   return { ...base, _levelBonuses: bonuses, level }
 }
 

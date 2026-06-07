@@ -79,6 +79,9 @@ export const CATALOG = [
     cost: 8,   // BAL01 : 15 → 8
     icon: '🔮',
     color: '#c0a060',
+    // TRM01 — option non encore implémentée (DV12, v2). Tant que c'est le cas elle reste
+    // NON achetable (sinon elle prélève 8 tokens sans aucun effet).
+    comingSoon: true,
   },
 ]
 
@@ -93,6 +96,7 @@ export default function GodsShop() {
   const bonusSkillBought = purchases.includes('bonus_skill')
 
   const spend = (item) => {
+    if (item.comingSoon) return // TRM01 — option non implémentée : non achetable
     if (tokens < item.cost) return
     if (purchases.includes(item.id) && item.id !== 'skill_levelup' && item.id !== 'starter_kit') return
     setTokens(t => t - item.cost)
@@ -165,7 +169,7 @@ export default function GodsShop() {
             const alreadyBought = purchases.includes(item.id) && item.id !== 'skill_levelup' && item.id !== 'starter_kit'
             const boughtCount = purchases.filter(p => p === item.id).length
             const canAfford = tokens >= item.cost
-            const disabled = alreadyBought || !canAfford
+            const disabled = alreadyBought || !canAfford || item.comingSoon // TRM01
 
             return (
               <div
@@ -199,7 +203,7 @@ export default function GodsShop() {
                     cursor: disabled ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {alreadyBought ? '✓ Bought' : `${item.cost} 🪙`}
+                  {item.comingSoon ? 'Soon' : alreadyBought ? '✓ Bought' : `${item.cost} 🪙`}
                 </button>
               </div>
             )

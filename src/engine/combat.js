@@ -2,7 +2,7 @@
 // Appelé par le store Zustand et l'écran Combat.jsx
 
 import { MONSTERS } from '../data/monsters'
-import { SKILLS } from '../data/skills'
+import { SKILLS, getLevelBonus } from '../data/skills'
 import { RESOURCES } from '../data/resources'
 import { scaleMonsterStats, ZONE_MULTS, ZONE_ORDER } from '../data/zones'
 import { checkIgnarethAwakening, checkSylvaraAwakening, checkVoltarisAwakening } from '../data/deities'
@@ -68,7 +68,8 @@ export function calcTurnOrder(hero, enemies) {
  */
 export function getScaledSkillCost(template, level) {
   if (!template) return { mana: 0, hp: 0 }
-  const reduction = template.levelBonuses?.[level]?.costReduction ?? 0
+  // SKL01 — anti-régression niveaux 4-5 : on garde la réduction du dernier palier défini.
+  const reduction = getLevelBonus(template, level).costReduction ?? 0
   return {
     mana: Math.max(0, Math.round(template.cost.mana * (1 - reduction))),
     hp: Math.max(0, Math.round(template.cost.hp * (1 - reduction))),

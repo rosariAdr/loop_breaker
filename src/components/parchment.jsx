@@ -18,7 +18,10 @@ export function ArtSlot({ caption, src, w, h, round, glow, style, className = ''
 
 // Avatar héros chibi (idle animé, ou walking pendant un voyage) + halo + plaque.
 // idleFrames > 1 → cycle /sprites/hero/<idle|walking>/NN.png ; sinon sprite statique `src`.
-export function HeroAvatar({ x, y, name = 'Kael', src, idleFrames = 18, fps = 9, walking = false, walkFrames = 24, walkFps = 14 }) {
+// WM-AVATAR — walkFps 14 → 28 : pendant un voyage la POSITION glisse à la même vitesse
+// (transition CSS 1.8s, cf. TRV04) mais le cycle de marche défile 2× plus vite → le perso
+// fait visiblement ~2× plus de pas sur le même trajet (sans aller plus vite sur la carte).
+export function HeroAvatar({ x, y, name = 'Kael', src, idleFrames = 18, fps = 9, walking = false, walkFrames = 24, walkFps = 28 }) {
   const animated = idleFrames > 1
   const [frame, setFrame] = useState(0)
 
