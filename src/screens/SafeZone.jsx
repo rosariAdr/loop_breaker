@@ -17,6 +17,11 @@ import { ALCHEMY_RECIPES, MASTER_RECIPES } from '../data/recipes'
 import CraftingMinigame from '../components/CraftingMinigame'
 import { ArtSlot, HeroAvatar, ParchmentFrame } from '../components/parchment'
 import { portraitSrc } from '../data/portraits'
+import { getDialogue, FALLBACK_DIALOGUE } from '../data/dialogues'
+import DialoguePanel from '../components/DialoguePanel'
+
+// NPC04 — arbre de dialogue par bâtiment (repli générique sinon)
+const TALK_ID = { inn: 'inn_marta', church: 'church_caelum', merchant: 'merchant_pell', blacksmith: 'blacksmith_bram' }
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
 
@@ -42,24 +47,26 @@ const NPCS = {
 // pas de 2e fenêtre). Les autres bâtiments ouvrent encore leur panneau via
 // onEnter (kind 'panel') — migration vers le corps du panneau en IMM02.
 function buildingActions(building, npc) {
-  switch (building) {
-    case 'inn':
-      return [
-        { ico: '🛏', label: 'Rest at the Inn', kind: 'rest', primary: true },
-        { ico: '📜', label: 'Quest Board', kind: 'nav', screen: 'quest_board' },
-      ]
-    default:
-      return [{ ico: npc.icon, label: npc.cta, kind: 'panel', primary: true }]
+  const talk = { ico: '💬', label: 'Talk', kind: 'talk' } // NPC04
+  if (building === 'inn') {
+    return [
+      { ico: '🛏', label: 'Rest at the Inn', kind: 'rest', primary: true },
+      { ico: '📜', label: 'Quest Board', kind: 'nav', screen: 'quest_board' },
+      talk,
+    ]
   }
+  return [{ ico: npc.icon, label: npc.cta, kind: 'panel', primary: true }, talk]
 }
 
 function NpcOverlay({ building, onClose, onEnter, showPanel, panel }) {
   const npc = NPCS[building]
   const { sleep, setScreen } = useGameStore()
   const [flash, setFlash] = useState(null)
+  const [talkDlg, setTalkDlg] = useState(null) // NPC04 — dialogue en cours
   if (!npc) return null
   const src = npc.role ? portraitSrc(npc.role, 'talk') : null
   const actions = buildingActions(building, npc)
+  const expanded = showPanel || talkDlg
 
   const run = (a) => {
     if (a.kind === 'rest') {
@@ -70,12 +77,14 @@ function NpcOverlay({ building, onClose, onEnter, showPanel, panel }) {
       setScreen(a.screen)
     } else if (a.kind === 'panel') {
       onEnter()
+    } else if (a.kind === 'talk') {
+      setTalkDlg(getDialogue(TALK_ID[building]) ?? FALLBACK_DIALOGUE)
     }
   }
 
   return (
     <div className="npc-scrim" onClick={onClose}>
-      <div className={`npc-panel ${showPanel ? 'has-panel' : ''}`} onClick={e => e.stopPropagation()}>
+      <div className={`npc-panel ${expanded ? 'has-panel' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="npc-portrait">
           <div className="pframe" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             {src
@@ -89,6 +98,11 @@ function NpcOverlay({ building, onClose, onEnter, showPanel, panel }) {
           {showPanel ? (
             // IMM02 — panneau fonctionnel rendu DANS la même fenêtre (plus de 2e fenêtre)
             <div className="npc-panel-host">{panel}</div>
+          ) : talkDlg ? (
+            // NPC04 — conversation (arbre de dialogue) dans la même fenêtre
+            <div className="npc-panel-host">
+              <DialoguePanel dialogue={talkDlg} speaker={`${npc.name} — ${npc.title}`} onClose={() => setTalkDlg(null)} />
+            </div>
           ) : (
             <>
               <div className="npc-eyebrow">{npc.name} — {npc.title}</div>
