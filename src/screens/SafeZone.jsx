@@ -19,6 +19,7 @@ import { ArtSlot, HeroAvatar, ParchmentFrame } from '../components/parchment'
 import { portraitSrc } from '../data/portraits'
 import { getDialogue, FALLBACK_DIALOGUE } from '../data/dialogues'
 import DialoguePanel from '../components/DialoguePanel'
+import InformantsPanel from '../components/InformantsPanel'
 
 // NPC04 — arbre de dialogue par bâtiment (repli générique sinon)
 const TALK_ID = { inn: 'inn_marta', church: 'church_caelum', merchant: 'merchant_pell', blacksmith: 'blacksmith_bram' }
@@ -52,6 +53,7 @@ function buildingActions(building, npc) {
     return [
       { ico: '🛏', label: 'Rest at the Inn', kind: 'rest', primary: true },
       { ico: '📜', label: 'Quest Board', kind: 'nav', screen: 'quest_board' },
+      { ico: '🕵', label: 'Ask around', kind: 'panel' }, // TAV01 — informateurs
       talk,
     ]
   }
@@ -267,7 +269,7 @@ export default function SafeZone() {
               : activeBuilding === 'blacksmith' ? <BlacksmithPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />
               : activeBuilding === 'master_smith' ? <MasterSmithPanel onBack={() => setShowPanel(false)} />
               : activeBuilding === 'knight_trainer' ? <KnightTrainerPanel onBack={() => setShowPanel(false)} />
-              : <InnPanel onBack={() => setShowPanel(false)} />
+              : <InformantsPanel onBack={() => setShowPanel(false)} />
           ) : null}
         />
       )}

@@ -101,6 +101,7 @@ export default function HeroSheet({ onClose }) {
                 <div className="dv"><div className="dv-num">#{hero.runNumber}</div><div className="dv-lbl">Run</div></div>
               </div>
               <button className="pbtn wide" onClick={() => setScreen('inventory')}>🎒 Inventory</button>
+              <button className="pbtn wide" style={{ marginTop: 6 }} onClick={() => setScreen('codex')}>📖 Bestiary</button>
             </div>
           </div>
 

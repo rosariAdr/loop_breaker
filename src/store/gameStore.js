@@ -176,6 +176,9 @@ const INITIAL_META = {
 
   // SET01 — réglages joueur (persistés avec meta)
   settings: { animations: true },
+
+  // TAV01 — infos achetées aux informateurs (persistant entre runs)
+  knownInfo: [], // [infoId, ...]
 }
 
 // ── Helpers purs (hors store) ─────────────────────────────────────────────────
@@ -1376,6 +1379,17 @@ export const useGameStore = create((set, get) => ({
   // SET01 — modifier un réglage joueur
   setSetting: (key, value) =>
     set((s) => ({ meta: { ...s.meta, settings: { ...(s.meta.settings ?? {}), [key]: value } } })),
+
+  // TAV01 — acheter une info à un informateur. @returns {boolean} succès
+  buyInfo: (id, price) => {
+    const { hero, meta } = get()
+    if ((meta.knownInfo ?? []).includes(id)) return false
+    if (hero.inventory.gold < price) return false
+    get().spendGold(price)
+    set((s) => ({ meta: { ...s.meta, knownInfo: [...(s.meta.knownInfo ?? []), id] } }))
+    useToastStore.getState().addToast('🕵 Information acquired.', 'info')
+    return true
+  },
 
   // TECH07 — Export / Import de save (fichier). Filet de sécurité + portabilité.
   exportSave: () => {

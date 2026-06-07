@@ -8,6 +8,7 @@ import ZoneView from './screens/ZoneView'
 import Combat from './screens/Combat'
 import HeroSheet from './screens/HeroSheet'
 import Inventory from './screens/Inventory'
+import CodexOverlay from './screens/CodexOverlay'
 import SafeZone from './screens/SafeZone'
 import PostMortem from './screens/PostMortem'
 import GodsShop from './screens/GodsShop'
@@ -25,7 +26,7 @@ import { Sidebar } from './components/parchment'
 // Écrans en takeover plein-canvas (sans topbar/breadcrumb)
 const FULLSCREEN = ['combat', 'post_mortem', 'gods_shop', 'divine_call']
 // IMM04 — écrans rendus en overlay AU-DESSUS du monde (immersion : on ne quitte pas la scène)
-const OVERLAY_SCREENS = ['hero_sheet', 'inventory']
+const OVERLAY_SCREENS = ['hero_sheet', 'inventory', 'codex']
 
 function App() {
   const {
@@ -117,6 +118,7 @@ function App() {
       case 'combat':      return <Combat />
       case 'hero_sheet':  return <HeroSheet onClose={overlayClose} />
       case 'inventory':   return <Inventory onClose={overlayClose} />
+      case 'codex':       return <CodexOverlay onClose={overlayClose} />
       case 'safe_zone':   return <SafeZone />
       case 'post_mortem': return <PostMortem />
       case 'gods_shop':   return <GodsShop />
