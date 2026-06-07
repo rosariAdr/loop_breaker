@@ -9,6 +9,7 @@ import Combat from './screens/Combat'
 import HeroSheet from './screens/HeroSheet'
 import Inventory from './screens/Inventory'
 import CodexOverlay from './screens/CodexOverlay'
+import QuestsOverlay from './screens/QuestsOverlay'
 import SafeZone from './screens/SafeZone'
 import PostMortem from './screens/PostMortem'
 import GodsShop from './screens/GodsShop'
@@ -26,7 +27,7 @@ import { Sidebar } from './components/parchment'
 // Écrans en takeover plein-canvas (sans topbar/breadcrumb)
 const FULLSCREEN = ['combat', 'post_mortem', 'gods_shop', 'divine_call']
 // IMM04 — écrans rendus en overlay AU-DESSUS du monde (immersion : on ne quitte pas la scène)
-const OVERLAY_SCREENS = ['hero_sheet', 'inventory', 'codex']
+const OVERLAY_SCREENS = ['hero_sheet', 'inventory', 'codex', 'quests']
 
 function App() {
   const {
@@ -119,6 +120,7 @@ function App() {
       case 'hero_sheet':  return <HeroSheet onClose={overlayClose} />
       case 'inventory':   return <Inventory onClose={overlayClose} />
       case 'codex':       return <CodexOverlay onClose={overlayClose} />
+      case 'quests':      return <QuestsOverlay onClose={overlayClose} />
       case 'safe_zone':   return <SafeZone />
       case 'post_mortem': return <PostMortem />
       case 'gods_shop':   return <GodsShop />
@@ -145,6 +147,8 @@ function App() {
       { ico: '🌙', label: 'Sleep', primary: true, onClick: () => sleep() },
       { ico: '⚔', label: 'Hero Sheet', onClick: () => setScreen('hero_sheet') },
       { ico: '🎒', label: 'Inventory', onClick: () => setScreen('inventory') },
+      // UI-BESTIARY-BTN — accès au bestiaire (CodexOverlay) depuis le panneau parchemin
+      { ico: '📖', label: 'Bestiary', onClick: () => setScreen('codex') },
     ],
   }
 
@@ -239,12 +243,14 @@ function Topbar({ onOpenSettings }) {
 
   const tabs = [
     { id: 'world_map', label: 'Map' },
+    { id: 'quests', label: 'Quests' }, // UI-QUESTS — suivi des quêtes actives (overlay)
     { id: 'hero_sheet', label: 'Hero' },
     { id: 'inventory', label: 'Bag' },
     { id: 'save', label: saveFlash ? '✓' : 'Save' },
   ]
   const activeTab = currentScreen === 'hero_sheet' ? 'hero_sheet'
-    : currentScreen === 'inventory' ? 'inventory' : 'world_map'
+    : currentScreen === 'inventory' ? 'inventory'
+    : currentScreen === 'quests' ? 'quests' : 'world_map'
 
   return (
     <div className="topbar">

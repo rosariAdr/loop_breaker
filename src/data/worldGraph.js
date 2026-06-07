@@ -11,7 +11,7 @@ export const POS = {
   ironhaven:        { x: 60, y: 56 },
   crumbled_ruins:   { x: 21, y: 59 },
   thornmarsh:       { x: 34, y: 79 },
-  barrow_hills:     { x: 51, y: 89 },
+  wildmere_hills:   { x: 51, y: 89 },
   crypt:            { x: 68, y: 83 }, // donjon (grotte)
   grimspire:        { x: 90, y: 45 }, // locked (overlay sur les montagnes)
 }
@@ -23,7 +23,7 @@ export const NODES = [
   { id: 'ironhaven', name: 'Ironhaven', kind: 'city', glow: 'amber' },
   { id: 'crumbled_ruins', name: 'Crumbled Ruins', kind: 'spot' },
   { id: 'thornmarsh', name: 'Thornmarsh', kind: 'spot' },
-  { id: 'barrow_hills', name: 'Barrow Hills', kind: 'spot' },
+  { id: 'wildmere_hills', name: 'Wildmere Hills', kind: 'spot' },
 ]
 
 // Graphe d'adjacence = source de vérité du déplacement (indépendant des chemins dessinés)
@@ -34,7 +34,7 @@ export const EDGES = [
   ['millhaven', 'thornmarsh'],
   ['millhaven', 'ironhaven'],
   ['ironhaven', 'thornmarsh'],
-  ['ironhaven', 'barrow_hills'],
+  ['ironhaven', 'wildmere_hills'],
   ['ironhaven', 'crypt'],
 ]
 

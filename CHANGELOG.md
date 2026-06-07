@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (MON01 — Refonte du bestiaire de surface)
+- **MON01** — Refonte des 4 spots d'Ashenvale : rosters revus (4 monstres/spot dont 1 élite). Ajouts : Thicket Hare, Tuskmaw Boar, Old Oakheart (forêt) ; Mire Slime, Fenrot Devourer (marais) ; Graven Sentinel (ruines, = ex-Grave Knight déplacé + renommé) ; Hill Slime, Russet Fox, Knoll Goblin, Thunderhoof (collines).
+- **MON01** — Zone **Barrow Hills → Wildmere Hills** (id `barrow_hills` → `wildmere_hills` renommé partout : monsters/zones/worldGraph/arène ; remap des saves dans `normalizeSave`).
+- **MON01** — Nouveau champ interne `skillDropType: 'active' | 'passive' | 'none'` sur chaque monstre. L'UI (clearing card + bestiaire) n'affiche **que le nom** du skill (jamais actif/passif) ; `none` → aucune ligne Technique.
+- **MON01** — 13 nouvelles techniques de bestiaire dans `skills.js` (9 actives + 4 passives). Ashwood Wolf conserve **Savage Bite**.
+- **MON01** — Rotting Shambler, Gloom Bat, Bog Shambler retirés ; Barrow Wight + Soul Harvester mis en **réserve** (`reserve: true`, jamais spawn en surface, conservés pour un usage futur). Quête `bog_purge` re-ciblée sur Mire Slime.
+
 ### Changed (Batch UI v1.1 — Design « parchemin », en cours)
 - **UI01** — Shell parchemin : canvas fixe 1920×1080 mis à l'échelle (`--lb-scale`), topbar bois (HP/MP/run/XP/day/tokens + onglets), breadcrumb, sidebar/journal partagés
 - **UI02** — WorldMap : carte illustrée en fond (`public/map/eldenmoor.png`), nodes en marqueurs discrets (%), trails SVG par graphe d'adjacence, Blighted Road + QTE

@@ -10,7 +10,7 @@ describe('worldGraph — adjacence', () => {
 
   it('areAdjacent = false pour des non-voisins', () => {
     expect(areAdjacent('greywatch', 'ironhaven')).toBe(false)
-    expect(areAdjacent('barrow_hills', 'greywatch')).toBe(false)
+    expect(areAdjacent('wildmere_hills', 'greywatch')).toBe(false)
   })
 
   it('areAdjacent = false pour un node avec lui-même', () => {
@@ -24,7 +24,7 @@ describe('worldGraph — adjacence', () => {
 
   it('neighborsOf liste tous les voisins (symétrique)', () => {
     const n = neighborsOf('ironhaven')
-    expect(n).toEqual(expect.arrayContaining(['millhaven', 'thornmarsh', 'barrow_hills', 'crypt']))
+    expect(n).toEqual(expect.arrayContaining(['millhaven', 'thornmarsh', 'wildmere_hills', 'crypt']))
     expect(n).toHaveLength(4)
   })
 

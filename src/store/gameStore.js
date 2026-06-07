@@ -3,6 +3,7 @@ import { MONSTERS } from '../data/monsters'
 import { QUESTS } from '../data/quests'
 import { SKILLS } from '../data/skills'
 import { RESOURCES } from '../data/resources'
+import { createEquipmentInstance } from '../data/equipment'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
 import { ZONES, getMonsterLevel } from '../data/zones'
 import { isEnemyTooStrong, buildEnemy } from '../engine/combat'
@@ -93,7 +94,7 @@ const INITIAL_HERO = {
 const INITIAL_WORLD = {
   currentZone: 'ashenvale',
   currentLocation: 'ironhaven', // ville/village où se trouve le héros
-  currentHuntingSpot: null,     // spot de chasse actif (ashenvale_forest | thornmarsh | crumbled_ruins | barrow_hills)
+  currentHuntingSpot: null,     // spot de chasse actif (ashenvale_forest | thornmarsh | crumbled_ruins | wildmere_hills)
   currentNode: 'ironhaven',     // TRV01 — position du héros sur la World Map (node)
 
   // Calendrier
@@ -283,6 +284,42 @@ function migrateV1ToV2(save) {
 }
 
 /**
+ * Backfill IDEMPOTENT des champs par défaut, appliqué à CHAQUE chargement quelle que
+ * soit la version de la save. Indispensable car les migrations sont *version-gated* :
+ * une save déjà à la version courante (ex. v2) qui a été écrite AVANT l'ajout d'un champ
+ * `meta`/`world`/`hero` ne repasse jamais par la migration et se retrouve avec ce champ
+ * `undefined` → crash à la première lecture non défensive.
+ *
+ * Cas réel corrigé : une save v2 sans `meta.seenHints` faisait throw `recordKill` au 5ᵉ
+ * kill (`state.meta.seenHints.includes(...)`) → compteurs de kills/quêtes bloqués + (avant
+ * le try/catch de handleVictory) combat figé. Le merge superficiel ré-injecte tout champ
+ * de premier niveau manquant SANS écraser les données existantes de la save.
+ */
+// MON01 — renommages d'ids de spots/nodes (decision 3 : id renommé partout). On remappe
+// les références persistées des vieilles saves pour qu'elles pointent toujours sur un spot
+// valide (sinon ZoneView/WorldMap casseraient sur un id disparu).
+const SPOT_ID_REMAP = { barrow_hills: 'wildmere_hills' }
+
+export function normalizeSave(save) {
+  if (!save || typeof save !== 'object') return save
+  const world = { ...INITIAL_WORLD, ...(save.world ?? {}) }
+  // Remap des ids de spot/node renommés
+  if (SPOT_ID_REMAP[world.currentHuntingSpot]) world.currentHuntingSpot = SPOT_ID_REMAP[world.currentHuntingSpot]
+  if (SPOT_ID_REMAP[world.currentNode]) world.currentNode = SPOT_ID_REMAP[world.currentNode]
+  return {
+    ...save,
+    hero: { ...INITIAL_HERO, ...(save.hero ?? {}) },
+    world,
+    meta: {
+      ...INITIAL_META,
+      ...(save.meta ?? {}),
+      // settings est imbriqué → fusion explicite pour ne pas perdre les sous-clés par défaut
+      settings: { ...INITIAL_META.settings, ...(save.meta?.settings ?? {}) },
+    },
+  }
+}
+
+/**
  * Applique toutes les migrations nécessaires en séquence pour amener
  * une save à la version courante (SAVE_VERSION).
  */
@@ -294,7 +331,8 @@ export function runMigrations(save) {
   // Ajouter les futures migrations ici :
   // if (fromVersion < 3) current = migrateV2ToV3(current)
 
-  return current
+  // Filet final : backfill des champs par défaut manquants, toutes versions confondues.
+  return normalizeSave(current)
 }
 
 // ── Store Zustand ─────────────────────────────────────────────────────────────
@@ -709,19 +747,22 @@ export const useGameStore = create((set, get) => ({
   // ── Kill count & idle ─────────────────────────────────────────────────────
   recordKill: (monsterId) =>
     set((state) => {
-      const current = state.world.monsterKillCounts[monsterId] || 0
+      const current = (state.world.monsterKillCounts ?? {})[monsterId] || 0
       const newCount = current + 1
 
       // TUT02 — Hint idle unlock : 1ère fois qu'un mob atteint 5 kills (seuil idle)
-      let newSeenHints = state.meta.seenHints
-      if (newCount >= 5 && !state.meta.seenHints.includes('idle_unlock')) {
+      // Accès défensif : `seenHints` peut être absent d'une vieille save → ?? []
+      // (sinon `.includes` throwait et bloquait l'incrément du compteur de kills).
+      const currentHints = state.meta.seenHints ?? []
+      let newSeenHints = currentHints
+      if (newCount >= 5 && !currentHints.includes('idle_unlock')) {
         const monsterName = MONSTERS[monsterId]?.name ?? monsterId
         useToastStore.getState().addToast(
           `Idle combat unlocked for ${monsterName}! Toggle it from the zone view.`,
           'info',
           4000,
         )
-        newSeenHints = [...state.meta.seenHints, 'idle_unlock']
+        newSeenHints = [...currentHints, 'idle_unlock']
       }
 
       return {
@@ -1248,28 +1289,48 @@ export const useGameStore = create((set, get) => ({
       if (!active.includes(questId)) return state
       const quest = QUESTS[questId]
       if (!quest) return state
-      let newManaStones = [...state.hero.inventory.manaStones]
+      const r = quest.reward
+      const newManaStones = [...state.hero.inventory.manaStones]
+      const newEquipment = [...state.hero.inventory.equipment]
+      const newResources = { ...state.hero.inventory.resources }
+      const newStats = { ...state.hero.stats }
       let newGold = state.hero.inventory.gold
-      if (quest.reward.skill) {
-        newManaStones.push({ skillId: quest.reward.skill.skillId, level: 1, xp: 0 })
-      }
-      if (quest.reward.gold) newGold += quest.reward.gold
-      const repTokens = quest.reward.reputationTokens ?? 1
+      let unseenLoot = state.unseenLoot
+      const repTokens = r.reputationTokens ?? 1
 
-      // Q07 — Toast récompense de quête
-      const rewardParts = []
-      if (quest.reward.gold) rewardParts.push(`+${quest.reward.gold}g`)
-      if (repTokens) rewardParts.push(`+${repTokens} 🪙`)
-      if (quest.reward.skill) {
-        const skillName = SKILLS[quest.reward.skill.skillId]?.name ?? quest.reward.skill.skillId
-        rewardParts.push(skillName)
+      if (r.skill) newManaStones.push({ skillId: r.skill.skillId, level: 1, xp: 0 })
+      if (r.gold) newGold += r.gold
+
+      // Q09 — récompenses variées : équipement / ressources / stat
+      const eqItem = r.equipment ? createEquipmentInstance(r.equipment.templateId, r.equipment.rarity) : null
+      if (eqItem) { newEquipment.push(eqItem); unseenLoot = true }
+      if (r.resources) {
+        for (const [id, qty] of Object.entries(r.resources)) {
+          newResources[id] = (newResources[id] || 0) + qty
+          unseenLoot = true
+        }
       }
+      if (r.stat && typeof newStats[r.stat.name] === 'number') {
+        newStats[r.stat.name] += r.stat.amount
+      }
+
+      // Q07/Q09 — Toast récompense de quête
+      const rewardParts = []
+      if (r.gold) rewardParts.push(`+${r.gold}g`)
+      if (repTokens) rewardParts.push(`+${repTokens} 🪙`)
+      if (r.skill) rewardParts.push(SKILLS[r.skill.skillId]?.name ?? r.skill.skillId)
+      if (eqItem) rewardParts.push(eqItem.name)
+      if (r.resources) {
+        for (const [id, qty] of Object.entries(r.resources)) rewardParts.push(`${qty}× ${RESOURCES[id]?.name ?? id}`)
+      }
+      if (r.stat) rewardParts.push(`+${r.stat.amount} ${r.stat.name}`)
       useToastStore.getState().addToast(
         `Quest complete: ${quest.name} — ${rewardParts.join(' · ')}`,
         'quest',
       )
 
       return {
+        unseenLoot,
         world: {
           ...state.world,
           activeQuests: active.filter((q) => q !== questId),
@@ -1277,8 +1338,9 @@ export const useGameStore = create((set, get) => ({
         },
         hero: {
           ...state.hero,
+          stats: newStats,
           reputationTokens: state.hero.reputationTokens + repTokens,
-          inventory: { ...state.hero.inventory, manaStones: newManaStones, gold: newGold },
+          inventory: { ...state.hero.inventory, manaStones: newManaStones, gold: newGold, equipment: newEquipment, resources: newResources },
         },
       }
     }),

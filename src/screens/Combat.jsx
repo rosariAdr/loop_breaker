@@ -79,6 +79,18 @@ import { applyDebuffsToStats } from '../utils/debuffs'
 // Emoji par type de monstre
 const MONSTER_EMOJI = {
   ashwood_wolf:     '🐺',
+  // MON01 — bestiaire de surface refondu
+  thicket_hare:     '🐇',
+  tuskmaw_boar:     '🐗',
+  old_oakheart:     '🌳',
+  mire_slime:       '🫧',
+  fenrot_devourer:  '🐊',
+  graven_sentinel:  '⚔️',
+  hill_slime:       '🟩',
+  russet_fox:       '🦊',
+  knoll_goblin:     '👺',
+  thunderhoof:      '🦬',
+  // anciens (réserve / supprimés — fallback conservé)
   rotting_shambler: '🧟',
   gloom_bat:        '🦇',
   marsh_serpent:    '🐍',
@@ -109,7 +121,7 @@ const ARENA_BACKGROUNDS = {
   ashenvale_forest: 'radial-gradient(ellipse at 50% 0%, #0a1208 0%, #070d08 60%, #050808 100%)',
   thornmarsh:       'radial-gradient(ellipse at 50% 0%, #08100e 0%, #060c0a 60%, #060808 100%)',
   crumbled_ruins:   'radial-gradient(ellipse at 50% 0%, #100a12 0%, #0c0810 60%, #080808 100%)',
-  barrow_hills:     'radial-gradient(ellipse at 50% 0%, #0a0812 0%, #080610 60%, #060608 100%)',
+  wildmere_hills:   'radial-gradient(ellipse at 50% 0%, #0a1008 0%, #081008 60%, #060806 100%)',
   blighted_road:    'radial-gradient(ellipse at 50% 0%, #160808 0%, #100606 60%, #080606 100%)',
   grimspire:        'radial-gradient(ellipse at 50% 0%, #100812 0%, #0c0810 60%, #080608 100%)',
   default:          'radial-gradient(ellipse at 50% 0%, #0a0810 0%, #080808 60%, #060608 100%)',
@@ -275,12 +287,17 @@ export default function Combat() {
     if (resolvedRef.current) return
     resolvedRef.current = true
     const finalStats = heroStatsRef.current
-    useGameStore.setState(state => ({
-      hero: {
-        ...state.hero,
-        stats: { ...state.hero.stats, hp: finalStats.hp, mana: finalStats.mana },
-      },
-    }))
+    try {
+      useGameStore.setState(state => ({
+        hero: {
+          ...state.hero,
+          stats: { ...state.hero.stats, hp: finalStats.hp, mana: finalStats.mana },
+        },
+      }))
+    } catch (err) {
+      // CMB-WIN-FIX — ne jamais bloquer la résolution du combat sur une erreur d'état.
+      console.error('[Combat] Échec de sauvegarde des PV/PM en fin de combat :', err)
+    }
     if (outcome === 'defeat') {
       addLog('You have fallen...', 'defeat')
       setTimeout(() => useGameStore.getState().heroDeath(cause), 1000)
@@ -294,54 +311,66 @@ export default function Combat() {
     if (resolvedRef.current) return // évite double-comptage si déclenché plusieurs fois
     resolvedRef.current = true
     addLog('Victory!', 'victory')
-    setCombatStats(s => ({ ...s, kills: defeatedEnemies.length }))  // B08
-    const allLoot = []
-    defeatedEnemies.forEach(e => {
-      const drops = calcDrops(e.monsterId, heroStatsRef.current.chance)
-      drops.resources.forEach(({ id, qty }) => {
-        addResource(id, qty)
-        const res = RESOURCES[id]
-        if (res) allLoot.push({ type: 'resource', name: `${qty}× ${res.name}` })
+    // CMB-WIN-FIX — Robustesse : TOUTE la distribution de récompenses est encapsulée
+    // dans un try/catch. Auparavant, si une seule récompense throwait (save corrompue,
+    // id de monstre/ressource manquant, champ non migré…), handleVictory s'interrompait
+    // APRÈS avoir loggé « Victory! » mais AVANT setPhase('result') → le joueur restait
+    // bloqué sur l'écran de combat, et resolvedRef (déjà true) neutralisait le filet de
+    // sécurité. On garantit désormais que la transition vers le ResultPanel a TOUJOURS lieu.
+    let divineCall = null
+    try {
+      setCombatStats(s => ({ ...s, kills: defeatedEnemies.length }))  // B08
+      const allLoot = []
+      defeatedEnemies.forEach(e => {
+        const drops = calcDrops(e.monsterId, heroStatsRef.current.chance)
+        drops.resources.forEach(({ id, qty }) => {
+          addResource(id, qty)
+          const res = RESOURCES[id]
+          if (res) allLoot.push({ type: 'resource', name: `${qty}× ${res.name}` })
+        })
+        if (drops.gold > 0) {
+          addGold(drops.gold)
+          allLoot.push({ type: 'gold', name: `${drops.gold}g` })
+        }
+        if (drops.skillDrop) {
+          const skillData = { skillId: drops.skillDrop, level: 1, xp: 0 }
+          addSkillToInventory(skillData)
+          const template = SKILLS[drops.skillDrop]
+          allLoot.push({ type: 'skill', name: template?.name ?? drops.skillDrop })
+          addLog(`✦ Skill acquired: ${template?.name}!`, 'drop')
+        }
+        recordKill(e.monsterId)
       })
-      if (drops.gold > 0) {
-        addGold(drops.gold)
-        allLoot.push({ type: 'gold', name: `${drops.gold}g` })
+      const totalXp = calcExpGain(defeatedEnemies)
+      if (totalXp > 0) {
+        gainExp(totalXp)
+        allLoot.push({ type: 'xp', name: `+${totalXp} XP` })
       }
-      if (drops.skillDrop) {
-        const skillData = { skillId: drops.skillDrop, level: 1, xp: 0 }
-        addSkillToInventory(skillData)
-        const template = SKILLS[drops.skillDrop]
-        allLoot.push({ type: 'skill', name: template?.name ?? drops.skillDrop })
-        addLog(`✦ Skill acquired: ${template?.name}!`, 'drop')
+      setLoot(allLoot)
+      const finalStats = heroStatsRef.current
+      useGameStore.setState(state => ({
+        hero: { ...state.hero, stats: { ...state.hero.stats, hp: finalStats.hp, mana: finalStats.mana } },
+      }))
+      // GLT01/GLT02 — Gluttony : absorption sur kill si passif équipé + prêt (cooldown 5j)
+      if (hasGluttony(hero.passiveSkills) && isGluttonyReady(world.dayCount, meta?.gluttonyLastUsed)) {
+        const assassinated = defeatedEnemies.find(e => assassinatedRef.current.has(e.id))
+        if (assassinated) {
+          addLog('Gluttony stirs — an assassination! Choose what to devour.', 'gluttony')
+          setGluttonyChoice({ monsterId: assassinated.monsterId }) // GLT02 — choix du joueur
+        } else if (rollGluttonyProc()) {
+          absorbGluttony({ monsterId: defeatedEnemies[0].monsterId }) // GLT01 — stat aléatoire
+        }
       }
-      recordKill(e.monsterId)
-    })
-    const totalXp = calcExpGain(defeatedEnemies)
-    if (totalXp > 0) {
-      gainExp(totalXp)
-      allLoot.push({ type: 'xp', name: `+${totalXp} XP` })
-    }
-    setLoot(allLoot)
-    const finalStats = heroStatsRef.current
-    useGameStore.setState(state => ({
-      hero: { ...state.hero, stats: { ...state.hero.stats, hp: finalStats.hp, mana: finalStats.mana } },
-    }))
-    // GLT01/GLT02 — Gluttony : absorption sur kill si passif équipé + prêt (cooldown 5j)
-    if (hasGluttony(hero.passiveSkills) && isGluttonyReady(world.dayCount, meta?.gluttonyLastUsed)) {
-      const assassinated = defeatedEnemies.find(e => assassinatedRef.current.has(e.id))
-      if (assassinated) {
-        addLog('Gluttony stirs — an assassination! Choose what to devour.', 'gluttony')
-        setGluttonyChoice({ monsterId: assassinated.monsterId }) // GLT02 — choix du joueur
-      } else if (rollGluttonyProc()) {
-        absorbGluttony({ monsterId: defeatedEnemies[0].monsterId }) // GLT01 — stat aléatoire
-      }
-    }
-    assassinatedRef.current.clear()
+      assassinatedRef.current.clear()
 
-    const divineCall = checkAwakeningConditions(
-      { ...hero, battleLog: [...hero.battleLog, { type: 'victory', day: world.dayCount }] },
-      world
-    )
+      divineCall = checkAwakeningConditions(
+        { ...hero, battleLog: [...(hero.battleLog ?? []), { type: 'victory', day: world.dayCount }] },
+        world
+      )
+    } catch (err) {
+      // On ne bloque JAMAIS le joueur : on logge et on termine quand même le combat.
+      console.error('[Combat] Échec de distribution des récompenses de victoire — combat terminé malgré tout :', err)
+    }
     setResult('victory')
     setPhase('result')
     if (divineCall) setTimeout(() => triggerDivineCall(divineCall), 1500)
@@ -699,7 +728,14 @@ export default function Combat() {
     }
   }
 
-  const handleLeave = () => endCombat(result)
+  const handleLeave = () => {
+    endCombat(result)
+    // CMB-WIN — après une VICTOIRE, revenir à l'écran de zone (la liste des monstres)
+    // si on combattait dans un spot de chasse. Fuite/mort gardent leur flux (world_map / post-mortem).
+    if (result === 'victory' && world.currentHuntingSpot) {
+      useGameStore.getState().setScreen('zone_view')
+    }
+  }
 
   if (!activeCombat) return null
 
@@ -897,10 +933,12 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
         <div
           className="flex items-center justify-center transition-all duration-200 overflow-hidden"
           style={{
-            width: '128px',
-            height: '128px',
-            fontSize: '4rem',
-            borderRadius: '14px',
+            // CMB-ICON — sprite ennemi ×2 (128 → 256, le conteneur a overflow-hidden donc
+            // doubler aussi le cadre, sinon le portrait agrandi serait rogné).
+            width: '256px',
+            height: '256px',
+            fontSize: '8rem',
+            borderRadius: '20px',
             background: isSelected && !dead
               ? 'radial-gradient(circle, #2c1010 0%, #180808 100%)'
               : 'radial-gradient(circle, #1a0a0a 0%, #0f0606 100%)',
@@ -914,7 +952,7 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
           {dead ? (
             <span>💀</span>
           ) : (
-            <MonsterPortrait monsterId={enemy.monsterId} fallbackEmoji={emoji} size={120} />
+            <MonsterPortrait monsterId={enemy.monsterId} fallbackEmoji={emoji} size={240} />
           )}
         </div>
 

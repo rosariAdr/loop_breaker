@@ -267,12 +267,12 @@ html.lb-no-anim *, html.lb-no-anim *::before, html.lb-no-anim *::after { animati
 .lb-tip::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--ink); }
 
 /* ── Hero avatar ───────────────────────────────────────────────────────────── */
-.hero-avatar { position: absolute; transform: translate(-50%, -100%); z-index: 30; display: flex; flex-direction: column; align-items: center; pointer-events: none; transition: left .6s cubic-bezier(.4,.8,.4,1), top .6s cubic-bezier(.4,.8,.4,1); }
+.hero-avatar { position: absolute; transform: translate(-50%, -100%); z-index: 30; display: flex; flex-direction: column; align-items: center; pointer-events: none; transition: left 1.8s cubic-bezier(.4,.8,.4,1), top 1.8s cubic-bezier(.4,.8,.4,1); }
 .hero-avatar .hero-sprite { width: 76px; height: 112px; display: flex; align-items: flex-end; justify-content: center; }
 .hero-avatar .hero-sprite img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 .hero-avatar .hero-glow { width: 80px; height: 14px; margin-top: -8px; border-radius: 50%; background: radial-gradient(ellipse, rgba(212,160,23,.7), transparent 70%); animation: heroGlow 2.4s ease-in-out infinite; }
 @keyframes heroGlow { 0%,100% { opacity: .65; transform: scale(1); } 50% { opacity: 1; transform: scale(1.12); } }
-.hero-avatar .hero-name { font-family: var(--font-head); font-weight: 700; font-size: 11px; color: var(--ink); margin-top: -4px; padding: 1px 7px; border-radius: 4px; background: rgba(246,232,196,.9); box-shadow: 0 1px 3px rgba(61,43,31,.3); }
+.hero-avatar .hero-name { font-family: var(--font-head); font-weight: 700; font-size: 11px; color: var(--ink); margin-top: -11px; padding: 1px 7px; border-radius: 4px; background: rgba(246,232,196,.9); box-shadow: 0 1px 3px rgba(61,43,31,.3); }
 
 /* ── Bâtiments / clearings ─────────────────────────────────────────────────── */
 .bld { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; z-index: 20; transition: transform .14s ease, filter .14s ease; }

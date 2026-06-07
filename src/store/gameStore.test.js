@@ -697,12 +697,12 @@ describe('Quêtes Q03 — boss donjon', () => {
 })
 
 describe('Quêtes Q08 — NPCs multiples', () => {
-  it('bog_purge : 4 bog_shamblers requis', () => {
+  it('bog_purge : 4 mire_slimes requis', () => {
     const store = useGameStore.getState
     store().startQuest('bog_purge')
-    for (let i = 0; i < 3; i++) store().recordKill('bog_shambler')
+    for (let i = 0; i < 3; i++) store().recordKill('mire_slime')
     expect(store().isQuestComplete('bog_purge')).toBe(false)
-    store().recordKill('bog_shambler')
+    store().recordKill('mire_slime')
     expect(store().isQuestComplete('bog_purge')).toBe(true)
   })
 

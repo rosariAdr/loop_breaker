@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { useToastStore } from '../store/toastStore'
 import { ZONES } from '../data/zones'
@@ -170,37 +170,47 @@ export default function SafeZone() {
   const closeBuilding = () => { setActiveBuilding(null); setShowPanel(false) }
 
   const zone = ZONES[world.currentZone]
-  if (!zone) return null
-
+  const isCity = zone?.city?.id === world.currentLocation
   // Trouver la localisation actuelle
-  const isCity = zone.city?.id === world.currentLocation
-  const location = isCity
-    ? zone.city
-    : zone.villages?.find(v => v.id === world.currentLocation)
+  const location = zone
+    ? (isCity ? zone.city : zone.villages?.find(v => v.id === world.currentLocation))
+    : null
 
+  // Génération paresseuse des bâtiments optionnels d'un village.
+  // generateVillageBuildings est déterministe (seedé sur l'id du village),
+  // donc le render peut la calculer sans la persister. La persistance dans le
+  // store DOIT passer par un effet : un setState pendant le render de SafeZone
+  // déclenchait un update d'App pendant le rendu (warning React).
+  const needsGeneration = Boolean(
+    location && !isCity && location.optionalBuildings && !world.generatedVillages?.[location.id]
+  )
+  useEffect(() => {
+    if (!needsGeneration) return
+    const optional = generateVillageBuildings(location.id, location.optionalBuildings)
+    useGameStore.setState(state => ({
+      world: {
+        ...state.world,
+        generatedVillages: {
+          ...state.world.generatedVillages,
+          [location.id]: { buildings: optional }
+        }
+      }
+    }))
+  }, [needsGeneration, location?.id])
+
+  if (!zone) return null
   if (!location) return null
 
   // Construire la liste des bâtiments disponibles
   let buildings = [...(location.buildings ?? [])]
   if (!isCity && location.optionalBuildings) {
-    // Récupérer depuis le store ou générer
+    // Déterministe : utilise la valeur persistée si présente, sinon recalcule
+    // (résultat identique) — l'effet ci-dessus se charge de la sauvegarde.
     const stored = world.generatedVillages?.[location.id]
-    if (stored) {
-      buildings = [...buildings, ...stored.buildings]
-    } else {
-      const optional = generateVillageBuildings(location.id, location.optionalBuildings)
-      buildings = [...buildings, ...optional]
-      // Sauvegarder dans le store
-      useGameStore.setState(state => ({
-        world: {
-          ...state.world,
-          generatedVillages: {
-            ...state.world.generatedVillages,
-            [location.id]: { buildings: optional }
-          }
-        }
-      }))
-    }
+    const optional = stored
+      ? stored.buildings
+      : generateVillageBuildings(location.id, location.optionalBuildings)
+    buildings = [...buildings, ...optional]
   }
 
   const BUILDING_INFO = {

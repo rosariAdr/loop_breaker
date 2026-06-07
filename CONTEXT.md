@@ -120,7 +120,7 @@ racine/
   | Lieu | x% | y% | | Lieu | x% | y% |
   |---|---|---|---|---|---|---|
   | Greywatch | 13 | 16 | | Thornmarsh | 34 | 79 |
-  | Ashenvale Forest | 43 | 16 | | Barrow Hills | 51 | 89 |
+  | Ashenvale Forest | 43 | 16 | | Wildmere Hills | 51 | 89 |
   | Millhaven | 41 | 41 | | Hollow Crypt (donjon) | 68 | 83 |
   | Ironhaven | 60 | 56 | | Grimspire (locked) | 90 | 45 |
   | Crumbled Ruins | 21 | 59 | | | | |
@@ -183,8 +183,8 @@ racine/
 |---|---|---|
 | Zones | 3 | Ashenvale (4 spots) + Blighted Road + Grimspire |
 | Spots de chasse | 6 | + levelRange par spot (utilisé par B12) |
-| Monstres / boss | 23 | dont Crypt Keeper, Lord of the Forsaken, Malachar (+ bossMechanics) |
-| Skills | 31 | dont 4 divins, soul_rend (suprême), reckless_blow (sacrifice), gluttony (passif) |
+| Monstres / boss | 29 | dont Crypt Keeper, Lord of the Forsaken, Malachar (+ bossMechanics). **MON01** : bestiaire de surface refondu (4 spots × 4 monstres dont 1 élite) ; 2 en réserve (`reserve: true`, exclus de `MONSTERS_BY_SPOT/_ZONE`, usage futur donjon) |
+| Skills | 44 | dont 4 divins, soul_rend (suprême), reckless_blow (sacrifice), gluttony (passif), + 13 techniques de bestiaire (MON01) |
 | Divinités actives | 3 | Ignareth / Sylvara / Voltaris |
 | Debuffs passifs | 4 | Burnt Hands / Poisoned / Fatigue / Black Smoke (CRF01) |
 | Recettes | 6 + 5 + ~10 | alchimie (Z04) + maître forgeron (Z06) + forge de base |

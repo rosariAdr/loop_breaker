@@ -129,11 +129,12 @@ export const QUESTS = {
   bog_purge: {
     id: 'bog_purge',
     name: 'Bog Purge',
-    description: 'The Bog Shamblers spread rot through the villages. Cull their numbers.',
+    description: 'The Mire Slimes spread rot through the marsh. Cull their numbers.',
     giverNpc: 'greywatch_elder',
     flavorText: '"My grandson fell last harvest. Do this, and the village remembers you."',
     objectives: [
-      { id: 'kill_bog_shamblers', type: 'kill', monsterId: 'bog_shambler', count: 4, label: 'Kill Bog Shamblers' },
+      // MON01 — re-ciblé depuis bog_shambler (retiré du Thornmarsh) vers mire_slime.
+      { id: 'kill_mire_slimes', type: 'kill', monsterId: 'mire_slime', count: 4, label: 'Kill Mire Slimes' },
     ],
     reward: {
       gold: 120,

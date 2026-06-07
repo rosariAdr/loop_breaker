@@ -557,7 +557,7 @@ describe('Scénario 13 — 3 NPCs en parallèle', () => {
 
     // Progresser sur toutes en parallèle
     for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
-    for (let i = 0; i < 4; i++) store().recordKill('bog_shambler')
+    for (let i = 0; i < 4; i++) store().recordKill('mire_slime')
     store().recordKill('hollow_crypt_boss')
 
     expect(store().isQuestComplete('first_blood')).toBe(true)
@@ -687,7 +687,7 @@ describe('BAL01 — Économie tokens (simulations)', () => {
       ['silence_the_crypt', 'hollow_crypt_boss', 1],
       ['storm_the_citadel', 'forsaken_citadel_boss', 1],
       ['end_the_demon', 'malachar', 1],
-      ['bog_purge', 'bog_shambler', 4],
+      ['bog_purge', 'mire_slime', 4],
       ['ruins_cleanse', null, null],  // ce quest a 2 objectives, on les complete tous deux
     ]
     for (const [questId, monster, count] of allQuests) {

@@ -63,7 +63,9 @@ export default function WorldMap() {
       // frames walking, puis arrivée (travelTo applique la position + le coût de tics).
       setWalking(true)
       travelTo(node.id)
-      setTimeout(() => setWalking(false), 700)
+      // TRV04 — voyage ~3× plus lent (synchronisé avec la transition CSS .hero-avatar 1.8s)
+      // pour rendre l'animation de marche bien visible.
+      setTimeout(() => setWalking(false), 2100)
     } else {
       const p = POS[node.id]
       setTip(p ? { x: p.x, y: p.y - 8, text: 'Too far — travel via connected paths first.' } : null)

@@ -661,6 +661,270 @@ export const SKILLS = {
     inheritable: false,
     levelBonuses: {},
   },
+
+  // ── MON01 — Techniques du bestiaire de surface refondu ────────────────────
+  // Actives = techniques de combat (dégâts ± effet) ; passives = bonus permanent.
+  // NB : l'UI n'affiche QUE le nom (jamais actif/passif). cf. skillDropType côté monstres.
+
+  bramble_slam: {
+    id: 'bramble_slam',
+    name: 'Bramble Slam',
+    description: 'A crushing blow wrapped in thorns. Deals heavy physical damage and slows the target.',
+    type: 'active',
+    cost: { mana: 22, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'physical', multiplier: 1.6 },
+      statusEffect: { type: 'slow', duration: 2 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'old_oakheart',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+    },
+  },
+
+  cursed_cleave: {
+    id: 'cursed_cleave',
+    name: 'Cursed Cleave',
+    description: 'A dark cleave that shatters the foe\'s guard, reducing their defense.',
+    type: 'active',
+    cost: { mana: 18, hp: 0, stat_sacrifice: null },
+    cooldown: 2,
+    effect: {
+      damage: { type: 'physical', multiplier: 1.4 },
+      statusEffect: { type: 'defense_break', duration: 2, reduction: 0.20 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'hollow_knight',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10, reductionBonus: 0.05 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20, reductionBonus: 0.10 },
+    },
+  },
+
+  soul_chill: {
+    id: 'soul_chill',
+    name: 'Soul Chill',
+    description: 'A spectral touch that bites deep and saps the target\'s speed.',
+    type: 'active',
+    cost: { mana: 16, hp: 0, stat_sacrifice: null },
+    cooldown: 2,
+    effect: {
+      damage: { type: 'physical', multiplier: 1.3 },
+      statusEffect: { type: 'slow', duration: 2 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'ruin_specter',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+    },
+  },
+
+  tomb_judgment: {
+    id: 'tomb_judgment',
+    name: 'Tomb Judgment',
+    description: 'A sentinel\'s verdict — a devastating strike that stuns the target for a turn.',
+    type: 'active',
+    cost: { mana: 25, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'physical', multiplier: 1.7 },
+      statusEffect: { type: 'stun', duration: 1 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'graven_sentinel',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+    },
+  },
+
+  venom_strike: {
+    id: 'venom_strike',
+    name: 'Venom Strike',
+    description: 'A serpent\'s fang that injects venom, poisoning the target for 3 turns.',
+    type: 'active',
+    cost: { mana: 18, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'physical', multiplier: 1.1 },
+      statusEffect: { type: 'poison', duration: 3, tickDamage: 8 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'marsh_serpent',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10, tickDamageBonus: 4 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20, tickDamageBonus: 8 },
+    },
+  },
+
+  thorn_lash: {
+    id: 'thorn_lash',
+    name: 'Thorn Lash',
+    description: 'A whip of living briar that lacerates and weakens the foe\'s attack.',
+    type: 'active',
+    cost: { mana: 16, hp: 0, stat_sacrifice: null },
+    cooldown: 2,
+    effect: {
+      damage: { type: 'physical', multiplier: 1.3 },
+      statusEffect: { type: 'atk_down', duration: 2, reduction: 0.15 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'briar_wraith',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10, reductionBonus: 0.05 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20, reductionBonus: 0.10 },
+    },
+  },
+
+  plague_maw: {
+    id: 'plague_maw',
+    name: 'Plague Maw',
+    description: 'A festering bite that floods the target with virulent poison.',
+    type: 'active',
+    cost: { mana: 22, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'physical', multiplier: 1.4 },
+      statusEffect: { type: 'poison', duration: 3, tickDamage: 14 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'fenrot_devourer',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10, tickDamageBonus: 6 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20, tickDamageBonus: 12 },
+    },
+  },
+
+  cheap_shot: {
+    id: 'cheap_shot',
+    name: 'Cheap Shot',
+    description: 'A dirty, sudden hit that briefly stuns the target.',
+    type: 'active',
+    cost: { mana: 14, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'physical', multiplier: 1.2 },
+      statusEffect: { type: 'stun', duration: 1 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'knoll_goblin',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+    },
+  },
+
+  trample_charge: {
+    id: 'trample_charge',
+    name: 'Trample Charge',
+    description: 'A thunderous charge that tramples the foe with overwhelming force.',
+    type: 'active',
+    cost: { mana: 24, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'physical', multiplier: 1.8 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'thunderhoof',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.30, costReduction: 0.10 },
+      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+    },
+  },
+
+  thick_hide: {
+    id: 'thick_hide',
+    name: 'Thick Hide',
+    description: 'Passive layers of toughened hide that permanently reduce incoming damage by 8%.',
+    type: 'passive',
+    cost: { mana: 0, hp: 0, stat_sacrifice: null },
+    cooldown: 0,
+    effect: { damageReduction: 0.08 },
+    xpToNext: [20, 50],
+    sourceMonster: 'tuskmaw_boar',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { reductionBonus: 0.06 },
+      3: { reductionBonus: 0.12 },
+    },
+  },
+
+  stoneskin: {
+    id: 'stoneskin',
+    name: 'Stoneskin',
+    description: 'Passive stone-hard skin that permanently reduces incoming damage by 12%.',
+    type: 'passive',
+    cost: { mana: 0, hp: 0, stat_sacrifice: null },
+    cooldown: 0,
+    effect: { damageReduction: 0.12 },
+    xpToNext: [20, 50],
+    sourceMonster: 'stone_golem',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { reductionBonus: 0.06 },
+      3: { reductionBonus: 0.12 },
+    },
+  },
+
+  caustic_coat: {
+    id: 'caustic_coat',
+    name: 'Caustic Coat',
+    description: 'Passive acidic film that erodes blows, permanently reducing incoming damage by 7%.',
+    type: 'passive',
+    cost: { mana: 0, hp: 0, stat_sacrifice: null },
+    cooldown: 0,
+    effect: { damageReduction: 0.07 },
+    xpToNext: [20, 50],
+    sourceMonster: 'mire_slime',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { reductionBonus: 0.05 },
+      3: { reductionBonus: 0.10 },
+    },
+  },
+
+  mossy_hide: {
+    id: 'mossy_hide',
+    name: 'Mossy Hide',
+    description: 'Passive mossy resilience that permanently increases max HP by 12%.',
+    type: 'passive',
+    cost: { mana: 0, hp: 0, stat_sacrifice: null },
+    cooldown: 0,
+    effect: { maxHpBonus: 0.12 },
+    xpToNext: [20, 50],
+    sourceMonster: 'hill_slime',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { maxHpBonusBonus: 0.10 },
+      3: { maxHpBonusBonus: 0.20 },
+    },
+  },
 }
 
 // Utilitaire : calculer les stats d'un skill selon son niveau actuel
