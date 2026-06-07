@@ -639,7 +639,8 @@ export const SKILLS = {
     xpToNext: [20, 50],
     sourceMonster: 'malachar',
     container: 'supreme',
-    inheritable: true, // toujours héritable, transgresse la règle normale
+    inheritable: true,
+    alwaysInheritable: true, // T12 — transgresse DV10 : héritable quel que soit le niveau
     levelBonuses: {
       2: { multiplierBonus: 0.50, costReduction: 0.10 },
       3: { multiplierBonus: 1.00, costReduction: 0.20 },
@@ -964,6 +965,9 @@ export function getSkillStats(skillId, level) {
 
 // Vérifier si un skill divin est héritable
 export function isDivineSkillInheritable(skill) {
+  // T12 — un skill marqué alwaysInheritable transgresse DV10 (ex. Soul Rend, le
+  // skill suprême du Demon Lord) : toujours transmissible, quel que soit son niveau.
+  if (skill.alwaysInheritable) return true
   if (skill.container !== 'divine') return skill.inheritable
   return skill.level >= 2
 }

@@ -61,7 +61,7 @@ export const ZONES = {
       name: 'Ironhaven',
       type: 'city',
       mapPos: { x: 44, y: 52 },
-      buildings: ['inn', 'church', 'merchant', 'alchemy', 'blacksmith'],
+      buildings: ['inn', 'church', 'merchant', 'alchemy', 'blacksmith', 'academy'],
       masterBlacksmithChance: 0.025,
     },
     villages: [
@@ -130,7 +130,7 @@ export const ZONES = {
       id: 'stonehaven',
       name: 'Stonehaven',
       type: 'city',
-      buildings: ['inn', 'church', 'merchant', 'alchemy', 'blacksmith'],
+      buildings: ['inn', 'church', 'merchant', 'alchemy', 'blacksmith', 'academy'],
       masterBlacksmithChance: 0.025,
     },
     villages: [

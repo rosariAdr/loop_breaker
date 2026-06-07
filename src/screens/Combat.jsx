@@ -23,6 +23,8 @@ import {
 import { getMalacharPhase, getCryptKeeperEnrage, rollCursedStrike, CURSED_STRIKE_EFFECT } from '../engine/bossMechanics'
 import { hasGluttony, isGluttonyReady, rollGluttonyProc, GLUTTONY_STATS } from '../engine/gluttony'
 import { getPassiveModifiers, PASSIVE_XP_PER_HIT } from '../engine/passives'
+import { applyVigorMalus, combatFatigueBuffer } from '../engine/vigor'
+import { auraDamageMult } from '../engine/aura'
 
 // B05 — icône + libellé par type d'effet de statut (cf. DESIGN.md §B05-SPEC)
 const STATUS_META = {
@@ -212,7 +214,9 @@ export default function Combat() {
     if (stat in equippedStats) equippedStats[stat] = (equippedStats[stat] ?? 0) + bonus
   })
   // CRF01 — les debuffs passifs réduisent les stats de combat
-  const effectiveBaseStats = applyDebuffsToStats(equippedStats, hero.activeDebuffs ?? [])
+  const debuffedStats = applyDebuffsToStats(equippedStats, hero.activeDebuffs ?? [])
+  // STA01 — la Fatigue (vigueur basse) réduit les stats de combat ; STA04 — l'Aura atténue ce malus
+  const effectiveBaseStats = applyVigorMalus(debuffedStats, hero.vigor, combatFatigueBuffer(hero.aura))
   // SKL-PASS — les passifs équipés boostent les PV max en combat (ex. Veteran's Resolve +20%)
   const passiveMods = getPassiveModifiers(hero.passiveSkills)
   const combatBaseStats = passiveMods.maxHpBonus > 0
@@ -371,6 +375,15 @@ export default function Combat() {
         }
       }
       assassinatedRef.current.clear()
+
+      // DEMON-FIGHT — victoire sur le Demon Lord (Malachar) → déclenche la défaite du
+      // Demon Lord (W01 +200 tokens, M02 compteur, W03 bannière, titres + warp ville),
+      // en réutilisant la logique éprouvée de clearDungeon('grimspire').
+      if (defeatedEnemies.some(e => e.rank === 'demon_lord')) {
+        useGameStore.getState().clearDungeon('grimspire')
+      }
+      // ACH01 — réévalue les accomplissements (kills, demon lord, jours, runs…)
+      useGameStore.getState().checkAchievements()
 
       divineCall = checkAwakeningConditions(
         { ...hero, battleLog: [...(hero.battleLog ?? []), { type: 'victory', day: world.dayCount }] },
@@ -604,8 +617,11 @@ export default function Combat() {
     }
     // B08 — track la mana dépensée
     setCombatStats(s => ({ ...s, manaSpent: s.manaSpent + (template.cost?.mana ?? 0) }))
+    // STA02 — chaque usage de skill compte pour l'Aura (déblocage + gain)
+    useGameStore.getState().recordSkillUse()
     if (template.effect?.damage) {
-      const dmg = calcSkillDamage(skill, heroStats, skill.level)
+      // STA02 — l'Aura multiplie les dégâts des skills (+0.5%/point)
+      const dmg = Math.round(calcSkillDamage(skill, heroStats, skill.level) * auraDamageMult(hero.aura))
       const isAoe = template.effect.aoe
       // B07 — nombre flottant sur chaque cible touchée
       if (isAoe) {
@@ -731,6 +747,11 @@ export default function Combat() {
         },
       },
     }))
+    // CRF06 — l'antidote (cureDebuffs) soigne les debuffs actifs (CRF01), y compris permanents.
+    if (res.effect.cureDebuffs) {
+      const cured = useGameStore.getState().cureHeroDebuffs()
+      if (cured > 0) addLog(`${res.name} cured your ailments (${cured} cleared).`, 'heal')
+    }
     afterPlayerAction(enemies)
   }
 

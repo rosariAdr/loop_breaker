@@ -1,7 +1,11 @@
 import { create } from 'zustand'
 import { MONSTERS } from '../data/monsters'
-import { QUESTS } from '../data/quests'
+import { QUESTS, getQuestById, heroSkillLevels } from '../data/quests'
 import { SKILLS, SKILL_MAX_LEVEL, skillXpForLevel } from '../data/skills'
+import { skillBuyPrice, skillSellPrice } from '../data/academy'
+import { ACHIEVEMENTS, newlyUnlocked } from '../data/achievements'
+import { VIGOR_MAX, VIGOR_COST, applyVigorCost } from '../engine/vigor'
+import { AURA, countWithinDays } from '../engine/aura'
 import { RESOURCES } from '../data/resources'
 import { createEquipmentInstance } from '../data/equipment'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
@@ -40,6 +44,17 @@ const INITIAL_HERO = {
   level: 1,
   exp: 0,
   expToNext: 100,
+
+  // STA01 — Vigueur (Fatigue) : 100 = frais, décroît avec l'effort, restaurée au sommeil.
+  vigor: 100,
+
+  // STA02 — Aura (mult. de dégâts permanent) + tracking d'usage de skills.
+  aura: 0,            // 0 = non débloquée
+  skillUseCount: 0,   // total de skills utilisés (pour le gain +1/10)
+  skillUseLog: [],    // [dayCount, …] pour la fenêtre glissante de déblocage (15 en <4j)
+
+  // STA03 — Concentration (qualité de craft, 0-150).
+  concentration: 0,
 
   // Skills (max 6 actifs, max 4 passifs)
   activeSkills: [],   // [{ skillId, level, xp, currentCooldown }]
@@ -121,12 +136,16 @@ const INITIAL_WORLD = {
   // Kill count par type de monstre (pour débloquer l'idle)
   monsterKillCounts: {}, // { monsterId: count }
 
+  // Q04 — spots de chasse déjà visités (pour les quêtes d'exploration)
+  visitedSpots: [], // [spotId, ...]
+
   // Toggles idle par monstre
   idleToggles: {},       // { monsterId: boolean }
 
   // État de l'idle global
   isIdleActive: false,
   idleTargetMonster: null,
+  idleHpThreshold: 0.2,  // I08 — seuil de PV (fraction) sous lequel l'idle se coupe automatiquement
   idleLog: [],           // [{ text, type, timestamp }] — 10 dernières entrées
 
   // Villages générés aléatoirement (buildings présents dans chaque village)
@@ -157,6 +176,12 @@ const INITIAL_META = {
   // TUT02/TUT03 — Hints d'onboarding déjà vus (ne se réaffichent jamais)
   seenHints: [],        // ['idle_unlock', ...]
   firstDeathSeen: false, // TUT03 — surbrillance PostMortem au 1er run
+
+  // ACH01 — accomplissements débloqués (persistants entre runs ; bonus de stat permanents)
+  achievements: [],     // [achievementId, ...]
+
+  // Q05 — nombre de crafts réussis (pour les quêtes de craft)
+  craftCount: 0,
 
   // Héritage en attente (rempli à la mort, consommé à la renaissance)
   pendingInheritance: null, // { stat, activeSkill, passiveSkill, bonuses }
@@ -228,6 +253,7 @@ function migrateV1ToV2(save) {
     currentHuntingSpot: world.currentHuntingSpot ?? null,
     monsterKillCounts: world.monsterKillCounts ?? {},
     idleToggles: world.idleToggles ?? {},
+    idleHpThreshold: world.idleHpThreshold ?? 0.2, // I08
     idleLog: Array.isArray(world.idleLog) ? world.idleLog : [],
     generatedVillages: world.generatedVillages ?? {},
     dungeons: world.dungeons ?? { ...INITIAL_WORLD.dungeons },
@@ -418,6 +444,64 @@ export const useGameStore = create((set, get) => ({
       }
     }),
 
+  // STA01 — dépense / restaure la vigueur (clampée 0-100)
+  spendVigor: (amount) =>
+    set((state) => ({ hero: { ...state.hero, vigor: applyVigorCost(state.hero.vigor ?? VIGOR_MAX, amount) } })),
+  restoreVigor: () =>
+    set((state) => ({ hero: { ...state.hero, vigor: VIGOR_MAX } })),
+
+  // STA02 — enregistre l'usage d'un skill : débloque l'Aura (15 skills en <4j) puis +1/10 usages.
+  recordSkillUse: () =>
+    set((state) => {
+      const day = state.world.dayCount
+      const log = [...(state.hero.skillUseLog ?? []), day].slice(-200)
+      const count = (state.hero.skillUseCount ?? 0) + 1
+      let aura = state.hero.aura ?? 0
+      if (aura <= 0) {
+        if (countWithinDays(log, day, AURA.unlockWindowDays) >= AURA.unlockUses) {
+          aura = AURA.startValue
+          useToastStore.getState().addToast('Your Aura awakens — your blows strike harder! (+15 Aura)', 'levelup', 4000)
+        }
+      } else if (Math.floor(count / AURA.gainPerUses) > Math.floor((count - 1) / AURA.gainPerUses)) {
+        aura += 1
+      }
+      return { hero: { ...state.hero, skillUseLog: log, skillUseCount: count, aura } }
+    }),
+
+  // STA02/TRA01 — débloque/ajoute de l'Aura directement (entraînement chez un maître)
+  grantAura: (amount) =>
+    set((state) => ({ hero: { ...state.hero, aura: Math.max(state.hero.aura ?? 0, 0) + amount } })),
+
+  // STA03 — gagne de la Concentration (clampée 0-150)
+  gainConcentration: (amount) =>
+    set((state) => ({ hero: { ...state.hero, concentration: Math.min(150, Math.max(0, (state.hero.concentration ?? 0) + amount)) } })),
+
+  // ITM01 — Lire un livre de stats (consommable `gain_stat`). @returns {boolean} succès
+  // STA03b — voie alternative de gain de Concentration (et Aura / stats permanentes).
+  useBook: (bookId) => {
+    const res = RESOURCES[bookId]
+    const eff = res?.effect
+    if (!eff || eff.type !== 'gain_stat') return false
+    const owned = get().hero.inventory.consumables[bookId] ?? 0
+    if (owned <= 0) return false
+    // consomme le livre
+    set((state) => ({
+      hero: { ...state.hero, inventory: { ...state.hero.inventory, consumables: { ...state.hero.inventory.consumables, [bookId]: owned - 1 } } },
+    }))
+    const { stat, amount } = eff
+    if (stat === 'concentration') get().gainConcentration(amount)
+    else if (stat === 'aura') get().grantAura(amount)
+    else {
+      // stat permanente (intelligence, strength…) → appliquée + mémorisée (réappliquée chaque run)
+      set((state) => ({
+        hero: { ...state.hero, stats: { ...state.hero.stats, [stat]: (state.hero.stats[stat] ?? 0) + amount } },
+        meta: { ...state.meta, permanentStatBoosts: { ...(state.meta.permanentStatBoosts ?? {}), [stat]: ((state.meta.permanentStatBoosts ?? {})[stat] ?? 0) + amount } },
+      }))
+    }
+    useToastStore.getState().addToast(`Read ${res.name} — +${amount} ${stat}`, 'levelup', 3500)
+    return true
+  },
+
   // ── Gestion de l'équipement ───────────────────────────────────────────────
   addEquipmentToInventory: (item) =>
     set((state) => ({
@@ -498,6 +582,53 @@ export const useGameStore = create((set, get) => ({
         },
       }
     }),
+
+  // ── ACA01/ACA03 — Académie : acheter / revendre des skills ────────────────
+  // Achète un skill (mana stone niveau 1) contre de l'or. @returns {boolean} succès
+  buySkill: (skillId) => {
+    const price = skillBuyPrice(skillId)
+    const { hero } = get()
+    if (price == null || hero.inventory.gold < price) {
+      useToastStore.getState().addToast('Not enough gold.', 'warning')
+      return false
+    }
+    set((state) => ({
+      hero: {
+        ...state.hero,
+        inventory: {
+          ...state.hero.inventory,
+          gold: state.hero.inventory.gold - price,
+          manaStones: [...state.hero.inventory.manaStones, { skillId, level: 1, xp: 0 }],
+        },
+      },
+      unseenLoot: true,
+    }))
+    useToastStore.getState().addToast(`Learned ${SKILLS[skillId]?.name ?? skillId} · −${price} 🪙`, 'info')
+    return true
+  },
+
+  // Revend UNE copie d'un skill possédé (mana stone), prix selon son niveau (ACA03 plus-value).
+  sellSkill: (skillId) => {
+    const { hero } = get()
+    const stones = hero.inventory.manaStones
+    const idx = stones.findIndex((s) => s.skillId === skillId)
+    if (idx === -1) return false
+    const level = stones[idx].level ?? 1
+    const price = skillSellPrice(skillId, level)
+    set((state) => {
+      const arr = state.hero.inventory.manaStones
+      const i = arr.findIndex((s) => s.skillId === skillId)
+      const newStones = i === -1 ? arr : [...arr.slice(0, i), ...arr.slice(i + 1)]
+      return {
+        hero: {
+          ...state.hero,
+          inventory: { ...state.hero.inventory, gold: state.hero.inventory.gold + price, manaStones: newStones },
+        },
+      }
+    })
+    useToastStore.getState().addToast(`Sold ${SKILLS[skillId]?.name ?? skillId} (Lv${level}) · +${price} 🪙`, 'info')
+    return true
+  },
 
   // ── Gestion des skills ────────────────────────────────────────────────────
   addSkillToInventory: (skillData) =>
@@ -686,6 +817,7 @@ export const useGameStore = create((set, get) => ({
             hp: state.hero.stats.maxHp,
             mana: state.hero.stats.maxMana,
           },
+          vigor: VIGOR_MAX, // STA01 — dormir restaure la vigueur à 100
           // CRF01 — un jour passe : les debuffs temporaires décrémentent
           activeDebuffs: tickDebuffsOneDay(state.hero.activeDebuffs ?? []),
         },
@@ -736,6 +868,32 @@ export const useGameStore = create((set, get) => ({
       return { meta: { ...state.meta, titlesEarned: [...earned, titleId] } }
     }),
 
+  // ACH01 — Évalue les accomplissements ; débloque les nouveaux, applique leurs bonus de
+  // stat (permanents, comme Gluttony) + toast. Appelé après kill / quête / mort / demon lord.
+  checkAchievements: () =>
+    set((state) => {
+      const newly = newlyUnlocked(state)
+      if (newly.length === 0) return state
+      const newStats = { ...state.hero.stats }
+      const permBoosts = { ...(state.meta.permanentStatBoosts ?? {}) }
+      newly.forEach((ach) => {
+        const r = ach.reward ?? {}
+        if (r.stat && typeof newStats[r.stat.name] === 'number') {
+          newStats[r.stat.name] += r.stat.amount
+          permBoosts[r.stat.name] = (permBoosts[r.stat.name] ?? 0) + r.stat.amount
+        }
+        useToastStore.getState().addToast(`🏆 Achievement: ${ACHIEVEMENTS[ach.id].name}!`, 'levelup', 4000)
+      })
+      return {
+        hero: { ...state.hero, stats: newStats },
+        meta: {
+          ...state.meta,
+          achievements: [...(state.meta.achievements ?? []), ...newly.map((a) => a.id)],
+          permanentStatBoosts: permBoosts,
+        },
+      }
+    }),
+
   // CRF01 — Applique un debuff au héros (utilisé par les ratés de crafting CRF02/03)
   addHeroDebuff: (debuffId, days = 7, permanent = false) =>
     set((state) => ({
@@ -744,6 +902,14 @@ export const useGameStore = create((set, get) => ({
         activeDebuffs: addDebuff(state.hero.activeDebuffs ?? [], debuffId, days, permanent),
       },
     })),
+
+  // CRF06 — Soigne les debuffs actifs du héros (y compris permanents). Utilisé par l'antidote.
+  // @returns {number} nombre de debuffs soignés
+  cureHeroDebuffs: () => {
+    const cured = (get().hero.activeDebuffs ?? []).length
+    if (cured > 0) set((state) => ({ hero: { ...state.hero, activeDebuffs: [] } }))
+    return cured
+  },
 
   // ── Kill count & idle ─────────────────────────────────────────────────────
   recordKill: (monsterId) =>
@@ -799,15 +965,33 @@ export const useGameStore = create((set, get) => ({
       }
     }),
 
+  // I08 — seuil de PV auto-stop de l'idle, configurable par le joueur (borné 5–90%)
+  setIdleHpThreshold: (value) =>
+    set((state) => ({
+      world: { ...state.world, idleHpThreshold: Math.max(0.05, Math.min(0.9, value)) },
+    })),
+
   addIdleLog: (entry) =>
     set((state) => {
       const newLog = [entry, ...state.world.idleLog].slice(0, 10)
       return { world: { ...state.world, idleLog: newLog } }
     }),
 
+  // Q04 — enregistre la visite d'un spot de chasse (dédup), pour les quêtes d'exploration
+  recordVisit: (spotId) =>
+    set((state) => {
+      const visited = state.world.visitedSpots ?? []
+      if (!spotId || visited.includes(spotId)) return state
+      return { world: { ...state.world, visitedSpots: [...visited, spotId] } }
+    }),
+
+  // Q05 — incrémente le compteur de crafts réussis (pour les quêtes de craft)
+  incrementCraftCount: () =>
+    set((state) => ({ meta: { ...state.meta, craftCount: (state.meta.craftCount ?? 0) + 1 } })),
+
   // ── Combat ────────────────────────────────────────────────────────────────
   startCombat: (enemies) =>
-    set({
+    set((state) => ({
       activeCombat: {
         enemies,
         turn: 0,
@@ -817,7 +1001,9 @@ export const useGameStore = create((set, get) => ({
         result: null, // 'victory' | 'defeat' | 'fled'
       },
       currentScreen: 'combat',
-    }),
+      // STA01 — un combat coûte de la vigueur
+      hero: { ...state.hero, vigor: applyVigorCost(state.hero.vigor ?? VIGOR_MAX, VIGOR_COST.combat) },
+    })),
 
   endCombat: (result) =>
     set((state) => {
@@ -1124,10 +1310,11 @@ export const useGameStore = create((set, get) => ({
         }
       }
 
-      // Auto-disable si HP < 20% avant même de commencer
+      // Auto-disable si HP sous le seuil configuré (I08) avant même de commencer
       const currentHp = state.hero.stats.hp
       const maxHp = state.hero.stats.maxHp
-      if (currentHp / maxHp < 0.2) {
+      const idleHpThreshold = state.world.idleHpThreshold ?? 0.2
+      if (currentHp / maxHp < idleHpThreshold) {
         const entry = { text: `[Idle] HP trop bas — combat suspendu.`, type: 'info', timestamp: Date.now() }
         // I04 — toast warning (événement rare, non-spammy)
         useToastStore.getState().addToast('Idle paused — HP too low. Rest before continuing.', 'warning')
@@ -1187,7 +1374,7 @@ export const useGameStore = create((set, get) => ({
         { ...state.hero.stats, hp: newHp },
       )
 
-      const isLowHp = s.hp / s.maxHp < 0.2
+      const isLowHp = s.hp / s.maxHp < (state.world.idleHpThreshold ?? 0.2)
       const levelUpStr = levelsGained > 0 ? ` ★ LEVEL UP! (${level})` : ''
       const entry = {
         text: `[Idle] Slew ${monster.name} · +${gold}g · +${xp}xp${levelUpStr}`,
@@ -1251,6 +1438,8 @@ export const useGameStore = create((set, get) => ({
           tickCount: total % 24,
           dayCount: state.world.dayCount + Math.floor(total / 24),
         },
+        // STA01 — un voyage coûte 1 de vigueur (par unité de distance)
+        hero: { ...state.hero, vigor: applyVigorCost(state.hero.vigor ?? VIGOR_MAX, VIGOR_COST.distance) },
       }
     }),
 
@@ -1277,12 +1466,15 @@ export const useGameStore = create((set, get) => ({
     }),
 
   isQuestComplete: (questId) => {
-    const { hero, world } = get()
-    const quest = QUESTS[questId]
+    const { hero, world, meta } = get()
+    const quest = getQuestById(questId)
     if (!quest) return false
     return quest.objectives.every((obj) => {
       if (obj.type === 'kill') return (world.monsterKillCounts[obj.monsterId] ?? 0) >= obj.count
       if (obj.type === 'level') return hero.level >= obj.targetLevel
+      if (obj.type === 'visit') return (world.visitedSpots ?? []).includes(obj.spotId) // Q04
+      if (obj.type === 'craft') return (meta.craftCount ?? 0) >= obj.count             // Q05
+      if (obj.type === 'skill_levelup') return (heroSkillLevels(hero)[obj.skillId] ?? 0) >= obj.targetLevel // ACA04
       return false
     })
   },
@@ -1291,14 +1483,17 @@ export const useGameStore = create((set, get) => ({
     set((state) => {
       const { activeQuests: active, completedQuests: completed } = state.world
       if (!active.includes(questId)) return state
-      const quest = QUESTS[questId]
+      const quest = getQuestById(questId)
       if (!quest) return state
       const r = quest.reward
       const newManaStones = [...state.hero.inventory.manaStones]
       const newEquipment = [...state.hero.inventory.equipment]
       const newResources = { ...state.hero.inventory.resources }
+      const newConsumables = { ...state.hero.inventory.consumables }
       const newStats = { ...state.hero.stats }
       let newGold = state.hero.inventory.gold
+      let newAura = state.hero.aura ?? 0
+      let newConcentration = state.hero.concentration ?? 0
       let unseenLoot = state.unseenLoot
       const repTokens = r.reputationTokens ?? 1
 
@@ -1314,9 +1509,18 @@ export const useGameStore = create((set, get) => ({
           unseenLoot = true
         }
       }
+      // CHQ01 — récompenses en consommables (élixirs/potions ; quêtes d'église)
+      if (r.consumables) {
+        for (const [id, qty] of Object.entries(r.consumables)) {
+          newConsumables[id] = (newConsumables[id] || 0) + qty
+        }
+      }
       if (r.stat && typeof newStats[r.stat.name] === 'number') {
         newStats[r.stat.name] += r.stat.amount
       }
+      // ACA04 — récompenses Aura / Concentration (quêtes de maître)
+      if (r.aura) newAura += r.aura
+      if (r.concentration) newConcentration += r.concentration
 
       // Q07/Q09 — Toast récompense de quête
       const rewardParts = []
@@ -1327,7 +1531,12 @@ export const useGameStore = create((set, get) => ({
       if (r.resources) {
         for (const [id, qty] of Object.entries(r.resources)) rewardParts.push(`${qty}× ${RESOURCES[id]?.name ?? id}`)
       }
+      if (r.consumables) {
+        for (const [id, qty] of Object.entries(r.consumables)) rewardParts.push(`${qty}× ${RESOURCES[id]?.name ?? id}`)
+      }
       if (r.stat) rewardParts.push(`+${r.stat.amount} ${r.stat.name}`)
+      if (r.aura) rewardParts.push(`+${r.aura} Aura`)
+      if (r.concentration) rewardParts.push(`+${r.concentration} Concentration`)
       useToastStore.getState().addToast(
         `Quest complete: ${quest.name} — ${rewardParts.join(' · ')}`,
         'quest',
@@ -1343,8 +1552,10 @@ export const useGameStore = create((set, get) => ({
         hero: {
           ...state.hero,
           stats: newStats,
+          aura: newAura,
+          concentration: newConcentration,
           reputationTokens: state.hero.reputationTokens + repTokens,
-          inventory: { ...state.hero.inventory, manaStones: newManaStones, gold: newGold, equipment: newEquipment, resources: newResources },
+          inventory: { ...state.hero.inventory, manaStones: newManaStones, gold: newGold, equipment: newEquipment, resources: newResources, consumables: newConsumables },
         },
       }
     }),

@@ -116,7 +116,7 @@ function Field({ k, children, cls }) {
   )
 }
 
-export function Sidebar({ style = 'scroll', location, zone, actions = [], idleLog, deity, demonLord, tokens }) {
+export function Sidebar({ style = 'scroll', location, zone, actions = [], idleLog, deity, demonLord, tokens, nextAchievement }) {
   return (
     <div className="sidebar">
       <div className={`scroll-panel style-${style}`}>
@@ -124,6 +124,23 @@ export function Sidebar({ style = 'scroll', location, zone, actions = [], idleLo
         <Field k="Deity" cls={deity ? '' : 'muted'}>{deity || 'No deity chosen'}</Field>
         <Field k="Demon Lord" cls="danger">⚡ {demonLord}</Field>
         <Field k="Reputation">🪙 {tokens} tokens</Field>
+
+        {/* UI-ACHIEVE-PREVIEW — accomplissement le plus proche */}
+        {nextAchievement && (
+          <div data-testid="next-achievement" style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: 'rgba(201,169,110,.12)', border: '1px solid var(--parchment-shadow, #3a2818)' }}>
+            <div className="t-label" style={{ marginBottom: 3 }}>🏆 Next Achievement</div>
+            <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, color: 'var(--ink)', fontSize: 13 }}>{nextAchievement.name}</div>
+            <div style={{ color: 'var(--ink-soft)', fontSize: 11, marginBottom: 4 }}>{nextAchievement.desc}</div>
+            <div role="progressbar" aria-label={`Achievement: ${nextAchievement.name}`} aria-valuenow={nextAchievement.current} aria-valuemin={0} aria-valuemax={nextAchievement.target}
+              style={{ height: 5, borderRadius: 3, background: 'rgba(0,0,0,.25)', overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, nextAchievement.pct * 100)}%`, height: '100%', background: 'var(--gold, #c0a060)' }} />
+            </div>
+            <div style={{ color: 'var(--ink-soft)', fontSize: 10, marginTop: 2, textAlign: 'right' }}>
+              {nextAchievement.current}/{nextAchievement.target}
+              {nextAchievement.reward?.stat ? ` · +${nextAchievement.reward.stat.amount} ${nextAchievement.reward.stat.name}` : ''}
+            </div>
+          </div>
+        )}
 
         {idleLog && (
           <>

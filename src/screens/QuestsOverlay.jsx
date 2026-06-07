@@ -2,10 +2,23 @@
 // Lecture seule : liste les quêtes en cours avec progression par objectif + récompenses.
 // Pour accepter/rendre une quête, c'est le Quest Board (en village) qui s'en charge.
 import { useGameStore } from '../store/gameStore'
-import { QUESTS, QUEST_NPCS } from '../data/quests'
+import { getQuestById, QUEST_NPC_REGISTRY, heroSkillLevels } from '../data/quests'
+import { RESOURCES } from '../data/resources'
 
 // Progression d'un objectif (mirroir de QuestBoard) : kill → monsterKillCounts, level → hero.level
-function objectiveProgress(obj, { killCounts, heroLevel }) {
+function objectiveProgress(obj, { killCounts, heroLevel, visitedSpots = [], craftCount = 0, skillLevels = {} }) {
+  if (obj.type === 'visit') {
+    const done = visitedSpots.includes(obj.spotId)
+    return { current: done ? 1 : 0, target: 1, done, pct: done ? 1 : 0 }
+  }
+  if (obj.type === 'craft') {
+    const current = Math.min(obj.count, craftCount)
+    return { current, target: obj.count, done: current >= obj.count, pct: obj.count > 0 ? current / obj.count : 0 }
+  }
+  if (obj.type === 'skill_levelup') {
+    const current = Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0)
+    return { current, target: obj.targetLevel, done: current >= obj.targetLevel, pct: obj.targetLevel > 0 ? current / obj.targetLevel : 0 }
+  }
   const current = obj.type === 'kill'
     ? Math.min(obj.count, killCounts[obj.monsterId] ?? 0)
     : obj.type === 'level'
@@ -18,12 +31,16 @@ function objectiveProgress(obj, { killCounts, heroLevel }) {
 export default function QuestsOverlay({ onClose }) {
   const activeQuests = useGameStore((s) => s.world.activeQuests) ?? []
   const killCounts = useGameStore((s) => s.world.monsterKillCounts) ?? {}
-  const heroLevel = useGameStore((s) => s.hero.level)
+  const visitedSpots = useGameStore((s) => s.world.visitedSpots) ?? []
+  const craftCount = useGameStore((s) => s.meta.craftCount) ?? 0
+  const hero = useGameStore((s) => s.hero)
+  const skillLevels = heroSkillLevels(hero)
+  const heroLevel = hero.level
   const isQuestComplete = useGameStore((s) => s.isQuestComplete)
   const setScreen = useGameStore((s) => s.setScreen)
   const back = onClose ?? (() => setScreen('world_map'))
 
-  const quests = activeQuests.map((id) => QUESTS[id]).filter(Boolean)
+  const quests = activeQuests.map((id) => getQuestById(id)).filter(Boolean)
 
   return (
     <div className="sheet-scrim" onClick={back}>
@@ -41,7 +58,7 @@ export default function QuestsOverlay({ onClose }) {
 
           {quests.map((q) => {
             const ready = isQuestComplete?.(q.id)
-            const giver = QUEST_NPCS[q.giverNpc]
+            const giver = QUEST_NPC_REGISTRY[q.giverNpc]
             return (
               <div
                 key={q.id}
@@ -71,7 +88,7 @@ export default function QuestsOverlay({ onClose }) {
 
                 <div className="flex flex-col gap-2" style={{ marginBottom: 8 }}>
                   {q.objectives.map((obj) => {
-                    const { current, target, done, pct } = objectiveProgress(obj, { killCounts, heroLevel })
+                    const { current, target, done, pct } = objectiveProgress(obj, { killCounts, heroLevel, visitedSpots, craftCount, skillLevels })
                     return (
                       <div key={obj.id} className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
@@ -104,6 +121,17 @@ export default function QuestsOverlay({ onClose }) {
                   )}
                   {q.reward?.skill && (
                     <span className="quest-reward" style={rewardStyle('#140e1a', '#c8a0ff', '#33285a')}>✦ Skill</span>
+                  )}
+                  {q.reward?.consumables && Object.entries(q.reward.consumables).map(([id, qty]) => (
+                    <span key={id} className="quest-reward" style={rewardStyle('#0e1814', '#70c0a0', '#0e3828')}>
+                      {qty}× {RESOURCES[id]?.name ?? id}
+                    </span>
+                  ))}
+                  {q.reward?.aura > 0 && (
+                    <span className="quest-reward" style={rewardStyle('#1a1228', '#c084fc', '#3a1858')}>+{q.reward.aura} Aura</span>
+                  )}
+                  {q.reward?.concentration > 0 && (
+                    <span className="quest-reward" style={rewardStyle('#0e1a1a', '#60c0c0', '#0e3838')}>+{q.reward.concentration} Conc.</span>
                   )}
                 </div>
               </div>

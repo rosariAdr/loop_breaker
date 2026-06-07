@@ -4,8 +4,12 @@ import { useToastStore } from '../store/toastStore'
 import { ZONES } from '../data/zones'
 import { RESOURCES } from '../data/resources'
 import { SKILLS } from '../data/skills'
-import { QUESTS } from '../data/quests'
+import { QUESTS, heroSkillLevels } from '../data/quests'
+import { CHURCH_QUESTS, getActiveChurchQuests, CHURCH_ROTATION_DAYS } from '../data/churchQuests'
+import { MASTER_QUESTS } from '../data/masterQuests'
+import { QuestCard } from './QuestBoard'
 import { isBuildingOpen, nextOpenHour } from '../data/buildingHours'
+import { getAcademyCatalog, skillSellPrice } from '../data/academy'
 import {
   EQUIPMENT_TEMPLATES,
   RARITY_TIERS,
@@ -13,7 +17,7 @@ import {
   canCraft,
   createEquipmentInstance,
 } from '../data/equipment'
-import { resolveCraftOutcome, alchemyQuantity } from '../utils/crafting'
+import { resolveCraftOutcome, alchemyQuantity, concentrationGain, rollConcentrationBump } from '../utils/crafting'
 import { ALCHEMY_RECIPES, MASTER_RECIPES } from '../data/recipes'
 import CraftingMinigame from '../components/CraftingMinigame'
 import { ArtSlot, HeroAvatar, ParchmentFrame } from '../components/parchment'
@@ -43,6 +47,8 @@ const NPCS = {
     line: "So you'd learn the blade? Steel is patient, lad. Train, and I'll make a hero of you yet." },
   alchemy:        { role: 'mage',     name: 'Vesna', title: 'Alchemist', icon: '⚗', cta: 'Enter the lab',
     line: "Mind the dosage — a hair too much and the draught turns to poison. Shall we brew?" },
+  academy:        { role: 'mage',     name: 'Archmagus Oren', title: 'Academy Master', icon: '📜', cta: 'Enter the Academy',
+    line: "Knowledge has a price, and a value. Learn a technique — or part with one you've outgrown." },
 }
 
 // IMM01 — actions par bâtiment. L'auberge s'exécute INLINE (repos + feedback,
@@ -237,6 +243,7 @@ export default function SafeZone() {
     blacksmith: { icon: '🔨', name: "Blacksmith's Forge", color: '#808080' },
     master_smith: { icon: '🛠', name: 'Master Smith', color: '#c0a060' }, // Z06
     knight_trainer: { icon: '⚔', name: 'Sir Aldric — Knight Trainer', color: '#c08040' },
+    academy: { icon: '📜', name: 'Academy of Magic', color: '#8060c0' }, // ACA01
   }
 
   return (
@@ -295,6 +302,7 @@ export default function SafeZone() {
               : activeBuilding === 'blacksmith' ? <BlacksmithPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />
               : activeBuilding === 'master_smith' ? <MasterSmithPanel onBack={() => setShowPanel(false)} />
               : activeBuilding === 'knight_trainer' ? <KnightTrainerPanel onBack={() => setShowPanel(false)} />
+              : activeBuilding === 'academy' ? <AcademyPanel onBack={() => setShowPanel(false)} />
               : <InformantsPanel onBack={() => setShowPanel(false)} />
           ) : null}
         />
@@ -361,9 +369,24 @@ function InnPanel({ onBack }) {
 }
 
 function ChurchPanel({ onBack }) {
-  const { hero, prayAtChurch } = useGameStore()
+  const { hero, world, meta, prayAtChurch, startQuest, completeQuest, abandonQuest, isQuestComplete } = useGameStore()
 
   const alreadyFull = hero.stats.hp >= hero.stats.maxHp && hero.stats.mana >= hero.stats.maxMana
+
+  // CHQ01 — quêtes de l'église : pool tournant tous les 3 jours
+  const activeIds = world.activeQuests ?? []
+  const completedIds = world.completedQuests ?? []
+  const dayCount = world.dayCount ?? 1
+  const rotating = getActiveChurchQuests(dayCount)
+  const available = rotating.filter(q => !activeIds.includes(q.id) && !completedIds.includes(q.id))
+  // Quêtes d'église acceptées (restent rendables même après rotation hors du pool)
+  const activeChurch = activeIds.map(id => CHURCH_QUESTS[id]).filter(Boolean)
+  const nextRotationDay = (Math.floor(dayCount / CHURCH_ROTATION_DAYS) + 1) * CHURCH_ROTATION_DAYS
+  const daysLeft = Math.max(1, nextRotationDay - dayCount)
+
+  const killCounts = world.monsterKillCounts ?? {}
+  const visitedSpots = world.visitedSpots ?? []
+  const craftCount = meta?.craftCount ?? 0
 
   return (
     <Panel title="⛪ Church of the Old Gods" onBack={onBack}>
@@ -392,6 +415,55 @@ function ChurchPanel({ onBack }) {
             {alreadyFull ? 'Already at full strength' : 'Restores 40% HP & Mana · costs 1 tick'}
           </span>
         </button>
+      </div>
+
+      {/* CHQ01 — Œuvres de dévotion (quêtes tournantes, récompenses tokens + élixirs) */}
+      <div className="mt-6 flex flex-col gap-3" style={{ maxWidth: 560 }} data-testid="church-quests">
+        <div className="flex items-baseline justify-between">
+          <h3 style={{ fontFamily: 'Cinzel, serif', color: '#c0a060', fontSize: '0.95rem' }}>
+            🕯 Acts of Devotion
+          </h3>
+          <span style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', fontStyle: 'italic' }}>
+            New deeds in {daysLeft} day{daysLeft > 1 ? 's' : ''}
+          </span>
+        </div>
+        <p style={{ color: 'var(--ink-soft)', fontSize: '0.72rem', fontStyle: 'italic' }}>
+          "Serve the faithful, and the Old Gods provide — never coin, but their blessings."
+        </p>
+
+        {activeChurch.length > 0 && activeChurch.map(q => (
+          <QuestCard
+            key={q.id}
+            quest={q}
+            questStatus="active"
+            heroLevel={hero.level}
+            killCounts={killCounts}
+            visitedSpots={visitedSpots}
+            craftCount={craftCount}
+            canComplete={isQuestComplete(q.id)}
+            onComplete={() => completeQuest(q.id)}
+            onAbandon={() => abandonQuest(q.id)}
+          />
+        ))}
+
+        {available.length > 0 ? available.map(q => (
+          <QuestCard
+            key={q.id}
+            quest={q}
+            questStatus="available"
+            heroLevel={hero.level}
+            killCounts={killCounts}
+            visitedSpots={visitedSpots}
+            craftCount={craftCount}
+            onAccept={() => startQuest(q.id)}
+          />
+        )) : (
+          activeChurch.length === 0 && (
+            <p style={{ color: '#5a4a3a', fontSize: '0.78rem', fontStyle: 'italic' }}>
+              You have answered the church's calls for now. Return in a few days.
+            </p>
+          )
+        )}
       </div>
     </Panel>
   )
@@ -555,6 +627,9 @@ function AlchemyPanel({ onBack }) {
 
   const handleComplete = ({ tier }) => {
     setMinigameOpen(false)
+    useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
+    useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
+    useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
     const qty = alchemyQuantity(tier)
     if (qty > 0) {
       addConsumable(recipe.output, qty)
@@ -657,7 +732,10 @@ function MasterSmithPanel({ onBack }) {
 
   const handleComplete = ({ tier }) => {
     setMinigameOpen(false)
-    const outcome = resolveCraftOutcome(recipe.rarity, tier)
+    useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
+    useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
+    useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
+    const outcome = resolveCraftOutcome(recipe.rarity, tier, rollConcentrationBump(hero.concentration)) // STA03
     if (outcome.success) {
       const item = createEquipmentInstance(recipe.templateId, outcome.rarity)
       addEquipmentToInventory(item)
@@ -767,7 +845,10 @@ function BlacksmithPanel({ onBack }) {
   // CRF03 + CRF04 — issue du mini-jeu : succès = rareté ajustée, échec = debuff
   const handleMinigameComplete = ({ tier }) => {
     setMinigameOpen(false)
-    const outcome = resolveCraftOutcome(selectedRarity, tier)
+    useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
+    useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
+    useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
+    const outcome = resolveCraftOutcome(selectedRarity, tier, rollConcentrationBump(hero.concentration)) // STA03
     if (outcome.success) {
       const item = createEquipmentInstance(selectedTemplate, outcome.rarity)
       addEquipmentToInventory(item)
@@ -974,9 +1055,19 @@ const ALDRIC_TRADES = [
 ]
 
 function KnightTrainerPanel({ onBack }) {
-  const { hero, world, spendGold, removeResource, addSkillToInventory, startQuest, completeQuest, isQuestComplete } = useGameStore()
-  const [tab, setTab] = useState('quests') // 'quests' | 'trades'
+  const { hero, world, spendGold, removeResource, addSkillToInventory, startQuest, completeQuest, isQuestComplete, grantAura } = useGameStore()
+  const [tab, setTab] = useState('quests') // 'quests' | 'trades' | 'train'
   const [msg, setMsg] = useState(null)
+
+  // TRA01 — entraînement : le maître guerrier octroie de l'Aura (voie alternative STA02)
+  const TRAIN_AURA_COST = 120
+  const TRAIN_AURA_GAIN = 5
+  const handleTrainAura = () => {
+    if (hero.inventory.gold < TRAIN_AURA_COST) return flash('Not enough gold.', '#c04040')
+    spendGold(TRAIN_AURA_COST)
+    grantAura(TRAIN_AURA_GAIN)
+    flash(`Trained hard! +${TRAIN_AURA_GAIN} Aura.`, '#c084fc')
+  }
 
   // Garde-fous pour les anciennes sauvegardes avec format incorrect
   const activeQuests = Array.isArray(world.activeQuests) ? world.activeQuests : []
@@ -1020,7 +1111,7 @@ function KnightTrainerPanel({ onBack }) {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4">
-        {['quests', 'trades'].map(t => (
+        {['quests', 'trades', 'train'].map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -1032,7 +1123,7 @@ function KnightTrainerPanel({ onBack }) {
               border: `1px solid ${tab === t ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
             }}
           >
-            {t === 'quests' ? '📜 Quests' : '⚔ Techniques'}
+            {t === 'quests' ? '📜 Quests' : t === 'trades' ? '⚔ Techniques' : '🔥 Train'}
           </button>
         ))}
       </div>
@@ -1199,6 +1290,167 @@ function KnightTrainerPanel({ onBack }) {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* TRA01 — entraînement : le maître guerrier octroie de l'Aura */}
+      {tab === 'train' && (
+        <div className="flex flex-col gap-2" style={{ maxWidth: 460 }}>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+            "Sweat now, bleed less later. Train, and your blows will bite harder."
+          </p>
+          <div className="flex items-center justify-between px-3 py-2 rounded" style={{ background: 'rgba(192,132,252,.10)', border: '1px solid var(--parchment-shadow)' }}>
+            <div>
+              <p style={{ fontFamily: 'Cinzel, serif', color: '#c084fc', fontSize: '0.88rem' }}>Combat Training</p>
+              <p style={{ color: 'var(--ink-soft)', fontSize: '0.73rem' }}>+{TRAIN_AURA_GAIN} Aura · current: {hero.aura ?? 0}</p>
+            </div>
+            <button
+              onClick={handleTrainAura}
+              disabled={hero.inventory.gold < TRAIN_AURA_COST}
+              data-testid="train-aura"
+              className="px-3 py-1 rounded text-xs shrink-0"
+              style={{ fontFamily: 'Cinzel, serif', background: hero.inventory.gold >= TRAIN_AURA_COST ? 'rgba(192,132,252,.18)' : 'rgba(201,169,110,.18)', color: hero.inventory.gold >= TRAIN_AURA_COST ? '#c084fc' : 'var(--ink-soft)', border: '1px solid var(--parchment-shadow)', cursor: hero.inventory.gold >= TRAIN_AURA_COST ? 'pointer' : 'not-allowed' }}
+            >
+              {TRAIN_AURA_COST} 🪙
+            </button>
+          </div>
+        </div>
+      )}
+    </Panel>
+  )
+}
+
+// ── ACA01/ACA03 — Académie de magie : acheter / revendre des skills ───────────
+function AcademyPanel({ onBack }) {
+  const { hero, world, buySkill, sellSkill, unequipActiveSkill, unequipPassiveSkill, startQuest, completeQuest, abandonQuest, isQuestComplete } = useGameStore()
+  const catalog = getAcademyCatalog()
+  const owned = hero.inventory.manaStones ?? []
+
+  // ACA04 — épreuves du maître (quêtes de level-up de skill)
+  const activeIds = world.activeQuests ?? []
+  const completedIds = world.completedQuests ?? []
+  const skillLevels = heroSkillLevels(hero)
+  const masterAvailable = Object.values(MASTER_QUESTS).filter(q => !activeIds.includes(q.id) && !completedIds.includes(q.id))
+  const masterActive = activeIds.map(id => MASTER_QUESTS[id]).filter(Boolean)
+
+  const rowStyle = (accent) => ({
+    background: 'rgba(160,110,220,.10)', border: `1px solid ${accent}`,
+    fontFamily: 'Cinzel, serif', borderRadius: 6,
+  })
+
+  return (
+    <Panel title="📜 Academy of Magic" onBack={onBack}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.5rem', fontStyle: 'italic' }}>
+        "Knowledge has a price, and a value. Learn a technique — or part with one you've outgrown."
+      </p>
+      <p style={{ color: 'var(--gold, #c0a060)', fontSize: '0.8rem', marginBottom: '0.6rem' }}>Gold: {hero.inventory.gold} 🪙</p>
+
+      <div className="t-label" style={{ marginBottom: 4 }}>Learn a skill</div>
+      <div className="flex flex-col gap-1.5" style={{ maxWidth: 460, marginBottom: '0.9rem' }}>
+        {catalog.map(({ skillId, price, skill }) => {
+          const afford = hero.inventory.gold >= price
+          return (
+            <button
+              key={skillId}
+              data-testid={`academy-buy-${skillId}`}
+              onClick={() => buySkill(skillId)}
+              disabled={!afford}
+              className="text-left px-3 py-2 text-xs flex items-center justify-between"
+              style={{ ...rowStyle(afford ? '#5a40b0' : '#1a1620'), opacity: afford ? 1 : 0.55, cursor: afford ? 'pointer' : 'not-allowed' }}
+            >
+              <span><span style={{ color: '#b090e0' }}>{skill.name}</span> <span style={{ color: '#6a5a7a', marginLeft: 6 }}>{skill.type}</span></span>
+              <span style={{ color: afford ? 'var(--gold, #c0a060)' : '#4a3a5a' }}>{price} 🪙</span>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="t-label" style={{ marginBottom: 4 }}>Sell a skill (from your unequipped stones)</div>
+      {owned.length === 0 ? (
+        <p style={{ color: 'var(--ink-soft)', fontSize: '0.78rem', fontStyle: 'italic' }}>No unequipped skills to sell.</p>
+      ) : (
+        <div className="flex flex-col gap-1.5" style={{ maxWidth: 460 }}>
+          {owned.map((s, i) => {
+            const skill = SKILLS[s.skillId]
+            const price = skillSellPrice(s.skillId, s.level ?? 1)
+            return (
+              <button
+                key={`${s.skillId}_${i}`}
+                data-testid={`academy-sell-${s.skillId}`}
+                onClick={() => sellSkill(s.skillId)}
+                className="text-left px-3 py-2 text-xs flex items-center justify-between"
+                style={{ ...rowStyle('#3a2818'), cursor: 'pointer' }}
+              >
+                <span style={{ color: 'var(--ink)' }}>{skill?.name ?? s.skillId} <span style={{ color: '#8a7a6a' }}>Lv{s.level ?? 1}</span></span>
+                <span style={{ color: 'var(--forest-deep, #4a8020)' }}>+{price} 🪙</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ACA02 — déséquiper un skill se fait UNIQUEMENT ici (à l'Académie). */}
+      <div className="t-label" style={{ margin: '0.9rem 0 4px' }}>Unequip a skill <span style={{ color: '#8a7a6a', fontWeight: 400 }}>(only here)</span></div>
+      {(hero.activeSkills.length + hero.passiveSkills.length) === 0 ? (
+        <p style={{ color: 'var(--ink-soft)', fontSize: '0.78rem', fontStyle: 'italic' }}>No equipped skills.</p>
+      ) : (
+        <div className="flex flex-col gap-1.5" style={{ maxWidth: 460 }}>
+          {hero.activeSkills.map((s, i) => (
+            <button
+              key={`uneq-a-${s.skillId}-${i}`}
+              data-testid={`academy-unequip-${s.skillId}`}
+              onClick={() => unequipActiveSkill(s.skillId)}
+              className="text-left px-3 py-2 text-xs flex items-center justify-between"
+              style={{ ...rowStyle('#3a2818'), cursor: 'pointer' }}
+            >
+              <span style={{ color: 'var(--ink)' }}>{SKILLS[s.skillId]?.name ?? s.skillId} <span style={{ color: '#8a7a6a' }}>active · Lv{s.level ?? 1}</span></span>
+              <span style={{ color: 'var(--amber-deep, #b07a30)' }}>Unequip ✕</span>
+            </button>
+          ))}
+          {hero.passiveSkills.map((s, i) => (
+            <button
+              key={`uneq-p-${s.skillId}-${i}`}
+              data-testid={`academy-unequip-${s.skillId}`}
+              onClick={() => unequipPassiveSkill(s.skillId)}
+              className="text-left px-3 py-2 text-xs flex items-center justify-between"
+              style={{ ...rowStyle('#3a2818'), cursor: 'pointer' }}
+            >
+              <span style={{ color: 'var(--ink)' }}>{SKILLS[s.skillId]?.name ?? s.skillId} <span style={{ color: '#8a7a6a' }}>passive · Lv{s.level ?? 1}</span></span>
+              <span style={{ color: 'var(--amber-deep, #b07a30)' }}>Unequip ✕</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ACA04 — Épreuves de maîtrise : monter un skill à un niveau donné */}
+      {(masterAvailable.length > 0 || masterActive.length > 0) && (
+        <div className="mt-4 flex flex-col gap-2" style={{ maxWidth: 560 }} data-testid="master-quests">
+          <div className="t-label" style={{ marginBottom: 2 }}>✦ Trials of Mastery</div>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.72rem', fontStyle: 'italic' }}>
+            "Bring a technique to the level I name, and I shall reward your discipline."
+          </p>
+          {masterActive.map(q => (
+            <QuestCard
+              key={q.id}
+              quest={q}
+              questStatus="active"
+              heroLevel={hero.level}
+              skillLevels={skillLevels}
+              canComplete={isQuestComplete(q.id)}
+              onComplete={() => completeQuest(q.id)}
+              onAbandon={() => abandonQuest(q.id)}
+            />
+          ))}
+          {masterAvailable.map(q => (
+            <QuestCard
+              key={q.id}
+              quest={q}
+              questStatus="available"
+              heroLevel={hero.level}
+              skillLevels={skillLevels}
+              onAccept={() => startQuest(q.id)}
+            />
+          ))}
         </div>
       )}
     </Panel>

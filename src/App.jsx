@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useGameStore } from './store/gameStore'
 import { useToastStore } from './store/toastStore'
 import { ZONES } from './data/zones'
+import { getClosestAchievement } from './data/achievements'
 
 import WorldMap from './screens/WorldMap'
 import ZoneView from './screens/ZoneView'
@@ -38,6 +39,7 @@ function App() {
   } = useGameStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const animationsOn = useGameStore((s) => s.meta.settings?.animations ?? true)
+  const meta = useGameStore((s) => s.meta) // UI-ACHIEVE-PREVIEW
 
   useEffect(() => {
     loadGame()
@@ -138,11 +140,14 @@ function App() {
   const locName = zone?.city?.id === world.currentLocation ? zone.city.name
     : zone?.villages?.find(v => v.id === world.currentLocation)?.name ?? zone?.name ?? 'Eldenmoor'
   const showSidebar = baseScreen === 'world_map'
+  // UI-ACHIEVE-PREVIEW — accomplissement dont on est le plus proche (encart panneau droit)
+  const nextAchievement = getClosestAchievement({ hero, world, meta })
   const sbProps = {
     location: locName, zone: zone?.name ?? 'Ashenvale',
     deity: hero.deity ? hero.deity[0].toUpperCase() + hero.deity.slice(1) : null,
     demonLord: world.demonLordDefeated ? 'Malachar (defeated)' : 'Malachar the Undying',
     tokens: hero.reputationTokens ?? 0,
+    nextAchievement,
     actions: [
       { ico: '🌙', label: 'Sleep', primary: true, onClick: () => sleep() },
       { ico: '⚔', label: 'Hero Sheet', onClick: () => setScreen('hero_sheet') },

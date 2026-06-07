@@ -69,19 +69,33 @@ export function scoreToTier(accuracy) {
  *  - échec   : { success: false, rarity: null, tier, severity: 'fail'|'catastrophe' }
  * La sévérité indique au caller quel debuff appliquer (et si permanent).
  */
-export function resolveCraftOutcome(baseRarity, tier) {
+// STA03 — `extraBump` ajoute des crans de rareté (bonus Concentration). Défaut 0 = inchangé.
+export function resolveCraftOutcome(baseRarity, tier, extraBump = 0) {
   switch (tier) {
     case 'perfect':
-      return { success: true, tier, rarity: bumpRarity(baseRarity, 2) }
+      return { success: true, tier, rarity: bumpRarity(baseRarity, 2 + extraBump) }
     case 'good':
-      return { success: true, tier, rarity: bumpRarity(baseRarity, 1) }
+      return { success: true, tier, rarity: bumpRarity(baseRarity, 1 + extraBump) }
     case 'neutral':
-      return { success: true, tier, rarity: baseRarity }
+      return { success: true, tier, rarity: bumpRarity(baseRarity, extraBump) }
     case 'fail':
       return { success: false, tier, rarity: null, severity: 'fail', permanentDebuff: false }
     case 'catastrophe':
       return { success: false, tier, rarity: null, severity: 'catastrophe', permanentDebuff: true }
     default:
-      return { success: true, tier: 'neutral', rarity: baseRarity }
+      return { success: true, tier: 'neutral', rarity: bumpRarity(baseRarity, extraBump) }
   }
+}
+
+// STA03 — Concentration (0-150). Gain par craft selon le tier du mini-jeu : +5 / +2 / +1.
+export const CONCENTRATION_MAX = 150
+export function concentrationGain(tier) {
+  return tier === 'perfect' ? 5 : tier === 'good' ? 2 : tier === 'neutral' ? 1 : 0
+}
+// Chance d'un cran de rareté supérieur = concentration/150 (≥150 → garanti).
+export function concentrationBumpChance(concentration) {
+  return Math.min(1, Math.max(0, (concentration ?? 0) / CONCENTRATION_MAX))
+}
+export function rollConcentrationBump(concentration, rng = Math.random) {
+  return rng() < concentrationBumpChance(concentration) ? 1 : 0
 }
