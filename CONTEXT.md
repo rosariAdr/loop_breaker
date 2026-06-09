@@ -33,6 +33,8 @@ npm run build         # dist/ — vérifier avant tout merge
 npm run lint          # ESLint check
 ```
 
+**Hébergement v1 (DEPLOY01)** : **Vercel + Vercel Authentication** (alpha **privée**). SPA 100 % client-side (pas de backend ; saves `localStorage`). Routing SPA via `vercel.json` (rewrites → `/index.html`). Réglages : preset Vite · build `npm run build` · output `dist`. ⚠️ `public/` étant gitignoré, **décider de la livraison des assets** avant la 1re mise en ligne (cf. README §Déploiement + `CONT05`). Le **durcissement réel** (backend, autorité serveur, comptes/rôles, anti-triche) est repoussé à une version ultérieure (cf. `SEC02`) — l'alpha privée s'appuie uniquement sur l'auth Vercel.
+
 **État technique (2026-06-01)** :
 - **729 tests** dans **29 fichiers**, durée ~7s — tous verts
 - Build prod : **~415 KB JS / ~117 KB gzipped**
