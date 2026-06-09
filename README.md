@@ -33,6 +33,25 @@ Explorer une zone → combattre (tour par tour, skills, effets de statut) → lo
 | **[DESIGN.md](DESIGN.md)** | Specs de game design validées (effets de statut, etc.). |
 | **[PLAYTESTS.md](PLAYTESTS.md)** | Journal de playtest structuré. |
 
+## Déploiement (Vercel — alpha privée)
+
+Loop Breaker est une **SPA 100 % client-side** (React + Vite, pas de backend, saves en `localStorage`).
+
+**Réglages Vercel (dashboard) :**
+
+| Réglage | Valeur |
+|---|---|
+| Framework preset | **Vite** |
+| Install command | `npm install` |
+| Build command | `npm run build` (→ `vite build`) |
+| Output directory | `dist` |
+
+- **Routing SPA** : `vercel.json` réécrit toutes les routes vers `/index.html` (pas de 404 au refresh / sur les deep links).
+- **Alpha PRIVÉE** : activer **Vercel Authentication** dans le dashboard (Settings → Deployment Protection) pour restreindre l'accès. Le durcissement réel (backend, autorité serveur, comptes/rôles) est repoussé à plus tard (cf. `SEC02`).
+- **Secrets** : ⚠️ **ne JAMAIS committer de secret** — tout le bundle est public côté client. Une variable destinée au client doit être préfixée `VITE_` et déclarée dans Vercel → Settings → Environment Variables. (À ce jour : aucune variable d'env requise.)
+
+> ⚠️ **Assets (`public/`) — prérequis avant un déploiement avec visuels.** Le dossier `public/` (carte, sprites héros, monstres, bâtiments, favicon) est **gitignoré** (taille + licences) → il **n'est pas dans le repo**, donc un build Vercel servirait l'app **sans ces visuels** (la carte et l'avatar n'ont pas de fallback ; monstres/bâtiments/portraits retombent sur emoji/placeholder). Le `npm run build` local fonctionne car `public/` existe en local. **Décision à prendre avant la 1re mise en ligne** : (a) committer tout/partie de `public/` (optimiser d'abord les PNG lourds via squoosh, vérifier les licences — OK pour une alpha privée), ou (b) prévoir une livraison d'assets séparée. Cf. `CONT05`.
+
 ## Architecture (résumé)
 
 - `src/data/` — données pures immuables (monstres, skills, zones, équipement, recettes, debuffs, titres).

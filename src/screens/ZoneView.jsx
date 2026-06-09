@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { ZONES } from '../data/zones'
 import { MONSTERS, MONSTERS_BY_ZONE, MONSTERS_BY_SPOT } from '../data/monsters'
@@ -11,8 +11,13 @@ import { ParchmentFrame } from '../components/parchment'
 const SKILL_REVEAL_THRESHOLD = 5
 
 export default function ZoneView() {
-  const { world, setScreen } = useGameStore()
+  const { world, setScreen, recordVisit } = useGameStore()
   const zone = ZONES[world.currentZone]
+
+  // Q04 — enregistre la visite du spot de chasse courant (quêtes d'exploration)
+  useEffect(() => {
+    if (world.currentHuntingSpot) recordVisit(world.currentHuntingSpot)
+  }, [world.currentHuntingSpot, recordVisit])
 
   if (!zone) return null
 
@@ -225,8 +230,12 @@ function DungeonSection({ zone, world }) {
 
 // ── Section Demon Lord ────────────────────────────────────────────────────────
 function DemonLordSection({ world }) {
+  const { startCombat, hero } = useGameStore()
+  // DEMON-FIGHT — lance le vrai combat contre Malachar (rank demon_lord, 3 phases BSS03,
+  // drop Soul Rend garanti). La victoire est gérée dans Combat.handleVictory → clearDungeon('grimspire').
   const handleChallenge = () => {
-    alert('Demon Lord battle coming soon!')
+    const enemies = generateEnemies('malachar', 'grimspire', hero.runNumber)
+    if (enemies.length) startCombat(enemies)
   }
 
   return (
@@ -259,11 +268,39 @@ function DemonLordSection({ world }) {
 
 // ── Journal idle (panneau parchemin) ──────────────────────────────────────────
 function IdleSidebar() {
-  const { world } = useGameStore()
+  const { world, setIdleHpThreshold } = useGameStore()
+  const threshold = world.idleHpThreshold ?? 0.2
+  const THRESHOLDS = [0.2, 0.35, 0.5]
 
   return (
     <aside className="forest-log">
       <div className="scroll-panel style-scroll" style={{ height: '100%' }}>
+        {/* I08 — réglage du seuil de PV d'auto-stop */}
+        <div className="t-label" style={{ marginBottom: 6 }}>Auto-stop at HP</div>
+        <div className="flex gap-1" style={{ marginBottom: 12 }} data-testid="idle-hp-threshold">
+          {THRESHOLDS.map((t) => {
+            const active = Math.abs(threshold - t) < 0.001
+            return (
+              <button
+                key={t}
+                onClick={() => setIdleHpThreshold(t)}
+                data-testid={`idle-threshold-${Math.round(t * 100)}`}
+                className="px-2 py-1 rounded text-xs"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  flex: 1,
+                  background: active ? 'rgba(74,128,32,.22)' : 'rgba(201,169,110,.14)',
+                  color: active ? 'var(--forest-deep, #4a8020)' : 'var(--ink-soft)',
+                  border: `1px solid ${active ? 'var(--forest-deep, #4a8020)' : 'var(--parchment-shadow, #3a2818)'}`,
+                  cursor: 'pointer',
+                }}
+              >
+                {Math.round(t * 100)}%
+              </button>
+            )
+          })}
+        </div>
+
         <div className="t-label" style={{ marginBottom: 8 }}>Idle Log</div>
 
         {world.isIdleActive ? (

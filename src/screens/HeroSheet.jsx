@@ -1,4 +1,5 @@
 import { useGameStore } from '../store/gameStore'
+import { useToastStore } from '../store/toastStore'
 import { SKILLS } from '../data/skills'
 import { DEITIES } from '../data/deities'
 import { RARITY_CONFIG, calcEquippedStatBonuses } from '../data/equipment'
@@ -14,6 +15,9 @@ const HERO_SPRITE = '/sprites/hero/idle/00.png'
 const STAT_TOOLTIPS = {
   HP: "Points de vie. À 0 → mort + transmigration.",
   Mana: "Énergie magique. Coût des skills actifs (réduit de 10% par niveau de skill).",
+  Vigor: "Vigueur (Fatigue). −3/combat, −1/voyage, −3/craft. Restaurée à 100 en dormant. Sous 70 → malus de stats croissant.",
+  Aura: "Aura — multiplicateur de dégâts permanent : +0,5% de dégâts par point. Se débloque en utilisant 15 skills en moins de 4 jours, puis +1 tous les 10 skills.",
+  Concentration: "Concentration — qualité de craft (0-150). Chance d'un cran de rareté supérieur = X/150 ; 150 = +1 cran garanti. Gagnée en craftant.",
   Strength: "Augmente les dégâts d'attaque basique et des skills physiques. +1/level-up.",
   Agility: "Vitesse au tour de combat (ordre d'action). Augmente le %fuite.",
   Intelligence: "Augmente les dégâts des skills magiques.",
@@ -30,8 +34,11 @@ const ATTR_DEFS = [
   { key: 'def', label: 'Defense' },
 ]
 
-export default function HeroSheet() {
-  const { hero, meta, world, setScreen, unequipItem, unequipActiveSkill, unequipPassiveSkill } = useGameStore()
+export default function HeroSheet({ onClose }) {
+  const { hero, meta, world, setScreen, unequipItem } = useGameStore()
+  // ACA02 — équiper est libre partout, mais déséquiper un skill se fait UNIQUEMENT à
+  // l'Académie de magie. Ailleurs, on donne un feedback clair au lieu de déséquiper.
+  const blockSkillUnequip = () => useToastStore.getState().addToast('Visit the Academy of Magic to unequip skills.', 'info')
   const equippedBonuses = calcEquippedStatBonuses(hero.equipped ?? {})
   const earnedTitles = (meta?.titlesEarned ?? []).map(id => TITLES[id]).filter(Boolean) // M01
   // GLT03 — statut Gluttony
@@ -39,7 +46,7 @@ export default function HeroSheet() {
   const gluttonyReady = isGluttonyReady(world?.dayCount ?? 0, meta?.gluttonyLastUsed)
   const gluttonyDays = gluttonyDaysRemaining(world?.dayCount ?? 0, meta?.gluttonyLastUsed)
 
-  const back = () => setScreen('world_map')
+  const back = onClose ?? (() => setScreen('world_map'))
 
   return (
     <div className="sheet-scrim" onClick={back}>
@@ -101,6 +108,7 @@ export default function HeroSheet() {
                 <div className="dv"><div className="dv-num">#{hero.runNumber}</div><div className="dv-lbl">Run</div></div>
               </div>
               <button className="pbtn wide" onClick={() => setScreen('inventory')}>🎒 Inventory</button>
+              <button className="pbtn wide" style={{ marginTop: 6 }} onClick={() => setScreen('codex')}>📖 Bestiary</button>
             </div>
           </div>
 
@@ -113,6 +121,12 @@ export default function HeroSheet() {
               <div className="derived" style={{ marginBottom: 20 }}>
                 <Vital label="HP" tip={STAT_TOOLTIPS.HP} color="var(--danger)" value={`${hero.stats.hp}/${hero.stats.maxHp}`} />
                 <Vital label="Mana" tip={STAT_TOOLTIPS.Mana} color="#2f7fb8" value={`${hero.stats.mana}/${hero.stats.maxMana}`} />
+                {/* STA01 — Vigueur (Fatigue) */}
+                <Vital label="Vigor" tip={STAT_TOOLTIPS.Vigor} color={(hero.vigor ?? 100) >= 70 ? '#4a8020' : (hero.vigor ?? 100) >= 30 ? '#b07a30' : 'var(--danger)'} value={`${hero.vigor ?? 100}/100`} />
+                {/* STA02 — Aura (mult. de dégâts) ; affichée une fois débloquée */}
+                {(hero.aura ?? 0) > 0 && <Vital label="Aura" tip={STAT_TOOLTIPS.Aura} color="#c084fc" value={`${hero.aura} (+${(hero.aura * 0.5).toFixed(1)}% dmg)`} />}
+                {/* STA03 — Concentration (qualité de craft) */}
+                {(hero.concentration ?? 0) > 0 && <Vital label="Concentration" tip={STAT_TOOLTIPS.Concentration} color="#60a0d0" value={`${hero.concentration}/150`} />}
                 <Vital label="Experience" value={`${hero.exp}/${hero.expToNext}`} />
               </div>
               <div className="attr-grid">
@@ -165,7 +179,7 @@ export default function HeroSheet() {
               <div className="pb-title">Active Skills ({hero.activeSkills.length}/6)</div>
               {hero.activeSkills.length === 0
                 ? <p className="hs-muted">No active skills equipped. Equip from Inventory.</p>
-                : <div className="skill-list">{hero.activeSkills.map(s => <SkillRow key={s.skillId} skill={s} onUnequip={() => unequipActiveSkill(s.skillId)} />)}</div>}
+                : <div className="skill-list">{hero.activeSkills.map(s => <SkillRow key={s.skillId} skill={s} onUnequip={blockSkillUnequip} />)}</div>}
             </div>
 
             {/* Passive Skills */}
@@ -173,7 +187,7 @@ export default function HeroSheet() {
               <div className="pb-title">Passive Skills ({hero.passiveSkills.length}/4)</div>
               {hero.passiveSkills.length === 0
                 ? <p className="hs-muted">No passive skills equipped.</p>
-                : <div className="skill-list">{hero.passiveSkills.map(s => <SkillRow key={s.skillId} skill={s} onUnequip={() => unequipPassiveSkill(s.skillId)} />)}</div>}
+                : <div className="skill-list">{hero.passiveSkills.map(s => <SkillRow key={s.skillId} skill={s} onUnequip={blockSkillUnequip} />)}</div>}
             </div>
 
             {/* GLT03 — Gluttony */}

@@ -1,21 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { ZONES } from '../data/zones'
+import { useToastStore } from '../store/toastStore'
+import { ZONES, getLocationType } from '../data/zones'
 import { RESOURCES } from '../data/resources'
 import { SKILLS } from '../data/skills'
-import { QUESTS } from '../data/quests'
+import { QUESTS, heroSkillLevels } from '../data/quests'
+import { CHURCH_QUESTS, getActiveChurchQuests, CHURCH_ROTATION_DAYS } from '../data/churchQuests'
+import { MASTER_QUESTS } from '../data/masterQuests'
+import { QuestCard } from './QuestBoard'
+import { isBuildingOpen, nextOpenHour } from '../data/buildingHours'
+import { getAcademyCatalog, skillSellPrice } from '../data/academy'
 import {
   EQUIPMENT_TEMPLATES,
   RARITY_TIERS,
   RARITY_CONFIG,
   canCraft,
   createEquipmentInstance,
+  filterEquipStockByLocation,
 } from '../data/equipment'
-import { resolveCraftOutcome, alchemyQuantity } from '../utils/crafting'
+import { resolveCraftOutcome, alchemyQuantity, concentrationGain, rollConcentrationBump } from '../utils/crafting'
 import { ALCHEMY_RECIPES, MASTER_RECIPES } from '../data/recipes'
 import CraftingMinigame from '../components/CraftingMinigame'
 import { ArtSlot, HeroAvatar, ParchmentFrame } from '../components/parchment'
 import { portraitSrc } from '../data/portraits'
+import { getDialogue, FALLBACK_DIALOGUE } from '../data/dialogues'
+import DialoguePanel from '../components/DialoguePanel'
+import InformantsPanel from '../components/InformantsPanel'
+
+// NPC04 — arbre de dialogue par bâtiment (repli générique sinon)
+const TALK_ID = { inn: 'inn_marta', church: 'church_caelum', merchant: 'merchant_pell', blacksmith: 'blacksmith_bram', guild: 'guild_master' }
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
 
@@ -35,15 +48,65 @@ const NPCS = {
     line: "So you'd learn the blade? Steel is patient, lad. Train, and I'll make a hero of you yet." },
   alchemy:        { role: 'mage',     name: 'Vesna', title: 'Alchemist', icon: '⚗', cta: 'Enter the lab',
     line: "Mind the dosage — a hair too much and the draught turns to poison. Shall we brew?" },
+  academy:        { role: 'mage',     name: 'Archmagus Oren', title: 'Academy Master', icon: '📜', cta: 'Enter the Academy',
+    line: "Knowledge has a price, and a value. Learn a technique — or part with one you've outgrown." },
+  // GLD01 — la Guilde des Aventuriers (ville uniquement) : reprend le tableau de quêtes + informateurs
+  guild:          { role: null, fallback: '⚜', name: 'Guildmaster Doran', title: 'Adventurers’ Guild', icon: '⚜', cta: 'Enter the Guild',
+    line: "Proven blades only past this hall. Take a commission, share a drink, hear what the road whispers." },
 }
 
-function NpcOverlay({ building, onClose, onEnter }) {
+// IMM01 — actions par bâtiment. L'auberge s'exécute INLINE (repos + feedback,
+// pas de 2e fenêtre). Les autres bâtiments ouvrent encore leur panneau via
+// onEnter (kind 'panel') — migration vers le corps du panneau en IMM02.
+function buildingActions(building, npc, isCity = false) {
+  const talk = { ico: '💬', label: 'Talk', kind: 'talk' } // NPC04
+  if (building === 'inn') {
+    // GLD01 — en ville, le tableau de quêtes est déplacé à la Guilde ; l'auberge
+    // ne propose plus que repos + informateurs. Au village, l'auberge garde son board.
+    const acts = [{ ico: '🛏', label: 'Rest at the Inn', kind: 'rest', primary: true }]
+    if (!isCity) acts.push({ ico: '📜', label: 'Quest Board', kind: 'nav', screen: 'quest_board' })
+    acts.push({ ico: '🕵', label: 'Ask around', kind: 'panel' }) // TAV01 — informateurs
+    acts.push(talk)
+    return acts
+  }
+  if (building === 'guild') {
+    // GLD01 — la Guilde des Aventuriers : commissions (tableau de quêtes) + informateurs
+    return [
+      { ico: '📜', label: 'Guild Board', kind: 'nav', screen: 'quest_board', primary: true },
+      { ico: '🕵', label: 'Informants', kind: 'panel' },
+      talk,
+    ]
+  }
+  return [{ ico: npc.icon, label: npc.cta, kind: 'panel', primary: true }, talk]
+}
+
+function NpcOverlay({ building, onClose, onEnter, showPanel, panel, isCity = false }) {
   const npc = NPCS[building]
+  const { sleep, setScreen } = useGameStore()
+  const [flash, setFlash] = useState(null)
+  const [talkDlg, setTalkDlg] = useState(null) // NPC04 — dialogue en cours
   if (!npc) return null
   const src = npc.role ? portraitSrc(npc.role, 'talk') : null
+  const actions = buildingActions(building, npc, isCity)
+  const expanded = showPanel || talkDlg
+
+  const run = (a) => {
+    if (a.kind === 'rest') {
+      sleep()
+      const d = useGameStore.getState().world.dayCount
+      setFlash(`You rest by the hearth — HP and Mana fully restored. Dawn breaks: it is now Day ${d}.`)
+    } else if (a.kind === 'nav') {
+      setScreen(a.screen)
+    } else if (a.kind === 'panel') {
+      onEnter()
+    } else if (a.kind === 'talk') {
+      setTalkDlg(getDialogue(TALK_ID[building]) ?? FALLBACK_DIALOGUE)
+    }
+  }
+
   return (
     <div className="npc-scrim" onClick={onClose}>
-      <div className="npc-panel" onClick={e => e.stopPropagation()}>
+      <div className={`npc-panel ${expanded ? 'has-panel' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="npc-portrait">
           <div className="pframe" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             {src
@@ -54,12 +117,28 @@ function NpcOverlay({ building, onClose, onEnter }) {
           <div className="t-label">{npc.title}</div>
         </div>
         <div className="npc-body">
-          <div className="npc-eyebrow">{npc.name} — {npc.title}</div>
-          <div className="npc-dialogue">“{npc.line}”</div>
-          <div className="npc-actions">
-            <button className="pbtn primary" onClick={onEnter}><span className="pbtn-ico">{npc.icon}</span>{npc.cta}</button>
-            <button className="pbtn" onClick={onClose}><span className="pbtn-ico">✕</span>Leave</button>
-          </div>
+          {showPanel ? (
+            // IMM02 — panneau fonctionnel rendu DANS la même fenêtre (plus de 2e fenêtre)
+            <div className="npc-panel-host">{panel}</div>
+          ) : talkDlg ? (
+            // NPC04 — conversation (arbre de dialogue) dans la même fenêtre
+            <div className="npc-panel-host">
+              <DialoguePanel dialogue={talkDlg} speaker={`${npc.name} — ${npc.title}`} onClose={() => setTalkDlg(null)} />
+            </div>
+          ) : (
+            <>
+              <div className="npc-eyebrow">{npc.name} — {npc.title}</div>
+              <div className="npc-dialogue">“{flash || npc.line}”</div>
+              <div className="npc-actions">
+                {actions.map((a, i) => (
+                  <button key={i} className={`pbtn ${a.primary ? 'primary' : ''}`} onClick={() => run(a)}>
+                    <span className="pbtn-ico">{a.ico}</span>{a.label}
+                  </button>
+                ))}
+                <button className="pbtn" onClick={onClose}><span className="pbtn-ico">✕</span>Leave</button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -75,15 +154,22 @@ const BLD_POS = {
   knight_trainer: { x: 30, y: 82 },
   alchemy:        { x: 70, y: 82 },
   master_smith:   { x: 50, y: 88 },
+  guild:          { x: 50, y: 16 }, // GLD01 — au centre de la place, en ville
 }
 
-function VilBuilding({ id, info, onClick }) {
+function VilBuilding({ id, info, onClick, closed = false }) {
   const p = BLD_POS[id]
   if (!p || !info) return null
   return (
-    <div className="bld" style={{ left: `${p.x}%`, top: `${p.y}%` }} onClick={onClick}>
-      <div className="bld-frame"><ArtSlot caption={info.name} w={120} h={80} /></div>
-      <div className="bld-sign"><span>{info.icon}</span>{info.name}</div>
+    <div
+      className="bld"
+      style={{ left: `${p.x}%`, top: `${p.y}%`, opacity: closed ? 0.55 : 1, filter: closed ? 'grayscale(0.5)' : 'none' }}
+      onClick={onClick}
+      title={closed ? 'Closed' : undefined}
+    >
+      {/* CONT01 — façade du bâtiment : /buildings/<id>.png (fallback placeholder légendé si absent) */}
+      <div className="bld-frame"><ArtSlot caption={info.name} src={`/buildings/${id}.png`} w={120} h={80} /></div>
+      <div className="bld-sign"><span>{info.icon}</span>{info.name}{closed && <span style={{ marginLeft: 4, fontSize: '0.7em', opacity: 0.8 }}>🔒</span>}</div>
     </div>
   )
 }
@@ -107,41 +193,61 @@ export default function SafeZone() {
   const [activeBuilding, setActiveBuilding] = useState(null)
   const [showPanel, setShowPanel] = useState(false)
 
-  const openBuilding = (id) => { setActiveBuilding(id); setShowPanel(false) }
+  const openBuilding = (id) => {
+    // BLD01 — un bâtiment fermé refuse l'entrée + indique son heure d'ouverture (inn = 24/24).
+    if (!isBuildingOpen(id, world.tickCount)) {
+      useToastStore.getState().addToast(
+        `${BUILDING_INFO[id]?.name ?? id} is closed — opens at ${nextOpenHour(id)}:00.`,
+        'warning',
+      )
+      return
+    }
+    setActiveBuilding(id); setShowPanel(false)
+  }
   const closeBuilding = () => { setActiveBuilding(null); setShowPanel(false) }
 
   const zone = ZONES[world.currentZone]
-  if (!zone) return null
-
+  const isCity = zone?.city?.id === world.currentLocation
   // Trouver la localisation actuelle
-  const isCity = zone.city?.id === world.currentLocation
-  const location = isCity
-    ? zone.city
-    : zone.villages?.find(v => v.id === world.currentLocation)
+  const location = zone
+    ? (isCity ? zone.city : zone.villages?.find(v => v.id === world.currentLocation))
+    : null
 
+  // Génération paresseuse des bâtiments optionnels d'un village.
+  // generateVillageBuildings est déterministe (seedé sur l'id du village),
+  // donc le render peut la calculer sans la persister. La persistance dans le
+  // store DOIT passer par un effet : un setState pendant le render de SafeZone
+  // déclenchait un update d'App pendant le rendu (warning React).
+  const needsGeneration = Boolean(
+    location && !isCity && location.optionalBuildings && !world.generatedVillages?.[location.id]
+  )
+  useEffect(() => {
+    if (!needsGeneration) return
+    const optional = generateVillageBuildings(location.id, location.optionalBuildings)
+    useGameStore.setState(state => ({
+      world: {
+        ...state.world,
+        generatedVillages: {
+          ...state.world.generatedVillages,
+          [location.id]: { buildings: optional }
+        }
+      }
+    }))
+  }, [needsGeneration, location?.id])
+
+  if (!zone) return null
   if (!location) return null
 
   // Construire la liste des bâtiments disponibles
   let buildings = [...(location.buildings ?? [])]
   if (!isCity && location.optionalBuildings) {
-    // Récupérer depuis le store ou générer
+    // Déterministe : utilise la valeur persistée si présente, sinon recalcule
+    // (résultat identique) — l'effet ci-dessus se charge de la sauvegarde.
     const stored = world.generatedVillages?.[location.id]
-    if (stored) {
-      buildings = [...buildings, ...stored.buildings]
-    } else {
-      const optional = generateVillageBuildings(location.id, location.optionalBuildings)
-      buildings = [...buildings, ...optional]
-      // Sauvegarder dans le store
-      useGameStore.setState(state => ({
-        world: {
-          ...state.world,
-          generatedVillages: {
-            ...state.world.generatedVillages,
-            [location.id]: { buildings: optional }
-          }
-        }
-      }))
-    }
+    const optional = stored
+      ? stored.buildings
+      : generateVillageBuildings(location.id, location.optionalBuildings)
+    buildings = [...buildings, ...optional]
   }
 
   const BUILDING_INFO = {
@@ -152,6 +258,8 @@ export default function SafeZone() {
     blacksmith: { icon: '🔨', name: "Blacksmith's Forge", color: '#808080' },
     master_smith: { icon: '🛠', name: 'Master Smith', color: '#c0a060' }, // Z06
     knight_trainer: { icon: '⚔', name: 'Sir Aldric — Knight Trainer', color: '#c08040' },
+    academy: { icon: '📜', name: 'Academy of Magic', color: '#8060c0' }, // ACA01
+    guild: { icon: '⚜', name: "Adventurers' Guild", color: '#c084fc' }, // GLD01
   }
 
   return (
@@ -189,31 +297,32 @@ export default function SafeZone() {
 
         {/* Bâtiments */}
         {buildings.map(id => (
-          <VilBuilding key={id} id={id} info={BUILDING_INFO[id]} onClick={() => openBuilding(id)} />
+          <VilBuilding key={id} id={id} info={BUILDING_INFO[id]} closed={!isBuildingOpen(id, world.tickCount)} onClick={() => openBuilding(id)} />
         ))}
 
         {/* Héros près du puits */}
         <HeroAvatar x="50%" y="40%" name={hero.name} src={HERO_SPRITE} />
       </div>
 
-      {/* ── UI05 — Dialogue PNJ (portrait pixel) à l'entrée d'un bâtiment ── */}
-      {activeBuilding && !showPanel && (
-        <NpcOverlay building={activeBuilding} onClose={closeBuilding} onEnter={() => setShowPanel(true)} />
-      )}
-
-      {/* ── Panneau fonctionnel du bâtiment (modale par-dessus le village) ── */}
-      {activeBuilding && showPanel && (
-        <div className="lb-modal-scrim" onClick={() => setShowPanel(false)}>
-          <div className="lb-modal" onClick={e => e.stopPropagation()}>
-            {activeBuilding === 'inn' && <InnPanel onBack={() => setShowPanel(false)} />}
-            {activeBuilding === 'church' && <ChurchPanel onBack={() => setShowPanel(false)} />}
-            {activeBuilding === 'merchant' && <MerchantPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />}
-            {activeBuilding === 'alchemy' && <AlchemyPanel onBack={() => setShowPanel(false)} />}
-            {activeBuilding === 'blacksmith' && <BlacksmithPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />}
-            {activeBuilding === 'master_smith' && <MasterSmithPanel onBack={() => setShowPanel(false)} />}
-            {activeBuilding === 'knight_trainer' && <KnightTrainerPanel onBack={() => setShowPanel(false)} />}
-          </div>
-        </div>
+      {/* ── UI05/IMM02 — Dialogue PNJ + panneau fonctionnel DANS LA MÊME fenêtre ── */}
+      {activeBuilding && (
+        <NpcOverlay
+          building={activeBuilding}
+          isCity={isCity}
+          showPanel={showPanel}
+          onEnter={() => setShowPanel(true)}
+          onClose={closeBuilding}
+          panel={showPanel ? (
+            activeBuilding === 'church' ? <ChurchPanel onBack={() => setShowPanel(false)} />
+              : activeBuilding === 'merchant' ? <MerchantPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />
+              : activeBuilding === 'alchemy' ? <AlchemyPanel onBack={() => setShowPanel(false)} />
+              : activeBuilding === 'blacksmith' ? <BlacksmithPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />
+              : activeBuilding === 'master_smith' ? <MasterSmithPanel onBack={() => setShowPanel(false)} />
+              : activeBuilding === 'knight_trainer' ? <KnightTrainerPanel onBack={() => setShowPanel(false)} />
+              : activeBuilding === 'academy' ? <AcademyPanel onBack={() => setShowPanel(false)} />
+              : <InformantsPanel onBack={() => setShowPanel(false)} />
+          ) : null}
+        />
       )}
     </>
   )
@@ -231,7 +340,7 @@ function InnPanel({ onBack }) {
 
   return (
     <Panel title="🍺 The Hearth Inn" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
         "Rest your bones, traveler. The road is long."
       </p>
       <div className="flex flex-col gap-3 max-w-sm">
@@ -243,8 +352,8 @@ function InnPanel({ onBack }) {
           className="mt-2 px-4 py-3 rounded transition-all hover:opacity-90"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: '#0f1a0f',
-            color: '#80c040',
+            background: 'rgba(74,124,47,.14)',
+            color: 'var(--forest-deep)',
             border: '1px solid #406030',
           }}
         >
@@ -260,7 +369,7 @@ function InnPanel({ onBack }) {
           className="px-4 py-3 rounded transition-all hover:opacity-90"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: '#0a0818',
+            background: 'rgba(160,110,220,.12)',
             color: '#c084fc',
             border: '1px solid #3a1c60',
           }}
@@ -277,13 +386,28 @@ function InnPanel({ onBack }) {
 }
 
 function ChurchPanel({ onBack }) {
-  const { hero, prayAtChurch } = useGameStore()
+  const { hero, world, meta, prayAtChurch, startQuest, completeQuest, abandonQuest, isQuestComplete } = useGameStore()
 
   const alreadyFull = hero.stats.hp >= hero.stats.maxHp && hero.stats.mana >= hero.stats.maxMana
 
+  // CHQ01 — quêtes de l'église : pool tournant tous les 3 jours
+  const activeIds = world.activeQuests ?? []
+  const completedIds = world.completedQuests ?? []
+  const dayCount = world.dayCount ?? 1
+  const rotating = getActiveChurchQuests(dayCount)
+  const available = rotating.filter(q => !activeIds.includes(q.id) && !completedIds.includes(q.id))
+  // Quêtes d'église acceptées (restent rendables même après rotation hors du pool)
+  const activeChurch = activeIds.map(id => CHURCH_QUESTS[id]).filter(Boolean)
+  const nextRotationDay = (Math.floor(dayCount / CHURCH_ROTATION_DAYS) + 1) * CHURCH_ROTATION_DAYS
+  const daysLeft = Math.max(1, nextRotationDay - dayCount)
+
+  const killCounts = world.monsterKillCounts ?? {}
+  const visitedSpots = world.visitedSpots ?? []
+  const craftCount = meta?.craftCount ?? 0
+
   return (
     <Panel title="⛪ Church of the Old Gods" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '1rem', fontStyle: 'italic' }}>
         "The gods hear those who kneel."
       </p>
       <div className="flex flex-col gap-3 max-w-sm">
@@ -296,7 +420,7 @@ function ChurchPanel({ onBack }) {
           className="mt-2 px-4 py-3 rounded transition-all"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: alreadyFull ? '#0a0a0a' : '#0f0f1a',
+            background: alreadyFull ? 'rgba(201,169,110,.1)' : 'rgba(160,110,220,.12)',
             color: alreadyFull ? '#3a3a4a' : '#c0a0ff',
             border: `1px solid ${alreadyFull ? '#1a1a2a' : '#5040a0'}`,
             cursor: alreadyFull ? 'not-allowed' : 'pointer',
@@ -309,12 +433,61 @@ function ChurchPanel({ onBack }) {
           </span>
         </button>
       </div>
+
+      {/* CHQ01 — Œuvres de dévotion (quêtes tournantes, récompenses tokens + élixirs) */}
+      <div className="mt-6 flex flex-col gap-3" style={{ maxWidth: 560 }} data-testid="church-quests">
+        <div className="flex items-baseline justify-between">
+          <h3 style={{ fontFamily: 'Cinzel, serif', color: '#c0a060', fontSize: '0.95rem' }}>
+            🕯 Acts of Devotion
+          </h3>
+          <span style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', fontStyle: 'italic' }}>
+            New deeds in {daysLeft} day{daysLeft > 1 ? 's' : ''}
+          </span>
+        </div>
+        <p style={{ color: 'var(--ink-soft)', fontSize: '0.72rem', fontStyle: 'italic' }}>
+          "Serve the faithful, and the Old Gods provide — never coin, but their blessings."
+        </p>
+
+        {activeChurch.length > 0 && activeChurch.map(q => (
+          <QuestCard
+            key={q.id}
+            quest={q}
+            questStatus="active"
+            heroLevel={hero.level}
+            killCounts={killCounts}
+            visitedSpots={visitedSpots}
+            craftCount={craftCount}
+            canComplete={isQuestComplete(q.id)}
+            onComplete={() => completeQuest(q.id)}
+            onAbandon={() => abandonQuest(q.id)}
+          />
+        ))}
+
+        {available.length > 0 ? available.map(q => (
+          <QuestCard
+            key={q.id}
+            quest={q}
+            questStatus="available"
+            heroLevel={hero.level}
+            killCounts={killCounts}
+            visitedSpots={visitedSpots}
+            craftCount={craftCount}
+            onAccept={() => startQuest(q.id)}
+          />
+        )) : (
+          activeChurch.length === 0 && (
+            <p style={{ color: '#5a4a3a', fontSize: '0.78rem', fontStyle: 'italic' }}>
+              You have answered the church's calls for now. Return in a few days.
+            </p>
+          )
+        )}
+      </div>
     </Panel>
   )
 }
 
 function MerchantPanel({ onBack }) {
-  const { hero, spendGold, addConsumable, addEquipmentToInventory } = useGameStore()
+  const { hero, world, spendGold, addConsumable, addEquipmentToInventory } = useGameStore()
   const [tab, setTab] = useState('potions') // 'potions' | 'equipment'
 
   const potionStock = [
@@ -325,28 +498,36 @@ function MerchantPanel({ onBack }) {
   ]
 
   // Équipements vendus par le marchand : templates avec merchantStock
-  const equipStock = Object.values(EQUIPMENT_TEMPLATES).flatMap(t =>
+  const fullEquipStock = Object.values(EQUIPMENT_TEMPLATES).flatMap(t =>
     Object.entries(t.merchantStock ?? {})
       .filter(([, avail]) => avail)
       .map(([rarity]) => ({ templateId: t.id, rarity, price: t.merchantBuyPrice?.[rarity] ?? 999 }))
   )
+  // Z07 — stock différencié : village = communs + 1 rare ; ville = rares + 1 epic
+  const locationType = getLocationType(world)
+  const equipStock = filterEquipStockByLocation(fullEquipStock, locationType)
 
   const buyPotion = (id) => {
     const res = RESOURCES[id]
     if (!res || hero.inventory.gold < res.buyPrice) return
     spendGold(res.buyPrice)
     addConsumable(id, 1)
+    // MRC01 — feedback d'achat
+    useToastStore.getState().addToast(`🛒 Bought ${res.name} · −${res.buyPrice}🪙`, 'info')
   }
 
   const buyEquipment = (templateId, rarity, price) => {
     if (hero.inventory.gold < price) return
     spendGold(price)
-    addEquipmentToInventory(createEquipmentInstance(templateId, rarity))
+    const item = createEquipmentInstance(templateId, rarity)
+    addEquipmentToInventory(item) // lève déjà le badge unseen-loot (UX05)
+    // MRC01 — feedback d'achat
+    useToastStore.getState().addToast(`🛒 Bought ${item.name} · −${price}🪙`, 'loot')
   }
 
   return (
     <Panel title="🛒 Merchant's Stall" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "Quality goods at honest prices. Mostly."
       </p>
       <div className="flex flex-col gap-2" style={{ maxWidth: '480px' }}>
@@ -361,9 +542,9 @@ function MerchantPanel({ onBack }) {
               className="px-3 py-1 rounded text-xs capitalize"
               style={{
                 fontFamily: 'Cinzel, serif',
-                background: tab === t ? '#1a1408' : '#0f0c08',
-                color: tab === t ? '#d4af70' : '#4a3a2a',
-                border: `1px solid ${tab === t ? '#3a2818' : '#1a1410'}`,
+                background: tab === t ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                color: tab === t ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                border: `1px solid ${tab === t ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
               }}
             >
               {t === 'potions' ? '🧪 Potions' : '⚔ Equipment'}
@@ -378,10 +559,10 @@ function MerchantPanel({ onBack }) {
           const owned = hero.inventory.consumables[id] || 0
           return (
             <div key={id} className="flex items-center justify-between p-2 rounded"
-              style={{ background: '#0f0c08', border: '1px solid #1a1410' }}>
+              style={{ background: 'rgba(201,169,110,.18)', border: '1px solid var(--parchment-shadow)' }}>
               <div>
-                <p style={{ color: '#d4af70', fontSize: '0.85rem' }}>{res.name}</p>
-                <p style={{ color: '#6a5a4a', fontSize: '0.75rem' }}>{res.description} · Owned: {owned}</p>
+                <p style={{ color: 'var(--amber-deep)', fontSize: '0.85rem' }}>{res.name}</p>
+                <p style={{ color: 'var(--ink-soft)', fontSize: '0.75rem' }}>{res.description} · Owned: {owned}</p>
               </div>
               <button
                 onClick={() => buyPotion(id)}
@@ -389,9 +570,9 @@ function MerchantPanel({ onBack }) {
                 className="px-3 py-1 rounded text-xs ml-3"
                 style={{
                   fontFamily: 'Cinzel, serif',
-                  background: canAfford ? '#1a1408' : '#0f0c08',
-                  color: canAfford ? '#d4af70' : '#4a3a2a',
-                  border: `1px solid ${canAfford ? '#3a2818' : '#1a1410'}`,
+                  background: canAfford ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                  color: canAfford ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                  border: `1px solid ${canAfford ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
                   cursor: canAfford ? 'pointer' : 'not-allowed',
                   whiteSpace: 'nowrap',
                 }}
@@ -408,12 +589,12 @@ function MerchantPanel({ onBack }) {
           const canAfford = hero.inventory.gold >= price
           return (
             <div key={`${templateId}_${rarity}`} className="flex items-center justify-between p-2 rounded"
-              style={{ background: '#0f0c08', border: '1px solid #1a1410', borderLeft: `3px solid ${rc.color}` }}>
+              style={{ background: 'rgba(201,169,110,.18)', border: '1px solid var(--parchment-shadow)', borderLeft: `3px solid ${rc.color}` }}>
               <div>
                 <p style={{ color: rc.color, fontSize: '0.85rem', fontFamily: 'Cinzel, serif' }}>
                   {rc.label} {t.name}
                 </p>
-                <p style={{ color: '#6a5a4a', fontSize: '0.73rem' }}>
+                <p style={{ color: 'var(--ink-soft)', fontSize: '0.73rem' }}>
                   {Object.entries(t.baseStats).map(([s, v]) =>
                     `+${Math.round(v * rc.mult)} ${s}`
                   ).join(' · ')}
@@ -425,9 +606,9 @@ function MerchantPanel({ onBack }) {
                 className="px-3 py-1 rounded text-xs ml-3"
                 style={{
                   fontFamily: 'Cinzel, serif',
-                  background: canAfford ? '#1a1408' : '#0f0c08',
-                  color: canAfford ? '#d4af70' : '#4a3a2a',
-                  border: `1px solid ${canAfford ? '#3a2818' : '#1a1410'}`,
+                  background: canAfford ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                  color: canAfford ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                  border: `1px solid ${canAfford ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
                   cursor: canAfford ? 'pointer' : 'not-allowed',
                   whiteSpace: 'nowrap',
                 }}
@@ -466,6 +647,9 @@ function AlchemyPanel({ onBack }) {
 
   const handleComplete = ({ tier }) => {
     setMinigameOpen(false)
+    useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
+    useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
+    useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
     const qty = alchemyQuantity(tier)
     if (qty > 0) {
       addConsumable(recipe.output, qty)
@@ -483,7 +667,7 @@ function AlchemyPanel({ onBack }) {
 
   return (
     <Panel title="⚗️ Alchemy Workshop" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "The alchemist gestures at the bubbling tubes. 'Steady hands, steady brew.'"
       </p>
       <div className="flex flex-col gap-1.5" style={{ maxWidth: '460px' }}>
@@ -497,7 +681,7 @@ function AlchemyPanel({ onBack }) {
               data-testid={`alchemy-recipe-${r.id}`}
               className="text-left px-3 py-2 rounded text-xs"
               style={{
-                background: selected === r.id ? '#160f1c' : '#0f0c10',
+                background: selected === r.id ? 'rgba(160,110,220,.16)' : 'rgba(201,169,110,.12)',
                 border: `1px solid ${selected === r.id ? '#5a40b0' : '#1a1620'}`,
                 opacity: ok ? 1 : 0.55,
                 fontFamily: 'Cinzel, serif',
@@ -519,7 +703,7 @@ function AlchemyPanel({ onBack }) {
           className="mt-3 px-4 py-2 rounded text-sm"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: canBrew ? '#160f1c' : '#0f0c10',
+            background: canBrew ? 'rgba(160,110,220,.16)' : 'rgba(201,169,110,.12)',
             color: canBrew ? '#b090e0' : '#4a3a5a',
             border: `1px solid ${canBrew ? '#5a40b0' : '#1a1620'}`,
             cursor: canBrew ? 'pointer' : 'not-allowed',
@@ -529,7 +713,7 @@ function AlchemyPanel({ onBack }) {
         </button>
       )}
       {msg && (
-        <p style={{ color: msg.startsWith('✗') ? '#c06040' : '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
+        <p style={{ color: msg.startsWith('✗') ? '#c06040' : 'var(--forest-deep)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
           {msg}
         </p>
       )}
@@ -568,7 +752,10 @@ function MasterSmithPanel({ onBack }) {
 
   const handleComplete = ({ tier }) => {
     setMinigameOpen(false)
-    const outcome = resolveCraftOutcome(recipe.rarity, tier)
+    useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
+    useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
+    useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
+    const outcome = resolveCraftOutcome(recipe.rarity, tier, rollConcentrationBump(hero.concentration)) // STA03
     if (outcome.success) {
       const item = createEquipmentInstance(recipe.templateId, outcome.rarity)
       addEquipmentToInventory(item)
@@ -585,7 +772,7 @@ function MasterSmithPanel({ onBack }) {
 
   return (
     <Panel title="🛠 Master Smith" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "A master at the anvil eyes your materials. 'Only the worthy leave with steel.'"
       </p>
       <div className="flex flex-col gap-1.5" style={{ maxWidth: '500px' }}>
@@ -600,14 +787,14 @@ function MasterSmithPanel({ onBack }) {
               data-testid={`master-recipe-${r.id}`}
               className="text-left px-3 py-2 rounded text-xs"
               style={{
-                background: selected === r.id ? '#161210' : '#0f0c08',
-                border: `1px solid ${selected === r.id ? rc.color : '#1a1410'}`,
+                background: selected === r.id ? 'rgba(212,160,23,.2)' : 'rgba(201,169,110,.18)',
+                border: `1px solid ${selected === r.id ? rc.color : 'var(--parchment-shadow)'}`,
                 opacity: ok ? 1 : 0.55,
                 fontFamily: 'Cinzel, serif',
               }}
             >
               <span style={{ color: rc.color }}>{r.name}</span>
-              <span style={{ color: '#6a5a4a', marginLeft: '0.5rem' }}>
+              <span style={{ color: 'var(--ink-soft)', marginLeft: '0.5rem' }}>
                 {Object.entries(r.ingredients).map(([id, q]) => `${RESOURCES[id]?.name ?? id}×${q}`).join(', ')} · {r.gold}g
               </span>
             </button>
@@ -622,9 +809,9 @@ function MasterSmithPanel({ onBack }) {
           className="mt-3 px-4 py-2 rounded text-sm"
           style={{
             fontFamily: 'Cinzel, serif',
-            background: canForge ? '#1a1208' : '#0f0c08',
-            color: canForge ? '#d4af70' : '#4a3a2a',
-            border: `1px solid ${canForge ? '#6a5018' : '#1a1410'}`,
+            background: canForge ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+            color: canForge ? 'var(--amber-deep)' : 'var(--ink-soft)',
+            border: `1px solid ${canForge ? '#6a5018' : 'var(--parchment-shadow)'}`,
             cursor: canForge ? 'pointer' : 'not-allowed',
           }}
         >
@@ -632,7 +819,7 @@ function MasterSmithPanel({ onBack }) {
         </button>
       )}
       {msg && (
-        <p style={{ color: msg.startsWith('✗') ? '#c06040' : '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
+        <p style={{ color: msg.startsWith('✗') ? '#c06040' : 'var(--forest-deep)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', marginTop: '0.5rem' }}>
           {msg}
         </p>
       )}
@@ -678,7 +865,10 @@ function BlacksmithPanel({ onBack }) {
   // CRF03 + CRF04 — issue du mini-jeu : succès = rareté ajustée, échec = debuff
   const handleMinigameComplete = ({ tier }) => {
     setMinigameOpen(false)
-    const outcome = resolveCraftOutcome(selectedRarity, tier)
+    useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
+    useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
+    useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
+    const outcome = resolveCraftOutcome(selectedRarity, tier, rollConcentrationBump(hero.concentration)) // STA03
     if (outcome.success) {
       const item = createEquipmentInstance(selectedTemplate, outcome.rarity)
       addEquipmentToInventory(item)
@@ -701,14 +891,14 @@ function BlacksmithPanel({ onBack }) {
 
   return (
     <Panel title="🔨 Blacksmith's Forge" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "The forge roars. The smith nods at you."
       </p>
 
       <div className="flex gap-4" style={{ maxWidth: '580px' }}>
         {/* Liste des templates */}
         <div className="flex flex-col gap-1" style={{ width: '180px', flexShrink: 0 }}>
-          <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
             Items
           </p>
           {['weapon', 'helmet', 'armor', 'boots'].map(slot => (
@@ -722,9 +912,9 @@ function BlacksmithPanel({ onBack }) {
                   onClick={() => { setSelectedTemplate(t.id); setSelectedRarity('common'); setCraftMsg(null) }}
                   className="w-full text-left px-2 py-1.5 rounded text-xs mb-0.5"
                   style={{
-                    background: selectedTemplate === t.id ? '#1a1208' : '#0f0c08',
-                    color: selectedTemplate === t.id ? '#d4af70' : '#6a5a4a',
-                    border: `1px solid ${selectedTemplate === t.id ? '#3a2818' : '#1a1410'}`,
+                    background: selectedTemplate === t.id ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                    color: selectedTemplate === t.id ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                    border: `1px solid ${selectedTemplate === t.id ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
                     fontFamily: 'Cinzel, serif',
                   }}
                 >
@@ -738,14 +928,14 @@ function BlacksmithPanel({ onBack }) {
         {/* Détail du craft */}
         <div className="flex-1 flex flex-col gap-3">
           {!template ? (
-            <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
+            <p style={{ color: 'var(--ink-soft)', fontSize: '0.82rem', fontStyle: 'italic' }}>
               Select an item to craft.
             </p>
           ) : (
             <>
               <div>
-                <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.95rem' }}>{template.name}</p>
-                <p style={{ color: '#6a5a4a', fontSize: '0.75rem', marginTop: '0.2rem' }}>{template.description}</p>
+                <p style={{ fontFamily: 'Cinzel, serif', color: 'var(--amber-deep)', fontSize: '0.95rem' }}>{template.name}</p>
+                <p style={{ color: 'var(--ink-soft)', fontSize: '0.75rem', marginTop: '0.2rem' }}>{template.description}</p>
               </div>
 
               {/* Sélecteur de rareté */}
@@ -760,8 +950,8 @@ function BlacksmithPanel({ onBack }) {
                       style={{
                         fontFamily: 'Cinzel, serif',
                         color: rc.color,
-                        background: selectedRarity === r ? '#1a1210' : '#0f0c08',
-                        border: `1px solid ${selectedRarity === r ? rc.color : '#2a2018'}`,
+                        background: selectedRarity === r ? 'rgba(212,160,23,.2)' : 'rgba(201,169,110,.18)',
+                        border: `1px solid ${selectedRarity === r ? rc.color : 'var(--parchment-shadow)'}`,
                       }}
                     >
                       {rc.label}
@@ -773,7 +963,7 @@ function BlacksmithPanel({ onBack }) {
               {/* Recette */}
               {recipe && (
                 <div className="flex flex-col gap-1">
-                  <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Recipe
                   </p>
                   {Object.entries(recipe.ingredients).map(([resId, qty]) => {
@@ -784,7 +974,7 @@ function BlacksmithPanel({ onBack }) {
                       <div key={resId} className="flex justify-between items-center"
                         // Z03 — grise les ingrédients manquants
                         style={{ fontSize: '0.78rem', opacity: ok ? 1 : 0.6 }}>
-                        <span style={{ color: ok ? '#80c040' : '#c04040' }}>
+                        <span style={{ color: ok ? 'var(--forest-deep)' : '#c04040' }}>
                           {ok ? '✓' : '✗'} {res?.name ?? resId}
                         </span>
                         <span style={{ color: ok ? '#6a9a4a' : '#8a3a2a' }}>
@@ -794,7 +984,7 @@ function BlacksmithPanel({ onBack }) {
                     )
                   })}
                   <div className="flex justify-between items-center mt-1" style={{ fontSize: '0.78rem' }}>
-                    <span style={{ color: hasGold ? '#80c040' : '#c04040' }}>
+                    <span style={{ color: hasGold ? 'var(--forest-deep)' : '#c04040' }}>
                       {hasGold ? '✓' : '✗'} Gold
                     </span>
                     <span style={{ color: hasGold ? '#6a9a4a' : '#8a3a2a' }}>
@@ -806,7 +996,7 @@ function BlacksmithPanel({ onBack }) {
 
               {/* Stat preview */}
               {recipe && (
-                <div style={{ fontSize: '0.75rem', color: '#6a5a4a' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
                   {Object.entries(template.baseStats).map(([s, v]) => (
                     <span key={s} style={{ marginRight: '0.75rem', color: RARITY_CONFIG[selectedRarity].color }}>
                       +{Math.round(v * RARITY_CONFIG[selectedRarity].mult)} {s}
@@ -822,9 +1012,9 @@ function BlacksmithPanel({ onBack }) {
                 className="px-4 py-2 rounded text-sm transition-all"
                 style={{
                   fontFamily: 'Cinzel, serif',
-                  background: canDoCraft ? '#1a1208' : '#0f0c08',
-                  color: canDoCraft ? '#d4af70' : '#4a3a2a',
-                  border: `1px solid ${canDoCraft ? '#6a5018' : '#1a1410'}`,
+                  background: canDoCraft ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                  color: canDoCraft ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                  border: `1px solid ${canDoCraft ? '#6a5018' : 'var(--parchment-shadow)'}`,
                   cursor: canDoCraft ? 'pointer' : 'not-allowed',
                 }}
               >
@@ -843,7 +1033,7 @@ function BlacksmithPanel({ onBack }) {
               )}
 
               {craftMsg && (
-                <p style={{ color: craftMsg.startsWith('✗') ? '#c06040' : '#80c040', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>
+                <p style={{ color: craftMsg.startsWith('✗') ? '#c06040' : 'var(--forest-deep)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>
                   {craftMsg}
                 </p>
               )}
@@ -885,15 +1075,25 @@ const ALDRIC_TRADES = [
 ]
 
 function KnightTrainerPanel({ onBack }) {
-  const { hero, world, spendGold, removeResource, addSkillToInventory, startQuest, completeQuest, isQuestComplete } = useGameStore()
-  const [tab, setTab] = useState('quests') // 'quests' | 'trades'
+  const { hero, world, spendGold, removeResource, addSkillToInventory, startQuest, completeQuest, isQuestComplete, grantAura } = useGameStore()
+  const [tab, setTab] = useState('quests') // 'quests' | 'trades' | 'train'
   const [msg, setMsg] = useState(null)
+
+  // TRA01 — entraînement : le maître guerrier octroie de l'Aura (voie alternative STA02)
+  const TRAIN_AURA_COST = 120
+  const TRAIN_AURA_GAIN = 5
+  const handleTrainAura = () => {
+    if (hero.inventory.gold < TRAIN_AURA_COST) return flash('Not enough gold.', '#c04040')
+    spendGold(TRAIN_AURA_COST)
+    grantAura(TRAIN_AURA_GAIN)
+    flash(`Trained hard! +${TRAIN_AURA_GAIN} Aura.`, '#c084fc')
+  }
 
   // Garde-fous pour les anciennes sauvegardes avec format incorrect
   const activeQuests = Array.isArray(world.activeQuests) ? world.activeQuests : []
   const completedQuests = Array.isArray(world.completedQuests) ? world.completedQuests : []
 
-  const flash = (text, color = '#80c040') => {
+  const flash = (text, color = 'var(--forest-deep)') => {
     setMsg({ text, color })
     setTimeout(() => setMsg(null), 2500)
   }
@@ -925,25 +1125,25 @@ function KnightTrainerPanel({ onBack }) {
 
   return (
     <Panel title="⚔ Sir Aldric — Knight of Millhaven" onBack={onBack}>
-      <p style={{ color: '#7a6a5a', fontSize: '0.83rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.83rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
         "I have fought for twenty years. Let me spare you the worst of the lessons."
       </p>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4">
-        {['quests', 'trades'].map(t => (
+        {['quests', 'trades', 'train'].map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className="px-3 py-1 rounded text-xs capitalize"
             style={{
               fontFamily: 'Cinzel, serif',
-              background: tab === t ? '#1a1408' : '#0f0c08',
-              color: tab === t ? '#d4af70' : '#4a3a2a',
-              border: `1px solid ${tab === t ? '#3a2818' : '#1a1410'}`,
+              background: tab === t ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+              color: tab === t ? 'var(--amber-deep)' : 'var(--ink-soft)',
+              border: `1px solid ${tab === t ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
             }}
           >
-            {t === 'quests' ? '📜 Quests' : '⚔ Techniques'}
+            {t === 'quests' ? '📜 Quests' : t === 'trades' ? '⚔ Techniques' : '🔥 Train'}
           </button>
         ))}
       </div>
@@ -963,10 +1163,10 @@ function KnightTrainerPanel({ onBack }) {
             const isDone = completedQuests.includes(questId)
             const canComplete = isActive && isQuestComplete(questId)
 
-            let statusColor = '#4a3a2a'
+            let statusColor = 'var(--ink-soft)'
             let statusLabel = 'Not started'
-            if (isDone) { statusColor = '#80c040'; statusLabel = 'Completed ✓' }
-            else if (canComplete) { statusColor = '#d4af70'; statusLabel = 'Ready to claim!' }
+            if (isDone) { statusColor = 'var(--forest-deep)'; statusLabel = 'Completed ✓' }
+            else if (canComplete) { statusColor = 'var(--amber-deep)'; statusLabel = 'Ready to claim!' }
             else if (isActive) { statusColor = '#6a9a4a'; statusLabel = 'In progress' }
 
             return (
@@ -974,17 +1174,17 @@ function KnightTrainerPanel({ onBack }) {
                 key={questId}
                 className="p-3 rounded"
                 style={{
-                  background: '#0f0c08',
-                  border: `1px solid ${isDone ? '#2a3a18' : canComplete ? '#4a3a18' : '#1a1410'}`,
+                  background: 'rgba(201,169,110,.18)',
+                  border: `1px solid ${isDone ? 'rgba(74,124,47,.16)' : canComplete ? '#4a3a18' : 'var(--parchment-shadow)'}`,
                   opacity: isDone ? 0.6 : 1,
                 }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
-                    <p style={{ fontFamily: 'Cinzel, serif', color: isDone ? '#4a5a2a' : '#d4af70', fontSize: '0.88rem' }}>
+                    <p style={{ fontFamily: 'Cinzel, serif', color: isDone ? '#4a5a2a' : 'var(--amber-deep)', fontSize: '0.88rem' }}>
                       {quest.name}
                     </p>
-                    <p style={{ color: '#5a4a3a', fontSize: '0.75rem', marginTop: '0.2rem', fontStyle: 'italic' }}>
+                    <p style={{ color: 'var(--ink-soft)', fontSize: '0.75rem', marginTop: '0.2rem', fontStyle: 'italic' }}>
                       {quest.flavorText}
                     </p>
                     {/* Objectifs */}
@@ -1001,14 +1201,14 @@ function KnightTrainerPanel({ onBack }) {
                         }
                         const done = current >= target
                         return (
-                          <p key={obj.id} style={{ color: done ? '#80c040' : '#6a5a3a', fontSize: '0.72rem' }}>
+                          <p key={obj.id} style={{ color: done ? 'var(--forest-deep)' : 'var(--ink-soft)', fontSize: '0.72rem' }}>
                             {done ? '✓' : '○'} {obj.label} ({Math.min(current, target)}/{target})
                           </p>
                         )
                       })}
                     </div>
                     {/* Récompense */}
-                    <p style={{ color: '#6a5a3a', fontSize: '0.7rem', marginTop: '0.4rem' }}>
+                    <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', marginTop: '0.4rem' }}>
                       Reward: {quest.reward.skill && `${SKILLS[quest.reward.skill.skillId]?.name ?? quest.reward.skill.skillId}`}
                       {quest.reward.gold && ` · ${quest.reward.gold}g`}
                     </p>
@@ -1021,7 +1221,7 @@ function KnightTrainerPanel({ onBack }) {
                       <button
                         onClick={() => { startQuest(questId); flash(`Quest accepted: ${quest.name}`) }}
                         className="px-2 py-0.5 rounded text-xs"
-                        style={{ fontFamily: 'Cinzel, serif', background: '#0f1808', color: '#80c040', border: '1px solid #2a4020' }}
+                        style={{ fontFamily: 'Cinzel, serif', background: 'rgba(74,124,47,.16)', color: 'var(--forest-deep)', border: '1px solid rgba(74,124,47,.4)' }}
                       >
                         Accept
                       </button>
@@ -1030,7 +1230,7 @@ function KnightTrainerPanel({ onBack }) {
                       <button
                         onClick={() => { completeQuest(questId); flash(`Quest complete! Reward claimed.`) }}
                         className="px-2 py-0.5 rounded text-xs"
-                        style={{ fontFamily: 'Cinzel, serif', background: '#1a1408', color: '#d4af70', border: '1px solid #4a3a18' }}
+                        style={{ fontFamily: 'Cinzel, serif', background: 'rgba(212,160,23,.18)', color: 'var(--amber-deep)', border: '1px solid #4a3a18' }}
                       >
                         Claim
                       </button>
@@ -1073,22 +1273,22 @@ function KnightTrainerPanel({ onBack }) {
                   key={trade.skillId}
                   className="flex items-center justify-between p-3 rounded"
                   style={{
-                    background: '#0f0c08',
-                    border: `1px solid ${alreadyOwns ? '#2a3a18' : '#1a1410'}`,
+                    background: 'rgba(201,169,110,.18)',
+                    border: `1px solid ${alreadyOwns ? 'rgba(74,124,47,.16)' : 'var(--parchment-shadow)'}`,
                     opacity: alreadyOwns ? 0.55 : 1,
                   }}
                 >
                   <div className="flex-1">
-                    <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.88rem' }}>
+                    <p style={{ fontFamily: 'Cinzel, serif', color: 'var(--amber-deep)', fontSize: '0.88rem' }}>
                       {skill.name}
                       <span className="ml-2 text-xs" style={{ color: skill.type === 'active' ? '#60c0a0' : '#c084fc' }}>
                         [{skill.type}]
                       </span>
                     </p>
-                    <p style={{ color: '#5a4a3a', fontSize: '0.73rem', fontStyle: 'italic', marginTop: '0.15rem' }}>
+                    <p style={{ color: 'var(--ink-soft)', fontSize: '0.73rem', fontStyle: 'italic', marginTop: '0.15rem' }}>
                       {trade.description}
                     </p>
-                    <p style={{ color: '#6a5a3a', fontSize: '0.7rem', marginTop: '0.2rem' }}>
+                    <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', marginTop: '0.2rem' }}>
                       Cost: {costLabel}
                     </p>
                   </div>
@@ -1098,9 +1298,9 @@ function KnightTrainerPanel({ onBack }) {
                     className="ml-3 px-3 py-1 rounded text-xs shrink-0"
                     style={{
                       fontFamily: 'Cinzel, serif',
-                      background: alreadyOwns ? '#0f0c08' : canBuy ? '#1a1208' : '#0f0c08',
-                      color: alreadyOwns ? '#3a4a2a' : canBuy ? '#d4af70' : '#4a3a2a',
-                      border: `1px solid ${alreadyOwns ? '#2a3a18' : canBuy ? '#3a2818' : '#1a1410'}`,
+                      background: alreadyOwns ? 'rgba(201,169,110,.18)' : canBuy ? 'rgba(212,160,23,.18)' : 'rgba(201,169,110,.18)',
+                      color: alreadyOwns ? '#3a4a2a' : canBuy ? 'var(--amber-deep)' : 'var(--ink-soft)',
+                      border: `1px solid ${alreadyOwns ? 'rgba(74,124,47,.16)' : canBuy ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
                       cursor: canBuy ? 'pointer' : 'not-allowed',
                     }}
                   >
@@ -1110,6 +1310,167 @@ function KnightTrainerPanel({ onBack }) {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* TRA01 — entraînement : le maître guerrier octroie de l'Aura */}
+      {tab === 'train' && (
+        <div className="flex flex-col gap-2" style={{ maxWidth: 460 }}>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+            "Sweat now, bleed less later. Train, and your blows will bite harder."
+          </p>
+          <div className="flex items-center justify-between px-3 py-2 rounded" style={{ background: 'rgba(192,132,252,.10)', border: '1px solid var(--parchment-shadow)' }}>
+            <div>
+              <p style={{ fontFamily: 'Cinzel, serif', color: '#c084fc', fontSize: '0.88rem' }}>Combat Training</p>
+              <p style={{ color: 'var(--ink-soft)', fontSize: '0.73rem' }}>+{TRAIN_AURA_GAIN} Aura · current: {hero.aura ?? 0}</p>
+            </div>
+            <button
+              onClick={handleTrainAura}
+              disabled={hero.inventory.gold < TRAIN_AURA_COST}
+              data-testid="train-aura"
+              className="px-3 py-1 rounded text-xs shrink-0"
+              style={{ fontFamily: 'Cinzel, serif', background: hero.inventory.gold >= TRAIN_AURA_COST ? 'rgba(192,132,252,.18)' : 'rgba(201,169,110,.18)', color: hero.inventory.gold >= TRAIN_AURA_COST ? '#c084fc' : 'var(--ink-soft)', border: '1px solid var(--parchment-shadow)', cursor: hero.inventory.gold >= TRAIN_AURA_COST ? 'pointer' : 'not-allowed' }}
+            >
+              {TRAIN_AURA_COST} 🪙
+            </button>
+          </div>
+        </div>
+      )}
+    </Panel>
+  )
+}
+
+// ── ACA01/ACA03 — Académie de magie : acheter / revendre des skills ───────────
+function AcademyPanel({ onBack }) {
+  const { hero, world, buySkill, sellSkill, unequipActiveSkill, unequipPassiveSkill, startQuest, completeQuest, abandonQuest, isQuestComplete } = useGameStore()
+  const catalog = getAcademyCatalog()
+  const owned = hero.inventory.manaStones ?? []
+
+  // ACA04 — épreuves du maître (quêtes de level-up de skill)
+  const activeIds = world.activeQuests ?? []
+  const completedIds = world.completedQuests ?? []
+  const skillLevels = heroSkillLevels(hero)
+  const masterAvailable = Object.values(MASTER_QUESTS).filter(q => !activeIds.includes(q.id) && !completedIds.includes(q.id))
+  const masterActive = activeIds.map(id => MASTER_QUESTS[id]).filter(Boolean)
+
+  const rowStyle = (accent) => ({
+    background: 'rgba(160,110,220,.10)', border: `1px solid ${accent}`,
+    fontFamily: 'Cinzel, serif', borderRadius: 6,
+  })
+
+  return (
+    <Panel title="📜 Academy of Magic" onBack={onBack}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: '0.5rem', fontStyle: 'italic' }}>
+        "Knowledge has a price, and a value. Learn a technique — or part with one you've outgrown."
+      </p>
+      <p style={{ color: 'var(--gold, #c0a060)', fontSize: '0.8rem', marginBottom: '0.6rem' }}>Gold: {hero.inventory.gold} 🪙</p>
+
+      <div className="t-label" style={{ marginBottom: 4 }}>Learn a skill</div>
+      <div className="flex flex-col gap-1.5" style={{ maxWidth: 460, marginBottom: '0.9rem' }}>
+        {catalog.map(({ skillId, price, skill }) => {
+          const afford = hero.inventory.gold >= price
+          return (
+            <button
+              key={skillId}
+              data-testid={`academy-buy-${skillId}`}
+              onClick={() => buySkill(skillId)}
+              disabled={!afford}
+              className="text-left px-3 py-2 text-xs flex items-center justify-between"
+              style={{ ...rowStyle(afford ? '#5a40b0' : '#1a1620'), opacity: afford ? 1 : 0.55, cursor: afford ? 'pointer' : 'not-allowed' }}
+            >
+              <span><span style={{ color: '#b090e0' }}>{skill.name}</span> <span style={{ color: '#6a5a7a', marginLeft: 6 }}>{skill.type}</span></span>
+              <span style={{ color: afford ? 'var(--gold, #c0a060)' : '#4a3a5a' }}>{price} 🪙</span>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="t-label" style={{ marginBottom: 4 }}>Sell a skill (from your unequipped stones)</div>
+      {owned.length === 0 ? (
+        <p style={{ color: 'var(--ink-soft)', fontSize: '0.78rem', fontStyle: 'italic' }}>No unequipped skills to sell.</p>
+      ) : (
+        <div className="flex flex-col gap-1.5" style={{ maxWidth: 460 }}>
+          {owned.map((s, i) => {
+            const skill = SKILLS[s.skillId]
+            const price = skillSellPrice(s.skillId, s.level ?? 1)
+            return (
+              <button
+                key={`${s.skillId}_${i}`}
+                data-testid={`academy-sell-${s.skillId}`}
+                onClick={() => sellSkill(s.skillId)}
+                className="text-left px-3 py-2 text-xs flex items-center justify-between"
+                style={{ ...rowStyle('#3a2818'), cursor: 'pointer' }}
+              >
+                <span style={{ color: 'var(--ink)' }}>{skill?.name ?? s.skillId} <span style={{ color: '#8a7a6a' }}>Lv{s.level ?? 1}</span></span>
+                <span style={{ color: 'var(--forest-deep, #4a8020)' }}>+{price} 🪙</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ACA02 — déséquiper un skill se fait UNIQUEMENT ici (à l'Académie). */}
+      <div className="t-label" style={{ margin: '0.9rem 0 4px' }}>Unequip a skill <span style={{ color: '#8a7a6a', fontWeight: 400 }}>(only here)</span></div>
+      {(hero.activeSkills.length + hero.passiveSkills.length) === 0 ? (
+        <p style={{ color: 'var(--ink-soft)', fontSize: '0.78rem', fontStyle: 'italic' }}>No equipped skills.</p>
+      ) : (
+        <div className="flex flex-col gap-1.5" style={{ maxWidth: 460 }}>
+          {hero.activeSkills.map((s, i) => (
+            <button
+              key={`uneq-a-${s.skillId}-${i}`}
+              data-testid={`academy-unequip-${s.skillId}`}
+              onClick={() => unequipActiveSkill(s.skillId)}
+              className="text-left px-3 py-2 text-xs flex items-center justify-between"
+              style={{ ...rowStyle('#3a2818'), cursor: 'pointer' }}
+            >
+              <span style={{ color: 'var(--ink)' }}>{SKILLS[s.skillId]?.name ?? s.skillId} <span style={{ color: '#8a7a6a' }}>active · Lv{s.level ?? 1}</span></span>
+              <span style={{ color: 'var(--amber-deep, #b07a30)' }}>Unequip ✕</span>
+            </button>
+          ))}
+          {hero.passiveSkills.map((s, i) => (
+            <button
+              key={`uneq-p-${s.skillId}-${i}`}
+              data-testid={`academy-unequip-${s.skillId}`}
+              onClick={() => unequipPassiveSkill(s.skillId)}
+              className="text-left px-3 py-2 text-xs flex items-center justify-between"
+              style={{ ...rowStyle('#3a2818'), cursor: 'pointer' }}
+            >
+              <span style={{ color: 'var(--ink)' }}>{SKILLS[s.skillId]?.name ?? s.skillId} <span style={{ color: '#8a7a6a' }}>passive · Lv{s.level ?? 1}</span></span>
+              <span style={{ color: 'var(--amber-deep, #b07a30)' }}>Unequip ✕</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ACA04 — Épreuves de maîtrise : monter un skill à un niveau donné */}
+      {(masterAvailable.length > 0 || masterActive.length > 0) && (
+        <div className="mt-4 flex flex-col gap-2" style={{ maxWidth: 560 }} data-testid="master-quests">
+          <div className="t-label" style={{ marginBottom: 2 }}>✦ Trials of Mastery</div>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.72rem', fontStyle: 'italic' }}>
+            "Bring a technique to the level I name, and I shall reward your discipline."
+          </p>
+          {masterActive.map(q => (
+            <QuestCard
+              key={q.id}
+              quest={q}
+              questStatus="active"
+              heroLevel={hero.level}
+              skillLevels={skillLevels}
+              canComplete={isQuestComplete(q.id)}
+              onComplete={() => completeQuest(q.id)}
+              onAbandon={() => abandonQuest(q.id)}
+            />
+          ))}
+          {masterAvailable.map(q => (
+            <QuestCard
+              key={q.id}
+              quest={q}
+              questStatus="available"
+              heroLevel={hero.level}
+              skillLevels={skillLevels}
+              onAccept={() => startQuest(q.id)}
+            />
+          ))}
         </div>
       )}
     </Panel>
@@ -1124,11 +1485,11 @@ function Panel({ title, onBack, children }) {
       <div className="flex items-center gap-3 mb-4">
         <button
           onClick={onBack}
-          style={{ color: '#6a5a4a', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}
+          style={{ color: 'var(--ink-soft)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}
         >
           ← Back
         </button>
-        <h3 style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '1rem' }}>
+        <h3 style={{ fontFamily: 'Cinzel, serif', color: 'var(--amber-deep)', fontSize: '1rem' }}>
           {title}
         </h3>
       </div>
@@ -1139,9 +1500,9 @@ function Panel({ title, onBack, children }) {
 
 function InfoLine({ label, value }) {
   return (
-    <div className="flex justify-between items-center py-1 border-b" style={{ borderColor: '#1a1410' }}>
-      <span style={{ color: '#6a5a4a', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>{label}</span>
-      <span style={{ color: '#d4af70', fontSize: '0.85rem' }}>{value}</span>
+    <div className="flex justify-between items-center py-1 border-b" style={{ borderColor: 'var(--parchment-shadow)' }}>
+      <span style={{ color: 'var(--ink-soft)', fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>{label}</span>
+      <span style={{ color: 'var(--amber-deep)', fontSize: '0.85rem' }}>{value}</span>
     </div>
   )
 }
@@ -1149,7 +1510,7 @@ function InfoLine({ label, value }) {
 function SidebarStat({ label, value, color }) {
   return (
     <div>
-      <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <p style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {label}
       </p>
       <p style={{ color, fontSize: '0.9rem' }}>{value}</p>

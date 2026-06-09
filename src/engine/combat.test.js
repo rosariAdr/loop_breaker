@@ -380,9 +380,9 @@ describe('calcExpGain', () => {
   it('fonctionne avec des ennemis buildEnemy réels', () => {
     const enemies = [
       buildEnemy('ashwood_wolf', 'ashenvale', 1),
-      buildEnemy('rotting_shambler', 'ashenvale', 1),
+      buildEnemy('tuskmaw_boar', 'ashenvale', 1),
     ]
-    expect(calcExpGain(enemies)).toBe(15 + 18) // 33
+    expect(calcExpGain(enemies)).toBe(15 + 20) // 35
   })
 })
 
@@ -639,8 +639,8 @@ describe('B12 — isEnemyTooStrong + getMonsterLevel', () => {
   it('getMonsterLevel dérive le niveau depuis le spot de chasse', () => {
     // ashwood_wolf est dans ashenvale_forest (levelRange [1, 8]) → niveau min 1
     expect(getMonsterLevel('ashwood_wolf')).toBe(1)
-    // soul_harvester est dans barrow_hills (levelRange [18, 26]) → niveau min 18
-    expect(getMonsterLevel('soul_harvester')).toBe(18)
+    // thunderhoof est dans wildmere_hills (levelRange [18, 26]) → niveau min 18
+    expect(getMonsterLevel('thunderhoof')).toBe(18)
   })
 
   it('getMonsterLevel retourne 1 pour un monstre inconnu', () => {

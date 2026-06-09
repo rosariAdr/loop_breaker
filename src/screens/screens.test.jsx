@@ -56,8 +56,9 @@ describe('Smoke tests — montage de chaque écran', () => {
   })
 
   it('QuestBoard monte', () => {
+    // GLD01 — lieu par défaut = ville (Ironhaven) → titre "Adventurers' Guild"
     render(<QuestBoard />)
-    expect(screen.getByText('Quest Board')).toBeInTheDocument()
+    expect(screen.getByText("Adventurers' Guild")).toBeInTheDocument()
   })
 
   it('PostMortem monte si lastRunSummary existe', () => {
@@ -517,7 +518,8 @@ describe('Inventory — régression vieille save (bug user)', () => {
 describe('QuestBoard — affichage quêtes', () => {
   it('affiche au moins une quête disponible (sir_aldric a 3 quêtes)', () => {
     render(<QuestBoard />)
-    expect(screen.getByText('Available')).toBeInTheDocument()
+    // GLD01 — en ville la section s'intitule "Available · Guild Commissions"
+    expect(screen.getByText(/Available/)).toBeInTheDocument()
     expect(screen.getByText('First Blood')).toBeInTheDocument()
   })
 
@@ -553,9 +555,10 @@ describe('QuestBoard — affichage quêtes', () => {
     expect(screen.getByText(/Active \(1\)/)).toBeInTheDocument()
   })
 
-  it('bouton "← Inn" → safe_zone', () => {
+  it('bouton retour → safe_zone', () => {
+    // GLD01 — en ville le retour est libellé "← Guild"
     render(<QuestBoard />)
-    fireEvent.click(screen.getByText('← Inn'))
+    fireEvent.click(screen.getByText('← Guild'))
     expect(useGameStore.getState().currentScreen).toBe('safe_zone')
   })
 })

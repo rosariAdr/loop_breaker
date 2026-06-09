@@ -22,6 +22,10 @@ import {
 } from '../engine/combat'
 import { getMalacharPhase, getCryptKeeperEnrage, rollCursedStrike, CURSED_STRIKE_EFFECT } from '../engine/bossMechanics'
 import { hasGluttony, isGluttonyReady, rollGluttonyProc, GLUTTONY_STATS } from '../engine/gluttony'
+import { getPassiveModifiers, PASSIVE_XP_PER_HIT } from '../engine/passives'
+import { applyVigorMalus, combatFatigueBuffer } from '../engine/vigor'
+import { auraDamageMult } from '../engine/aura'
+import { getSkillVfx } from '../engine/skillVfx'
 
 // B05 — icône + libellé par type d'effet de statut (cf. DESIGN.md §B05-SPEC)
 const STATUS_META = {
@@ -38,7 +42,10 @@ const STATUS_META = {
 // B05 — construit l'instance d'effet à appliquer depuis le template d'un skill,
 // en intégrant les bonus de niveau (tickDamageBonus, etc.).
 function buildStatusEffectInstance(statusEffect, level = 1, levelBonuses = {}) {
-  const bonus = levelBonuses[level] ?? {}
+  // SKL01 — anti-régression au-delà du dernier palier défini (skills jusqu'à Lv5)
+  const _defined = Object.keys(levelBonuses).map(Number)
+  const _lvKey = _defined.length && level > Math.max(..._defined) ? Math.max(..._defined) : level
+  const bonus = levelBonuses[_lvKey] ?? {}
   return {
     id: `${statusEffect.type}_${Date.now()}_${Math.random()}`,
     type: statusEffect.type,
@@ -79,6 +86,18 @@ import { applyDebuffsToStats } from '../utils/debuffs'
 // Emoji par type de monstre
 const MONSTER_EMOJI = {
   ashwood_wolf:     '🐺',
+  // MON01 — bestiaire de surface refondu
+  thicket_hare:     '🐇',
+  tuskmaw_boar:     '🐗',
+  old_oakheart:     '🌳',
+  mire_slime:       '🫧',
+  fenrot_devourer:  '🐊',
+  graven_sentinel:  '⚔️',
+  hill_slime:       '🟩',
+  russet_fox:       '🦊',
+  knoll_goblin:     '👺',
+  thunderhoof:      '🦬',
+  // anciens (réserve / supprimés — fallback conservé)
   rotting_shambler: '🧟',
   gloom_bat:        '🦇',
   marsh_serpent:    '🐍',
@@ -109,7 +128,7 @@ const ARENA_BACKGROUNDS = {
   ashenvale_forest: 'radial-gradient(ellipse at 50% 0%, #0a1208 0%, #070d08 60%, #050808 100%)',
   thornmarsh:       'radial-gradient(ellipse at 50% 0%, #08100e 0%, #060c0a 60%, #060808 100%)',
   crumbled_ruins:   'radial-gradient(ellipse at 50% 0%, #100a12 0%, #0c0810 60%, #080808 100%)',
-  barrow_hills:     'radial-gradient(ellipse at 50% 0%, #0a0812 0%, #080610 60%, #060608 100%)',
+  wildmere_hills:   'radial-gradient(ellipse at 50% 0%, #0a1008 0%, #081008 60%, #060806 100%)',
   blighted_road:    'radial-gradient(ellipse at 50% 0%, #160808 0%, #100606 60%, #080606 100%)',
   grimspire:        'radial-gradient(ellipse at 50% 0%, #100812 0%, #0c0810 60%, #080608 100%)',
   default:          'radial-gradient(ellipse at 50% 0%, #0a0810 0%, #080808 60%, #060608 100%)',
@@ -196,10 +215,17 @@ export default function Combat() {
     if (stat in equippedStats) equippedStats[stat] = (equippedStats[stat] ?? 0) + bonus
   })
   // CRF01 — les debuffs passifs réduisent les stats de combat
-  const effectiveBaseStats = applyDebuffsToStats(equippedStats, hero.activeDebuffs ?? [])
+  const debuffedStats = applyDebuffsToStats(equippedStats, hero.activeDebuffs ?? [])
+  // STA01 — la Fatigue (vigueur basse) réduit les stats de combat ; STA04 — l'Aura atténue ce malus
+  const effectiveBaseStats = applyVigorMalus(debuffedStats, hero.vigor, combatFatigueBuffer(hero.aura))
+  // SKL-PASS — les passifs équipés boostent les PV max en combat (ex. Veteran's Resolve +20%)
+  const passiveMods = getPassiveModifiers(hero.passiveSkills)
+  const combatBaseStats = passiveMods.maxHpBonus > 0
+    ? { ...effectiveBaseStats, maxHp: Math.round(effectiveBaseStats.maxHp * (1 + passiveMods.maxHpBonus)) }
+    : effectiveBaseStats
 
   const [enemies, setEnemies] = useState(activeCombat?.enemies ?? [])
-  const [heroStats, setHeroStats] = useState(effectiveBaseStats)
+  const [heroStats, setHeroStats] = useState(combatBaseStats)
   const [heroSkills, setHeroSkills] = useState(
     hero.activeSkills.map(s => ({ ...s, currentCooldown: 0 }))
   )
@@ -216,6 +242,8 @@ export default function Combat() {
   const [turnCount, setTurnCount] = useState(1)
   const [animatingEnemyId, setAnimatingEnemyId] = useState(null) // id ennemi qui reçoit un coup
   const [animatingHero, setAnimatingHero] = useState(false)      // héros qui reçoit un coup
+  const [skillFx, setSkillFx] = useState(null)                   // ANIM02 — VFX skill en cours : { targetIds, element, color, mode, aoe, heavy }
+  const [arenaSkillShake, setArenaSkillShake] = useState(false)  // ANIM02 — secousse d'arène (gros skill / AoE)
   const [heroAttackAnim, setHeroAttackAnim] = useState(false)    // B13 — héros qui lance une attaque/skill
   const [attackingEnemyId, setAttackingEnemyId] = useState(null) // B02 — ennemi qui frappe
   const [floatingNumbers, setFloatingNumbers] = useState([])     // B07 — [{id, targetId, amount, type}]
@@ -224,6 +252,7 @@ export default function Combat() {
 
   const bossStateRef = useRef({ enraged: false, lastPhase: 1 }) // BSS01/03
   const assassinatedRef = useRef(new Set()) // GLT02 — ennemis tués en 1 coup depuis HP max
+  const resolvedRef = useRef(false) // garde anti-double résolution (victoire/défaite)
   const [gluttonyChoice, setGluttonyChoice] = useState(null) // GLT02 — { monsterId } pour le modal de choix
   const heroStatsRef = useRef(heroStats)
   // Mise à jour du ref hors render (évite l'erreur ESLint react-hooks/refs)
@@ -260,6 +289,7 @@ export default function Combat() {
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!activeCombat) return
+    resolvedRef.current = false
     const initial = activeCombat.enemies
     setEnemies(initial)
     setIsBoss(initial.some(e => ['boss', 'demon_lord', 'elite'].includes(e.rank)))
@@ -270,13 +300,20 @@ export default function Combat() {
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const finishCombat = useCallback((outcome, cause = 'Unknown enemy') => {
+    if (resolvedRef.current) return
+    resolvedRef.current = true
     const finalStats = heroStatsRef.current
-    useGameStore.setState(state => ({
-      hero: {
-        ...state.hero,
-        stats: { ...state.hero.stats, hp: finalStats.hp, mana: finalStats.mana },
-      },
-    }))
+    try {
+      useGameStore.setState(state => ({
+        hero: {
+          ...state.hero,
+          stats: { ...state.hero.stats, hp: finalStats.hp, mana: finalStats.mana },
+        },
+      }))
+    } catch (err) {
+      // CMB-WIN-FIX — ne jamais bloquer la résolution du combat sur une erreur d'état.
+      console.error('[Combat] Échec de sauvegarde des PV/PM en fin de combat :', err)
+    }
     if (outcome === 'defeat') {
       addLog('You have fallen...', 'defeat')
       setTimeout(() => useGameStore.getState().heroDeath(cause), 1000)
@@ -287,59 +324,94 @@ export default function Combat() {
   }, [addLog])
 
   const handleVictory = useCallback((defeatedEnemies) => {
+    if (resolvedRef.current) return // évite double-comptage si déclenché plusieurs fois
+    resolvedRef.current = true
     addLog('Victory!', 'victory')
-    setCombatStats(s => ({ ...s, kills: defeatedEnemies.length }))  // B08
-    const allLoot = []
-    defeatedEnemies.forEach(e => {
-      const drops = calcDrops(e.monsterId, heroStatsRef.current.chance)
-      drops.resources.forEach(({ id, qty }) => {
-        addResource(id, qty)
-        const res = RESOURCES[id]
-        if (res) allLoot.push({ type: 'resource', name: `${qty}× ${res.name}` })
+    // CMB-WIN-FIX — Robustesse : TOUTE la distribution de récompenses est encapsulée
+    // dans un try/catch. Auparavant, si une seule récompense throwait (save corrompue,
+    // id de monstre/ressource manquant, champ non migré…), handleVictory s'interrompait
+    // APRÈS avoir loggé « Victory! » mais AVANT setPhase('result') → le joueur restait
+    // bloqué sur l'écran de combat, et resolvedRef (déjà true) neutralisait le filet de
+    // sécurité. On garantit désormais que la transition vers le ResultPanel a TOUJOURS lieu.
+    let divineCall = null
+    try {
+      setCombatStats(s => ({ ...s, kills: defeatedEnemies.length }))  // B08
+      const allLoot = []
+      defeatedEnemies.forEach(e => {
+        const drops = calcDrops(e.monsterId, heroStatsRef.current.chance)
+        drops.resources.forEach(({ id, qty }) => {
+          addResource(id, qty)
+          const res = RESOURCES[id]
+          if (res) allLoot.push({ type: 'resource', name: `${qty}× ${res.name}` })
+        })
+        if (drops.gold > 0) {
+          addGold(drops.gold)
+          allLoot.push({ type: 'gold', name: `${drops.gold}g` })
+        }
+        if (drops.skillDrop) {
+          const skillData = { skillId: drops.skillDrop, level: 1, xp: 0 }
+          addSkillToInventory(skillData)
+          const template = SKILLS[drops.skillDrop]
+          allLoot.push({ type: 'skill', name: template?.name ?? drops.skillDrop })
+          addLog(`✦ Skill acquired: ${template?.name}!`, 'drop')
+        }
+        recordKill(e.monsterId)
       })
-      if (drops.gold > 0) {
-        addGold(drops.gold)
-        allLoot.push({ type: 'gold', name: `${drops.gold}g` })
+      const totalXp = calcExpGain(defeatedEnemies)
+      if (totalXp > 0) {
+        gainExp(totalXp)
+        allLoot.push({ type: 'xp', name: `+${totalXp} XP` })
       }
-      if (drops.skillDrop) {
-        const skillData = { skillId: drops.skillDrop, level: 1, xp: 0 }
-        addSkillToInventory(skillData)
-        const template = SKILLS[drops.skillDrop]
-        allLoot.push({ type: 'skill', name: template?.name ?? drops.skillDrop })
-        addLog(`✦ Skill acquired: ${template?.name}!`, 'drop')
+      setLoot(allLoot)
+      const finalStats = heroStatsRef.current
+      useGameStore.setState(state => ({
+        hero: { ...state.hero, stats: { ...state.hero.stats, hp: finalStats.hp, mana: finalStats.mana } },
+      }))
+      // GLT01/GLT02 — Gluttony : absorption sur kill si passif équipé + prêt (cooldown 5j)
+      if (hasGluttony(hero.passiveSkills) && isGluttonyReady(world.dayCount, meta?.gluttonyLastUsed)) {
+        const assassinated = defeatedEnemies.find(e => assassinatedRef.current.has(e.id))
+        if (assassinated) {
+          addLog('Gluttony stirs — an assassination! Choose what to devour.', 'gluttony')
+          setGluttonyChoice({ monsterId: assassinated.monsterId }) // GLT02 — choix du joueur
+        } else if (rollGluttonyProc()) {
+          absorbGluttony({ monsterId: defeatedEnemies[0].monsterId }) // GLT01 — stat aléatoire
+        }
       }
-      recordKill(e.monsterId)
-    })
-    const totalXp = calcExpGain(defeatedEnemies)
-    if (totalXp > 0) {
-      gainExp(totalXp)
-      allLoot.push({ type: 'xp', name: `+${totalXp} XP` })
-    }
-    setLoot(allLoot)
-    const finalStats = heroStatsRef.current
-    useGameStore.setState(state => ({
-      hero: { ...state.hero, stats: { ...state.hero.stats, hp: finalStats.hp, mana: finalStats.mana } },
-    }))
-    // GLT01/GLT02 — Gluttony : absorption sur kill si passif équipé + prêt (cooldown 5j)
-    if (hasGluttony(hero.passiveSkills) && isGluttonyReady(world.dayCount, meta?.gluttonyLastUsed)) {
-      const assassinated = defeatedEnemies.find(e => assassinatedRef.current.has(e.id))
-      if (assassinated) {
-        addLog('Gluttony stirs — an assassination! Choose what to devour.', 'gluttony')
-        setGluttonyChoice({ monsterId: assassinated.monsterId }) // GLT02 — choix du joueur
-      } else if (rollGluttonyProc()) {
-        absorbGluttony({ monsterId: defeatedEnemies[0].monsterId }) // GLT01 — stat aléatoire
-      }
-    }
-    assassinatedRef.current.clear()
+      assassinatedRef.current.clear()
 
-    const divineCall = checkAwakeningConditions(
-      { ...hero, battleLog: [...hero.battleLog, { type: 'victory', day: world.dayCount }] },
-      world
-    )
+      // DEMON-FIGHT — victoire sur le Demon Lord (Malachar) → déclenche la défaite du
+      // Demon Lord (W01 +200 tokens, M02 compteur, W03 bannière, titres + warp ville),
+      // en réutilisant la logique éprouvée de clearDungeon('grimspire').
+      if (defeatedEnemies.some(e => e.rank === 'demon_lord')) {
+        useGameStore.getState().clearDungeon('grimspire')
+      }
+      // ACH01 — réévalue les accomplissements (kills, demon lord, jours, runs…)
+      useGameStore.getState().checkAchievements()
+
+      divineCall = checkAwakeningConditions(
+        { ...hero, battleLog: [...(hero.battleLog ?? []), { type: 'victory', day: world.dayCount }] },
+        world
+      )
+    } catch (err) {
+      // On ne bloque JAMAIS le joueur : on logge et on termine quand même le combat.
+      console.error('[Combat] Échec de distribution des récompenses de victoire — combat terminé malgré tout :', err)
+    }
     setResult('victory')
     setPhase('result')
     if (divineCall) setTimeout(() => triggerDivineCall(divineCall), 1500)
   }, [addLog, addResource, addGold, addSkillToInventory, recordKill, gainExp, triggerDivineCall, hero, world, meta, absorbGluttony])
+
+  // Filet de sécurité anti-combat-bloqué : si on se retrouve au tour du joueur
+  // (non animé) avec TOUS les ennemis vaincus — ex. course entre les setTimeout du
+  // combat — déclencher la victoire au lieu de rester coincé. Idempotent (resolvedRef).
+  useEffect(() => {
+    if (phase === 'player' && !isAnimating && enemies.length > 0
+        && enemies.every(isDefeated) && !resolvedRef.current) {
+      const t = setTimeout(() => handleVictory(enemies), 0)
+      return () => clearTimeout(t)
+    }
+    return undefined
+  }, [phase, isAnimating, enemies, handleVictory])
 
   const enemyTurn = useCallback((aliveEnemies) => {
     // B05 — tick des effets de statut (DoT + stun) au début du tour ennemi
@@ -439,7 +511,11 @@ export default function Combat() {
             }
           }
         }
-        addLog(action.log, 'enemy')
+        // SKL-PASS — réduction de dégâts des passifs équipés (Stone Skin, Thick Hide, Stoneskin…)
+        const pMods = getPassiveModifiers(useGameStore.getState().hero.passiveSkills)
+        if (pMods.damageReduction > 0) dmg = Math.max(0, Math.round(dmg * (1 - pMods.damageReduction)))
+        // Log reconstruit avec les dégâts FINAUX (cohérent avec réduction + mécaniques de boss)
+        addLog(`${enemy.name} attacks for ${dmg} damage!`, 'enemy')
         // B02 — flash sur l'ennemi qui attaque
         setAttackingEnemyId(enemy.id)
         setTimeout(() => setAttackingEnemyId(null), 400)
@@ -452,6 +528,11 @@ export default function Combat() {
           if (newHp <= 0) setTimeout(() => finishCombat('defeat', enemy.name), 300)
           return { ...prev, hp: newHp }
         })
+        // SKL-PASS — chaque passif équipé gagne de l'XP à chaque coup encaissé (impact passif)
+        if (dmg > 0) {
+          const ps = useGameStore.getState().hero.passiveSkills
+          ps.forEach(p => useGameStore.getState().gainSkillXp(p.skillId, PASSIVE_XP_PER_HIT))
+        }
         setHeroHitFlash(true)
         setAnimatingHero(true)
         setTimeout(() => { setHeroHitFlash(false); setAnimatingHero(false) }, 400)
@@ -539,9 +620,22 @@ export default function Combat() {
     }
     // B08 — track la mana dépensée
     setCombatStats(s => ({ ...s, manaSpent: s.manaSpent + (template.cost?.mana ?? 0) }))
+    // STA02 — chaque usage de skill compte pour l'Aura (déblocage + gain)
+    useGameStore.getState().recordSkillUse()
     if (template.effect?.damage) {
-      const dmg = calcSkillDamage(skill, heroStats, skill.level)
+      // STA02 — l'Aura multiplie les dégâts des skills (+0.5%/point)
+      const dmg = Math.round(calcSkillDamage(skill, heroStats, skill.level) * auraDamageMult(hero.aura))
       const isAoe = template.effect.aoe
+      // ANIM02 — VFX propre au skill : projectile/frappe teinté par l'élément, flash sur la/les cible(s)
+      const vfx = getSkillVfx(template)
+      const fxTargetIds = isAoe ? aliveEnemies.map(e => e.id) : [skillTarget.id]
+      setSkillFx({ targetIds: fxTargetIds, ...vfx })
+      setAnimatingEnemyId(skillTarget.id)
+      if (vfx.heavy || isAoe) {
+        setArenaSkillShake(true)
+        setTimeout(() => setArenaSkillShake(false), 360)
+      }
+      setTimeout(() => { setSkillFx(null); setAnimatingEnemyId(null) }, 520)
       // B07 — nombre flottant sur chaque cible touchée
       if (isAoe) {
         enemies.filter(e => !isDefeated(e)).forEach(e => pushFloatingNumber(e.id, dmg, 'skill'))
@@ -666,6 +760,11 @@ export default function Combat() {
         },
       },
     }))
+    // CRF06 — l'antidote (cureDebuffs) soigne les debuffs actifs (CRF01), y compris permanents.
+    if (res.effect.cureDebuffs) {
+      const cured = useGameStore.getState().cureHeroDebuffs()
+      if (cured > 0) addLog(`${res.name} cured your ailments (${cured} cleared).`, 'heal')
+    }
     afterPlayerAction(enemies)
   }
 
@@ -681,7 +780,14 @@ export default function Combat() {
     }
   }
 
-  const handleLeave = () => endCombat(result)
+  const handleLeave = () => {
+    endCombat(result)
+    // CMB-WIN — après une VICTOIRE, revenir à l'écran de zone (la liste des monstres)
+    // si on combattait dans un spot de chasse. Fuite/mort gardent leur flux (world_map / post-mortem).
+    if (result === 'victory' && world.currentHuntingSpot) {
+      useGameStore.getState().setScreen('zone_view')
+    }
+  }
 
   if (!activeCombat) return null
 
@@ -694,10 +800,15 @@ export default function Combat() {
       style={{ minHeight: 'calc(100vh - 48px)', background: arenaBg }}
     >
       {/* ── Arène ── */}
-      <div className="flex flex-col flex-1">
+      {/* ANIM01 — screen shake quand le héros encaisse ; ANIM02 — secousse sur gros skill/AoE */}
+      <div className={`flex flex-col flex-1${animatingHero || arenaSkillShake ? ' anim-arena-shake' : ''}`}>
 
         {/* Zone ennemis — haut, centré */}
-        <div className="flex justify-center items-end gap-10 px-8 pt-6 pb-4" style={{ minHeight: '200px' }}>
+        <div className="flex justify-center items-end gap-10 px-8 pt-6 pb-4 relative" style={{ minHeight: '200px' }}>
+          {/* ANIM02 — onde de choc AoE teintée par l'élément */}
+          {skillFx?.aoe && (
+            <span className="skill-aoe-wave" data-testid="skill-aoe-wave" style={{ '--fx-color': skillFx.color }} aria-hidden="true" />
+          )}
           {enemies.map(enemy => (
             <EnemyCard
               key={enemy.id}
@@ -705,6 +816,7 @@ export default function Combat() {
               isSelected={selectedTargetId === enemy.id}
               isHit={animatingEnemyId === enemy.id}
               isAttacking={attackingEnemyId === enemy.id}
+              fx={skillFx && skillFx.targetIds.includes(enemy.id) ? skillFx : null}
               floatingNumbers={floatingNumbers.filter(n => n.targetId === enemy.id)}
               onSelect={() => !isDefeated(enemy) && phase === 'player' && setSelectedTargetId(enemy.id)}
             />
@@ -847,15 +959,17 @@ function PhaseIndicator({ phase, turnCount }) {
 }
 
 // ── Carte ennemi ──────────────────────────────────────────────────────────────
-function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = [], onSelect }) {
+function EnemyCard({ enemy, isSelected, isHit, isAttacking, fx = null, floatingNumbers = [], onSelect }) {
   const hpPct = Math.max(0, Math.min(1, enemy.currentHp / enemy.stats.hp))
   const dead = isDefeated(enemy)
   const rankBadge = RANK_BADGE[enemy.rank]
   const emoji = MONSTER_EMOJI[enemy.monsterId] ?? MONSTER_EMOJI.default
+  // ANIM02 — un skill teinté frappe cette carte : hit-react même hors animatingEnemyId (utile en AoE)
+  const reacting = isHit || !!fx
 
   return (
     <div
-      className={`flex flex-col items-center gap-2.5 transition-all duration-300 relative${isHit ? ' anim-shake' : ''}${isAttacking ? ' anim-flash' : ''}`}
+      className={`flex flex-col items-center gap-2.5 transition-all duration-300 relative${reacting ? ' anim-hit-react' : ''}${isAttacking ? ' anim-enemy-attack' : ''}`}
       style={{ opacity: dead ? 0.22 : 1, cursor: dead ? 'default' : 'pointer' }}
       onClick={onSelect}
     >
@@ -876,13 +990,29 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
 
       {/* Portrait — 128px, badge en overlay */}
       <div className="relative">
+        {/* ANIM01 — étincelle d'impact au coup reçu */}
+        {isHit && !dead && <span className="impact-spark" data-testid="impact-spark" />}
+        {/* ANIM02 — VFX du skill : flash élémentaire + projectile (magie/distance) ou frappe (mêlée) */}
+        {fx && !dead && (
+          <>
+            <span className="skill-flash" data-testid="skill-flash" style={{ '--fx-color': fx.color }} aria-hidden="true" />
+            <span
+              className={fx.mode === 'projectile' ? 'skill-orb' : 'skill-slash'}
+              data-testid={fx.mode === 'projectile' ? 'skill-orb' : 'skill-slash'}
+              style={{ '--fx-color': fx.color }}
+              aria-hidden="true"
+            />
+          </>
+        )}
         <div
           className="flex items-center justify-center transition-all duration-200 overflow-hidden"
           style={{
-            width: '128px',
-            height: '128px',
-            fontSize: '4rem',
-            borderRadius: '14px',
+            // CMB-ICON — sprite ennemi ×2 (128 → 256, le conteneur a overflow-hidden donc
+            // doubler aussi le cadre, sinon le portrait agrandi serait rogné).
+            width: '256px',
+            height: '256px',
+            fontSize: '8rem',
+            borderRadius: '20px',
             background: isSelected && !dead
               ? 'radial-gradient(circle, #2c1010 0%, #180808 100%)'
               : 'radial-gradient(circle, #1a0a0a 0%, #0f0606 100%)',
@@ -896,7 +1026,7 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
           {dead ? (
             <span>💀</span>
           ) : (
-            <MonsterPortrait monsterId={enemy.monsterId} fallbackEmoji={emoji} size={120} />
+            <MonsterPortrait monsterId={enemy.monsterId} fallbackEmoji={emoji} size={240} />
           )}
         </div>
 
@@ -965,8 +1095,8 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
 
 // ── Carte héros ───────────────────────────────────────────────────────────────
 function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking, floatingNumbers = [], heroEffects = [] }) {
-  // B13 — anim-hero-attack lors d'une attaque ; prend le pas sur anim-flash si actif
-  const animClass = isAttacking ? ' anim-hero-attack' : isAnimHit ? ' anim-flash' : ''
+  // B13 — anim-hero-attack lors d'une attaque ; ANIM01 — hit-react quand le héros encaisse
+  const animClass = isAttacking ? ' anim-hero-attack' : isAnimHit ? ' anim-hit-react' : ''
   return (
     <div className={`flex items-center gap-6 relative${animClass}`}>
       {/* B07 — Nombres flottants (dégâts reçus / soins) */}
@@ -975,6 +1105,7 @@ function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking
       <div
         className="flex items-center justify-center flex-shrink-0"
         style={{
+          position: 'relative',
           width: '96px',
           height: '96px',
           fontSize: '2.8rem',
@@ -989,6 +1120,8 @@ function HeroCard({ heroStats, heroName, deity, hitFlash, isAnimHit, isAttacking
           transition: 'all 0.15s ease',
         }}
       >
+        {/* ANIM01 — étincelle d'impact quand le héros encaisse */}
+        {isAnimHit && <span className="impact-spark" data-testid="impact-spark-hero" />}
         <HeroBattleSprite />
       </div>
 

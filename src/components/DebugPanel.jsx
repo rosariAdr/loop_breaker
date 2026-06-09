@@ -93,6 +93,24 @@ function DebugPanelContent({ onClose }) {
     cmd('Skip day (sleep)', () => get().sleep()),
     cmd('+1 tick', () => get().advanceTick()),
     cmd('Set run #10', () => store.setState((s) => ({ hero: { ...s.hero, runNumber: 10 } }))),
+    // PROC07 — give stats
+    cmd('+5 all attrs', () => store.setState((s) => ({
+      hero: { ...s.hero, stats: {
+        ...s.hero.stats,
+        strength: s.hero.stats.strength + 5,
+        agility: s.hero.stats.agility + 5,
+        intelligence: s.hero.stats.intelligence + 5,
+        chance: s.hero.stats.chance + 5,
+        def: s.hero.stats.def + 5,
+      } },
+    }))),
+    cmd('+50 maxHP/MP', () => store.setState((s) => ({
+      hero: { ...s.hero, stats: {
+        ...s.hero.stats,
+        maxHp: s.hero.stats.maxHp + 50, hp: s.hero.stats.hp + 50,
+        maxMana: s.hero.stats.maxMana + 50, mana: s.hero.stats.mana + 50,
+      } },
+    }))),
     cmd('Force Ignareth', () => get().acceptDeity('ignareth', 'inferno_strike')),
     cmd('Force Sylvara', () => get().acceptDeity('sylvara', 'healing_bloom')),
     cmd('Force Voltaris', () => get().acceptDeity('voltaris', 'chain_lightning')),

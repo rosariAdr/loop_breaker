@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { SKILLS } from '../data/skills'
 
@@ -79,6 +79,9 @@ export const CATALOG = [
     cost: 8,   // BAL01 : 15 → 8
     icon: '🔮',
     color: '#c0a060',
+    // TRM01 — option non encore implémentée (DV12, v2). Tant que c'est le cas elle reste
+    // NON achetable (sinon elle prélève 8 tokens sans aucun effet).
+    comingSoon: true,
   },
 ]
 
@@ -92,7 +95,28 @@ export default function GodsShop() {
   const bonusSkillPool = getBonusSkillPool(meta.lastRunSummary)
   const bonusSkillBought = purchases.includes('bonus_skill')
 
+  // T02 — transition animée de renaissance avant l'application réelle de la transmigration
+  const [reborn, setReborn] = useState(false)
+  const pendingRef = useRef(null)
+  const firedRef = useRef(false)
+  const nextRun = (hero.runNumber ?? 0) + 1
+
+  const finishRebirth = () => {
+    if (firedRef.current) return
+    firedRef.current = true
+    applyTransmigration(pendingRef.current ?? {})
+  }
+
+  // Auto-avance après l'animation (un fallback ; le bouton fait la même chose)
+  useEffect(() => {
+    if (!reborn) return
+    const t = setTimeout(finishRebirth, 2600)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reborn])
+
   const spend = (item) => {
+    if (item.comingSoon) return // TRM01 — option non implémentée : non achetable
     if (tokens < item.cost) return
     if (purchases.includes(item.id) && item.id !== 'skill_levelup' && item.id !== 'starter_kit') return
     setTokens(t => t - item.cost)
@@ -123,10 +147,36 @@ export default function GodsShop() {
       bonusStatSlot: purchases.includes('bonus_stat'),
       skillLevelUps: purchases.filter(p => p === 'skill_levelup').length,
     }
-    applyTransmigration(shopPurchases)
+    // T02 — lance d'abord la transition animée ; applyTransmigration s'exécute à la fin
+    pendingRef.current = shopPurchases
+    setReborn(true)
   }
 
   const inheritance = meta.pendingInheritance
+
+  // T02 — écran de transition animé entre la boutique et la renaissance
+  if (reborn) {
+    return (
+      <div
+        className="takeover-void transmig-scene"
+        data-testid="rebirth-transition"
+        style={{ background: 'radial-gradient(ellipse at 50% 45%, #2a1a4e 0%, #120c22 45%, #060509 100%)' }}
+      >
+        <div className="transmig-core" aria-hidden="true" />
+        <div className="transmig-rings" aria-hidden="true">
+          <span /><span /><span />
+        </div>
+        <div className="transmig-text">
+          <p className="transmig-kicker">The cycle turns…</p>
+          <p className="transmig-title">Reborn</p>
+          <p className="transmig-run">Run {nextRun}</p>
+        </div>
+        <button onClick={finishRebirth} className="transmig-continue" data-testid="rebirth-continue">
+          Begin Anew →
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="takeover-void" style={{ background: 'radial-gradient(ellipse at 50% 12%, #18102e 0%, #0b0a12 55%, #060509 100%)' }}>
@@ -165,7 +215,7 @@ export default function GodsShop() {
             const alreadyBought = purchases.includes(item.id) && item.id !== 'skill_levelup' && item.id !== 'starter_kit'
             const boughtCount = purchases.filter(p => p === item.id).length
             const canAfford = tokens >= item.cost
-            const disabled = alreadyBought || !canAfford
+            const disabled = alreadyBought || !canAfford || item.comingSoon // TRM01
 
             return (
               <div
@@ -199,7 +249,7 @@ export default function GodsShop() {
                     cursor: disabled ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {alreadyBought ? '✓ Bought' : `${item.cost} 🪙`}
+                  {item.comingSoon ? 'Soon' : alreadyBought ? '✓ Bought' : `${item.cost} 🪙`}
                 </button>
               </div>
             )

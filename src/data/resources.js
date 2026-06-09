@@ -383,6 +383,26 @@ export const RESOURCES = {
     effect: { type: 'heal_percent', value: 0.15, cureDebuffs: true },
     isConsumable: true,
   },
+
+  // ── ITM01 — Livres de stats (consommables `gain_stat`) ──────────────────────
+  tome_of_focus: {
+    id: 'tome_of_focus', name: 'Tome of Focus', category: 'book',
+    description: 'Studying it sharpens your crafting focus. +10 Concentration.',
+    rarity: 'uncommon', sellPrice: 30, buyPrice: 90,
+    effect: { type: 'gain_stat', stat: 'concentration', amount: 10 }, isConsumable: true, isBook: true,
+  },
+  tome_of_might: {
+    id: 'tome_of_might', name: 'Tome of Might', category: 'book',
+    description: 'Forbidden techniques flow into you. +5 Aura.',
+    rarity: 'rare', sellPrice: 50, buyPrice: 150,
+    effect: { type: 'gain_stat', stat: 'aura', amount: 5 }, isConsumable: true, isBook: true,
+  },
+  tome_of_wisdom: {
+    id: 'tome_of_wisdom', name: 'Tome of Wisdom', category: 'book',
+    description: 'Ancient knowledge permanently sharpens your mind. +1 Intelligence.',
+    rarity: 'rare', sellPrice: 60, buyPrice: 180,
+    effect: { type: 'gain_stat', stat: 'intelligence', amount: 1 }, isConsumable: true, isBook: true,
+  },
 }
 
 export const RARITY_COLORS = {

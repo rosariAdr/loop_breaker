@@ -4,36 +4,47 @@
 import { useState, useEffect } from 'react'
 
 export function ArtSlot({ caption, src, w, h, round, glow, style, className = '' }) {
+  // Fallback gracieux : si l'image (src) est absente/404, on retombe sur le placeholder légendé.
+  // On mémorise QUEL src a échoué → si src change, on retente sans useEffect.
+  const [failedSrc, setFailedSrc] = useState(null)
+  const showImg = src && failedSrc !== src
   return (
     <div
       className={`art-slot ${round ? 'round' : ''} ${glow ? 'glow-gold' : ''} ${className}`}
       style={{ width: w, height: h, ...style }}
     >
-      {src
-        ? <img src={src} alt="" draggable={false} />
+      {showImg
+        ? <img src={src} alt="" draggable={false} onError={() => setFailedSrc(src)} />
         : <span className="as-cap">{caption}</span>}
     </div>
   )
 }
 
-// Avatar héros chibi (idle animé) + halo doré + plaque de nom.
-// idleFrames > 1 → cycle /sprites/hero/idle/NN.png ; sinon sprite statique `src`.
-export function HeroAvatar({ x, y, name = 'Kael', src, idleFrames = 18, fps = 9 }) {
+// Avatar héros chibi (idle animé, ou walking pendant un voyage) + halo + plaque.
+// idleFrames > 1 → cycle /sprites/hero/<idle|walking>/NN.png ; sinon sprite statique `src`.
+// WM-AVATAR — walkFps 14 → 28 : pendant un voyage la POSITION glisse à la même vitesse
+// (transition CSS 1.8s, cf. TRV04) mais le cycle de marche défile 2× plus vite → le perso
+// fait visiblement ~2× plus de pas sur le même trajet (sans aller plus vite sur la carte).
+export function HeroAvatar({ x, y, name = 'Kael', src, idleFrames = 18, fps = 9, walking = false, walkFrames = 24, walkFps = 28 }) {
   const animated = idleFrames > 1
   const [frame, setFrame] = useState(0)
+
+  const dir = walking ? 'walking' : 'idle'
+  const frames = walking ? walkFrames : idleFrames
+  const animFps = walking ? walkFps : fps
 
   useEffect(() => {
     if (!animated) return undefined
     // Préchargement pour éviter le scintillement au 1er cycle
-    for (let i = 0; i < idleFrames; i++) {
+    for (let i = 0; i < frames; i++) {
       const im = new Image()
-      im.src = `/sprites/hero/idle/${String(i).padStart(2, '0')}.png`
+      im.src = `/sprites/hero/${dir}/${String(i).padStart(2, '0')}.png`
     }
-    const id = setInterval(() => setFrame(f => (f + 1) % idleFrames), Math.round(1000 / fps))
+    const id = setInterval(() => setFrame(f => (f + 1) % frames), Math.round(1000 / animFps))
     return () => clearInterval(id)
-  }, [animated, idleFrames, fps])
+  }, [animated, dir, frames, animFps])
 
-  const frameSrc = animated ? `/sprites/hero/idle/${String(frame).padStart(2, '0')}.png` : src
+  const frameSrc = animated ? `/sprites/hero/${dir}/${String(frame % frames).padStart(2, '0')}.png` : src
 
   return (
     <div className="hero-avatar" style={{ left: x, top: y }}>
@@ -109,7 +120,7 @@ function Field({ k, children, cls }) {
   )
 }
 
-export function Sidebar({ style = 'scroll', location, zone, actions = [], idleLog, deity, demonLord, tokens }) {
+export function Sidebar({ style = 'scroll', location, zone, actions = [], idleLog, deity, demonLord, tokens, nextAchievement }) {
   return (
     <div className="sidebar">
       <div className={`scroll-panel style-${style}`}>
@@ -117,6 +128,23 @@ export function Sidebar({ style = 'scroll', location, zone, actions = [], idleLo
         <Field k="Deity" cls={deity ? '' : 'muted'}>{deity || 'No deity chosen'}</Field>
         <Field k="Demon Lord" cls="danger">⚡ {demonLord}</Field>
         <Field k="Reputation">🪙 {tokens} tokens</Field>
+
+        {/* UI-ACHIEVE-PREVIEW — accomplissement le plus proche */}
+        {nextAchievement && (
+          <div data-testid="next-achievement" style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: 'rgba(201,169,110,.12)', border: '1px solid var(--parchment-shadow, #3a2818)' }}>
+            <div className="t-label" style={{ marginBottom: 3 }}>🏆 Next Achievement</div>
+            <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, color: 'var(--ink)', fontSize: 13 }}>{nextAchievement.name}</div>
+            <div style={{ color: 'var(--ink-soft)', fontSize: 11, marginBottom: 4 }}>{nextAchievement.desc}</div>
+            <div role="progressbar" aria-label={`Achievement: ${nextAchievement.name}`} aria-valuenow={nextAchievement.current} aria-valuemin={0} aria-valuemax={nextAchievement.target}
+              style={{ height: 5, borderRadius: 3, background: 'rgba(0,0,0,.25)', overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, nextAchievement.pct * 100)}%`, height: '100%', background: 'var(--gold, #c0a060)' }} />
+            </div>
+            <div style={{ color: 'var(--ink-soft)', fontSize: 10, marginTop: 2, textAlign: 'right' }}>
+              {nextAchievement.current}/{nextAchievement.target}
+              {nextAchievement.reward?.stat ? ` · +${nextAchievement.reward.stat.amount} ${nextAchievement.reward.stat.name}` : ''}
+            </div>
+          </div>
+        )}
 
         {idleLog && (
           <>

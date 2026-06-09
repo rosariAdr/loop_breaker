@@ -1,16 +1,23 @@
 import { create } from 'zustand'
 import { MONSTERS } from '../data/monsters'
-import { QUESTS } from '../data/quests'
-import { SKILLS } from '../data/skills'
+import { QUESTS, getQuestById, heroSkillLevels } from '../data/quests'
+import { SKILLS, SKILL_MAX_LEVEL, skillXpForLevel } from '../data/skills'
+import { skillBuyPrice, skillSellPrice } from '../data/academy'
+import { ACHIEVEMENTS, newlyUnlocked } from '../data/achievements'
+import { VIGOR_MAX, VIGOR_COST, applyVigorCost } from '../engine/vigor'
+import { AURA, countWithinDays } from '../engine/aura'
 import { RESOURCES } from '../data/resources'
+import { createEquipmentInstance } from '../data/equipment'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
-import { ZONES, getMonsterLevel } from '../data/zones'
+import { ZONES, ZONE_ORDER, getMonsterLevel } from '../data/zones'
+import { getInformant } from '../data/informants'
 import { isEnemyTooStrong, buildEnemy } from '../engine/combat'
 import { useToastStore } from './toastStore'
 import { removeOneManaStone } from '../utils/manaStones'
 import { addDebuff, tickDebuffsOneDay } from '../utils/debuffs'
 import { TITLES } from '../data/titles'
 import { pickGluttonyStat, gluttonyAbsorbAmount } from '../engine/gluttony'
+import { elapsedIdleTicks, canGrind, computeOfflineGains } from '../engine/offlineProgress'
 
 // ── TECH02 — Save schema versioning ──────────────────────────────────────────
 // Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
@@ -38,6 +45,17 @@ const INITIAL_HERO = {
   level: 1,
   exp: 0,
   expToNext: 100,
+
+  // STA01 — Vigueur (Fatigue) : 100 = frais, décroît avec l'effort, restaurée au sommeil.
+  vigor: 100,
+
+  // STA02 — Aura (mult. de dégâts permanent) + tracking d'usage de skills.
+  aura: 0,            // 0 = non débloquée
+  skillUseCount: 0,   // total de skills utilisés (pour le gain +1/10)
+  skillUseLog: [],    // [dayCount, …] pour la fenêtre glissante de déblocage (15 en <4j)
+
+  // STA03 — Concentration (qualité de craft, 0-150).
+  concentration: 0,
 
   // Skills (max 6 actifs, max 4 passifs)
   activeSkills: [],   // [{ skillId, level, xp, currentCooldown }]
@@ -92,7 +110,12 @@ const INITIAL_HERO = {
 const INITIAL_WORLD = {
   currentZone: 'ashenvale',
   currentLocation: 'ironhaven', // ville/village où se trouve le héros
-  currentHuntingSpot: null,     // spot de chasse actif (ashenvale_forest | thornmarsh | crumbled_ruins | barrow_hills)
+  currentHuntingSpot: null,     // spot de chasse actif (ashenvale_forest | thornmarsh | crumbled_ruins | wildmere_hills)
+  currentNode: 'ironhaven',     // TRV01 — position du héros sur la World Map (node)
+
+  // PROG02 — zones débloquées (déblocage explicite via quête/info ; auto-déblocage
+  // par niveau/kills reste géré par isZoneUnlocked). Nouveau run = zone de départ seule.
+  unlockedZones: ['ashenvale'],
 
   // Calendrier
   dayCount: 1,
@@ -118,12 +141,16 @@ const INITIAL_WORLD = {
   // Kill count par type de monstre (pour débloquer l'idle)
   monsterKillCounts: {}, // { monsterId: count }
 
+  // Q04 — spots de chasse déjà visités (pour les quêtes d'exploration)
+  visitedSpots: [], // [spotId, ...]
+
   // Toggles idle par monstre
   idleToggles: {},       // { monsterId: boolean }
 
   // État de l'idle global
   isIdleActive: false,
   idleTargetMonster: null,
+  idleHpThreshold: 0.2,  // I08 — seuil de PV (fraction) sous lequel l'idle se coupe automatiquement
   idleLog: [],           // [{ text, type, timestamp }] — 10 dernières entrées
 
   // Villages générés aléatoirement (buildings présents dans chaque village)
@@ -155,6 +182,12 @@ const INITIAL_META = {
   seenHints: [],        // ['idle_unlock', ...]
   firstDeathSeen: false, // TUT03 — surbrillance PostMortem au 1er run
 
+  // ACH01 — accomplissements débloqués (persistants entre runs ; bonus de stat permanents)
+  achievements: [],     // [achievementId, ...]
+
+  // Q05 — nombre de crafts réussis (pour les quêtes de craft)
+  craftCount: 0,
+
   // Héritage en attente (rempli à la mort, consommé à la renaissance)
   pendingInheritance: null, // { stat, activeSkill, passiveSkill, bonuses }
 
@@ -167,6 +200,16 @@ const INITIAL_META = {
   // GLT01 — Gluttony : boosts de stats permanents cumulés (appliqués à chaque run)
   permanentStatBoosts: {}, // { strength: N, ... }
   gluttonyLastUsed: null,  // jour de la dernière absorption (cooldown 5 jours)
+
+  // IDLE-OFF — progression hors-ligne
+  lastSeen: null,        // timestamp (ms) de la dernière sauvegarde
+  offlineSummary: null,  // { monsterName, kills, gold, xp, resources } — affiché au retour puis effacé
+
+  // SET01 — réglages joueur (persistés avec meta)
+  settings: { animations: true },
+
+  // TAV01 — infos achetées aux informateurs (persistant entre runs)
+  knownInfo: [], // [infoId, ...]
 }
 
 // ── Helpers purs (hors store) ─────────────────────────────────────────────────
@@ -215,9 +258,13 @@ function migrateV1ToV2(save) {
     currentHuntingSpot: world.currentHuntingSpot ?? null,
     monsterKillCounts: world.monsterKillCounts ?? {},
     idleToggles: world.idleToggles ?? {},
+    idleHpThreshold: world.idleHpThreshold ?? 0.2, // I08
+    // PROG02 — migration : une save antérieure (sans le champ) a tout débloqué (pas de régression).
+    unlockedZones: Array.isArray(world.unlockedZones) ? world.unlockedZones : [...ZONE_ORDER],
     idleLog: Array.isArray(world.idleLog) ? world.idleLog : [],
     generatedVillages: world.generatedVillages ?? {},
     dungeons: world.dungeons ?? { ...INITIAL_WORLD.dungeons },
+    currentNode: world.currentNode ?? world.currentLocation ?? 'ironhaven', // TRV01
   }
 
   // ── Hero ──
@@ -270,6 +317,42 @@ function migrateV1ToV2(save) {
 }
 
 /**
+ * Backfill IDEMPOTENT des champs par défaut, appliqué à CHAQUE chargement quelle que
+ * soit la version de la save. Indispensable car les migrations sont *version-gated* :
+ * une save déjà à la version courante (ex. v2) qui a été écrite AVANT l'ajout d'un champ
+ * `meta`/`world`/`hero` ne repasse jamais par la migration et se retrouve avec ce champ
+ * `undefined` → crash à la première lecture non défensive.
+ *
+ * Cas réel corrigé : une save v2 sans `meta.seenHints` faisait throw `recordKill` au 5ᵉ
+ * kill (`state.meta.seenHints.includes(...)`) → compteurs de kills/quêtes bloqués + (avant
+ * le try/catch de handleVictory) combat figé. Le merge superficiel ré-injecte tout champ
+ * de premier niveau manquant SANS écraser les données existantes de la save.
+ */
+// MON01 — renommages d'ids de spots/nodes (decision 3 : id renommé partout). On remappe
+// les références persistées des vieilles saves pour qu'elles pointent toujours sur un spot
+// valide (sinon ZoneView/WorldMap casseraient sur un id disparu).
+const SPOT_ID_REMAP = { barrow_hills: 'wildmere_hills' }
+
+export function normalizeSave(save) {
+  if (!save || typeof save !== 'object') return save
+  const world = { ...INITIAL_WORLD, ...(save.world ?? {}) }
+  // Remap des ids de spot/node renommés
+  if (SPOT_ID_REMAP[world.currentHuntingSpot]) world.currentHuntingSpot = SPOT_ID_REMAP[world.currentHuntingSpot]
+  if (SPOT_ID_REMAP[world.currentNode]) world.currentNode = SPOT_ID_REMAP[world.currentNode]
+  return {
+    ...save,
+    hero: { ...INITIAL_HERO, ...(save.hero ?? {}) },
+    world,
+    meta: {
+      ...INITIAL_META,
+      ...(save.meta ?? {}),
+      // settings est imbriqué → fusion explicite pour ne pas perdre les sous-clés par défaut
+      settings: { ...INITIAL_META.settings, ...(save.meta?.settings ?? {}) },
+    },
+  }
+}
+
+/**
  * Applique toutes les migrations nécessaires en séquence pour amener
  * une save à la version courante (SAVE_VERSION).
  */
@@ -281,7 +364,8 @@ export function runMigrations(save) {
   // Ajouter les futures migrations ici :
   // if (fromVersion < 3) current = migrateV2ToV3(current)
 
-  return current
+  // Filet final : backfill des champs par défaut manquants, toutes versions confondues.
+  return normalizeSave(current)
 }
 
 // ── Store Zustand ─────────────────────────────────────────────────────────────
@@ -367,6 +451,64 @@ export const useGameStore = create((set, get) => ({
       }
     }),
 
+  // STA01 — dépense / restaure la vigueur (clampée 0-100)
+  spendVigor: (amount) =>
+    set((state) => ({ hero: { ...state.hero, vigor: applyVigorCost(state.hero.vigor ?? VIGOR_MAX, amount) } })),
+  restoreVigor: () =>
+    set((state) => ({ hero: { ...state.hero, vigor: VIGOR_MAX } })),
+
+  // STA02 — enregistre l'usage d'un skill : débloque l'Aura (15 skills en <4j) puis +1/10 usages.
+  recordSkillUse: () =>
+    set((state) => {
+      const day = state.world.dayCount
+      const log = [...(state.hero.skillUseLog ?? []), day].slice(-200)
+      const count = (state.hero.skillUseCount ?? 0) + 1
+      let aura = state.hero.aura ?? 0
+      if (aura <= 0) {
+        if (countWithinDays(log, day, AURA.unlockWindowDays) >= AURA.unlockUses) {
+          aura = AURA.startValue
+          useToastStore.getState().addToast('Your Aura awakens — your blows strike harder! (+15 Aura)', 'levelup', 4000)
+        }
+      } else if (Math.floor(count / AURA.gainPerUses) > Math.floor((count - 1) / AURA.gainPerUses)) {
+        aura += 1
+      }
+      return { hero: { ...state.hero, skillUseLog: log, skillUseCount: count, aura } }
+    }),
+
+  // STA02/TRA01 — débloque/ajoute de l'Aura directement (entraînement chez un maître)
+  grantAura: (amount) =>
+    set((state) => ({ hero: { ...state.hero, aura: Math.max(state.hero.aura ?? 0, 0) + amount } })),
+
+  // STA03 — gagne de la Concentration (clampée 0-150)
+  gainConcentration: (amount) =>
+    set((state) => ({ hero: { ...state.hero, concentration: Math.min(150, Math.max(0, (state.hero.concentration ?? 0) + amount)) } })),
+
+  // ITM01 — Lire un livre de stats (consommable `gain_stat`). @returns {boolean} succès
+  // STA03b — voie alternative de gain de Concentration (et Aura / stats permanentes).
+  useBook: (bookId) => {
+    const res = RESOURCES[bookId]
+    const eff = res?.effect
+    if (!eff || eff.type !== 'gain_stat') return false
+    const owned = get().hero.inventory.consumables[bookId] ?? 0
+    if (owned <= 0) return false
+    // consomme le livre
+    set((state) => ({
+      hero: { ...state.hero, inventory: { ...state.hero.inventory, consumables: { ...state.hero.inventory.consumables, [bookId]: owned - 1 } } },
+    }))
+    const { stat, amount } = eff
+    if (stat === 'concentration') get().gainConcentration(amount)
+    else if (stat === 'aura') get().grantAura(amount)
+    else {
+      // stat permanente (intelligence, strength…) → appliquée + mémorisée (réappliquée chaque run)
+      set((state) => ({
+        hero: { ...state.hero, stats: { ...state.hero.stats, [stat]: (state.hero.stats[stat] ?? 0) + amount } },
+        meta: { ...state.meta, permanentStatBoosts: { ...(state.meta.permanentStatBoosts ?? {}), [stat]: ((state.meta.permanentStatBoosts ?? {})[stat] ?? 0) + amount } },
+      }))
+    }
+    useToastStore.getState().addToast(`Read ${res.name} — +${amount} ${stat}`, 'levelup', 3500)
+    return true
+  },
+
   // ── Gestion de l'équipement ───────────────────────────────────────────────
   addEquipmentToInventory: (item) =>
     set((state) => ({
@@ -448,6 +590,53 @@ export const useGameStore = create((set, get) => ({
       }
     }),
 
+  // ── ACA01/ACA03 — Académie : acheter / revendre des skills ────────────────
+  // Achète un skill (mana stone niveau 1) contre de l'or. @returns {boolean} succès
+  buySkill: (skillId) => {
+    const price = skillBuyPrice(skillId)
+    const { hero } = get()
+    if (price == null || hero.inventory.gold < price) {
+      useToastStore.getState().addToast('Not enough gold.', 'warning')
+      return false
+    }
+    set((state) => ({
+      hero: {
+        ...state.hero,
+        inventory: {
+          ...state.hero.inventory,
+          gold: state.hero.inventory.gold - price,
+          manaStones: [...state.hero.inventory.manaStones, { skillId, level: 1, xp: 0 }],
+        },
+      },
+      unseenLoot: true,
+    }))
+    useToastStore.getState().addToast(`Learned ${SKILLS[skillId]?.name ?? skillId} · −${price} 🪙`, 'info')
+    return true
+  },
+
+  // Revend UNE copie d'un skill possédé (mana stone), prix selon son niveau (ACA03 plus-value).
+  sellSkill: (skillId) => {
+    const { hero } = get()
+    const stones = hero.inventory.manaStones
+    const idx = stones.findIndex((s) => s.skillId === skillId)
+    if (idx === -1) return false
+    const level = stones[idx].level ?? 1
+    const price = skillSellPrice(skillId, level)
+    set((state) => {
+      const arr = state.hero.inventory.manaStones
+      const i = arr.findIndex((s) => s.skillId === skillId)
+      const newStones = i === -1 ? arr : [...arr.slice(0, i), ...arr.slice(i + 1)]
+      return {
+        hero: {
+          ...state.hero,
+          inventory: { ...state.hero.inventory, gold: state.hero.inventory.gold + price, manaStones: newStones },
+        },
+      }
+    })
+    useToastStore.getState().addToast(`Sold ${SKILLS[skillId]?.name ?? skillId} (Lv${level}) · +${price} 🪙`, 'info')
+    return true
+  },
+
   // ── Gestion des skills ────────────────────────────────────────────────────
   addSkillToInventory: (skillData) =>
     set((state) => ({
@@ -526,8 +715,9 @@ export const useGameStore = create((set, get) => ({
         skills.map((s) => {
           if (s.skillId !== skillId) return s
           const newXp = s.xp + xpAmount
-          const xpNeeded = s.level === 1 ? 20 : 50
-          if (newXp >= xpNeeded && s.level < 3) {
+          // SKL01 — paliers d'XP jusqu'au niveau 5 (était 3) via skillXpForLevel.
+          const xpNeeded = skillXpForLevel(s.level)
+          if (newXp >= xpNeeded && s.level < SKILL_MAX_LEVEL) {
             const toLevel = s.level + 1
             levelUps.push({
               id: `${skillId}_${Date.now()}_${Math.random()}`,
@@ -634,6 +824,7 @@ export const useGameStore = create((set, get) => ({
             hp: state.hero.stats.maxHp,
             mana: state.hero.stats.maxMana,
           },
+          vigor: VIGOR_MAX, // STA01 — dormir restaure la vigueur à 100
           // CRF01 — un jour passe : les debuffs temporaires décrémentent
           activeDebuffs: tickDebuffsOneDay(state.hero.activeDebuffs ?? []),
         },
@@ -684,6 +875,32 @@ export const useGameStore = create((set, get) => ({
       return { meta: { ...state.meta, titlesEarned: [...earned, titleId] } }
     }),
 
+  // ACH01 — Évalue les accomplissements ; débloque les nouveaux, applique leurs bonus de
+  // stat (permanents, comme Gluttony) + toast. Appelé après kill / quête / mort / demon lord.
+  checkAchievements: () =>
+    set((state) => {
+      const newly = newlyUnlocked(state)
+      if (newly.length === 0) return state
+      const newStats = { ...state.hero.stats }
+      const permBoosts = { ...(state.meta.permanentStatBoosts ?? {}) }
+      newly.forEach((ach) => {
+        const r = ach.reward ?? {}
+        if (r.stat && typeof newStats[r.stat.name] === 'number') {
+          newStats[r.stat.name] += r.stat.amount
+          permBoosts[r.stat.name] = (permBoosts[r.stat.name] ?? 0) + r.stat.amount
+        }
+        useToastStore.getState().addToast(`🏆 Achievement: ${ACHIEVEMENTS[ach.id].name}!`, 'levelup', 4000)
+      })
+      return {
+        hero: { ...state.hero, stats: newStats },
+        meta: {
+          ...state.meta,
+          achievements: [...(state.meta.achievements ?? []), ...newly.map((a) => a.id)],
+          permanentStatBoosts: permBoosts,
+        },
+      }
+    }),
+
   // CRF01 — Applique un debuff au héros (utilisé par les ratés de crafting CRF02/03)
   addHeroDebuff: (debuffId, days = 7, permanent = false) =>
     set((state) => ({
@@ -693,22 +910,33 @@ export const useGameStore = create((set, get) => ({
       },
     })),
 
+  // CRF06 — Soigne les debuffs actifs du héros (y compris permanents). Utilisé par l'antidote.
+  // @returns {number} nombre de debuffs soignés
+  cureHeroDebuffs: () => {
+    const cured = (get().hero.activeDebuffs ?? []).length
+    if (cured > 0) set((state) => ({ hero: { ...state.hero, activeDebuffs: [] } }))
+    return cured
+  },
+
   // ── Kill count & idle ─────────────────────────────────────────────────────
   recordKill: (monsterId) =>
     set((state) => {
-      const current = state.world.monsterKillCounts[monsterId] || 0
+      const current = (state.world.monsterKillCounts ?? {})[monsterId] || 0
       const newCount = current + 1
 
       // TUT02 — Hint idle unlock : 1ère fois qu'un mob atteint 5 kills (seuil idle)
-      let newSeenHints = state.meta.seenHints
-      if (newCount >= 5 && !state.meta.seenHints.includes('idle_unlock')) {
+      // Accès défensif : `seenHints` peut être absent d'une vieille save → ?? []
+      // (sinon `.includes` throwait et bloquait l'incrément du compteur de kills).
+      const currentHints = state.meta.seenHints ?? []
+      let newSeenHints = currentHints
+      if (newCount >= 5 && !currentHints.includes('idle_unlock')) {
         const monsterName = MONSTERS[monsterId]?.name ?? monsterId
         useToastStore.getState().addToast(
           `Idle combat unlocked for ${monsterName}! Toggle it from the zone view.`,
           'info',
           4000,
         )
-        newSeenHints = [...state.meta.seenHints, 'idle_unlock']
+        newSeenHints = [...currentHints, 'idle_unlock']
       }
 
       return {
@@ -744,15 +972,46 @@ export const useGameStore = create((set, get) => ({
       }
     }),
 
+  // I08 — seuil de PV auto-stop de l'idle, configurable par le joueur (borné 5–90%)
+  setIdleHpThreshold: (value) =>
+    set((state) => ({
+      world: { ...state.world, idleHpThreshold: Math.max(0.05, Math.min(0.9, value)) },
+    })),
+
   addIdleLog: (entry) =>
     set((state) => {
       const newLog = [entry, ...state.world.idleLog].slice(0, 10)
       return { world: { ...state.world, idleLog: newLog } }
     }),
 
+  // Q04 — enregistre la visite d'un spot de chasse (dédup), pour les quêtes d'exploration
+  recordVisit: (spotId) =>
+    set((state) => {
+      const visited = state.world.visitedSpots ?? []
+      if (!spotId || visited.includes(spotId)) return state
+      return { world: { ...state.world, visitedSpots: [...visited, spotId] } }
+    }),
+
+  // PROG03 — débloque explicitement une zone (via récompense de quête OU info d'informateur).
+  unlockZone: (zoneId, source = 'unknown') =>
+    set((state) => {
+      if (!ZONES[zoneId]) return state
+      const cur = state.world.unlockedZones ?? []
+      if (cur.includes(zoneId)) return state
+      useToastStore.getState().addToast(
+        `🗺 New region revealed: ${ZONES[zoneId]?.name ?? zoneId}${source === 'info' ? ' (rumor)' : ''}`,
+        'info',
+      )
+      return { world: { ...state.world, unlockedZones: [...cur, zoneId] } }
+    }),
+
+  // Q05 — incrémente le compteur de crafts réussis (pour les quêtes de craft)
+  incrementCraftCount: () =>
+    set((state) => ({ meta: { ...state.meta, craftCount: (state.meta.craftCount ?? 0) + 1 } })),
+
   // ── Combat ────────────────────────────────────────────────────────────────
   startCombat: (enemies) =>
-    set({
+    set((state) => ({
       activeCombat: {
         enemies,
         turn: 0,
@@ -762,7 +1021,9 @@ export const useGameStore = create((set, get) => ({
         result: null, // 'victory' | 'defeat' | 'fled'
       },
       currentScreen: 'combat',
-    }),
+      // STA01 — un combat coûte de la vigueur
+      hero: { ...state.hero, vigor: applyVigorCost(state.hero.vigor ?? VIGOR_MAX, VIGOR_COST.combat) },
+    })),
 
   endCombat: (result) =>
     set((state) => {
@@ -891,12 +1152,15 @@ export const useGameStore = create((set, get) => ({
       const { pendingInheritance } = state.meta
       if (!pendingInheritance) return state
 
-      // Stats de base + héritage (+10% sur la stat choisie)
+      // Stats de base + héritage de stat (TRM01)
       const newStats = { ...INITIAL_HERO.stats }
       if (pendingInheritance.stat) {
-        newStats[pendingInheritance.stat] = Math.round(
-          INITIAL_HERO.stats[pendingInheritance.stat] * 1.10
-        )
+        const stat = pendingInheritance.stat
+        const base = INITIAL_HERO.stats[stat] ?? 0
+        // TRM01 — « ramener davantage » : 40% de la valeur ATTEINTE pendant le run
+        // (lastRunSummary), avec plancher = base (jamais sous la stat de départ).
+        const runValue = state.meta.lastRunSummary?.stats?.[stat] ?? base
+        newStats[stat] = Math.max(base, Math.round(runValue * 0.4))
       }
       newStats.hp = newStats.maxHp = 100
       newStats.mana = newStats.maxMana = 60
@@ -1066,10 +1330,11 @@ export const useGameStore = create((set, get) => ({
         }
       }
 
-      // Auto-disable si HP < 20% avant même de commencer
+      // Auto-disable si HP sous le seuil configuré (I08) avant même de commencer
       const currentHp = state.hero.stats.hp
       const maxHp = state.hero.stats.maxHp
-      if (currentHp / maxHp < 0.2) {
+      const idleHpThreshold = state.world.idleHpThreshold ?? 0.2
+      if (currentHp / maxHp < idleHpThreshold) {
         const entry = { text: `[Idle] HP trop bas — combat suspendu.`, type: 'info', timestamp: Date.now() }
         // I04 — toast warning (événement rare, non-spammy)
         useToastStore.getState().addToast('Idle paused — HP too low. Rest before continuing.', 'warning')
@@ -1129,7 +1394,7 @@ export const useGameStore = create((set, get) => ({
         { ...state.hero.stats, hp: newHp },
       )
 
-      const isLowHp = s.hp / s.maxHp < 0.2
+      const isLowHp = s.hp / s.maxHp < (state.world.idleHpThreshold ?? 0.2)
       const levelUpStr = levelsGained > 0 ? ` ★ LEVEL UP! (${level})` : ''
       const entry = {
         text: `[Idle] Slew ${monster.name} · +${gold}g · +${xp}xp${levelUpStr}`,
@@ -1180,6 +1445,24 @@ export const useGameStore = create((set, get) => ({
       return { world: { ...state.world, tickCount: newTick } }
     }),
 
+  // TRV01/TRV03 — Voyage vers un node adjacent : déplace le héros sur la carte et
+  // avance le temps de 3 tics (avec rollover de jour). N'exécute PAS l'idle
+  // (on ne farme pas en marchant — décision 2026-06-06).
+  travelTo: (nodeId, ticks = 3) =>
+    set((state) => {
+      const total = state.world.tickCount + ticks
+      return {
+        world: {
+          ...state.world,
+          currentNode: nodeId,
+          tickCount: total % 24,
+          dayCount: state.world.dayCount + Math.floor(total / 24),
+        },
+        // STA01 — un voyage coûte 1 de vigueur (par unité de distance)
+        hero: { ...state.hero, vigor: applyVigorCost(state.hero.vigor ?? VIGOR_MAX, VIGOR_COST.distance) },
+      }
+    }),
+
   // ── Système de quêtes ────────────────────────────────────────────────────
   startQuest: (questId) =>
     set((state) => {
@@ -1203,12 +1486,15 @@ export const useGameStore = create((set, get) => ({
     }),
 
   isQuestComplete: (questId) => {
-    const { hero, world } = get()
-    const quest = QUESTS[questId]
+    const { hero, world, meta } = get()
+    const quest = getQuestById(questId)
     if (!quest) return false
     return quest.objectives.every((obj) => {
       if (obj.type === 'kill') return (world.monsterKillCounts[obj.monsterId] ?? 0) >= obj.count
       if (obj.type === 'level') return hero.level >= obj.targetLevel
+      if (obj.type === 'visit') return (world.visitedSpots ?? []).includes(obj.spotId) // Q04
+      if (obj.type === 'craft') return (meta.craftCount ?? 0) >= obj.count             // Q05
+      if (obj.type === 'skill_levelup') return (heroSkillLevels(hero)[obj.skillId] ?? 0) >= obj.targetLevel // ACA04
       return false
     })
   },
@@ -1217,39 +1503,85 @@ export const useGameStore = create((set, get) => ({
     set((state) => {
       const { activeQuests: active, completedQuests: completed } = state.world
       if (!active.includes(questId)) return state
-      const quest = QUESTS[questId]
+      const quest = getQuestById(questId)
       if (!quest) return state
-      let newManaStones = [...state.hero.inventory.manaStones]
+      const r = quest.reward
+      const newManaStones = [...state.hero.inventory.manaStones]
+      const newEquipment = [...state.hero.inventory.equipment]
+      const newResources = { ...state.hero.inventory.resources }
+      const newConsumables = { ...state.hero.inventory.consumables }
+      const newStats = { ...state.hero.stats }
       let newGold = state.hero.inventory.gold
-      if (quest.reward.skill) {
-        newManaStones.push({ skillId: quest.reward.skill.skillId, level: 1, xp: 0 })
-      }
-      if (quest.reward.gold) newGold += quest.reward.gold
-      const repTokens = quest.reward.reputationTokens ?? 1
+      let newAura = state.hero.aura ?? 0
+      let newConcentration = state.hero.concentration ?? 0
+      let unseenLoot = state.unseenLoot
+      const repTokens = r.reputationTokens ?? 1
 
-      // Q07 — Toast récompense de quête
-      const rewardParts = []
-      if (quest.reward.gold) rewardParts.push(`+${quest.reward.gold}g`)
-      if (repTokens) rewardParts.push(`+${repTokens} 🪙`)
-      if (quest.reward.skill) {
-        const skillName = SKILLS[quest.reward.skill.skillId]?.name ?? quest.reward.skill.skillId
-        rewardParts.push(skillName)
+      if (r.skill) newManaStones.push({ skillId: r.skill.skillId, level: 1, xp: 0 })
+      if (r.gold) newGold += r.gold
+
+      // Q09 — récompenses variées : équipement / ressources / stat
+      const eqItem = r.equipment ? createEquipmentInstance(r.equipment.templateId, r.equipment.rarity) : null
+      if (eqItem) { newEquipment.push(eqItem); unseenLoot = true }
+      if (r.resources) {
+        for (const [id, qty] of Object.entries(r.resources)) {
+          newResources[id] = (newResources[id] || 0) + qty
+          unseenLoot = true
+        }
       }
+      // CHQ01 — récompenses en consommables (élixirs/potions ; quêtes d'église)
+      if (r.consumables) {
+        for (const [id, qty] of Object.entries(r.consumables)) {
+          newConsumables[id] = (newConsumables[id] || 0) + qty
+        }
+      }
+      if (r.stat && typeof newStats[r.stat.name] === 'number') {
+        newStats[r.stat.name] += r.stat.amount
+      }
+      // ACA04 — récompenses Aura / Concentration (quêtes de maître)
+      if (r.aura) newAura += r.aura
+      if (r.concentration) newConcentration += r.concentration
+      // PROG03 — récompense qui débloque une zone (voie « quête »)
+      const newUnlockedZones = [...(state.world.unlockedZones ?? [])]
+      if (r.unlockZone && ZONES[r.unlockZone] && !newUnlockedZones.includes(r.unlockZone)) {
+        newUnlockedZones.push(r.unlockZone)
+      }
+
+      // Q07/Q09 — Toast récompense de quête
+      const rewardParts = []
+      if (r.gold) rewardParts.push(`+${r.gold}g`)
+      if (repTokens) rewardParts.push(`+${repTokens} 🪙`)
+      if (r.skill) rewardParts.push(SKILLS[r.skill.skillId]?.name ?? r.skill.skillId)
+      if (eqItem) rewardParts.push(eqItem.name)
+      if (r.resources) {
+        for (const [id, qty] of Object.entries(r.resources)) rewardParts.push(`${qty}× ${RESOURCES[id]?.name ?? id}`)
+      }
+      if (r.consumables) {
+        for (const [id, qty] of Object.entries(r.consumables)) rewardParts.push(`${qty}× ${RESOURCES[id]?.name ?? id}`)
+      }
+      if (r.stat) rewardParts.push(`+${r.stat.amount} ${r.stat.name}`)
+      if (r.aura) rewardParts.push(`+${r.aura} Aura`)
+      if (r.concentration) rewardParts.push(`+${r.concentration} Concentration`)
       useToastStore.getState().addToast(
         `Quest complete: ${quest.name} — ${rewardParts.join(' · ')}`,
         'quest',
       )
 
       return {
+        unseenLoot,
         world: {
           ...state.world,
           activeQuests: active.filter((q) => q !== questId),
           completedQuests: [...completed, questId],
+          unlockedZones: newUnlockedZones,
         },
         hero: {
           ...state.hero,
+          stats: newStats,
+          aura: newAura,
+          concentration: newConcentration,
           reputationTokens: state.hero.reputationTokens + repTokens,
-          inventory: { ...state.hero.inventory, manaStones: newManaStones, gold: newGold },
+          inventory: { ...state.hero.inventory, manaStones: newManaStones, gold: newGold, equipment: newEquipment, resources: newResources, consumables: newConsumables },
         },
       }
     }),
@@ -1280,6 +1612,8 @@ export const useGameStore = create((set, get) => ({
 
   // ── Persistence localStorage ──────────────────────────────────────────────
   saveGame: () => {
+    // IDLE-OFF — horodate la sauvegarde (base du calcul hors-ligne au retour)
+    set((s) => ({ meta: { ...s.meta, lastSeen: Date.now() } }))
     const { hero, world, meta } = get()
     const payload = JSON.stringify({ hero, world, meta, saveVersion: SAVE_VERSION })
     try {
@@ -1300,6 +1634,83 @@ export const useGameStore = create((set, get) => ({
       const parsed = JSON.parse(raw)
       const migrated = runMigrations(parsed)
       set({ hero: migrated.hero, world: migrated.world, meta: migrated.meta })
+      return true
+    } catch {
+      return false
+    }
+  },
+
+  // IDLE-OFF — au retour, créditer les gains accumulés pendant l'absence si l'idle
+  // était actif. Calcul en batch (valeurs espérées). nowMs injectable pour les tests.
+  applyOfflineProgress: (nowMs = Date.now()) => {
+    const { hero, world, meta } = get()
+    if (!world.isIdleActive || !world.idleTargetMonster || !meta.lastSeen) return
+    const monsterId = world.idleTargetMonster
+    const monster = MONSTERS[monsterId]
+    if (!monster || !canGrind(hero, monster)) return
+    // Idle se serait arrêté si l'ennemi est trop fort (B12) → pas de gains hors-ligne
+    if (isEnemyTooStrong(getMonsterLevel(monsterId), hero.level)) return
+
+    const ticks = elapsedIdleTicks(meta.lastSeen, nowMs)
+    if (ticks <= 0) return
+
+    const gains = computeOfflineGains({ monster, ticks, chance: hero.stats.chance })
+
+    // Crédit via les actions canoniques (gère les level-ups proprement)
+    get().addGold(gains.gold)
+    for (const [id, qty] of Object.entries(gains.resources)) get().addResource(id, qty)
+    if (gains.xp > 0) get().gainExp(gains.xp)
+
+    set((s) => ({
+      world: {
+        ...s.world,
+        monsterKillCounts: {
+          ...s.world.monsterKillCounts,
+          [monsterId]: (s.world.monsterKillCounts[monsterId] || 0) + gains.kills,
+        },
+      },
+      meta: {
+        ...s.meta,
+        lastSeen: nowMs, // évite le double-comptage si on recharge
+        offlineSummary: { monsterName: monster.name, ...gains },
+      },
+    }))
+  },
+
+  clearOfflineSummary: () => set((s) => ({ meta: { ...s.meta, offlineSummary: null } })),
+
+  // SET01 — modifier un réglage joueur
+  setSetting: (key, value) =>
+    set((s) => ({ meta: { ...s.meta, settings: { ...(s.meta.settings ?? {}), [key]: value } } })),
+
+  // TAV01 — acheter une info à un informateur. @returns {boolean} succès
+  buyInfo: (id, price) => {
+    const { hero, meta } = get()
+    if ((meta.knownInfo ?? []).includes(id)) return false
+    if (hero.inventory.gold < price) return false
+    get().spendGold(price)
+    set((s) => ({ meta: { ...s.meta, knownInfo: [...(s.meta.knownInfo ?? []), id] } }))
+    useToastStore.getState().addToast('🕵 Information acquired.', 'info')
+    // PROG03 — certaines rumeurs débloquent une zone (voie « info informateur »)
+    const inf = getInformant(id)
+    if (inf?.unlockZone) get().unlockZone(inf.unlockZone, 'info')
+    return true
+  },
+
+  // TECH07 — Export / Import de save (fichier). Filet de sécurité + portabilité.
+  exportSave: () => {
+    const { hero, world, meta } = get()
+    return JSON.stringify({ hero, world, meta, saveVersion: SAVE_VERSION }, null, 2)
+  },
+
+  /** Charge une save depuis une chaîne JSON (avec migrations). @returns {boolean} succès */
+  importSave: (json) => {
+    try {
+      const parsed = JSON.parse(json)
+      if (!parsed || !parsed.hero || !parsed.world) return false
+      const migrated = runMigrations(parsed)
+      set({ hero: migrated.hero, world: migrated.world, meta: migrated.meta })
+      get().saveGame()
       return true
     } catch {
       return false
@@ -1364,6 +1775,7 @@ export const useGameStore = create((set, get) => ({
           demonLordDefeated: isDemonLordKill ? true : state.world.demonLordDefeated,
           // D05 — warp
           currentLocation: safeCityId,
+          currentNode: safeCityId, // TRV01 — garde la position carte synchronisée au warp
           currentHuntingSpot: null,
           isIdleActive: false,
           idleTargetMonster: null,

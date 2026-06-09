@@ -50,8 +50,8 @@ export const EQUIPMENT_TEMPLATES = {
       epic:      { ingredients: { cursed_steel: 3, warlord_crest: 1 },           gold: 250 },
       legendary: { ingredients: { cursed_steel: 5, warlord_crest: 2, void_crystal: 1 }, gold: 800 },
     },
-    merchantStock: { common: true, rare: true, epic: false },
-    merchantBuyPrice: { common: 40, rare: 160 },
+    merchantStock: { common: true, rare: true, epic: true }, // Z07 — epic vendu en ville uniquement
+    merchantBuyPrice: { common: 40, rare: 160, epic: 520 },
   },
 
   bone_staff: {
@@ -216,6 +216,34 @@ export function calcEquipmentStats(templateId, rarity) {
   })
 
   return result
+}
+
+/**
+ * Z07 — Filtre/pondère le stock d'équipement marchand selon le type de localité.
+ * - village : raretés communes + au plus 1 rare (la moins chère).
+ * - ville   : raretés rares + au plus 1 epic (la moins chère).
+ * Conserve l'ordre d'origine ; retombe sur le stock brut si le filtre vide tout.
+ * @param {Array<{templateId,rarity,price}>} stock
+ * @param {'city'|'village'} type
+ */
+export function filterEquipStockByLocation(stock, type) {
+  if (!Array.isArray(stock) || stock.length === 0) return stock ?? []
+  const cheapestOf = (rar) => {
+    const items = stock.filter((s) => s.rarity === rar)
+    if (items.length === 0) return null
+    return items.reduce((a, b) => (b.price < a.price ? b : a))
+  }
+  let result
+  if (type === 'city') {
+    result = stock.filter((s) => s.rarity === 'rare')
+    const epic = cheapestOf('epic')
+    if (epic) result = [...result, epic]
+  } else {
+    result = stock.filter((s) => s.rarity === 'common')
+    const rare = cheapestOf('rare')
+    if (rare) result = [...result, rare]
+  }
+  return result.length ? result : stock
 }
 
 /**

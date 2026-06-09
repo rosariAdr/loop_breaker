@@ -1,7 +1,7 @@
 # Tasks — Loop Breaker (Roguelite Idle RPG)
 
 > Backlog source de vérité. Grooming : vérifier INVEST + AC avant de démarrer un ticket M/L. DoD par type dans `CONTRIBUTING.md` (PROC00).
-> **Versioning** : `v1` = POC figé · `v1.1` = UI parchemin + sprites + QoL · `v1.5` = profondeur (NPC → STA → PROG) · `v2` = ambition.
+> **Versioning** : `v1` = POC figé · `v1.1` = UI parchemin + sprites + QoL · `v1.2` = profondeur (NPC → STA → PROG) · `v2` = ambition.
 > Dernière réorganisation : 2026-06-03 (grooming complet + intégration handoff Claude Design + stats STA chiffrées).
 
 ---
@@ -18,6 +18,12 @@ _(aucune dépendance externe bloquante)_
 
 ---
 
+## Release / Déploiement
+
+- [x] **DEPLOY01 — Publication v1 sur Vercel (alpha privée)** (M) — *2026-06-08.* SPA client-side → Vercel + **Vercel Authentication** (alpha privée). **✅ Repo prêt** : `.gitignore` durci (`.env`, `.vercel`), `vercel.json` (rewrites SPA → `/index.html`), `index.html` (meta description ; lang/title/favicon OK), build prod **vert** (0 erreur), 0 secret en dur, chemins d'assets **absolus**, README §Déploiement + CONTEXT notés. **✅ Bloqueur résolu** : `public/` committé (commit `caa03d9` : 142 assets — carte, sprites héros, monstres, bâtiments, portraits, favicon, ASSET_LICENSES) ; **`raw/` exclus** (sources HD ~344 Mo). **Reste (actions hors-repo, utilisateur)** : `git push` la branche, puis Vercel dashboard → importer le repo + **activer Deployment Protection / Vercel Authentication**. **⚠️ À noter** : 3 PNG lourds dans l'historique (map 9.7 Mo, rotting_shambler 5.9 Mo, gloom_bat 5.6 Mo) → optimiser via squoosh **avant push** si on veut éviter le bloat d'historique (cf. CONT05).
+
+---
+
 ## v1 — POC (FIGÉE) ✅
 
 > Le POC est **complet et gagnable de bout en bout** (Malachar tuable). **Ne rien ajouter ici.** Seule la stabilisation reste avant de figer la v1 et d'attaquer l'habillage v1.1.
@@ -25,7 +31,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **BAL02 — Calibration boss difficulty + playtest** (S) - 3 runs jusqu'au boss par zone ; noter HP restant moyen + nombre de morts ; ajuster `zone_mult` boss si besoin ; documenter dans PLAYTESTS.md
 - [ ] **BAL03 — Calibration idle kill rate vs progression** (S) - vérifier que l'idle seul permet d'atteindre Zone 2 en ~10 jours in-game ; ajuster `dmgTaken` idle
 - [ ] **TECH04 — Performance Canvas 2D — budget 60fps** (S) - Chrome DevTools Performance ; target <8ms/frame ; mémoiser gradients statiques hors du loop
-- [ ] **TECH05 — JSDoc sur engine/combat.js** (M) - `@param`, `@returns`, `@example` sur toutes les fonctions exportées
+- [x] **TECH05 — JSDoc sur engine/combat.js** (M) - `@param`, `@returns`, `@example` sur toutes les fonctions exportées
 
 ---
 
@@ -38,24 +44,24 @@ _(aucune dépendance externe bloquante)_
 > - **Canvas fixe 1920×1080 + scaler** confirmé (PC-first ; Tailwind conservé + tokens CSS).
 > - **Écrans plein-écran** (Combat/GodsShop/DivineCall/PostMortem) : **mixte au cas par cas** (Combat probablement en takeover, les autres possiblement dans la coquille — choix documentés à l'implémentation).
 > - **Assets** : **hybride** — le dev fournit certaines sprites au fil de l'eau ; le reste en placeholder/art-slot (emoji), swap progressif (CONT01/CONT06). UI-A/UI-B ne bloquent pas sur les assets.
-> - **UI05 dialogue** : coquille vide / placeholder en v1.1 ; contenu en v1.5.
+> - **UI05 dialogue** : coquille vide / placeholder en v1.1 ; contenu en v1.2.
 
 ### Batch UI — migration parchemin
 
-- [ ] **UI01 — Coquille parchemin : scène + topbar + breadcrumb + sidebar + tokens** (M/L) — *`UI_HANDOFF.md` §IDENTITÉ + §LA SCÈNE*
+- [x] **UI01 — Coquille parchemin : scène + topbar + breadcrumb + sidebar + tokens** (M/L) — *`UI_HANDOFF.md` §IDENTITÉ + §LA SCÈNE*
   - **Tokens** : toutes les CSS custom properties (`--parchment`, `--ink`, `--forest`, `--gold`, `--amber`, jauges HP/MP/XP…) dans `index.css` ; fonts **Cinzel + Crimson Text** ; texture parchemin (grain de bruit + liseré vieilli).
   - **Scène** : stage fixe 1920×1080 centré + scaler `transform: scale(min(vw/1920,vh/1080))`, letterbox sur radial `#1c140d→#3a2a1c`, fond table en planches de bois. **DÉCIDÉ : on part sur le canvas fixe** (PC-first ; responsive mobile reporté à U02/v2). Tailwind conservé pour l'utilitaire + tokens CSS/classes custom pour les pièces bespoke (parchemin/bois).
   - **Topbar 64px** : Run#/Lv + barre XP ; jauges HP + MP (anim largeur .5s) ; groupe stats `☀ Day · T x/24 · 🪙` (**DayBar fusionnée dans la topbar — plus de ligne jour/nuit séparée**) ; onglets pills `Map · Hero · Bag · Save`.
   - **Breadcrumb 30px** (chemin de région, fil courant en `--gold`) + **sidebar journal 286px** (Location/Deity/Demon Lord/Reputation + zone Actions épinglée en bas) + **système de boutons** parchemin (`.primary` ambre).
   - AC : la coquille rend, les écrans existants tournent dedans **sans régression de logique**, build OK.
-- [ ] **UI02 — World Map parchemin** (M) — *§Écran 01*. Cadre boussole, champs de zone organiques (Ashenvale vert / **Grimspire verrouillé désaturé + tooltip niveau**), trails pointillés à l'encre + **Blighted Road** danger rouge, 8 nodes médaillons (positions dans le handoff), **node donjon** violet `?` + aura, **avatar héros chibi** + halo or (transition marche `.6s`). Conserve la logique Canvas/nodes (MAP01).
-- [ ] **UI03 — Village parchemin** (M) — *§Écran 02*. Cadre « vine », place + **puits**, chemins de terre rayonnants, **4 bâtiments** (sprite encadré + enseigne suspendue + sous-titre) → clic = overlay PNJ, déco (hens/barrels), avatar près du puits. Remplace le SafeZone sombre actuel.
-- [ ] **UI04 — Hunting Forest parchemin** (M) — *§Écran 03*. Cadre vine, **clearings** = disques verts (sprite monstre + terrain + plaque + **kill bar** + statut) ; états *disponible* / *idle actif* (anneau safe-green + badge `◆ IDLE`) / *verrouillé* (`🔒`, "Fight 10× to unlock idle") ; idle log en sidebar. Conserve Fight/Idle (B03, S02).
-- [ ] **UI05 — Overlay dialogue PNJ** (M) — *§Écran 04*. Panneau ancré bas sur scrim, **colonne portrait** (cadre woodgrain + portrait pixel, **6 émotions** Talk/Calm/Smile/Sadness/Aggression/Special selon le ton) + **colonne corps** (eyebrow + dialogue Crimson italic 26px + boutons d'action). **DÉCIDÉ : coquille vide / dialogues placeholder en v1.1** (le contenu et l'arbre de dialogue NPC01/NPC04 viennent en v1.5 ; on en rediscute).
-- [ ] **UI06 — Hero Sheet overlay parchemin** (S/M) — *§Écran 05*. Modale centrée, portrait woodgrain, grille équipement 6 slots, **Vitals & Attributes** (cartes + barres), Derived, Skills, Allegiance. Conserve Active Debuffs (CRF05) + Titles (M01) + Gluttony (GLT03). **DÉCIDÉ : mapper l'UI sur les stats actuelles** (strength/agility/intelligence/chance/def + hp/mana) — pas de refonte data ni de migration. On reprend la mise en page du handoff mais avec les stats du jeu (les labels Vitality/Dexterity/Faith/Luck du handoff sont indicatifs).
-- [ ] **UI07 — Inventory overlay parchemin** (S) — *§Écran 06*. Modale, **Carried Items** grille 6 colonnes + pastille d'or, **Equipped** grille 6 slots. Conserve les onglets + stack mana stones (S03).
+- [x] **UI02 — World Map parchemin** (M) — *§Écran 01*. Cadre boussole, champs de zone organiques (Ashenvale vert / **Grimspire verrouillé désaturé + tooltip niveau**), trails pointillés à l'encre + **Blighted Road** danger rouge, 8 nodes médaillons (positions dans le handoff), **node donjon** violet `?` + aura, **avatar héros chibi** + halo or (transition marche `.6s`). Conserve la logique Canvas/nodes (MAP01).
+- [x] **UI03 — Village parchemin** (M) — *§Écran 02*. Cadre « vine », place + **puits**, chemins de terre rayonnants, **4 bâtiments** (sprite encadré + enseigne suspendue + sous-titre) → clic = overlay PNJ, déco (hens/barrels), avatar près du puits. Remplace le SafeZone sombre actuel.
+- [x] **UI04 — Hunting Forest parchemin** (M) — *§Écran 03*. Cadre vine, **clearings** = disques verts (sprite monstre + terrain + plaque + **kill bar** + statut) ; états *disponible* / *idle actif* (anneau safe-green + badge `◆ IDLE`) / *verrouillé* (`🔒`, "Fight 10× to unlock idle") ; idle log en sidebar. Conserve Fight/Idle (B03, S02).
+- [x] **UI05 — Overlay dialogue PNJ** (M) — *§Écran 04*. Panneau ancré bas sur scrim, **colonne portrait** (cadre woodgrain + portrait pixel, **6 émotions** Talk/Calm/Smile/Sadness/Aggression/Special selon le ton) + **colonne corps** (eyebrow + dialogue Crimson italic 26px + boutons d'action). **DÉCIDÉ : coquille vide / dialogues placeholder en v1.1** (le contenu et l'arbre de dialogue NPC01/NPC04 viennent en v1.2 ; on en rediscute).
+- [x] **UI06 — Hero Sheet overlay parchemin** (S/M) — *§Écran 05*. Modale centrée, portrait woodgrain, grille équipement 6 slots, **Vitals & Attributes** (cartes + barres), Derived, Skills, Allegiance. Conserve Active Debuffs (CRF05) + Titles (M01) + Gluttony (GLT03). **DÉCIDÉ : mapper l'UI sur les stats actuelles** (strength/agility/intelligence/chance/def + hp/mana) — pas de refonte data ni de migration. On reprend la mise en page du handoff mais avec les stats du jeu (les labels Vitality/Dexterity/Faith/Luck du handoff sont indicatifs).
+- [x] **UI07 — Inventory overlay parchemin** (S) — *§Écran 06*. Modale, **Carried Items** grille 6 colonnes + pastille d'or, **Equipped** grille 6 slots. Conserve les onglets + stack mana stones (S03).
 - [ ] **UI08 — Intégration sprites (couches A + B)** (L) — *§ASSETS*. **Couche A** chibi cartoon (carte/combat : héros, façades de bâtiments, monstres, Malachar) + **Couche B** portraits pixel 128×128 à 6 émotions (overlays dialogue). **Règle stricte : jamais mélanger chibi et portrait pixel à la même échelle dans un même cadre.** Héros placeholder = chibi "Necromancer of the Shadow" (Idle/Walking/Dying). Dépend CONT01/CONT06.
-- [ ] **UI09 — Transition parchemin + toasts + écrans hors handoff** (M) — **Échange de parchemin** à l'entrée/sortie de zone (enroule monde / déroule zone, **≤350ms, skippable après le 1er run** — la navigation arrive des dizaines de fois/session) ; **toasts** parchemin (bulle sombre bas-centre, bordure dorée, italique, ~2.6s) ; restyle des écrans **hors handoff** (Combat, GodsShop, DivineCall, PostMortem) au même langage.
+- [x] **UI09 — Transition parchemin + toasts + écrans hors handoff** (M) — ✅ **toasts** parchemin (bulle sombre/liseré doré/italique, ToastContainer) ✅ ; **déroulé de parchemin** à l'entrée/sortie de zone (`.parch-wipe`, ≤340ms, non bloquant, neutralisé par le réglage Animations) ✅ ; **décision** : les écrans takeover (Combat/GodsShop/DivineCall/PostMortem) restent **volontairement sombres/dramatiques** (contraste avec le monde parchemin) — ils partagent déjà la typo Cinzel + accents or, pas de re-skin parchemin. — **Échange de parchemin** à l'entrée/sortie de zone (enroule monde / déroule zone, **≤350ms, skippable après le 1er run** — la navigation arrive des dizaines de fois/session) ; **toasts** parchemin (bulle sombre bas-centre, bordure dorée, italique, ~2.6s) ; restyle des écrans **hors handoff** (Combat, GodsShop, DivineCall, PostMortem) au même langage.
 
 > **État d'implémentation (2026-06-06, branche `feat/ui-parchemin`, non mergée)** : UI01→UI07 faits ; UI09 partiel (PostMortem + GodsShop portés ; DivineCall gardé sombre/mystique ; Combat déjà abouti + héros animé). **DEV01** (harnais de test) + assets (sprites monstres en forêt, héros idle animé carte/village/combat) faits. Suite = batches ci-dessous.
 
@@ -63,16 +69,16 @@ _(aucune dépendance externe bloquante)_
 
 > Les overlays « plein écran » cassent l'immersion : on veut **tout dans des fenêtres ancrées sur le monde** (style panneau PNJ), sans empiler de 2e fenêtre.
 
-- [ ] **IMM01 — Actions du bâtiment inline dans le panneau PNJ (plus de 2e fenêtre)** (M) — *Bug remonté : clic auberge → overlay PNJ (OK) mais « Rest at the Inn » ouvre une **2e fenêtre** (modale sombre) → coupe l'immersion.*
+- [x] **IMM01 — Actions du bâtiment inline dans le panneau PNJ (plus de 2e fenêtre)** (M) — *Bug remonté : clic auberge → overlay PNJ (OK) mais « Rest at the Inn » ouvre une **2e fenêtre** (modale sombre) → coupe l'immersion.*
   - Le panneau PNJ porte **directement** les actions réelles du bâtiment. Actions simples (Rest…) **exécutées en place**, retour affiché dans la zone dialogue (« Vous vous reposez… HP/MP restaurés, le temps avance »).
   - Inn (Marta) : `🛏 Rest at the Inn` (repos inline : heal + avance temps) · `📜 Quest Board` · `✕ Leave`.
   - AC : « Rest at the Inn » n'ouvre **plus** de 2e fenêtre ; effet appliqué + feedback dans le même panneau.
-- [ ] **IMM02 — Sous-UI fonctionnelles rendues DANS le panneau (suppression `.lb-modal`)** (L) — *dépend IMM01.*
+- [x] **IMM02 — Sous-UI fonctionnelles rendues DANS le panneau (suppression `.lb-modal`)** (L) — *dépend IMM01.*
   - Bâtiments à UI riche (Marchand, Forge, Alchimie, Maître-forgeron, Entraîneur, Église) : leur contenu s'affiche **dans le corps du panneau PNJ** (body remplacé/scrollable), pas dans une modale séparée. Bouton `◄ Back` revient au dialogue, `✕ Leave` ferme.
   - Implique : retirer la modale `.lb-modal` du Village ; reparenter `InnPanel/MerchantPanel/BlacksmithPanel/AlchemyPanel/MasterSmithPanel/KnightTrainerPanel/ChurchPanel` dans le panneau.
   - **DÉCIDÉ (2026-06-06)** : le cas des **mini-jeux** (forge/alchimie) inline-vs-fenêtre est **différé** (on tranchera au retravail des mini-jeux). Ce batch reparente les panneaux non-minijeu ; forge/alchimie peuvent rester en fenêtre temporairement.
-- [ ] **IMM03 — Restyle parchemin des panneaux fonctionnels** (M) — *dépend IMM02.* Les panneaux ne sont plus sur fond sombre → recolorer leur intérieur (texte `--ink`, cartes parchemin, boutons ambre) pour lisibilité/cohérence sur le panneau clair.
-- [ ] **IMM04 — Hero Sheet & Inventory en overlay immersif (sur l'écran courant)** (M) — *Aujourd'hui Hero/Bag = écrans takeover → on « quitte » le monde.*
+- [x] **IMM03 — Restyle parchemin des panneaux fonctionnels** (M) — *dépend IMM02.* Les panneaux ne sont plus sur fond sombre → recolorer leur intérieur (texte `--ink`, cartes parchemin, boutons ambre) pour lisibilité/cohérence sur le panneau clair.
+- [x] **IMM04 — Hero Sheet & Inventory en overlay immersif (sur l'écran courant)** (M) — *Aujourd'hui Hero/Bag = écrans takeover → on « quitte » le monde.*
   - Les afficher en **overlay au-dessus de l'écran courant** (monde estompé derrière, scrim) façon fenêtre de bâtiment ; les onglets topbar **basculent l'overlay** au lieu de changer `currentScreen`.
   - Implique : flags `heroSheetOpen`/`inventoryOpen` rendus par-dessus la scène ; `.sheet-scrim` couvre l'écran courant.
   - **DÉCIDÉ (2026-06-06)** : garder le format **« sheet centré »** (juste rendu en overlay au-dessus du monde), pas de panneau ancré bas.
@@ -81,35 +87,143 @@ _(aucune dépendance externe bloquante)_
 
 > On **marche** d'un node à l'autre le long du réseau, à un coût en temps. *(Renommé de MAP03-05 → TRV01-03 pour éviter la collision avec le `MAP03` PixiJS de v2.)*
 
-- [ ] **TRV01 — Logique de voyage entre nodes (entrer vs voyager)** (M)
+- [x] **TRV01 — Logique de voyage entre nodes (entrer vs voyager)** (M)
   - Clic **node courant** (où est le héros) → **entrer** dans la zone (safe_zone/zone_view, instantané, sans coût).
   - Clic **node adjacent** (graphe `EDGES`) → **voyager** : héros marche A→B, **+3 tics**, puis arrivée (maj `currentLocation`).
   - Clic node **non adjacent** → non navigable direct (feedback / grisé).
   - AC : depuis un node, seuls les voisins `EDGES` sont voyageables ; entrer dans la zone courante reste gratuit/instantané.
-- [ ] **TRV02 — Animation de marche le long du trail (sprites walking)** (M) — *dépend TRV01.*
+- [x] **TRV02 — Animation de marche le long du trail (sprites walking)** (M) — *dépend TRV01.*
   - Animer le sprite **walking** (24 frames, `public/sprites/hero/walking/`) interpolé le long du segment A→B (~1–1.5 s), puis retour idle à l'arrivée ; input verrouillé + trail surligné pendant la marche.
-- [ ] **TRV03 — Coût en temps du voyage (+3 tics) + rollover** (S/M) — *dépend TRV01.*
+- [x] **TRV03 — Coût en temps du voyage (+3 tics) + rollover** (S/M) — *dépend TRV01.*
   - Voyage = **+3 tics** ; gérer le rollover de jour (>24 tics).
   - **DÉCIDÉ (2026-06-06)** : le voyage **ne déclenche PAS** les tics idle (on ne farme pas en marchant — ça n'a pas de sens). Le voyage **avance seulement le temps** (jour/nuit, horaires de bâtiments, respawn donjon) sans crédit de kills/loot.
 
 ### Sprites, assets & contenu visuel
 
-- [ ] **CONT01 — Sprites de carte/combat chibi (couche A)** (M) — *§ASSETS*. **✅ Héros placeholder en place** (`public/sprites/hero/{idle,walking,dying}` — Necromancer chibi CraftPix, à remplacer par un chibi héroïque). **Reste** : façades de bâtiments, **18/23 monstres**, **boss Malachar**, déco (well/hens/barrels). Pipeline `public/monsters/README.md`.
+- [ ] **CONT01 — Sprites de carte/combat chibi (couche A)** (M) — *§ASSETS*. **✅ Héros placeholder en place** (`public/sprites/hero/{idle,walking,dying}` — Necromancer chibi CraftPix, à remplacer par un chibi héroïque). **✅ 16/16 monstres de surface liés** (2026-06-08 : `public/monsters/<id>.png` normalisés, chargés par `MonsterPortrait`/ZoneView avec fallback emoji). **✅ 5/9 façades de bâtiments liées** (2026-06-08 : `public/buildings/<id>.png` — inn, church, merchant, alchemy, blacksmith — chargées via `ArtSlot src` dans `VilBuilding`, fallback placeholder légendé). **Reste (art à produire)** : 3 boss (Crypt Keeper, Lord of the Forsaken, **Malachar**), 6 monstres Grimspire, 2 élites Blighted Road, 2 réserve (barrow_wight, soul_harvester) ; **4 façades** (master_smith, knight_trainer, academy, guild) + déco (well/hens/barrels). Pipeline `public/monsters/README.md`.
 - [x] ~~**CONT06 — Portraits PNJ pixel (couche B)**~~ — **✅ 5 portraits en place** (`public/portraits/{aldric,smith,marta,merchant,mage}`, 6 émotions, CraftPix) + manifeste `src/data/portraits.js`. **Reste à sourcer** : prêtre (church), chef de village, divinités → fallback emoji en attendant.
-- [ ] **CONT04 — Noms propres donjons Zone 2** (XS) - remplacer placeholders par noms définitifs
+- [x] **CONT04 — Noms propres donjons Zone 2** (XS) — ✅ vérifié : noms définitifs déjà en place (donjon « The Forsaken Citadel », boss « Lord of the Forsaken », demon lord « Malachar the Undying ») ; aucun placeholder restant. - remplacer placeholders par noms définitifs
 - [ ] **CONT05 — ASSETS.md + sourcing licences** (S) — **✅ `ASSETS.md` créé** (crédits + inventaire + règle anti-clash). Assets **gitignorés (local-only)** → pas de problème de redistribution. ⚠️ **Reste** : prévoir la **livraison des assets au déploiement** (script de copie / release séparée, car absents du repo) + un set d'icônes SVG (remplace emoji).
 - [ ] **C03 — Portraits personnage** (S) - 8 icônes au choix en CharCreation (warrior/rogue/mage/ranger/monk/knight/witch/bard)
 
 ### QoL essentiel (shippabilité)
 
-- [ ] **IDLE-OFF — Progression hors-ligne** (M) - au retour, calculer les gains accumulés depuis `meta.lastSeen` (timestamp) → simuler N ticks → écran récap "Pendant ton absence : X kills, Y or, Z loot". **DÉCIDÉ : gains illimités (pas de plafond), la Fatigue ne s'accumule PAS hors-ligne, auto-stop HP à revoir plus tard.** AC : fermer/rouvrir l'onglet pendant idle actif crédite les bons gains + écran récap
-- [ ] **SET01 — Menu Options / Réglages** (S) - écran joueur : toggle animations, vitesse de texte, (volume quand U05), reset save (via ConfirmDialog UX03). Sort le toggle "animate" du DebugPanel (DEV-only) vers le joueur
-- [ ] **TECH07 — Export / Import de save (fichier)** (S) - bouton "Exporter" (JSON téléchargé) + "Importer" (lecture fichier → `loadGame` + migrations). Filet de sécurité + portabilité multi-machine. Complète TECH02/TECH03
-- [ ] **PROC07 — Debug panel : boutons "give stats"** (XS) - ajouter au `DebugPanel.jsx` (DEV) : +5 STR/AGI/INT/Chance/DEF, +50 maxHP/maxMana, ou "God mode stats"
+- [x] **IDLE-OFF — Progression hors-ligne** (M) - au retour, calculer les gains accumulés depuis `meta.lastSeen` (timestamp) → simuler N ticks → écran récap "Pendant ton absence : X kills, Y or, Z loot". **DÉCIDÉ : gains illimités (pas de plafond), la Fatigue ne s'accumule PAS hors-ligne, auto-stop HP à revoir plus tard.** AC : fermer/rouvrir l'onglet pendant idle actif crédite les bons gains + écran récap
+- [x] **SET01 — Menu Options / Réglages** (S) - écran joueur : toggle animations, vitesse de texte, (volume quand U05), reset save (via ConfirmDialog UX03). Sort le toggle "animate" du DebugPanel (DEV-only) vers le joueur
+- [x] **TECH07 — Export / Import de save (fichier)** (S) - bouton "Exporter" (JSON téléchargé) + "Importer" (lecture fichier → `loadGame` + migrations). Filet de sécurité + portabilité multi-machine. Complète TECH02/TECH03
+- [x] **PROC07 — Debug panel : boutons "give stats"** (XS) - ajouter au `DebugPanel.jsx` (DEV) : +5 STR/AGI/INT/Chance/DEF, +50 maxHP/maxMana, ou "God mode stats"
+- [x] **KBD01 — Touche Échap = retour à la World Map** (XS) — *retour playtest 2026-06-06.* Quand on est dans une zone (`safe_zone` / `zone_view`) ou un overlay (Hero Sheet / Inventory / panneau PNJ), **Échap** revient à la WorldMap (ou ferme l'overlay courant en priorité). Sous-ensemble ciblé de **UX04** (navigation clavier complète, v2). AC : Échap sur safe_zone/zone_view → `world_map` ; Échap ferme un overlay ouvert avant de quitter la zone.
+- [x] **MRC01 — Feedback d'achat marchand (toast)** (XS) — *retour playtest 2026-06-06.* À l'achat d'un consommable ou d'un équipement chez le marchand, **confirmer visuellement la transaction**. **Approche proposée (à valider)** : réutiliser le système de toasts (U01) → toast type `info`/`loot` « Acheté : <item> · −<prix> 🪙 » (cohérent avec les toasts loot/quête existants), + jouer le badge `unseen-loot` si c'est de l'équipement. Alternative si on veut plus appuyé : petit flash sur la ligne d'item + son (U05). AC : tout achat marchand déclenche un retour visuel immédiat ; pas de double-déclenchement. *(Dev hésite entre toast simple et feedback inline — on tranchera ensemble si besoin.)*
+
+### Batch — retours playtest 2026-06-07 (carte & combat)
+
+> **Implémenté 2026-06-07 (session dev)** : WM-NAME, TRV04, CMB-WIN, CMB-ICON, UI-BESTIARY-BTN, UI-QUESTS. Restent ouverts : SKL-PASS, ANIM01, UI-ACHIEVE-PREVIEW (ce dernier nécessite un système d'achievements à créer au préalable). Suite : **845 tests verts**.
+
+- [x] **CMB-STUCK — 🔴 URGENT : combat gagné mais bloqué sur l'écran de combat** (RÉSOLU 2026-06-07). *Repro joueur : victoire par compétence OU attaque normale → reste coincé au tour du héros, « Victory! » loggé mais pas de ResultPanel.* **Cause-racine** : `handleVictory` (Combat.jsx) loggait « Victory! » puis distribuait TOUTES les récompenses (drops, kills, XP, Gluttony, éveil divin) **avant** `setPhase('result')`. Si une récompense throwait (état de save spécifique : un champ/id provoquant une exception au milieu de la chaîne), la fonction s'interrompait après le log mais avant la transition → joueur bloqué ; pire, `resolvedRef` (déjà `true`) **neutralisait le filet de sécurité**, rendant le blocage irrécupérable. **Correctif** : toute la distribution de récompenses encapsulée dans `try/catch` → `setResult('victory') + setPhase('result')` s'exécutent TOUJOURS (idem `finishCombat`). Une récompense qui échoue est loggée (`console.error`) mais ne bloque plus jamais. **Tests** (`src/screens/Combat.victory.test.jsx`, 7 cas) : victoire 1-coup / multi-tours / multi-ennemis / avec divinité / par compétence + **2 régressions** injectant un throw dans une récompense → vérifient que le ResultPanel s'affiche quand même (validés : ils échouent sur le code non corrigé). Suite : 830 tests verts.
+- [x] **SAVE-NORM — 🔴 compteurs de kills/quêtes bloqués + (cause du combat figé)** (RÉSOLU 2026-06-07). *Repro joueur (save day10) : `monsterKillCounts` bloqués à 4, idle jamais débloqué, quêtes gelées.* **Cause-racine** : la save (`saveVersion: 2`, écrite avant l'ajout de `meta.seenHints`) n'avait pas ce champ ; or `recordKill` faisait `state.meta.seenHints.includes('idle_unlock')` — déclenché seulement quand `newCount >= 5` → au **5ᵉ kill**, `seenHints` étant `undefined`, **throw** → le `set()` n'était pas appliqué → compteur figé à 4. Les migrations étant *version-gated*, une save **déjà en v2** ne repassait jamais par le backfill (`{...INITIAL_META, ...meta}` ne tourne que pour v1). C'est **aussi la cause profonde du combat figé** (le throw remontait avant `setPhase('result')` ; le `try/catch` de CMB-STUCK masquait le symptôme mais perdait silencieusement kills/quêtes). **Correctif** : (1) `normalizeSave` **idempotent** appliqué à CHAQUE load (toutes versions) qui ré-injecte tout champ `meta/world/hero` manquant sans écraser les données ; (2) accès défensif `state.meta.seenHints ?? []` dans `recordKill`. **Auto-réparation** : la save du joueur se répare au prochain chargement (les compteurs reprennent de 4→5). **Tests** (`src/store/saveNormalize.test.js`, 9 cas) dont 3 régressions reproduisant le throw exact (`Cannot read properties of undefined (reading 'includes')`). Suite : 839 tests verts.
+- [x] **SKL-PASS — XP des skills passifs via impact passif** (M) — *retour playtest 2026-06-07.* Les skills passifs doivent gagner de l'XP **quand ils impactent passivement la situation**, pas via les kills. Ex. *Veteran's Resolve* → +XP **à chaque coup encaissé** ; un passif de drop → +XP à chaque drop ; un passif de soin → +XP à chaque soin déclenché, etc. **À cadrer** : table `passiveXpTrigger` par skill (event → montant), hook dans les bons points du combat (prise de dégâts, drop, soin…). AC : un passif équipé monte en niveau en jouant normalement, selon son effet ; les actifs gardent leur progression actuelle.
+
+- [x] **UI-QUESTS — Bouton « Quests » + suivi des quêtes actives** (S) — *retour playtest 2026-06-07.* Ajouter un bouton **« Quests »** dans la **Topbar** (à côté de Map/Hero/Bag/Save) qui ouvre un **overlay de suivi** listant toutes les quêtes en cours (`world.activeQuests`) avec, pour chacune : titre, description courte, **progression** (ex. `kills X/Y`, dérivée de `monsterKillCounts` / objectifs de la quête) et récompense. Réutiliser le pattern overlay IMM04 (comme Hero/Bag/Codex). *Note : le Quest Board existe en SafeZone mais n'est accessible que dans un village → ce bouton global permet le suivi partout.* AC : bouton Topbar visible hors combat ; overlay liste les quêtes actives avec barre/compteur de progression à jour ; fermeture via ✕/Échap.
+- [x] **UI-BESTIARY-BTN — Bouton « Bestiaire » dans le panneau parchemin droit** (XS) — *retour playtest 2026-06-07.* Ajouter un bouton **« 📖 Bestiaire »** dans le **panneau latéral droit de la WorldMap** (bloc parchemin LOCATION/DEITY/DEMON LORD/REPUTATION/ACTIONS) qui ouvre l'overlay **CodexOverlay** déjà existant (`setScreen('codex')`). Aujourd'hui le bestiaire n'est atteignable que depuis le HeroSheet. AC : bouton parchemin présent dans la colonne droite ; clic → ouvre le bestiaire ; style cohérent avec les autres actions du panneau.
+- [x] **UI-ACHIEVE-PREVIEW — Aperçu de l'achievement le plus proche (panneau droit)** (M) — *retour playtest 2026-06-07.* Afficher dans le **panneau parchemin droit** un encart « **Prochain accomplissement** » montrant l'achievement dont on est **le plus proche** (titre + barre de progression `X/Y` + récompense). Peut **remplacer ou compléter** l'encart RÉPUTATION. **À cadrer (préalable)** : il n'y a pas encore de **système d'achievements formel** — soit (a) en créer un (`src/data/achievements.js` : id, condition, cible, récompense, dérivés de compteurs existants : kills totaux, quêtes complétées, jours survécus, runs, demon lords, titres…), soit (b) le dériver des `titles`/compteurs existants. Le calcul « le plus proche » = max du ratio `progress/target` parmi les achievements non débloqués. AC : encart droit affiche 1 achievement en cours avec progression réelle, mis à jour quand les compteurs évoluent.
+
+- [x] **WM-NAME — Remonter la plaque de nom du héros (WorldMap)** (XS) — l'**avatar reste à la même position**, mais la plaque de nom doit être **plus proche / plus haute** (collée sous/contre l'avatar). CSS : `.hero-avatar .hero-name` `margin-top` plus négatif (actuellement `-4px`). AC : avatar inchangé, nom remonté et resserré.
+- [x] **TRV04 — Voyage 3× plus lent (animation de marche plus visible)** (XS) — *dépend TRV02.* La marche est trop rapide, on ne voit pas l'animation. **Multiplier la durée du déplacement par ~3** : transition CSS `.hero-avatar` (`left/top`) de `.6s` → `~1.8s` **et** la fenêtre `walking` (WorldMap, actuellement `700ms`) → `~2100ms`, gardées synchronisées. AC : la marche dure ~3× plus longtemps, l'anim walking est nettement visible ; input verrouillé toute la durée.
+- [x] **CMB-WIN — Retour à la zone après victoire** (S) — après un combat **gagné** (et collecte du loot dans le ResultPanel), revenir sur l'**écran de zone** (`zone_view`, là où sont listés les monstres), pas ailleurs. AC : « Continue » du ResultPanel après victoire → `setScreen('zone_view')` (en conservant `currentHuntingSpot`). *(Vérifier les autres issues : fuite/mort/donjon gardent leur flux actuel.)*
+- [x] **CMB-ICON — Icône de monstre ×2 en combat** (XS) — agrandir le sprite ennemi en combat. `Combat.jsx` `EnemyCard` → `MonsterPortrait size` (actuellement `120`) ≈ `240` ; ajuster le layout/min-height de la zone ennemis si besoin. AC : sprite ennemi 2× plus grand, sans casser la disposition multi-ennemis ni les barres HP/floating numbers.
+- [x] **ANIM01 — Refonte des animations d'attaque (héros + monstres)** (M) — *demande de cadrage : voici le faisable.*
+  - **État actuel** : héros = keyframe `anim-hero-attack` (translateX +18px ping-pong 300ms, B13) sur un sprite idle statique ; monstres = flash `attackingEnemyId` (B02) + hit-flash + floating numbers, sprite PNG statique.
+  - **Faisable SANS nouveaux assets (CSS/transform sur les sprites existants)** — *recommandé pour ce ticket* :
+    - **Lunge + recoil** : l'attaquant amorce (léger retrait/anticipation) → frappe rapide vers la cible (héros → droite, ennemi → vers le héros) → retour amorti (easing « overshoot » pour le poids).
+    - **Réaction à l'impact** : la cible recule/tremble + hit-flash (teinte rouge) + « scale-punch » (1.0→1.12→1.0).
+    - **Étincelle d'impact** : burst CSS (radial-gradient en étoile/flash) spawné sur la cible à l'impact, fade ~250ms. Aucun asset.
+    - **Screen shake** léger sur gros coups / crits (translate de l'arène de quelques px).
+    - **Flash élémentaire** : couleur du flash selon le type de dégâts du skill (feu=orange, glace=bleu…).
+    - **Projectile** pour les skills à distance/magie : orbe CSS qui voyage attaquant→cible avant l'impact.
+    - **Timing/easing** : anticipation + overshoot pour donner du poids (vs translation linéaire actuelle).
+  - **Faisable AVEC nouveaux assets (différé)** : frames d'attaque par entité (spritesheets héros + monstres) → animation image par image. Nécessite de l'art (extension CONT01).
+  - AC : attaque héros et attaque ennemie ont chacune un cycle lisible (windup → strike → impact → settle) + retour d'impact sur la cible ; pas de régression des dégâts/floating numbers/hit-flash existants.
+- [x] **WM-AVATAR — Avatar WorldMap ×2 + cadence de marche doublée** (XS) — *retour playtest 2026-06-07.* Deux changements **indépendants** :
+  1. **Taille** : avatar héros **2× plus grand** sur la WorldMap. `index.css` `.hero-avatar .hero-sprite` (actuellement `76×112`) → `~152×224` ; l'avatar reste ancré au même point (`transform: translate(-50%,-100%)`). Réaligner la plaque de nom + le halo (cohérent WM-NAME) pour qu'ils suivent l'avatar agrandi.
+  2. **Cadence d'animation** : pendant un voyage, **garder la MÊME durée de déplacement** (TRV04 — glisse A→B en ~1.8 s/2100 ms) mais **doubler la cadence du cycle de marche** → le perso fait visiblement ~2× plus de pas sur le trajet. `HeroAvatar` : `walkFps` `14` → `~28` (la **position** glisse à la même vitesse via la transition CSS ; seule la **lecture des frames du spritesheet** s'accélère). *(Vérifier que les 24 frames bouclent proprement à 28 fps sur 2.1 s.)*
+  - AC : avatar 2× plus grand sans casser l'ancrage/nom/halo ; en voyage, durée inchangée mais animation de marche nettement plus « vivante » (≈2× plus de pas). **(FAIT — ajusté à ×1.8 sur retour playtest.)**
+- [ ] **ANIM02 — Animations de combat spécifiques aux skills** (M) — *retour playtest 2026-06-07, pas prioritaire.* ANIM01 a posé les bases (lunge/recoil/impact/étincelle/screen-shake) sur l'**attaque de base**. À cadrer : des animations **propres à chaque skill** — **projectile** pour les skills à distance/magie (orbe CSS attaquant→cible), **flash élémentaire** teinté selon le type de dégâts (feu=orange, glace=bleu, poison=vert…), feedback **AoE** (onde de choc sur tous les ennemis), windup plus marqué sur les gros skills (Power Strike/Cleave/skills suprêmes). Possiblement piloté par un champ `skill.vfx` (type/couleur). AC : chaque skill a un retour visuel distinct de l'attaque de base ; pas de régression ANIM01.
+- [x] **TRM01 — 🐞 Héritage de stat à la transmigration + audit complet du God's Shop** (M) — *retour playtest 2026-06-07.* **Bug remonté : « ma stat n'a pas été ramenée » à la transmigration.** **Investigation (déjà faite) :**
+  - **Cause probable** : dans `PostMortem.jsx`, `chosenStat` démarre à `null` (l.14) et n'est posé que si le joueur **clique** une stat (l.129). Si rien n'est cliqué → `confirmInheritance(null, …)` → `applyTransmigration` saute le boost (`if (pendingInheritance.stat)`) → **aucune stat héritée**. **Fix proposé** : pré-sélectionner par défaut (ex. la stat la plus haute du run, ou la 1ʳᵉ) **et/ou** rendre la sélection obligatoire avant « Confirm ».
+  - **DÉCIDÉ (formule, 2026-06-07)** : ramener **davantage** la stat → `nouvelle = stat_du_run × 0.4` (au lieu de `base × 1.10`). La valeur du run est dans `meta.lastRunSummary.stats[stat]`. ⚠️ **Edge case** : pour une stat peu montée, `× 0.4 < base` → ça **nerferait sous la base**. Plancher à appliquer : `nouvelle = max(base, round(stat_du_run × 0.4))` *(implémenté par défaut — à confirmer ; alternative : `base + (stat_du_run − base) × 0.4`)*.
+  - **Audit du God's Shop** (`CATALOG`, `GodsShop.jsx`) — vérifier que **chaque** option est fonctionnelle :
+    - `rank_restore` → `rankRestored` → T06 (restaure 80 % des tokens) ✔ à tester
+    - `bonus_skill` → `extraSkills` (skill choisi) ✔ à tester
+    - `bonus_stat` → `bonusStatSlot` → T08 (+1 stat aléatoire) ✔ à tester
+    - `skill_levelup` → `skillLevelUps` (count) → T09 ✔ à tester
+    - `starter_kit` → potions hp/mana (ids existants ✔) ✔ à tester
+    - **`divine_oracle` → ❌ MORT : défini dans `CATALOG` (coûte 8 tokens) mais JAMAIS consommé dans `handleConfirm` ni ailleurs** → soit l'implémenter (DV12, v2), soit le retirer du catalogue pour ne pas voler 8 tokens au joueur.
+  - **Tests à ajouter** : 1 test par option du shop vérifiant son effet **post-transmigration** sur le héros (stats/tokens/skills/consommables) + un test « stat héritée appliquée » et « stat non choisie → comportement défini ». AC : héritage de stat fiable, chaque option du shop a un effet vérifié par un test, `divine_oracle` traité (implémenté ou retiré).
+- [x] **CHQ01 — Quêtes de l'église (rotation 3 jours, récompenses tokens + élixirs, sans gold)** (M) — *retour playtest 2026-06-07.* L'**église** (ChurchPanel, NPC04 prêtre) propose un **pool de quêtes** qui **change tous les 3 jours** (rotation basée sur `world.dayCount`, ex. `Math.floor(dayCount/3)` comme seed). Récompenses = **tokens de réputation + élixirs/potions (consommables)**, **JAMAIS de gold** (contrainte explicite). **À cadrer** : data `CHURCH_QUESTS` (pool) + sélection des N quêtes actives selon le bloc de 3 jours, intégration au flux de quêtes existant (`activeQuests`/`completeQuest`), reward `{ reputationTokens, consumables:{id:qty} }` (étend Q09 qui couvre déjà gold/équipement/ressources/stat — ici **tokens+consommables sans gold**). Lien CAL01 (calendrier) + église. AC : entrer à l'église affiche 2-3 quêtes ; elles tournent tous les 3 jours ; les compléter donne tokens + élixirs (jamais d'or) ; tests sur la rotation + les récompenses.
+- [x] **DEMON-FIGHT — Action pour combattre le Demon Lord (Malachar)** (M) — *retour playtest 2026-06-07.* **Aujourd'hui il n'y a aucun combat réel contre le Demon Lord** : le bouton « Challenge ➜ » de la section Demon Lord (`ZoneView.jsx` → `DemonLordSection.handleChallenge`) fait juste `alert('Demon Lord battle coming soon!')`. **À implémenter** : déclencher le vrai combat → `startCombat([buildEnemy('malachar', 'grimspire', hero.runNumber)])` (Malachar = rank `demon_lord`, `bossMechanics` 3 phases BSS03, drop **Soul Rend** garanti). **Conditions d'accès à cadrer** (Grimspire débloqué / Forsaken Citadel `cleared` / niveau requis). **Sur victoire** → lever `demonLordDefeated` + récompense **W01 (+200 tokens)** + compteur **M02** + flag **W03** (`malacharDefeatedThisRun`, bannière post-mortem) — cette logique existe déjà dans `clearDungeon('grimspire')` : soit l'appeler à la victoire Malachar, soit extraire une action dédiée `defeatDemonLord()` (plus propre, pour découpler du donjon). **Tests** : l'action lance bien un combat Malachar ; la victoire lève les bons flags + récompenses. AC : bouton fonctionnel → combat Malachar ; victoire = Demon Lord vaincu (tokens/compteur/bannière) ; défaite = mort normale.
+
+## MON01 — Refonte du bestiaire de surface (4 spots d'Ashenvale)
+
+- [x] **MON01 — Refonte bestiaire de surface + champ `skillDropType`** (L) — ✅ RÉALISÉ 2026-06-07 (skills+monsters+zones+worldGraph+Combat+quests+normalizeSave ; 19 tests MON01/remap ; 864 tests verts ; docs CONTEXT/CHANGELOG à jour). — *spec joueur 2026-06-07.* Commit : `feat(MON01): refonte bestiaire de surface + skillDropType`.
+
+  **Contexte / fichiers.** Données : `src/data/monsters.js` (`MONSTERS`, dérivés `MONSTERS_BY_SPOT` / `MONSTERS_BY_ZONE`), `src/data/skills.js` (`SKILLS`), `src/data/zones.js` (spots + `levelRange`). Modèle actuel d'un monstre : `{ id, name, zone:'ashenvale', huntingSpot, rank, baseStats:{hp,atk,def,spd}, expReward, goldReward:{min,max}, skillDrop:{chance,skillId}, resourceDrops:[{resourceId,chance,qty:{min,max}}] }`. Les **4 « zones » de la spec = les 4 `huntingSpot`** : `ashenvale_forest` (Lv 1-8) · `thornmarsh` (Lv 6-14) · `crumbled_ruins` (Lv 12-20) · `barrow_hills` (Lv 18-26). Consommateurs : `ZoneView` (cartes de clearing, via `MONSTERS_BY_SPOT`), `CodexOverlay` (bestiaire, via `MONSTERS_BY_ZONE` + révélation S02/`SKILL_REVEAL=5`), `Combat` (`generateEnemies`/`buildEnemy`, map `MONSTER_EMOJI`, `ARENA_BACKGROUNDS`), idle, quêtes.
+
+  ### Roster final par spot (stats = `baseStats`)
+  | Spot | Monstre (id suggéré) | Rang | HP | ATK | DEF | SPD | `skillDropType` → skill |
+  |---|---|---|---|---|---|---|---|
+  | **ashenvale_forest** (1-8) | Ashwood Wolf `ashwood_wolf` | normal | 40 | 8 | 3 | 12 | active → **Rending Bite** |
+  | | Thicket Hare `thicket_hare` | normal | 22 | 4 | 1 | 22 | none |
+  | | Tuskmaw Boar `tuskmaw_boar` | normal | 55 | 11 | 6 | 7 | passive → **Thick Hide** |
+  | | Old Oakheart `old_oakheart` | **elite** | 160 | 22 | 14 | 6 | active → **Bramble Slam** |
+  | **crumbled_ruins** (12-20) | Stone Golem `stone_golem` | normal | 100 | 12 | 15 | 4 | passive → **Stoneskin** |
+  | | Hollow Knight `hollow_knight` | normal | 80 | 14 | 10 | 8 | active → **Cursed Cleave** |
+  | | Ruin Specter `ruin_specter` | normal | 45 | 16 | 3 | 16 | active → **Soul Chill** |
+  | | Graven Sentinel `graven_sentinel` *(= ex-Grave Knight, déplacé + renommé)* | **elite** | 190 | 24 | 16 | 7 | active → **Tomb Judgment** |
+  | **thornmarsh** (6-14) | Marsh Serpent `marsh_serpent` | normal | 50 | 11 | 4 | 10 | active → **Venom Strike** |
+  | | Briar Wraith `briar_wraith` | normal | 35 | 10 | 2 | 14 | active → **Thorn Lash** |
+  | | Mire Slime `mire_slime` | normal | 70 | 8 | 6 | 5 | passive → **Caustic Coat** |
+  | | Fenrot Devourer `fenrot_devourer` | **elite** | 175 | 21 | 12 | 6 | active → **Plague Maw** |
+  | **barrow_hills** → **Wildmere Hills** (18-26) | Hill Slime `hill_slime` | normal | 90 | 16 | 10 | 6 | passive → **Mossy Hide** |
+  | | Russet Fox `russet_fox` | normal | 60 | 18 | 6 | 20 | none |
+  | | Knoll Goblin `knoll_goblin` | normal | 85 | 20 | 8 | 12 | active → **Cheap Shot** |
+  | | Thunderhoof `thunderhoof` | **elite** | 210 | 28 | 12 | 14 | active → **Trample Charge** |
+
+  **Retraits surface** : Rotting Shambler, Gloom Bat (ashenvale_forest) ; Bog Shambler (thornmarsh) ; Barrow Wight, Grave Knight, Soul Harvester (barrow_hills). **Réserve** (gardés en données, hors surface, pour Hollow Crypt/Grimspire) : **Barrow Wight** + **Soul Harvester** → flag `reserve: true` (ou `huntingSpot:'reserve'`) et **exclus de `MONSTERS_BY_SPOT`** pour ne jamais spawn (`generateEnemies` part de `MONSTERS_BY_SPOT[spot]`). Grave Knight → **devient** Graven Sentinel dans crumbled_ruins. Rotting Shambler / Gloom Bat / Bog Shambler → supprimés OU mis en réserve (décider ; voir ⚠️ quête ci-dessous).
+
+  ### Modèle de données
+  - Ajouter **`skillDropType: 'active' | 'passive' | 'none'`** sur chaque monstre (champ **interne** : drop + bestiaire).
+  - `active`/`passive` → le monstre lègue un **mana stone** du skill nommé (S03 — stacking des doublons). `skillDrop = { chance, skillId }` pointe sur ce skill.
+  - `none` → **pas** de `skillDrop`, pas de mana stone de technique.
+  - **Créer les skills manquants** dans `skills.js` (14 nommés) avec effet cohérent : `type:'active'` = technique de combat (dégâts/debuff/contrôle, `cost`, `cooldown`) ; `type:'passive'` = bonus permanent (+DEF / regen / résistance). **Réconcilier avec l'existant** (`savage_bite`, `venom_bite`, `cleave`, `counter_strike`…) : réutiliser un id existant adapté plutôt que dupliquer, OU créer le nouveau (ex. `rending_bite`). Garder `skillDropType` cohérent avec `SKILLS[id].type`.
+
+  ### Règle UI (IMPORTANTE)
+  - Clearing card (`ZoneView`) **et** Bestiaire (`CodexOverlay`) affichent le **NOM du skill** après le seuil de kills existant (ligne « Technique », comme aujourd'hui `✦ {skillName}` / flou < 5 kills S02), mais **JAMAIS** « actif/passif ». `skillDropType` n'est **jamais** exposé comme label UI.
+  - Monstres `skillDropType:'none'` → **aucune** ligne Technique.
+
+  ### ⚠️ Dépendances / risques à traiter (sinon casse)
+  1. **Quête `bog_purge`** (`src/data/quests.js`) cible `bog_shambler` (retiré de thornmarsh) → **re-cibler** vers un monstre restant du marais (ex. `mire_slime`) **ou** garder `bog_shambler` en réserve + adapter. Sinon quête incomplétable.
+  2. **Test `CodexOverlay.test.jsx`** attend « Savage Bite » révélé sur `ashwood_wolf` à 5 kills → à mettre à jour si le skill du loup devient « Rending Bite ».
+  3. **Zone `barrow_hills`** : ne renommer que le **`name`** d'affichage → « Wildmere Hills » + description « Verdant hills teeming with wild beasts and roaming creatures. ». **Garder l'`id` `barrow_hills`** (sinon cascade sur `huntingSpot`, saves `currentHuntingSpot`, `ARENA_BACKGROUNDS`, B12). Décision à acter dans le ticket.
+  4. **`MONSTER_EMOJI`** (`Combat.jsx`) + `ARENA_BACKGROUNDS` : ajouter une entrée fallback pour chaque **nouvel id**.
+  5. **`expReward` / `goldReward` / `resourceDrops`** : non fournis par la spec pour les **nouveaux** monstres → définir des valeurs cohérentes avec le `levelRange` du spot (s'appuyer sur B12 + la courbe existante / `PROC04` balance spreadsheet). Définir aussi les ressources de craft associées (`resources.js`) si de nouvelles apparaissent.
+  6. **`CodexOverlay`** groupe par `MONSTERS_BY_ZONE` (tout = `ashenvale`) → envisager un regroupement par **`huntingSpot`** pour lisibilité des 4 sous-zones (optionnel, à confirmer).
+  7. Vérifier toute autre référence directe aux ids retirés/renommés (idle `idleTargetMonster`, `recordKill`/`monsterKillCounts`, `dataHelpers`, `scenarios.test.js`, debug panel).
+
+  ### Équilibrage
+  - Vérifier que les courbes HP/ATK collent aux `levelRange` recommandés des spots (élites ~2-4× un normal du même spot ; SPD cohérent avec l'ordre de jeu). Mettre à jour le **balance spreadsheet** (PROC04) si présent.
+
+  ### Docs
+  - Mettre à jour `CONTEXT.md` (roster par spot + champ `skillDropType` + règle « ne pas exposer actif/passif en UI ») et `CHANGELOG.md`. *(⚠️ vérifier l'existence de ces fichiers — sinon créer ; la doc actuelle vit dans `DESIGN.md`/`ASSETS.md`/`UI_HANDOFF.md`.)*
+
+  ### Tests
+  - MàJ/ajout : data monstres (roster par spot, présence `skillDropType`, réserve exclue de `MONSTERS_BY_SPOT`), drops/mana stones, `CodexOverlay` (noms de skills révélés, **aucun** label actif/passif, `none` sans ligne Technique), quêtes impactées, idle, helpers/scénarios. **Aucun test cassé.**
+
+  ### Livrable / AC
+  - Roster refondu sur les 4 spots ; zone affichée « Wildmere Hills » ; `skillDropType` en place sur tous les monstres ; 14 skills créés/réconciliés ; UI affiche le **nom** du skill **sans** révéler actif/passif ; `none` sans ligne Technique ; Barrow Wight + Soul Harvester isolés en réserve (jamais spawn surface) ; quête `bog_purge` re-ciblée ; tests verts ; docs à jour. Commit `feat(MON01): refonte bestiaire de surface + skillDropType`.
 
 ---
 
-## v1.5 — Profondeur & contenu
+## v1.2 — Profondeur & contenu
 
 > Ordre acté : **NPC → STA → PROG**. Les informateurs (NPC) débloquent des zones (PROG), donc NPC est prérequis naturel de PROG.
 
@@ -117,57 +231,97 @@ _(aucune dépendance externe bloquante)_
 
 > **DÉCIDÉ — répartition par localité** : Auberge (partout) = dormir + informateurs. En **ville** : auberge = dormir + informateurs seulement, les quêtes passent à la **Guilde**. En **village** : auberge = dormir + informateurs + quêtes + init carte d'aventurier. NPC par bâtiment : auberge, marchand, alchimiste, forgeron, guilde. 1-2 informateurs/auberge. 1 chef de village (présent à toute heure tant que BLD01 pas fait).
 
-- [ ] **NPC01 — Système de dialogue NPC (arbre simple)** (M) - `DialogueNode { text, options:[{label, nextId}] }` dans `data/dialogues/` ; 2-3 nœuds max par NPC ; composant `DialoguePanel`. Base de NPC04/TAV01/GLD01/ACA*
-- [ ] **NPC04 — Dialogue avec le maître/sse du bâtiment** (M) - 1 NPC maître par bâtiment (auberge/marchand/alchimiste/forgeron/guilde) + chef de village ; messages prédéfinis en entrant ; utilise NPC01
-- [ ] **TAV01 — Informateurs à l'auberge** (M) - 1-2 informateurs/auberge (3-4 à la Guilde ville) qui vendent des infos : déblocage zone (PROG03), loot, indices boss. **DÉCIDÉ — contreparties : or / ressources / équipement / mana stone** (PAS un skill équipé). Lien NPC04 + Q09
-- [ ] **GLD01 — Guilde des Aventuriers (ville)** (M) - **DÉCIDÉ : la Guilde remplace entièrement le quest board de l'auberge en ville** ; quêtes prestigieuses liées au rang Q06 ; 3-4 informateurs sur place
-- [ ] **GLD02 — Quêtes & carte d'aventurier au village (via l'auberge)** (S) - pool de quêtes réduit dans l'auberge village + initialisation de la carte d'aventurier ici ; pondération `location.type`
-- [ ] **SKL01 — Skills jusqu'au niveau 5** (M) - étendre le leveling de 3 à 5 niveaux : définir seuils d'XP 3→4 et 4→5 + scaling d'effet/coût par niveau ; prérequis d'ACA03. AC : un skill peut atteindre Lv5, scaling cohérent, migration save
-- [ ] **ACA01 — Académie de magie (acheter/vendre skills)** (M) - bâtiment ville : catalogue d'achat de skills + revente depuis l'inventaire de skills
-- [ ] **ACA02 — Déséquipement réservé à l'Académie** (S) - équiper libre partout, **déséquiper seulement à l'Académie** + feedback clair ailleurs
-- [ ] **ACA03 — Achat-revente avec plus-value au niveau** (M) - **DÉCIDÉ — formule : `nouveau_prix = prix_origine × 1.15^(niveau−1)`** (skills Lv1→5, dépend SKL01). Pas de garde anti-exploit pour l'instant
-- [ ] **ACA04 — Quêtes de level-up de skill (maître)** (M) - le maître demande de monter un skill au niveau X. **DÉCIDÉ — récompense : gold + (skill OU +5 Aura OU +5 Concentration)**. Type `skill_levelup` + Q09 ; lien NPC04
-- [ ] **BLD01 — Horaires d'ouverture des bâtiments** (M) - `openHours:{from,to}` en ticks (lié CAL01). **DÉCIDÉ : taverne ouverte 24/24 ; les autres ont des horaires ; le chef de village suit alors les horaires.** Bâtiment fermé → refus + heure d'ouverture
+- [x] **NPC01 — Système de dialogue NPC (arbre simple)** (M) - `DialogueNode { text, options:[{label, nextId}] }` dans `data/dialogues/` ; 2-3 nœuds max par NPC ; composant `DialoguePanel`. Base de NPC04/TAV01/GLD01/ACA*
+- [x] **NPC04 — Dialogue avec le maître/sse du bâtiment** (M) - 1 NPC maître par bâtiment (auberge/marchand/alchimiste/forgeron/guilde) + chef de village ; messages prédéfinis en entrant ; utilise NPC01
+- [x] **TAV01 — Informateurs à l'auberge** (M) - 1-2 informateurs/auberge (3-4 à la Guilde ville) qui vendent des infos : déblocage zone (PROG03), loot, indices boss. **DÉCIDÉ — contreparties : or / ressources / équipement / mana stone** (PAS un skill équipé). Lien NPC04 + Q09
+- [x] **GLD01 — Guilde des Aventuriers (ville)** (M) - **DÉCIDÉ : la Guilde remplace entièrement le quest board de l'auberge en ville** ; quêtes prestigieuses liées au rang Q06 ; 3-4 informateurs sur place
+- [x] **GLD02 — Quêtes & carte d'aventurier au village (via l'auberge)** (S) - pool de quêtes réduit dans l'auberge village + initialisation de la carte d'aventurier ici ; pondération `location.type`
+- [x] **SKL01 — Skills jusqu'au niveau 5** (M) - étendre le leveling de 3 à 5 niveaux : définir seuils d'XP 3→4 et 4→5 + scaling d'effet/coût par niveau ; prérequis d'ACA03. AC : un skill peut atteindre Lv5, scaling cohérent, migration save
+- [x] **ACA01 — Académie de magie (acheter/vendre skills)** (M) - bâtiment ville : catalogue d'achat de skills + revente depuis l'inventaire de skills
+- [x] **ACA02 — Déséquipement réservé à l'Académie** (S) - équiper libre partout, **déséquiper seulement à l'Académie** + feedback clair ailleurs
+- [x] **ACA03 — Achat-revente avec plus-value au niveau** (M) - **DÉCIDÉ — formule : `nouveau_prix = prix_origine × 1.15^(niveau−1)`** (skills Lv1→5, dépend SKL01). Pas de garde anti-exploit pour l'instant
+- [x] **ACA04 — Quêtes de level-up de skill (maître)** (M) - le maître demande de monter un skill au niveau X. **DÉCIDÉ — récompense : gold + (skill OU +5 Aura OU +5 Concentration)**. Type `skill_levelup` + Q09 ; lien NPC04
+- [x] **BLD01 — Horaires d'ouverture des bâtiments** (M) - `openHours:{from,to}` en ticks (lié CAL01). **DÉCIDÉ : taverne ouverte 24/24 ; les autres ont des horaires ; le chef de village suit alors les horaires.** Bâtiment fermé → refus + heure d'ouverture
 
 ### Bloc 2 — Nouvelles stats (Fatigue · Aura · Concentration)
 
 > 💡 STA02 + STA03 partagent un compteur d'activité sur **fenêtre glissante de 4 jours** → coder un seul helper `countWithinDays(events, 4)`.
 
-- [ ] **STA01 — Fatigue (vigueur 0–100)** (M) - jauge de vigueur : 100 = frais, décroît avec l'effort. **DÉCIDÉ — coûts : −3/combat, −1/unité de distance, −3/craft. Dormir à l'auberge restaure à 100.** Paliers de malus temporaires : sous 70 → −10% ATK ; sous 50 → −15% ATK+AGI ; sous 30 → −35% toutes stats + risque d'échec craft ×4. AC : décrément par action, restauration au sommeil, malus appliqués aux bons paliers, tests
+- [x] **STA01 — Fatigue (vigueur 0–100)** (M) - jauge de vigueur : 100 = frais, décroît avec l'effort. **DÉCIDÉ — coûts : −3/combat, −1/unité de distance, −3/craft. Dormir à l'auberge restaure à 100.** Paliers de malus temporaires : sous 70 → −10% ATK ; sous 50 → −15% ATK+AGI ; sous 30 → −35% toutes stats + risque d'échec craft ×4. AC : décrément par action, restauration au sommeil, malus appliqués aux bons paliers, tests
   - **DÉCIDÉ — collision résolue** : le *debuff* "Fatigue" de CRF01 (AGI−20%, **dormant — jamais appliqué en jeu**) est **supprimé** de `data/debuffs.js` (+ maj des 22 tests qui le référencent). À la place, une action ratée/usante ajoute **+40 de Fatigue** (≈ −40 de vigueur sur la jauge 0–100). À faire **dans le cadre de cette implémentation STA01**.
-- [ ] **STA02 — Aura (multiplicateur de dégâts)** (M) - multiplicateur passif permanent : **+ (X/2)% de dégâts par point d'Aura, sans plafond**. **DÉCIDÉ — déblocage : 15 skills utilisés en <4 jours OU entraînement chez un maître (guerrier/mage, voir TRA01). À l'unlock : 15 d'Aura de départ. Gain : +1 Aura tous les 10 skills utilisés (pour l'instant).** Impacte `calcSkillDamage` + effets défensifs. Tracking fenêtre 4j (`countWithinDays`)
-- [ ] **STA03 — Concentration (qualité de craft)** (M) - **DÉCIDÉ — effet : de 0 à 150, donne (X/150)% de chance d'un cran de rareté supérieur ; 150 = +1 cran garanti. Gain par craft selon le score du mini-jeu : +1 / +2 / +5.** Impacte `resolveCraftOutcome`
-- [ ] **STA03b — Gain de Concentration via quête ou livre (mécanique généralisable)** (S) - source alternative de Concentration (et, à terme, Intelligence et Aura) via quêtes et livres. Mécanique générique `gain_stat` réutilisable. Dépend ITM01 (livres) + Q09 (récompense quête)
-- [ ] **STA04 — Atténuation de la Fatigue par Concentration (craft) et Aura (combat)** (S) - **DÉCIDÉ** : la **Concentration** tamponne l'impact Fatigue sur le **craft** (70% à 100, 85% à 200, 100% à 300) ; l'**Aura** tamponne l'impact Fatigue sur le **combat** (50% à 100, 70% à 200, 85% à 300). AC : aux paliers, le malus de Fatigue est réduit du bon pourcentage sur le bon domaine ; tests
-- [ ] **TRA01 — Entraînement chez un maître** (M) - action *Train* avec un NPC maître (guerrier/mage, lié NPC04 + Knight Trainer/Académie) qui octroie de l'Aura (maître guerrier/mage) ou de la Concentration (artisan). Voie de déblocage alternative de STA02/STA03
-- [ ] **ITM01 — Livres de stats (objets consommables)** (S) - nouveau type d'objet `book` avec effet `gain_stat` (Concentration, Intelligence, Aura…). Achetables chez marchands, trouvables en quêtes/donjons. Base de STA03b
+- [x] **STA02 — Aura (multiplicateur de dégâts)** (M) - multiplicateur passif permanent : **+ (X/2)% de dégâts par point d'Aura, sans plafond**. **DÉCIDÉ — déblocage : 15 skills utilisés en <4 jours OU entraînement chez un maître (guerrier/mage, voir TRA01). À l'unlock : 15 d'Aura de départ. Gain : +1 Aura tous les 10 skills utilisés (pour l'instant).** Impacte `calcSkillDamage` + effets défensifs. Tracking fenêtre 4j (`countWithinDays`)
+- [x] **STA03 — Concentration (qualité de craft)** (M) - **DÉCIDÉ — effet : de 0 à 150, donne (X/150)% de chance d'un cran de rareté supérieur ; 150 = +1 cran garanti. Gain par craft selon le score du mini-jeu : +1 / +2 / +5.** Impacte `resolveCraftOutcome`
+- [x] **STA03b — Gain de Concentration via quête ou livre (mécanique généralisable)** (S) - source alternative de Concentration (et, à terme, Intelligence et Aura) via quêtes et livres. Mécanique générique `gain_stat` réutilisable. Dépend ITM01 (livres) + Q09 (récompense quête)
+- [x] **STA04 — Atténuation de la Fatigue par Concentration (craft) et Aura (combat)** (S) - **DÉCIDÉ** : la **Concentration** tamponne l'impact Fatigue sur le **craft** (70% à 100, 85% à 200, 100% à 300) ; l'**Aura** tamponne l'impact Fatigue sur le **combat** (50% à 100, 70% à 200, 85% à 300). AC : aux paliers, le malus de Fatigue est réduit du bon pourcentage sur le bon domaine ; tests
+- [x] **TRA01 — Entraînement chez un maître** (M) - action *Train* avec un NPC maître (guerrier/mage, lié NPC04 + Knight Trainer/Académie) qui octroie de l'Aura (maître guerrier/mage) ou de la Concentration (artisan). Voie de déblocage alternative de STA02/STA03
+- [x] **ITM01 — Livres de stats (objets consommables)** (S) - nouveau type d'objet `book` avec effet `gain_stat` (Concentration, Intelligence, Aura…). Achetables chez marchands, trouvables en quêtes/donjons. Base de STA03b
 
 ### Bloc 3 — Déblocage progressif des zones & fog of war
 
 > Vision : la carte n'est pas entièrement découverte au départ. On débloque une zone en aidant assez de gens (quêtes), en atteignant un niveau/des stats, ou en achetant l'info (informateurs TAV01). Petit nuage (fog) sur les zones non découvertes.
 
-- [ ] **PROG02 — État de départ restreint** (S) - **DÉCIDÉ : nouvelle localité "village de départ" + sa zone**, seules débloquées au démarrage. `unlockedZones:[startZone]`. Migration : anciennes saves = tout débloqué
-- [ ] **PROG01 — Déverrouillage progressif des zones (data-driven)** (M) - `zone.unlock:{ type:'quest'|'info'|'zoneCleared'|'level'|'stat'|'item', ref, hidden }` + `isZoneUnlocked`/`getVisibleZones` ; fog of war (nuage) sur les zones non découvertes sur la WorldMap. Dépend PROG02
-- [ ] **PROG03 — Déblocage de zone via quête OU info NPC** (M) - action `unlockZone(zoneId, source)` ; deux voies : quête (Guilde) ou info achetée (informateur TAV01). Dépend PROG01
+- [x] **PROG02 — État de départ restreint** (S) - **DÉCIDÉ : nouvelle localité "village de départ" + sa zone**, seules débloquées au démarrage. `unlockedZones:[startZone]`. Migration : anciennes saves = tout débloqué
+- [x] **PROG01 — Déverrouillage progressif des zones (data-driven)** (M) - `zone.unlock:{ type:'quest'|'info'|'zoneCleared'|'level'|'stat'|'item', ref, hidden }` + `isZoneUnlocked`/`getVisibleZones` ; fog of war (nuage) sur les zones non découvertes sur la WorldMap. Dépend PROG02
+- [x] **PROG03 — Déblocage de zone via quête OU info NPC** (M) - action `unlockZone(zoneId, source)` ; deux voies : quête (Guilde) ou info achetée (informateur TAV01). Dépend PROG01
 
 ### Contenu & systèmes complémentaires
 
-- [ ] **CODEX01 — Bestiaire / Codex** (M) - compendium des monstres qui se remplit progressivement (cohérent S02 : stats après X kills, skill après 5 kills). Réutilise `monsterKillCounts` déjà présent
-- [ ] **ACH01 — Succès avec bonus permanents** (M) - **DÉCIDÉ : bonus méta (persistent entre runs) ; ampleur +1 à +10 en stat, +1% à +7% gold/exp ; liste de 8 succès de départ à définir.** `meta.achievements` + déblocage + toast. Proposer les 8 succès au grooming de contenu
-- [ ] **CRF06 — Antidote craftable chez l'alchimiste** (M) - brancher l'effet `cureDebuffs` de `antidote_basic` (déjà craftable Z04) sur les debuffs permanents CRF01
-- [ ] **NPC02 — 10 nouvelles quêtes contenu** (M) - rangs Cuivre→Argent : élites, donjons, livraison, exploration
-- [ ] **Q04 — Quêtes exploration** (S) - type `'visit'` : complétée quand `world.visitedSpots` inclut la cible
-- [ ] **Q05 — Quêtes craft** (M) - type `'craft'` : tracker `meta.craftCount` incrémenté à chaque craft réussi
-- [ ] **Q09 — Récompenses de quête variées (gold / équipement / ressources / stat)** (S) - étendre `quest.reward` : `equipment:{templateId,rarity}`, `resources:{id:qty}`, `stat:{name,amount}` (base de STA03b/ACA04/TAV01). Adapter `completeQuest` + RewardBadge + toast Q07
-- [ ] **Z07 — Stock d'équipement différencié village vs ville** (S/M) - village = communs + 1 rare ; ville = rares + 1 epic. Pondérer `equipStock` selon `location.type`. **Bloqué par PROG02** (distinction de localité)
+- [x] **CODEX01 — Bestiaire / Codex** (M) - compendium des monstres qui se remplit progressivement (cohérent S02 : stats après X kills, skill après 5 kills). Réutilise `monsterKillCounts` déjà présent
+- [x] **ACH01 — Succès avec bonus permanents** (M) - **DÉCIDÉ : bonus méta (persistent entre runs) ; ampleur +1 à +10 en stat, +1% à +7% gold/exp ; liste de 8 succès de départ à définir.** `meta.achievements` + déblocage + toast. Proposer les 8 succès au grooming de contenu
+- [x] **CRF06 — Antidote craftable chez l'alchimiste** (M) - brancher l'effet `cureDebuffs` de `antidote_basic` (déjà craftable Z04) sur les debuffs permanents CRF01
+- [x] **NPC02 — 10 nouvelles quêtes contenu** (M) - rangs Cuivre→Argent : élites, donjons, livraison, exploration
+- [x] **Q04 — Quêtes exploration** (S) - type `'visit'` : complétée quand `world.visitedSpots` inclut la cible
+- [x] **Q05 — Quêtes craft** (M) - type `'craft'` : tracker `meta.craftCount` incrémenté à chaque craft réussi
+- [x] **Q09 — Récompenses de quête variées (gold / équipement / ressources / stat)** (S) - étendre `quest.reward` : `equipment:{templateId,rarity}`, `resources:{id:qty}`, `stat:{name,amount}` (base de STA03b/ACA04/TAV01). Adapter `completeQuest` + RewardBadge + toast Q07
+- [x] **Z07 — Stock d'équipement différencié village vs ville** (S/M) - village = communs + 1 rare ; ville = rares + 1 epic. Pondérer `equipStock` selon `location.type`. **Bloqué par PROG02** (distinction de localité)
 - [ ] **D01 — Flux donjon complet** (L) - path map : Entrée → choix A (Combat|Trésor) → choix B (CombatElite|Repos|Event) → Boss ; idle interdit. ⏸ **Différé : nécessite `D01-SPEC` (DESIGN.md) avant dev** — PV/loot par type de nœud, probabilités, génération
 - [ ] **D03 — Carte de donjon** (M) - 5 nodes Canvas/SVG par type, chemin tracé, nœud actuel mis en évidence — dépend D01
 - [ ] **D06 — Donjon spawn la nuit suivante** (M) - cycle sommeil déclenche respawn + position aléatoire + marker "?" — dépend CAL01 + MAP01
-- [ ] **T02 — Transmigration animée** (M) - écran de transition animé entre GodsShop et renaissance
-- [ ] **T05 — Socle universel d'héritage (écran dédié)** (M) - **UI uniquement** (la logique d'héritage existe déjà dans `applyTransmigration`) : écran de choix 1 stat + 1 active + 1 passive avant la boutique
-- [ ] **T12 — Skill suprême Demon Lord ("Soul Rend") héritable** (M) - flag `skill.alwaysInheritable: true` (transgresse DV10)
-- [ ] **I08 — Choix joueur en idle** (M) - config avant idle : monster type + seuil HP personnalisable (le "craft en parallèle" reporté). Garder minimal pour v1.5
+- [x] **T02 — Transmigration animée** (M) - écran de transition animé entre GodsShop et renaissance
+- [x] **T05 — Socle universel d'héritage (écran dédié)** (M) — ✅ couvert par PostMortem (section « Transmigration — Choose what to carry » : 1 stat + 1 active + 1 passive, puis « Enter the Gods' Shop → ») - **UI uniquement** (la logique d'héritage existe déjà dans `applyTransmigration`) : écran de choix 1 stat + 1 active + 1 passive avant la boutique
+- [x] **T12 — Skill suprême Demon Lord ("Soul Rend") héritable** (M) - flag `skill.alwaysInheritable: true` (transgresse DV10)
+- [x] **I08 — Choix joueur en idle** (M) - config avant idle : monster type + seuil HP personnalisable (le "craft en parallèle" reporté). Garder minimal pour v1.2
 - [ ] **TUT01 — Premier run guidé : tooltips contextuels** (L) - hints progressifs restants (TUT02/TUT03 déjà faits) : J2 donjons, 1er dieu, 1er craft… ⏸ **Différé : lister les 5-6 hints restants (mini-spec) avant dev**
+
+---
+
+## v1.3 — Backlog playtest 2026-06-07 (à groomer)
+
+> Tickets capturés depuis un retour de jeu. **Non groomés** : vérifier INVEST + AC avant de démarrer un M/L. L'ordre et les décisions fines seront tranchés au grooming.
+
+### QoL & UI
+
+- [ ] **WAIT01 — Action « Wait » (avancer jusqu'à une heure choisie)** (S) — *retour playtest 2026-06-07.* Ajouter un bouton **« Wait »** juste **sous « Sleep »/« Rest »** (auberge / safe zone). Ouvre un **sélecteur d'heure cible** ; avance `world.tickCount` jusqu'à cette heure (et `dayCount` +1 si l'heure visée est déjà passée → lendemain). **À cadrer** : coût éventuel (vigueur ? aucun ?), bornes 0–23, interaction BLD01 (attendre l'ouverture d'un bâtiment), et le fait que ça **ne restaure pas** (≠ sommeil). AC : choisir une heure avance le temps en conséquence ; l'UI reflète le nouveau tick/jour.
+- [ ] **VIG01 — Jauge de vigueur dans la top bar** (S) — *retour playtest 2026-06-07.* Afficher la **vigueur (STA01)** dans la barre du haut, à côté de HP/Mana (lecture seule depuis `hero.vigor`). AC : la jauge reflète la vigueur courante et se met à jour après combat/déplacement/craft/sommeil.
+- [ ] **HIDE01 — Masquer Aura & Concentration jusqu'au déblocage** (S) — *retour playtest 2026-06-07.* **Aura** et **Concentration** ne s'affichent (HeroSheet + tooltips + encarts) **qu'une fois débloquées** (Aura : 15 skills en <4 j OU entraînement TRA01 ; Concentration : 1er gain via craft/livre/quête). **À cadrer** : flag de déblocage (`meta.auraUnlocked` / `meta.concentrationUnlocked`, ou dérivé de `>0` / `skillUseLog`). AC : un nouveau héros ne voit ni Aura ni Concentration ; elles apparaissent au déblocage.
+
+### Divin — église *(priorité basse mais important)*
+
+- [ ] **DVQ01 — Quêtes divines à l'église** (M) — *retour playtest 2026-06-07.* L'église propose des **quêtes liées aux dieux** (en plus des « œuvres de dévotion » CHQ01) ; récompenses orientées **faveur divine**. **À cadrer** : pool, conditions, lien `deities.js` + relations (ALT01). Dépend CHQ01/Q09. *Priorité basse.*
+- [ ] **ALT01 — Autels des dieux + relations divines** (M) — *retour playtest 2026-06-07.* Un **autel par dieu** dans l'église ; **offrandes/prières** pour augmenter une **jauge de relation/faveur** par dieu (au-delà du `divineBonds` actuel). **À cadrer** : données `divineFavor:{deityId:score}`, coûts d'offrande (gold/ressources/tokens), effets de la faveur (bénédictions, accès skills divins…). Lien DV03/DV04/`deities.js`. *Priorité basse mais important.*
+
+### Craft
+
+- [ ] **CRAFTMG01 — Mini-jeux dédiés par métier de craft** (M) — *retour playtest 2026-06-07.* Concevoir/revoir un **mini-jeu spécifique par métier** (forge, alchimie, cuisine, cordonnier…) au lieu du `CraftingMinigame` générique unique. **À cadrer** : 1 mécanique par métier + mapping métier→mini-jeu + impact qualité (lien STA03 Concentration).
+- [ ] **COOK01 — Métier de cuisine** (M) — *retour playtest 2026-06-07.* Introduire un **craft de cuisine** : recettes de plats → **consommables/buffs** (≠ équipement). **À cadrer** : bâtiment/NPC cuisine, ingrédients, effets (buffs temporaires ATK/vigueur/regen…), intégration `recipes.js` + `resources.js`. Lien CRAFTMG01.
+- [ ] **LEAT01 — Séparer forge (métal) et cordonnier (cuir)** (M) — *retour playtest 2026-06-07.* **DÉCIDÉ : séparer les équipements métal et cuir.** La **forge** ne traite que le **métal** ; un **cordonnier/maroquinier** traite le **cuir** (bottes, armures légères, gants…). **À cadrer** : tag `material:'metal'|'leather'` sur `EQUIPMENT_TEMPLATES`, répartition des recettes par bâtiment, nouveau bâtiment/NPC cordonnier (BLD_POS/NPCS/BUILDING_INFO). Lien Z07/Z03.
+
+### Contenu & systèmes
+
+- [ ] **ZADV01 — Design de la zone avancée (Grimspire) + bestiaire** (L) — *retour playtest 2026-06-07.* Design **complet de Grimspire** (zone avancée) : **spots de chasse**, **monstres dédiés** (refonte façon MON01 d'Ashenvale), niveaux, loot, ambiance. **À spec avant dev.** Lien MON01.
+- [ ] **MONLV01 — Système de niveau des monstres** (M/L) — *retour playtest 2026-06-07.* **DÉCIDÉ : chaque monstre a un niveau** qui **module l'exp, le gold ET les drop rates.** **À cadrer** : source du niveau (spot/zone + run scaling ?), formules exp/gold/drop selon le niveau, affichage du niveau en combat + bestiaire. Lien `zones.js` (`scaleMonsterStats`, `getMonsterLevel`) + combat.
+- [ ] **DUNREV01 — Revue complète du système de donjon (umbrella)** (L) — *retour playtest 2026-06-07.* **Reprendre tout le système de donjon.** Regroupe les différés **D01** (flux nœuds Entrée→choix→Boss), **D03** (carte), **D06** (respawn nuit). **Prérequis : `D01-SPEC` (DESIGN.md)** — types de nœuds, PV/loot par nœud, probabilités, génération. **À spec avant dev.**
+- [ ] **MVAR01 — Variante d'image par ennemi (combats multi-ennemis)** (S/M) — *retour playtest 2026-06-08.* En combat avec **plusieurs ennemis du même monstre**, chacun utilise une **variante d'image différente** quand plusieurs existent (sinon réutilise `<id>.png`). **✅ Assets prêts** : schéma de nommage `public/monsters/<id>.png` + `<id>_2.png` + `<id>_3.png` déjà en place (2026-06-08) — pools actuels : **3 variantes** (mire_slime, fenrot_devourer, stone_golem, hollow_knight, ruin_specter, graven_sentinel, hill_slime, russet_fox, knoll_goblin, thunderhoof) · **2** (thicket_hare, briar_wraith) · **1** (ashwood_wolf, tuskmaw_boar, old_oakheart, marsh_serpent). **À cadrer (décision clé)** : le navigateur ne peut pas lister `public/` → le loader doit **connaître le nombre de variantes** par monstre : soit (a) un **manifeste data** `MONSTER_VARIANTS={ russet_fox:3, … }`, soit (b) tenter `<id>_N.png` avec **fallback onError** sur `<id>.png` (génère des 404). Attribution variante = par **index d'ennemi** (`(i % count) + 1`, ou aléatoire distinct). Touche `MonsterPortrait` (Combat) + `<img>` ZoneView + Codex. Fallback : moins de variantes que d'ennemis → on cycle ; aucune image → emoji.
+- [ ] **QA01 — Audit compteurs de monstres + intégrité & fonctionnel des items** (M) — *retour playtest 2026-06-08.* Passe de **vérification** en 3 volets : **(1) Compteurs de monstres bien actualisés** — `world.monsterKillCounts` incrémenté à chaque kill (combat + idle), propagation correcte vers : déblocage idle (≥5 kills), Codex/Bestiaire (stats après X kills, skill flou < 5), objectifs de quête `kill`, succès. **(2) Items bien liés** — auditer toutes les références d'items (drops monstres `resourceDrops`/`skillDrop`, recettes `recipes.js`, stock marchand/forge, récompenses de quête `resources`/`consumables`/`equipment`, livres ITM01) pointent vers des ids **existants** dans `RESOURCES`/`EQUIPMENT_TEMPLATES`/`SKILLS` (test d'intégrité data, type npc02.test). **(3) Items fonctionnellement ET logiquement corrects** — chaque item « lié » a un **effet qui marche** (potions heal/mana, élixirs/buffs, antidote `cureDebuffs` CRF06, livres `gain_stat` ITM01, équipement = stats appliquées) **et cohérent** : l'effet correspond au **type/à la description/à la rareté** (ex. une potion de soin soigne bien, un tome de Focus donne bien de la Concentration, un équipement « lourd » n'a pas de stats incohérentes, le rendement d'une recette est logique). AC : un test d'intégrité référentielle + une checklist d'effets vérifiés (fonctionnels **+ logiques**) ; corriger les références mortes ou effets incohérents. **NB** : une partie est déjà couverte par les tests existants (npc02/z07/itm01/crf06…) — ce ticket les consolide et comble les trous.
+
+### Démarrage restreint « Greywatch » (découpage — étend PROG01/02/03)
+
+> Vision (playtest 2026-06-07) : le run **démarre à Greywatch**, seule la **forêt** est accessible ; **nuages (fog)** sur le reste de la carte ; les nuages **se dissipent** au fur et à mesure que les zones/spots se débloquent. ⚠️ Étend le déblocage data-driven (PROG01/02/03, livré au **niveau « grande zone »**) **au niveau des nodes de la WorldMap** (= la version *littérale* de PROG02, plus ambitieuse que l'implémentation actuelle).
+
+- [ ] **START01 — Le run démarre à Greywatch (village de départ)** (M) — **✅ DÉCIDÉ (2026-06-08) : le starting point est `greywatch`.** `world.currentLocation`/`currentNode` initial = **greywatch** (au lieu d'ironhaven) ; le héros spawn au village de départ. Migration : anciennes saves inchangées. **À cadrer** : impact sur les tests qui supposent `ironhaven` au départ. Dépend rien (point d'entrée du bloc).
+- [ ] **START02 — Accès initial limité à la forêt + déblocage par node** (M) — au démarrage, seuls **Greywatch** + **Ashenvale Forest** sont accessibles ; les autres **nodes** WorldMap (marais, ruines, collines, ville, route, Grimspire) sont **verrouillés**. **Étend `zone.unlock` / `unlockedZones` / `isZoneUnlocked` au niveau des hunting spots/nodes** (aujourd'hui : seulement les grandes zones). Dépend START01 + PROG01/PROG02.
+- [ ] **START03 — Fog of war généralisé (nuage par node) + dissipation** (M) — afficher un **nuage** sur **chaque node/zone non débloqué(e)** de la WorldMap (généralise le fog PROG01 aujourd'hui limité à Grimspire) ; le nuage **disparaît** au déblocage. Dépend START02.
+- [ ] **START04 — Conditions de déblocage progressif des nodes** (M) — définir les **conditions par node** (forêt → marais → ruines → collines → ville → route → Grimspire) en data-driven (kills / niveau / quête / info), cohérent avec PROG01/PROG03. Dépend START02. *Ordre & conditions à affiner au grooming.*
 
 ---
 

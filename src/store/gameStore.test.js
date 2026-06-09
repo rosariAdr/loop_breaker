@@ -213,12 +213,13 @@ describe('gainSkillXp', () => {
     expect(skill.level).toBe(3)
   })
 
-  it('ne dépasse pas Lv3', () => {
-    for (let i = 0; i < 200; i++) {
+  it('monte jusqu\'à Lv5 puis plafonne (SKL01)', () => {
+    // seuils cumulés 20+50+90+140 = 300 XP pour atteindre Lv5
+    for (let i = 0; i < 400; i++) {
       useGameStore.getState().gainSkillXp('savage_bite', 1)
     }
     const skill = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
-    expect(skill.level).toBe(3)
+    expect(skill.level).toBe(5)
   })
 })
 
@@ -697,12 +698,12 @@ describe('Quêtes Q03 — boss donjon', () => {
 })
 
 describe('Quêtes Q08 — NPCs multiples', () => {
-  it('bog_purge : 4 bog_shamblers requis', () => {
+  it('bog_purge : 4 mire_slimes requis', () => {
     const store = useGameStore.getState
     store().startQuest('bog_purge')
-    for (let i = 0; i < 3; i++) store().recordKill('bog_shambler')
+    for (let i = 0; i < 3; i++) store().recordKill('mire_slime')
     expect(store().isQuestComplete('bog_purge')).toBe(false)
-    store().recordKill('bog_shambler')
+    store().recordKill('mire_slime')
     expect(store().isQuestComplete('bog_purge')).toBe(true)
   })
 
@@ -884,12 +885,13 @@ describe('confirmInheritance + applyTransmigration', () => {
     expect(useGameStore.getState().meta.pendingInheritance.activeSkill.skillId).toBe('savage_bite')
   })
 
-  it('applyTransmigration booste la stat héritée de 10%', () => {
+  it('applyTransmigration hérite 40% de la stat du run, plancher = base (TRM01)', () => {
     const baseStr = useGameStore.getState().hero.stats.strength
+    // run où la force a bien monté → 100
+    useGameStore.setState(s => ({ meta: { ...s.meta, lastRunSummary: { stats: { strength: 100 } } } }))
     useGameStore.getState().confirmInheritance('strength', null, null)
     useGameStore.getState().applyTransmigration({ extraSkills: [] })
-    const after = useGameStore.getState().hero.stats.strength
-    expect(after).toBe(Math.round(baseStr * 1.10))
+    expect(useGameStore.getState().hero.stats.strength).toBe(Math.max(baseStr, Math.round(100 * 0.4)))
   })
 
   it('applyTransmigration incrémente runNumber et deathCount', () => {

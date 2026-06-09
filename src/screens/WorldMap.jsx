@@ -3,45 +3,10 @@ import { useGameStore } from '../store/gameStore'
 import { MONSTERS } from '../data/monsters'
 import QTEBar from '../components/QTEBar'
 import { HeroAvatar } from '../components/parchment'
+import { POS, NODES, EDGES, areAdjacent } from '../data/worldGraph'
+import { isZoneUnlocked } from '../data/zones'
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
-
-// ── Coordonnées RELATIVES (%) calées sur public/map/eldenmoor.png ──────────────
-// Carte de fond ↔ coordonnées : si l'image est remplacée, réajuster ce seul tableau.
-// (doc : CONTEXT.md §WorldMap)
-const POS = {
-  greywatch:        { x: 13, y: 16 },
-  ashenvale_forest: { x: 43, y: 16 },
-  millhaven:        { x: 41, y: 41 },
-  ironhaven:        { x: 60, y: 56 },
-  crumbled_ruins:   { x: 21, y: 59 },
-  thornmarsh:       { x: 34, y: 79 },
-  barrow_hills:     { x: 51, y: 89 },
-  crypt:            { x: 68, y: 83 }, // donjon (grotte)
-  grimspire:        { x: 90, y: 45 }, // locked (marqueur en overlay sur les montagnes)
-}
-
-const NODES = [
-  { id: 'greywatch', name: 'Greywatch', kind: 'village', glow: 'village' },
-  { id: 'ashenvale_forest', name: 'Ashenvale Forest', kind: 'spot' },
-  { id: 'millhaven', name: 'Millhaven', kind: 'village', glow: 'village' },
-  { id: 'ironhaven', name: 'Ironhaven', kind: 'city', glow: 'amber' },
-  { id: 'crumbled_ruins', name: 'Crumbled Ruins', kind: 'spot' },
-  { id: 'thornmarsh', name: 'Thornmarsh', kind: 'spot' },
-  { id: 'barrow_hills', name: 'Barrow Hills', kind: 'spot' },
-]
-
-// Graphe d'adjacence = source de vérité (indépendant des chemins dessinés)
-const EDGES = [
-  ['greywatch', 'ashenvale_forest'],
-  ['ashenvale_forest', 'millhaven'],
-  ['millhaven', 'crumbled_ruins'],
-  ['millhaven', 'thornmarsh'],
-  ['millhaven', 'ironhaven'],
-  ['ironhaven', 'thornmarsh'],
-  ['ironhaven', 'barrow_hills'],
-  ['ironhaven', 'crypt'],
-]
 
 // Marqueur discret (anneau + plaque de nom) — n'occulte pas l'illustration
 function WmNode({ id, name, glow, locked, dungeon, tag, onClick, onHover }) {
@@ -65,30 +30,49 @@ function WmNode({ id, name, glow, locked, dungeon, tag, onClick, onHover }) {
 }
 
 export default function WorldMap() {
-  const { world, hero, setScreen, discoverDungeon } = useGameStore()
+  const { world, hero, setScreen, discoverDungeon, travelTo } = useGameStore()
   const [tip, setTip] = useState(null)
   const [qteOpen, setQteOpen] = useState(false)
+  const [walking, setWalking] = useState(false) // TRV02 — animation de marche pendant un voyage
 
   const totalAshenvaleKills = Object.entries(world.monsterKillCounts)
     .filter(([id]) => MONSTERS[id]?.zone === 'ashenvale')
     .reduce((sum, [, n]) => sum + n, 0)
-  const blightedUnlocked = totalAshenvaleKills >= 10 || hero.level >= 3
-  const grimspireUnlocked = hero.level >= 8 || totalAshenvaleKills >= 40
+  // PROG01 — déblocage data-driven (mêmes conditions niveau/kills, désormais dans zones.js)
+  // + voie explicite (PROG03 : quête/info → world.unlockedZones).
+  const blightedUnlocked = isZoneUnlocked('blighted_road', { world, hero })
+  const grimspireUnlocked = isZoneUnlocked('grimspire', { world, hero })
 
-  const heroId = (world.currentHuntingSpot ?? world.currentLocation)
-  const heroPos = POS[heroId] ?? POS.ironhaven
+  // TRV01 — position du héros sur la carte (fallback pour les saves sans currentNode)
+  const heroNode = world.currentNode ?? world.currentHuntingSpot ?? world.currentLocation ?? 'ironhaven'
+  const heroPos = POS[heroNode] ?? POS.ironhaven
 
   const goSafe = (id) => {
-    useGameStore.setState(s => ({ world: { ...s.world, currentZone: 'ashenvale', currentLocation: id, currentHuntingSpot: null } }))
+    useGameStore.setState(s => ({ world: { ...s.world, currentZone: 'ashenvale', currentLocation: id, currentHuntingSpot: null, currentNode: id } }))
     setScreen('safe_zone')
   }
   const goHunt = (id) => {
-    useGameStore.setState(s => ({ world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: id } }))
+    useGameStore.setState(s => ({ world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: id, currentNode: id } }))
     setScreen('zone_view')
   }
+  // TRV01 — clic node : entrer (node courant) · voyager (adjacent, +3 tics) · bloqué (sinon)
   const onNode = (node) => {
-    if (node.kind === 'city' || node.kind === 'village') goSafe(node.id)
-    else if (node.kind === 'spot') goHunt(node.id)
+    if (walking) return // TRV02 — input verrouillé pendant la marche
+    if (node.id === heroNode) {
+      if (node.kind === 'city' || node.kind === 'village') goSafe(node.id)
+      else if (node.kind === 'spot') goHunt(node.id)
+    } else if (areAdjacent(heroNode, node.id)) {
+      // TRV02 — marche animée : le héros glisse A→B (transition CSS) en jouant les
+      // frames walking, puis arrivée (travelTo applique la position + le coût de tics).
+      setWalking(true)
+      travelTo(node.id)
+      // TRV04 — voyage ~3× plus lent (synchronisé avec la transition CSS .hero-avatar 1.8s)
+      // pour rendre l'animation de marche bien visible.
+      setTimeout(() => setWalking(false), 2100)
+    } else {
+      const p = POS[node.id]
+      setTip(p ? { x: p.x, y: p.y - 8, text: 'Too far — travel via connected paths first.' } : null)
+    }
   }
 
   const dungeon = world.dungeons?.ashenvale
@@ -141,6 +125,13 @@ export default function WorldMap() {
         />
       )}
 
+      {/* PROG01 — Fog of war : nuage sur les zones non débloquées */}
+      {!grimspireUnlocked && (
+        <div className="wm-fog" data-testid="fog-grimspire" style={{ left: `${POS.grimspire.x}%`, top: `${POS.grimspire.y}%` }} aria-hidden="true">
+          <span>☁</span><span>☁</span><span>☁</span>
+        </div>
+      )}
+
       {/* Grimspire (locked) — marqueur overlay sur les montagnes */}
       <WmNode
         id="grimspire" name="Grimspire" locked={!grimspireUnlocked}
@@ -163,7 +154,7 @@ export default function WorldMap() {
       </div>
 
       {/* Héros (légèrement au-dessus du node courant) */}
-      <HeroAvatar x={`${heroPos.x}%`} y={`${heroPos.y - 5}%`} name={hero.name} src={HERO_SPRITE} />
+      <HeroAvatar x={`${heroPos.x}%`} y={`${heroPos.y - 1.5}%`} name={hero.name} src={HERO_SPRITE} walking={walking} />
 
       {/* Tooltip */}
       {tip && <div className="lb-tip" style={{ left: `${tip.x}%`, top: `${tip.y}%` }}>{tip.text}</div>}

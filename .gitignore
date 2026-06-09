@@ -1,3 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+
+# Vercel
+.vercel
+
+# Env (jamais de secret committé — app 100% client-side)
+.env
+.env.local
+.env.*.local
+
 # Logs
 logs
 *.log
@@ -7,49 +22,30 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-
-# Environment
-.env.local
-.env.*.local
-*.local
-
 # Test coverage
 coverage/
 
-# Editor directories and files
+# Editor / OS
 .vscode/*
-.vscode/
-.idea/
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Debug
 *.local
 
 # Claude Code IDE config
 .claude/
 
-# Monster portraits — local only for now
-# TODO: optimiser tous les PNG via squoosh.app (≤ 300 KB) avant de re-add
-# Le README.md reste tracké (guide de génération)
-public/monsters/*.png
-public/monsters/*.webp
-public/monsters/*.jpg
-public/monsters/*.jpeg
-public/
-
-# Design reference (local-only)
+# ── Assets ───────────────────────────────────────────────────────────────────
+# DEPLOY01 : `public/` est désormais COMMITTÉ → les visuels (carte, sprites,
+# monstres, bâtiments, favicon) partent sur Vercel (alpha privée).
+# Exclus : les dossiers `raw/` = sources haute-résolution (backups locaux, ~344 Mo,
+# jamais servis par l'app) + la référence `design/` (local-only).
+public/monsters/raw/
+public/buildings/raw/
 design/
