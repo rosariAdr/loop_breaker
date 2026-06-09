@@ -86,6 +86,62 @@ h1, h2, h3, h4 { font-family: var(--font-head); }
 .anim-screen-fade { animation: screen-fade-in 0.15s ease; }
 .impact-spark { position: absolute; top: 50%; left: 50%; width: 120px; height: 120px; transform: translate(-50%,-50%); pointer-events: none; z-index: 6; background: radial-gradient(circle, rgba(255,244,210,.95) 0%, rgba(255,180,80,.55) 28%, transparent 62%); animation: impact-spark 0.34s ease-out forwards; }
 
+/* ── ANIM02 — VFX propres aux skills (teinte via --fx-color) ─────────────────── */
+/* Flash élémentaire sur la cible */
+.skill-flash {
+  position: absolute; top: 50%; left: 50%; width: 150px; height: 150px;
+  transform: translate(-50%,-50%); pointer-events: none; z-index: 5;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--fx-color, #fff) 0%, color-mix(in srgb, var(--fx-color, #fff) 55%, transparent) 32%, transparent 64%);
+  mix-blend-mode: screen; opacity: 0;
+  animation: skill-flash 0.5s ease-out forwards;
+}
+@keyframes skill-flash {
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.4); }
+  30%  { opacity: .95; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.5); }
+}
+/* Projectile (magie / distance) : un orbe arrive sur la cible puis éclate */
+.skill-orb {
+  position: absolute; top: 50%; left: -40%; width: 34px; height: 34px;
+  transform: translateY(-50%); pointer-events: none; z-index: 7; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--fx-color, #fff) 45%, transparent 72%);
+  box-shadow: 0 0 16px 6px color-mix(in srgb, var(--fx-color, #fff) 70%, transparent);
+  animation: skill-orb 0.42s cubic-bezier(.4,0,.7,1) forwards;
+}
+@keyframes skill-orb {
+  0%   { left: -45%; opacity: 0; transform: translateY(-50%) scale(.6); }
+  20%  { opacity: 1; }
+  70%  { left: 50%; transform: translateY(-50%) translateX(-50%) scale(1); opacity: 1; }
+  100% { left: 50%; transform: translateY(-50%) translateX(-50%) scale(2.1); opacity: 0; }
+}
+/* Frappe au corps-à-corps : un trait diagonal balaie la cible */
+.skill-slash {
+  position: absolute; top: 50%; left: 50%; width: 130px; height: 10px;
+  transform: translate(-50%,-50%) rotate(-32deg) scaleX(0); transform-origin: center;
+  pointer-events: none; z-index: 7; border-radius: 6px;
+  background: linear-gradient(90deg, transparent, var(--fx-color, #fff), transparent);
+  box-shadow: 0 0 12px 2px color-mix(in srgb, var(--fx-color, #fff) 60%, transparent);
+  animation: skill-slash 0.34s ease-out forwards;
+}
+@keyframes skill-slash {
+  0%   { transform: translate(-50%,-50%) rotate(-32deg) scaleX(0); opacity: 0; }
+  35%  { transform: translate(-50%,-50%) rotate(-32deg) scaleX(1); opacity: 1; }
+  100% { transform: translate(-50%,-50%) rotate(-32deg) scaleX(1.1); opacity: 0; }
+}
+/* Onde de choc AoE : un anneau s'étend sur toute la rangée d'ennemis */
+.skill-aoe-wave {
+  position: absolute; top: 60%; left: 50%; width: 60px; height: 60px;
+  transform: translate(-50%,-50%); pointer-events: none; z-index: 4; border-radius: 50%;
+  border: 3px solid var(--fx-color, #fff);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--fx-color, #fff) 60%, transparent);
+  animation: skill-aoe-wave 0.5s ease-out forwards;
+}
+@keyframes skill-aoe-wave {
+  0%   { opacity: .85; transform: translate(-50%,-50%) scale(.3); }
+  100% { opacity: 0;   transform: translate(-50%,-50%) scale(9); }
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
    STAGE — canvas fixe 1920×1080 scalé pour tenir dans le viewport
    ════════════════════════════════════════════════════════════════════════════ */
@@ -577,5 +633,96 @@ html.lb-no-anim *, html.lb-no-anim *::before, html.lb-no-anim *::after { animati
 .wm-blighted-chip { font-family: var(--font-body); font-style: italic; font-size: 11px; color: var(--danger);
   background: rgba(192,57,43,.14); border: 1px solid rgba(192,57,43,.5); border-radius: 5px; padding: 2px 8px; white-space: nowrap; }
 
+/* PROG01 — Fog of war (nuage) sur une zone verrouillée de la World Map */
+.wm-fog {
+  position: absolute; transform: translate(-50%, -55%);
+  pointer-events: none; z-index: 3;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
+  opacity: .9;
+}
+.wm-fog span {
+  display: inline-block; font-size: 30px; color: rgba(228,228,236,.85);
+  margin: 0 -8px; animation: wm-fog-drift 5s ease-in-out infinite;
+}
+.wm-fog span:nth-child(1) { font-size: 26px; animation-delay: 0s; }
+.wm-fog span:nth-child(2) { font-size: 36px; animation-delay: .8s; }
+.wm-fog span:nth-child(3) { font-size: 26px; animation-delay: 1.6s; }
+@keyframes wm-fog-drift {
+  0%, 100% { transform: translateX(0); opacity: .82; }
+  50%      { transform: translateX(4px); opacity: 1; }
+}
+
+/* UI09 — Déroulé de parchemin à l'entrée/sortie de zone (bande qui balaie verticalement) */
+.parch-wipe {
+  position: absolute; inset: 0; z-index: 40; pointer-events: none;
+  background:
+    linear-gradient(180deg,
+      rgba(214,191,140,0) 0%,
+      rgba(214,191,140,.5) 42%,
+      rgba(196,170,110,.72) 50%,
+      rgba(214,191,140,.5) 58%,
+      rgba(214,191,140,0) 100%);
+  background-size: 100% 320%;
+  animation: parch-wipe 340ms ease-in-out forwards;
+}
+@keyframes parch-wipe {
+  0%   { background-position: 50% -110%; opacity: 0; }
+  18%  { opacity: 1; }
+  100% { background-position: 50% 210%; opacity: 0; }
+}
+
 /* pause anim */
 .no-anim *, .no-anim *::before, .no-anim *::after { animation: none !important; }
+
+/* ── T02 — Transition animée de transmigration (renaissance) ─────────────────── */
+.transmig-scene {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.transmig-core {
+  position: absolute; top: 45%; left: 50%; width: 16px; height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, #d8b8ff 40%, rgba(160,110,220,0) 70%);
+  box-shadow: 0 0 60px 24px rgba(180,140,255,.55);
+  animation: transmig-core 2.6s ease-out forwards;
+}
+@keyframes transmig-core {
+  0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 0; }
+  25%  { opacity: 1; }
+  60%  { transform: translate(-50%,-50%) scale(9); opacity: .95; }
+  100% { transform: translate(-50%,-50%) scale(26); opacity: 0; }
+}
+.transmig-rings { position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%); }
+.transmig-rings span {
+  position: absolute; top: 50%; left: 50%; width: 40px; height: 40px;
+  margin: -20px 0 0 -20px; border-radius: 50%;
+  border: 2px solid rgba(199,156,255,.6);
+  animation: transmig-ring 2.6s ease-out infinite;
+}
+.transmig-rings span:nth-child(2) { animation-delay: .5s; }
+.transmig-rings span:nth-child(3) { animation-delay: 1s; }
+@keyframes transmig-ring {
+  0%   { transform: scale(0.3); opacity: .8; }
+  100% { transform: scale(7); opacity: 0; }
+}
+.transmig-text { position: relative; z-index: 2; text-align: center; animation: transmig-text-in 1.2s ease-out .7s both; }
+.transmig-kicker { font-family: var(--font-head); color: #9a8ac0; font-style: italic; font-size: .95rem; letter-spacing: .08em; }
+.transmig-title {
+  font-family: var(--font-head); font-weight: 800; color: #e6d4ff; font-size: 2.6rem;
+  letter-spacing: .14em; text-shadow: 0 0 30px rgba(180,140,255,.6); margin: .2rem 0;
+}
+.transmig-run { font-family: var(--font-head); color: #c79cff; font-size: 1.05rem; letter-spacing: .1em; }
+@keyframes transmig-text-in {
+  0%   { opacity: 0; transform: translateY(10px) scale(.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.transmig-continue {
+  position: relative; z-index: 2; margin-top: 2.4rem;
+  font-family: var(--font-head); font-weight: 600; font-size: .95rem; letter-spacing: .05em;
+  color: #9ce080; padding: 12px 26px; border-radius: 9px;
+  background: linear-gradient(180deg, rgba(80,160,72,.32), rgba(45,90,40,.5));
+  border: 1.5px solid rgba(80,160,72,.5); cursor: pointer;
+  animation: transmig-text-in 1s ease-out 1.6s both;
+}
+.transmig-continue:hover { opacity: .9; }

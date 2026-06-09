@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { useToastStore } from '../store/toastStore'
-import { ZONES } from '../data/zones'
+import { ZONES, getLocationType } from '../data/zones'
 import { RESOURCES } from '../data/resources'
 import { SKILLS } from '../data/skills'
 import { QUESTS, heroSkillLevels } from '../data/quests'
@@ -16,6 +16,7 @@ import {
   RARITY_CONFIG,
   canCraft,
   createEquipmentInstance,
+  filterEquipStockByLocation,
 } from '../data/equipment'
 import { resolveCraftOutcome, alchemyQuantity, concentrationGain, rollConcentrationBump } from '../utils/crafting'
 import { ALCHEMY_RECIPES, MASTER_RECIPES } from '../data/recipes'
@@ -27,7 +28,7 @@ import DialoguePanel from '../components/DialoguePanel'
 import InformantsPanel from '../components/InformantsPanel'
 
 // NPC04 — arbre de dialogue par bâtiment (repli générique sinon)
-const TALK_ID = { inn: 'inn_marta', church: 'church_caelum', merchant: 'merchant_pell', blacksmith: 'blacksmith_bram' }
+const TALK_ID = { inn: 'inn_marta', church: 'church_caelum', merchant: 'merchant_pell', blacksmith: 'blacksmith_bram', guild: 'guild_master' }
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
 
@@ -49,32 +50,44 @@ const NPCS = {
     line: "Mind the dosage — a hair too much and the draught turns to poison. Shall we brew?" },
   academy:        { role: 'mage',     name: 'Archmagus Oren', title: 'Academy Master', icon: '📜', cta: 'Enter the Academy',
     line: "Knowledge has a price, and a value. Learn a technique — or part with one you've outgrown." },
+  // GLD01 — la Guilde des Aventuriers (ville uniquement) : reprend le tableau de quêtes + informateurs
+  guild:          { role: null, fallback: '⚜', name: 'Guildmaster Doran', title: 'Adventurers’ Guild', icon: '⚜', cta: 'Enter the Guild',
+    line: "Proven blades only past this hall. Take a commission, share a drink, hear what the road whispers." },
 }
 
 // IMM01 — actions par bâtiment. L'auberge s'exécute INLINE (repos + feedback,
 // pas de 2e fenêtre). Les autres bâtiments ouvrent encore leur panneau via
 // onEnter (kind 'panel') — migration vers le corps du panneau en IMM02.
-function buildingActions(building, npc) {
+function buildingActions(building, npc, isCity = false) {
   const talk = { ico: '💬', label: 'Talk', kind: 'talk' } // NPC04
   if (building === 'inn') {
+    // GLD01 — en ville, le tableau de quêtes est déplacé à la Guilde ; l'auberge
+    // ne propose plus que repos + informateurs. Au village, l'auberge garde son board.
+    const acts = [{ ico: '🛏', label: 'Rest at the Inn', kind: 'rest', primary: true }]
+    if (!isCity) acts.push({ ico: '📜', label: 'Quest Board', kind: 'nav', screen: 'quest_board' })
+    acts.push({ ico: '🕵', label: 'Ask around', kind: 'panel' }) // TAV01 — informateurs
+    acts.push(talk)
+    return acts
+  }
+  if (building === 'guild') {
+    // GLD01 — la Guilde des Aventuriers : commissions (tableau de quêtes) + informateurs
     return [
-      { ico: '🛏', label: 'Rest at the Inn', kind: 'rest', primary: true },
-      { ico: '📜', label: 'Quest Board', kind: 'nav', screen: 'quest_board' },
-      { ico: '🕵', label: 'Ask around', kind: 'panel' }, // TAV01 — informateurs
+      { ico: '📜', label: 'Guild Board', kind: 'nav', screen: 'quest_board', primary: true },
+      { ico: '🕵', label: 'Informants', kind: 'panel' },
       talk,
     ]
   }
   return [{ ico: npc.icon, label: npc.cta, kind: 'panel', primary: true }, talk]
 }
 
-function NpcOverlay({ building, onClose, onEnter, showPanel, panel }) {
+function NpcOverlay({ building, onClose, onEnter, showPanel, panel, isCity = false }) {
   const npc = NPCS[building]
   const { sleep, setScreen } = useGameStore()
   const [flash, setFlash] = useState(null)
   const [talkDlg, setTalkDlg] = useState(null) // NPC04 — dialogue en cours
   if (!npc) return null
   const src = npc.role ? portraitSrc(npc.role, 'talk') : null
-  const actions = buildingActions(building, npc)
+  const actions = buildingActions(building, npc, isCity)
   const expanded = showPanel || talkDlg
 
   const run = (a) => {
@@ -141,6 +154,7 @@ const BLD_POS = {
   knight_trainer: { x: 30, y: 82 },
   alchemy:        { x: 70, y: 82 },
   master_smith:   { x: 50, y: 88 },
+  guild:          { x: 50, y: 16 }, // GLD01 — au centre de la place, en ville
 }
 
 function VilBuilding({ id, info, onClick, closed = false }) {
@@ -153,7 +167,8 @@ function VilBuilding({ id, info, onClick, closed = false }) {
       onClick={onClick}
       title={closed ? 'Closed' : undefined}
     >
-      <div className="bld-frame"><ArtSlot caption={info.name} w={120} h={80} /></div>
+      {/* CONT01 — façade du bâtiment : /buildings/<id>.png (fallback placeholder légendé si absent) */}
+      <div className="bld-frame"><ArtSlot caption={info.name} src={`/buildings/${id}.png`} w={120} h={80} /></div>
       <div className="bld-sign"><span>{info.icon}</span>{info.name}{closed && <span style={{ marginLeft: 4, fontSize: '0.7em', opacity: 0.8 }}>🔒</span>}</div>
     </div>
   )
@@ -244,6 +259,7 @@ export default function SafeZone() {
     master_smith: { icon: '🛠', name: 'Master Smith', color: '#c0a060' }, // Z06
     knight_trainer: { icon: '⚔', name: 'Sir Aldric — Knight Trainer', color: '#c08040' },
     academy: { icon: '📜', name: 'Academy of Magic', color: '#8060c0' }, // ACA01
+    guild: { icon: '⚜', name: "Adventurers' Guild", color: '#c084fc' }, // GLD01
   }
 
   return (
@@ -292,6 +308,7 @@ export default function SafeZone() {
       {activeBuilding && (
         <NpcOverlay
           building={activeBuilding}
+          isCity={isCity}
           showPanel={showPanel}
           onEnter={() => setShowPanel(true)}
           onClose={closeBuilding}
@@ -470,7 +487,7 @@ function ChurchPanel({ onBack }) {
 }
 
 function MerchantPanel({ onBack }) {
-  const { hero, spendGold, addConsumable, addEquipmentToInventory } = useGameStore()
+  const { hero, world, spendGold, addConsumable, addEquipmentToInventory } = useGameStore()
   const [tab, setTab] = useState('potions') // 'potions' | 'equipment'
 
   const potionStock = [
@@ -481,11 +498,14 @@ function MerchantPanel({ onBack }) {
   ]
 
   // Équipements vendus par le marchand : templates avec merchantStock
-  const equipStock = Object.values(EQUIPMENT_TEMPLATES).flatMap(t =>
+  const fullEquipStock = Object.values(EQUIPMENT_TEMPLATES).flatMap(t =>
     Object.entries(t.merchantStock ?? {})
       .filter(([, avail]) => avail)
       .map(([rarity]) => ({ templateId: t.id, rarity, price: t.merchantBuyPrice?.[rarity] ?? 999 }))
   )
+  // Z07 — stock différencié : village = communs + 1 rare ; ville = rares + 1 epic
+  const locationType = getLocationType(world)
+  const equipStock = filterEquipStockByLocation(fullEquipStock, locationType)
 
   const buyPotion = (id) => {
     const res = RESOURCES[id]

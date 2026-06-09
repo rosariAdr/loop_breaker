@@ -3,6 +3,7 @@ import { useGameStore } from './store/gameStore'
 import { useToastStore } from './store/toastStore'
 import { ZONES } from './data/zones'
 import { getClosestAchievement } from './data/achievements'
+import { isZoneTransition } from './utils/transitions'
 
 import WorldMap from './screens/WorldMap'
 import ZoneView from './screens/ZoneView'
@@ -93,7 +94,10 @@ function App() {
   const fullscreen = FULLSCREEN.includes(currentScreen)
   const [underScreen, setUnderScreen] = useState('world_map')
   const [prevScreen, setPrevScreen] = useState(currentScreen)
+  // UI09 — déroulé de parchemin à l'entrée/sortie de zone (compteur → re-déclenche l'anim)
+  const [zoneWipe, setZoneWipe] = useState(0)
   if (currentScreen !== prevScreen) {
+    if (isZoneTransition(prevScreen, currentScreen)) setZoneWipe((w) => w + 1)
     setPrevScreen(currentScreen)
     if (!isOverlay && !fullscreen) setUnderScreen(currentScreen)
   }
@@ -160,6 +164,8 @@ function App() {
   return (
     <div className="lb-stage">
       <div className="lb-canvas">
+        {/* UI09 — déroulé de parchemin (≤340ms, non bloquant ; neutralisé par le réglage Animations) */}
+        {zoneWipe > 0 && <div key={zoneWipe} className="parch-wipe" data-testid="zone-wipe" aria-hidden="true" />}
         {!fullscreen && <Topbar onOpenSettings={() => setSettingsOpen(true)} />}
         {!fullscreen && <Breadcrumb />}
 

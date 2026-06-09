@@ -29,6 +29,7 @@ export const INFORMANTS = [
     teaser: "There's a path beyond the Blighted Road… for the worthy.",
     reveal: 'Grimspire opens to the proven — reach level 8, or cull forty Ashenvale beasts.',
     price: 40,
+    unlockZone: 'grimspire', // PROG03 — acheter cette info débloque la zone immédiatement
   },
 ]
 

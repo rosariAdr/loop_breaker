@@ -4,13 +4,17 @@
 import { useState, useEffect } from 'react'
 
 export function ArtSlot({ caption, src, w, h, round, glow, style, className = '' }) {
+  // Fallback gracieux : si l'image (src) est absente/404, on retombe sur le placeholder légendé.
+  // On mémorise QUEL src a échoué → si src change, on retente sans useEffect.
+  const [failedSrc, setFailedSrc] = useState(null)
+  const showImg = src && failedSrc !== src
   return (
     <div
       className={`art-slot ${round ? 'round' : ''} ${glow ? 'glow-gold' : ''} ${className}`}
       style={{ width: w, height: h, ...style }}
     >
-      {src
-        ? <img src={src} alt="" draggable={false} />
+      {showImg
+        ? <img src={src} alt="" draggable={false} onError={() => setFailedSrc(src)} />
         : <span className="as-cap">{caption}</span>}
     </div>
   )

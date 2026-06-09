@@ -9,7 +9,8 @@ import { AURA, countWithinDays } from '../engine/aura'
 import { RESOURCES } from '../data/resources'
 import { createEquipmentInstance } from '../data/equipment'
 import { DEITIES, applyDeityBlessing } from '../data/deities'
-import { ZONES, getMonsterLevel } from '../data/zones'
+import { ZONES, ZONE_ORDER, getMonsterLevel } from '../data/zones'
+import { getInformant } from '../data/informants'
 import { isEnemyTooStrong, buildEnemy } from '../engine/combat'
 import { useToastStore } from './toastStore'
 import { removeOneManaStone } from '../utils/manaStones'
@@ -111,6 +112,10 @@ const INITIAL_WORLD = {
   currentLocation: 'ironhaven', // ville/village où se trouve le héros
   currentHuntingSpot: null,     // spot de chasse actif (ashenvale_forest | thornmarsh | crumbled_ruins | wildmere_hills)
   currentNode: 'ironhaven',     // TRV01 — position du héros sur la World Map (node)
+
+  // PROG02 — zones débloquées (déblocage explicite via quête/info ; auto-déblocage
+  // par niveau/kills reste géré par isZoneUnlocked). Nouveau run = zone de départ seule.
+  unlockedZones: ['ashenvale'],
 
   // Calendrier
   dayCount: 1,
@@ -254,6 +259,8 @@ function migrateV1ToV2(save) {
     monsterKillCounts: world.monsterKillCounts ?? {},
     idleToggles: world.idleToggles ?? {},
     idleHpThreshold: world.idleHpThreshold ?? 0.2, // I08
+    // PROG02 — migration : une save antérieure (sans le champ) a tout débloqué (pas de régression).
+    unlockedZones: Array.isArray(world.unlockedZones) ? world.unlockedZones : [...ZONE_ORDER],
     idleLog: Array.isArray(world.idleLog) ? world.idleLog : [],
     generatedVillages: world.generatedVillages ?? {},
     dungeons: world.dungeons ?? { ...INITIAL_WORLD.dungeons },
@@ -985,6 +992,19 @@ export const useGameStore = create((set, get) => ({
       return { world: { ...state.world, visitedSpots: [...visited, spotId] } }
     }),
 
+  // PROG03 — débloque explicitement une zone (via récompense de quête OU info d'informateur).
+  unlockZone: (zoneId, source = 'unknown') =>
+    set((state) => {
+      if (!ZONES[zoneId]) return state
+      const cur = state.world.unlockedZones ?? []
+      if (cur.includes(zoneId)) return state
+      useToastStore.getState().addToast(
+        `🗺 New region revealed: ${ZONES[zoneId]?.name ?? zoneId}${source === 'info' ? ' (rumor)' : ''}`,
+        'info',
+      )
+      return { world: { ...state.world, unlockedZones: [...cur, zoneId] } }
+    }),
+
   // Q05 — incrémente le compteur de crafts réussis (pour les quêtes de craft)
   incrementCraftCount: () =>
     set((state) => ({ meta: { ...state.meta, craftCount: (state.meta.craftCount ?? 0) + 1 } })),
@@ -1521,6 +1541,11 @@ export const useGameStore = create((set, get) => ({
       // ACA04 — récompenses Aura / Concentration (quêtes de maître)
       if (r.aura) newAura += r.aura
       if (r.concentration) newConcentration += r.concentration
+      // PROG03 — récompense qui débloque une zone (voie « quête »)
+      const newUnlockedZones = [...(state.world.unlockedZones ?? [])]
+      if (r.unlockZone && ZONES[r.unlockZone] && !newUnlockedZones.includes(r.unlockZone)) {
+        newUnlockedZones.push(r.unlockZone)
+      }
 
       // Q07/Q09 — Toast récompense de quête
       const rewardParts = []
@@ -1548,6 +1573,7 @@ export const useGameStore = create((set, get) => ({
           ...state.world,
           activeQuests: active.filter((q) => q !== questId),
           completedQuests: [...completed, questId],
+          unlockedZones: newUnlockedZones,
         },
         hero: {
           ...state.hero,
@@ -1665,6 +1691,9 @@ export const useGameStore = create((set, get) => ({
     get().spendGold(price)
     set((s) => ({ meta: { ...s.meta, knownInfo: [...(s.meta.knownInfo ?? []), id] } }))
     useToastStore.getState().addToast('🕵 Information acquired.', 'info')
+    // PROG03 — certaines rumeurs débloquent une zone (voie « info informateur »)
+    const inf = getInformant(id)
+    if (inf?.unlockZone) get().unlockZone(inf.unlockZone, 'info')
     return true
   },
 

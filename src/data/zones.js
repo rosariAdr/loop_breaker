@@ -61,7 +61,7 @@ export const ZONES = {
       name: 'Ironhaven',
       type: 'city',
       mapPos: { x: 44, y: 52 },
-      buildings: ['inn', 'church', 'merchant', 'alchemy', 'blacksmith', 'academy'],
+      buildings: ['inn', 'church', 'merchant', 'alchemy', 'blacksmith', 'academy', 'guild'], // GLD01
       masterBlacksmithChance: 0.025,
     },
     villages: [
@@ -105,6 +105,8 @@ export const ZONES = {
     dungeon: null,
     city: null,
     villages: [],
+    // PROG01 — déblocage data-driven (conditions en OU ; visible mais voilée tant que verrouillée)
+    unlock: { hidden: false, conditions: [{ type: 'level', value: 3 }, { type: 'kills', zone: 'ashenvale', value: 10 }] },
   },
 
   grimspire: {
@@ -114,6 +116,8 @@ export const ZONES = {
     levelRange: [21, 40],
     zoneMult: 2.5,
     monsters: ['grimstone_troll', 'cursed_sentinel', 'abyssal_hound', 'wyvern_scout', 'plague_monk', 'iron_wraith'],
+    // PROG01 — déblocage data-driven (niveau 8 OU 40 kills d'Ashenvale, OU déblocage explicite PROG03)
+    unlock: { hidden: false, conditions: [{ type: 'level', value: 8 }, { type: 'kills', zone: 'ashenvale', value: 40 }] },
     dungeon: {
       id: 'forsaken_citadel',
       name: 'The Forsaken Citadel',
@@ -130,7 +134,7 @@ export const ZONES = {
       id: 'stonehaven',
       name: 'Stonehaven',
       type: 'city',
-      buildings: ['inn', 'church', 'merchant', 'alchemy', 'blacksmith', 'academy'],
+      buildings: ['inn', 'church', 'merchant', 'alchemy', 'blacksmith', 'academy', 'guild'], // GLD01
       masterBlacksmithChance: 0.025,
     },
     villages: [
@@ -162,8 +166,63 @@ export const ZONES = {
   },
 }
 
+// Z07 — Type de localité courante (ville vs village), d'après la zone + currentLocation.
+export function getLocationType(world) {
+  const zone = ZONES[world?.currentZone]
+  if (!zone) return 'village'
+  if (zone.city?.id === world.currentLocation) return 'city'
+  return 'village'
+}
+
 // Ordre des zones sur la carte (pour la navigation)
 export const ZONE_ORDER = ['ashenvale', 'blighted_road', 'grimspire']
+
+// PROG02 — zone de départ : seule débloquée d'office au démarrage d'un nouveau run.
+export const START_ZONE = 'ashenvale'
+
+// Total de kills d'une zone (réutilisé par les conditions de déblocage 'kills').
+function killsInZone(world, zoneId) {
+  return Object.entries(world?.monsterKillCounts ?? {})
+    .filter(([id]) => MONSTERS[id]?.zone === zoneId)
+    .reduce((sum, [, n]) => sum + n, 0)
+}
+
+/**
+ * PROG01 — Une zone est-elle débloquée ? (data-driven)
+ * - pas de `unlock` → toujours ouverte (zone de départ).
+ * - présente dans `world.unlockedZones` → débloquée explicitement (PROG03 : quête/info).
+ * - sinon : au moins une condition d'auto-déblocage satisfaite (niveau / kills / stat / zoneCleared).
+ * @param {string} zoneId
+ * @param {{world?:object, hero?:object}} state - accepte { world, hero }.
+ */
+export function isZoneUnlocked(zoneId, state = {}) {
+  const zone = ZONES[zoneId]
+  if (!zone) return false
+  if (!zone.unlock) return true
+  const world = state.world ?? state
+  const hero = state.hero ?? {}
+  if ((world?.unlockedZones ?? []).includes(zoneId)) return true
+  return (zone.unlock.conditions ?? []).some((c) => {
+    if (c.type === 'level') return (hero.level ?? 0) >= c.value
+    if (c.type === 'kills') return killsInZone(world, c.zone ?? START_ZONE) >= c.value
+    if (c.type === 'stat') return (hero.stats?.[c.stat] ?? 0) >= c.value
+    if (c.type === 'zoneCleared') return (world?.clearedZones ?? []).includes(c.ref)
+    return false
+  })
+}
+
+/**
+ * PROG01 — Zones visibles sur la carte : toutes les non-cachées + celles débloquées.
+ * Une zone `unlock.hidden` reste invisible (fog total) tant qu'elle n'est pas débloquée.
+ */
+export function getVisibleZones(state = {}) {
+  return ZONE_ORDER.filter((id) => {
+    const zone = ZONES[id]
+    if (!zone?.unlock) return true
+    if (!zone.unlock.hidden) return true
+    return isZoneUnlocked(id, state)
+  })
+}
 
 // Multiplicateurs de zone pour le scaling de difficulté
 export const ZONE_MULTS = {

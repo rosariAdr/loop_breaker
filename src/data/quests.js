@@ -4,6 +4,7 @@
 
 import { CHURCH_QUESTS, CHURCH_QUEST_NPC } from './churchQuests'
 import { MASTER_QUESTS, MASTER_QUEST_NPC } from './masterQuests'
+import { MONSTERS } from './monsters'
 
 // ── NPCs donneurs (Q08) ──────────────────────────────────────────────────────
 export const QUEST_NPCS = {
@@ -273,13 +274,14 @@ export const QUESTS = {
   nc_explore_hills: {
     id: 'nc_explore_hills',
     name: 'Beyond the Treeline',
-    description: 'Chart the Wildmere Hills for the Ironhaven survey.',
+    description: 'Chart the Wildmere Hills for the Ironhaven survey — and find the pass to Grimspire.',
     giverNpc: 'greywatch_elder',
-    flavorText: '"The maps end where the hills begin. Help us draw the rest."',
+    flavorText: '"The maps end where the hills begin. Help us draw the rest — and the road beyond."',
     objectives: [
       { id: 'visit_hills', type: 'visit', spotId: 'wildmere_hills', label: 'Explore the Wildmere Hills' },
     ],
-    reward: { gold: 90, reputationTokens: 2, stat: { name: 'strength', amount: 1 } },
+    // PROG03 — voie « quête » : terminer cette exploration révèle Grimspire.
+    reward: { gold: 90, reputationTokens: 2, stat: { name: 'strength', amount: 1 }, unlockZone: 'grimspire' },
   },
 
   nc_artisans_trial: {
@@ -307,6 +309,35 @@ export const QUEST_NPC_REGISTRY = { ...QUEST_NPCS, ...CHURCH_QUEST_NPC, ...MASTE
 /** Résout une quête par id (board, église ou maître). */
 export function getQuestById(id) {
   return QUESTS[id] ?? CHURCH_QUESTS[id] ?? MASTER_QUESTS[id] ?? null
+}
+
+// ── GLD01/GLD02 — Répartition des quêtes du board par lieu (Guilde ville / auberge village) ──
+// Prestige Q06 (rang aventurier requis) : seuil de tokens pour ACCEPTER une quête prestigieuse.
+export const PRESTIGE_MIN_TOKENS = 10 // rang Argent (cf. RANK_TIERS)
+
+/**
+ * Une quête est "prestigieuse" (réservée à la Guilde, gardée par le rang) si elle
+ * récompense beaucoup de réputation (≥3) ou vise un boss / demon lord / élite.
+ */
+export function isPrestigiousQuest(quest) {
+  if (!quest) return false
+  if ((quest.reward?.reputationTokens ?? 0) >= 3) return true
+  return quest.objectives.some((o) => {
+    if (o.type !== 'kill') return false
+    const m = MONSTERS[o.monsterId]
+    return !!m && (m.rank === 'boss' || m.rank === 'demon_lord' || m.rank === 'elite')
+  })
+}
+
+/**
+ * Quêtes du board affichées selon le lieu :
+ * - 'guild' (ville) : tout le board (les prestigieuses sont gardées par le rang à l'acceptation).
+ * - 'village'       : uniquement les quêtes standard (pool réduit).
+ */
+export function getBoardQuests(venue) {
+  const all = Object.values(QUESTS)
+  if (venue === 'village') return all.filter((q) => !isPrestigiousQuest(q))
+  return all
 }
 
 /**

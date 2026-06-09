@@ -4,6 +4,7 @@ import { MONSTERS } from '../data/monsters'
 import QTEBar from '../components/QTEBar'
 import { HeroAvatar } from '../components/parchment'
 import { POS, NODES, EDGES, areAdjacent } from '../data/worldGraph'
+import { isZoneUnlocked } from '../data/zones'
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
 
@@ -37,8 +38,10 @@ export default function WorldMap() {
   const totalAshenvaleKills = Object.entries(world.monsterKillCounts)
     .filter(([id]) => MONSTERS[id]?.zone === 'ashenvale')
     .reduce((sum, [, n]) => sum + n, 0)
-  const blightedUnlocked = totalAshenvaleKills >= 10 || hero.level >= 3
-  const grimspireUnlocked = hero.level >= 8 || totalAshenvaleKills >= 40
+  // PROG01 — déblocage data-driven (mêmes conditions niveau/kills, désormais dans zones.js)
+  // + voie explicite (PROG03 : quête/info → world.unlockedZones).
+  const blightedUnlocked = isZoneUnlocked('blighted_road', { world, hero })
+  const grimspireUnlocked = isZoneUnlocked('grimspire', { world, hero })
 
   // TRV01 — position du héros sur la carte (fallback pour les saves sans currentNode)
   const heroNode = world.currentNode ?? world.currentHuntingSpot ?? world.currentLocation ?? 'ironhaven'
@@ -120,6 +123,13 @@ export default function WorldMap() {
           onClick={onCrypt}
           onHover={(on) => setTip(on ? { x: POS.crypt.x, y: POS.crypt.y - 8, text: 'A mysterious portal hums with dark energy…' } : null)}
         />
+      )}
+
+      {/* PROG01 — Fog of war : nuage sur les zones non débloquées */}
+      {!grimspireUnlocked && (
+        <div className="wm-fog" data-testid="fog-grimspire" style={{ left: `${POS.grimspire.x}%`, top: `${POS.grimspire.y}%` }} aria-hidden="true">
+          <span>☁</span><span>☁</span><span>☁</span>
+        </div>
       )}
 
       {/* Grimspire (locked) — marqueur overlay sur les montagnes */}

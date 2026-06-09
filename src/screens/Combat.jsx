@@ -25,6 +25,7 @@ import { hasGluttony, isGluttonyReady, rollGluttonyProc, GLUTTONY_STATS } from '
 import { getPassiveModifiers, PASSIVE_XP_PER_HIT } from '../engine/passives'
 import { applyVigorMalus, combatFatigueBuffer } from '../engine/vigor'
 import { auraDamageMult } from '../engine/aura'
+import { getSkillVfx } from '../engine/skillVfx'
 
 // B05 — icône + libellé par type d'effet de statut (cf. DESIGN.md §B05-SPEC)
 const STATUS_META = {
@@ -241,6 +242,8 @@ export default function Combat() {
   const [turnCount, setTurnCount] = useState(1)
   const [animatingEnemyId, setAnimatingEnemyId] = useState(null) // id ennemi qui reçoit un coup
   const [animatingHero, setAnimatingHero] = useState(false)      // héros qui reçoit un coup
+  const [skillFx, setSkillFx] = useState(null)                   // ANIM02 — VFX skill en cours : { targetIds, element, color, mode, aoe, heavy }
+  const [arenaSkillShake, setArenaSkillShake] = useState(false)  // ANIM02 — secousse d'arène (gros skill / AoE)
   const [heroAttackAnim, setHeroAttackAnim] = useState(false)    // B13 — héros qui lance une attaque/skill
   const [attackingEnemyId, setAttackingEnemyId] = useState(null) // B02 — ennemi qui frappe
   const [floatingNumbers, setFloatingNumbers] = useState([])     // B07 — [{id, targetId, amount, type}]
@@ -623,6 +626,16 @@ export default function Combat() {
       // STA02 — l'Aura multiplie les dégâts des skills (+0.5%/point)
       const dmg = Math.round(calcSkillDamage(skill, heroStats, skill.level) * auraDamageMult(hero.aura))
       const isAoe = template.effect.aoe
+      // ANIM02 — VFX propre au skill : projectile/frappe teinté par l'élément, flash sur la/les cible(s)
+      const vfx = getSkillVfx(template)
+      const fxTargetIds = isAoe ? aliveEnemies.map(e => e.id) : [skillTarget.id]
+      setSkillFx({ targetIds: fxTargetIds, ...vfx })
+      setAnimatingEnemyId(skillTarget.id)
+      if (vfx.heavy || isAoe) {
+        setArenaSkillShake(true)
+        setTimeout(() => setArenaSkillShake(false), 360)
+      }
+      setTimeout(() => { setSkillFx(null); setAnimatingEnemyId(null) }, 520)
       // B07 — nombre flottant sur chaque cible touchée
       if (isAoe) {
         enemies.filter(e => !isDefeated(e)).forEach(e => pushFloatingNumber(e.id, dmg, 'skill'))
@@ -787,11 +800,15 @@ export default function Combat() {
       style={{ minHeight: 'calc(100vh - 48px)', background: arenaBg }}
     >
       {/* ── Arène ── */}
-      {/* ANIM01 — screen shake léger quand le héros encaisse un coup */}
-      <div className={`flex flex-col flex-1${animatingHero ? ' anim-arena-shake' : ''}`}>
+      {/* ANIM01 — screen shake quand le héros encaisse ; ANIM02 — secousse sur gros skill/AoE */}
+      <div className={`flex flex-col flex-1${animatingHero || arenaSkillShake ? ' anim-arena-shake' : ''}`}>
 
         {/* Zone ennemis — haut, centré */}
-        <div className="flex justify-center items-end gap-10 px-8 pt-6 pb-4" style={{ minHeight: '200px' }}>
+        <div className="flex justify-center items-end gap-10 px-8 pt-6 pb-4 relative" style={{ minHeight: '200px' }}>
+          {/* ANIM02 — onde de choc AoE teintée par l'élément */}
+          {skillFx?.aoe && (
+            <span className="skill-aoe-wave" data-testid="skill-aoe-wave" style={{ '--fx-color': skillFx.color }} aria-hidden="true" />
+          )}
           {enemies.map(enemy => (
             <EnemyCard
               key={enemy.id}
@@ -799,6 +816,7 @@ export default function Combat() {
               isSelected={selectedTargetId === enemy.id}
               isHit={animatingEnemyId === enemy.id}
               isAttacking={attackingEnemyId === enemy.id}
+              fx={skillFx && skillFx.targetIds.includes(enemy.id) ? skillFx : null}
               floatingNumbers={floatingNumbers.filter(n => n.targetId === enemy.id)}
               onSelect={() => !isDefeated(enemy) && phase === 'player' && setSelectedTargetId(enemy.id)}
             />
@@ -941,15 +959,17 @@ function PhaseIndicator({ phase, turnCount }) {
 }
 
 // ── Carte ennemi ──────────────────────────────────────────────────────────────
-function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = [], onSelect }) {
+function EnemyCard({ enemy, isSelected, isHit, isAttacking, fx = null, floatingNumbers = [], onSelect }) {
   const hpPct = Math.max(0, Math.min(1, enemy.currentHp / enemy.stats.hp))
   const dead = isDefeated(enemy)
   const rankBadge = RANK_BADGE[enemy.rank]
   const emoji = MONSTER_EMOJI[enemy.monsterId] ?? MONSTER_EMOJI.default
+  // ANIM02 — un skill teinté frappe cette carte : hit-react même hors animatingEnemyId (utile en AoE)
+  const reacting = isHit || !!fx
 
   return (
     <div
-      className={`flex flex-col items-center gap-2.5 transition-all duration-300 relative${isHit ? ' anim-hit-react' : ''}${isAttacking ? ' anim-enemy-attack' : ''}`}
+      className={`flex flex-col items-center gap-2.5 transition-all duration-300 relative${reacting ? ' anim-hit-react' : ''}${isAttacking ? ' anim-enemy-attack' : ''}`}
       style={{ opacity: dead ? 0.22 : 1, cursor: dead ? 'default' : 'pointer' }}
       onClick={onSelect}
     >
@@ -972,6 +992,18 @@ function EnemyCard({ enemy, isSelected, isHit, isAttacking, floatingNumbers = []
       <div className="relative">
         {/* ANIM01 — étincelle d'impact au coup reçu */}
         {isHit && !dead && <span className="impact-spark" data-testid="impact-spark" />}
+        {/* ANIM02 — VFX du skill : flash élémentaire + projectile (magie/distance) ou frappe (mêlée) */}
+        {fx && !dead && (
+          <>
+            <span className="skill-flash" data-testid="skill-flash" style={{ '--fx-color': fx.color }} aria-hidden="true" />
+            <span
+              className={fx.mode === 'projectile' ? 'skill-orb' : 'skill-slash'}
+              data-testid={fx.mode === 'projectile' ? 'skill-orb' : 'skill-slash'}
+              style={{ '--fx-color': fx.color }}
+              aria-hidden="true"
+            />
+          </>
+        )}
         <div
           className="flex items-center justify-center transition-all duration-200 overflow-hidden"
           style={{
