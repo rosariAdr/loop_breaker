@@ -110,7 +110,7 @@ describe('Q03 — Quêtes boss donjon', () => {
 describe('Q08 — Quêtes Greywatch Elder', () => {
   it('bog_purge vient de greywatch_elder', () => {
     expect(QUESTS.bog_purge.giverNpc).toBe('greywatch_elder')
-    expect(QUESTS.bog_purge.objectives[0].monsterId).toBe('bog_shambler')
+    expect(QUESTS.bog_purge.objectives[0].monsterId).toBe('mire_slime')
   })
 
   it('ruins_cleanse a plusieurs objectifs', () => {

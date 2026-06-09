@@ -9,6 +9,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (MON01 — Refonte du bestiaire de surface)
+- **MON01** — Refonte des 4 spots d'Ashenvale : rosters revus (4 monstres/spot dont 1 élite). Ajouts : Thicket Hare, Tuskmaw Boar, Old Oakheart (forêt) ; Mire Slime, Fenrot Devourer (marais) ; Graven Sentinel (ruines, = ex-Grave Knight déplacé + renommé) ; Hill Slime, Russet Fox, Knoll Goblin, Thunderhoof (collines).
+- **MON01** — Zone **Barrow Hills → Wildmere Hills** (id `barrow_hills` → `wildmere_hills` renommé partout : monsters/zones/worldGraph/arène ; remap des saves dans `normalizeSave`).
+- **MON01** — Nouveau champ interne `skillDropType: 'active' | 'passive' | 'none'` sur chaque monstre. L'UI (clearing card + bestiaire) n'affiche **que le nom** du skill (jamais actif/passif) ; `none` → aucune ligne Technique.
+- **MON01** — 13 nouvelles techniques de bestiaire dans `skills.js` (9 actives + 4 passives). Ashwood Wolf conserve **Savage Bite**.
+- **MON01** — Rotting Shambler, Gloom Bat, Bog Shambler retirés ; Barrow Wight + Soul Harvester mis en **réserve** (`reserve: true`, jamais spawn en surface, conservés pour un usage futur). Quête `bog_purge` re-ciblée sur Mire Slime.
+
+### Changed (Batch UI v1.1 — Design « parchemin », en cours)
+- **UI01** — Shell parchemin : canvas fixe 1920×1080 mis à l'échelle (`--lb-scale`), topbar bois (HP/MP/run/XP/day/tokens + onglets), breadcrumb, sidebar/journal partagés
+- **UI02** — WorldMap : carte illustrée en fond (`public/map/eldenmoor.png`), nodes en marqueurs discrets (%), trails SVG par graphe d'adjacence, Blighted Road + QTE
+- **UI03** — Village (SafeZone) : carte parchemin (place + puits + chemins + bâtiments façon référence), panneaux de bâtiment fonctionnels en modale sombre par-dessus
+- **UI04** — Forêt (ZoneView) : décor parchemin, monstres en cartes-clairières (killbar, idle/fight, aperçu de skill drop conservé), journal idle en panneau parchemin ; header dissocié (Map / titre / desc espacés)
+- **UI06** — Hero Sheet : layout sheet parchemin 2 colonnes (portrait + équipement | vitals + attributs + skills + allégeance) ; debuffs/gluttony/titres conservés
+- **UI05** — Dialogue PNJ à l'entrée des bâtiments du village : portrait pixel (couche B : marta/smith/aldric/merchant/mage) + réplique + action → ouvre le panneau fonctionnel (Back ramène au dialogue)
+- **UI07** — Inventory : sheet parchemin à onglets (mana stones / équipement / consommables / ressources), cartes + panneaux détail recolorés ; equip/sell/diff/confirm intacts
+- **UI09 (partiel)** — écrans takeover (mode plein écran dramatique, choix « Mixte ») :
+  - **PostMortem** : parchemin « chronique de l'âme » sur fond ténébreux (récap + transmigration), bannière Malachar conservée
+  - **GodsShop** : boutique divine polie (violet éthéré premium, fond takeover partagé)
+  - **DivineCall** : conservé en sombre/mystique thématisé par dieu (déjà conforme à l'esthétique takeover)
+- Avatar héros chibi affiché ×2 (sprite 76×112, halo 80×20) **+ idle animé** (18 frames, ~9 fps, préchargées) sur WorldMap & Village
+- **DEV01** — Harnais de test : bouton flottant `⚙ DEV` + panneau Navigate (sauts d'écran) / Triggers (combat, appel divin, mort→PostMortem, boutique) / Cheats — permet de tester tous les écrans sans jouer le run
+- **Assets** — sprites chibi des monstres sur les cartes-clairières de la forêt (Combat les utilisait déjà)
+- *Combat : déjà une UI sombre/dramatique aboutie et sur-thème (Cinzel, accents gold/violet) — pas de refonte nécessaire ; polish ciblé si besoin*
+
+### Added (Batch O — Gluttony & Malachar, POC bouclé)
+- **GLT01** — Skill passif Gluttony : absorption permanente de stats (proc 10%, cooldown 5j), réappliquée à chaque run
+- **GLT02** — Assassinat (kill en 1 coup depuis HP max) → absorption garantie + choix de la stat (modal)
+- **GLT03** — Statut Gluttony sur HeroSheet (Ready / jours restants)
+- **GLT04** — Toast d'absorption (type `gluttony`)
+- **W01** — Malachar POC : phases + Soul Rend garanti + 200 tokens + titres → **win condition bouclée**
+
+### Added (Batch N — Boss mechanics & titres)
+- **M01** — Titres permanents (`meta.titlesEarned`) : registre, `awardTitle`, affichage HeroSheet
+- **T13** — Titre "Demon Lord Slayer" (+ "Malachar's Bane") gagné en tuant le Demon Lord
+- **BSS03** — Malachar en 3 phases (Rage +50% ATK, Soul Drain 15% maxHP/tour)
+- **BSS01** *(léger)* — Crypt Keeper : enrage +40% ATK à 50% HP (vraie invocation → BSS01b backlog)
+- **BSS02** *(léger)* — Lord of the Forsaken : Cursed Strike STR−20% (armure régénérante → BSS02b backlog)
+
+### Added (Batch P — Crafting & artisans)
+- **CRF01** — Debuffs passifs temporaires (Burnt Hands/Poisoned/Fatigue/Black Smoke), décrément au sommeil, réduction de stats en combat
+- **CRF02/CRF03** — Mini-jeux de crafting (alchimie : dosage ; forge : 3 frappes rythmées) — composant `CraftingMinigame`
+- **CRF04** — Issue du craft selon le score : rareté +2/+1/base, ou raté/catastrophe avec debuff
+- **CRF05** — Section "Active Debuffs" sur HeroSheet (durée / "Cure needed")
+- **Z04** — Alchimiste : 6 recettes de potions, brassage via mini-jeu (qualité = quantité)
+- **Z06** — Maître forgeron : 5 recettes Rare/Epic, mini-jeu forge, spawn 10% au village
+
+### Added (Batch M — Profondeur de combat)
+- **B05-SPEC** — `DESIGN.md` : spec complète des effets de statut (DoT/contrôle/stat, plafond 2, interactions, valeurs par niveau)
+- **B05** — Effets de statut opérationnels en combat : poison/burn (DoT), stun (saut de tour), slow/defense_break/atk_down/max_hp_reduction/all_stats_down (modificateurs de stats). Icônes d'effets actifs sur les cartes ennemi/héros. Moteur pur : `tickStatusEffects`, `applyStatusEffect`, `getEffectiveStats`, `canHeal`, `isStunned`
+- **B10** — Sacrifice de stat (`cost.stat_sacrifice`) + skill `reckless_blow` (220% STR contre −3 AGI). Permanent persisté, temporaire récupéré au combat suivant
+- **B12** — Combat manuel forcé quand un monstre idle dépasse le niveau du héros de +5 (`getMonsterLevel`, `isEnemyTooStrong`)
+- **B03** — Multi-ennemis 1-3 selon zone/rang (`getEnemyCount`/`generateEnemies`), branché dans ZoneView
+
+### Fixed (Batch M)
+- `applyStatusEffects` était défini mais jamais appelé — les effets de statut étaient inertes en combat
+- Skills de pur debuff (`abyss_howl`, `forsaken_curse`) provoquaient un soft-lock du combat (animation jamais relâchée)
+
 ### Added (Batch G — Fermeture v0.1)
 - **Z02** — 4 consommables marchand (`stamina_ration`, `elixir_minor`, `mana_crystal`, `antidote_basic`) + effet `restore_both` (HP+Mana)
 - **Z03** — Forge : ingrédients manquants grisés + message de blocage explicite + tests `canCraft`

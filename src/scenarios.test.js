@@ -84,7 +84,9 @@ describe('Scénario 1 — Premier run complet', () => {
     expect(store().hero.runNumber).toBe(2)
     expect(store().hero.deathCount).toBe(1)
     expect(store().hero.activeSkills.some(s => s.skillId === 'counter_strike')).toBe(true)
-    expect(store().hero.stats.strength).toBeGreaterThan(10) // +10% sur la stat héritée (base=10 → 11)
+    // TRM01 — héritage = max(base, round(stat_du_run × 0.4)). Le run 1 (mort Lv1) n'a pas fait
+    // monter la force → plancher = base (10). Plus de bonus +10% systématique.
+    expect(store().hero.stats.strength).toBeGreaterThanOrEqual(10)
     expect(store().world.dayCount).toBe(1) // nouveau run, jour 1
     expect(store().currentScreen).toBe('world_map')
   })
@@ -557,7 +559,7 @@ describe('Scénario 13 — 3 NPCs en parallèle', () => {
 
     // Progresser sur toutes en parallèle
     for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
-    for (let i = 0; i < 4; i++) store().recordKill('bog_shambler')
+    for (let i = 0; i < 4; i++) store().recordKill('mire_slime')
     store().recordKill('hollow_crypt_boss')
 
     expect(store().isQuestComplete('first_blood')).toBe(true)
@@ -687,7 +689,7 @@ describe('BAL01 — Économie tokens (simulations)', () => {
       ['silence_the_crypt', 'hollow_crypt_boss', 1],
       ['storm_the_citadel', 'forsaken_citadel_boss', 1],
       ['end_the_demon', 'malachar', 1],
-      ['bog_purge', 'bog_shambler', 4],
+      ['bog_purge', 'mire_slime', 4],
       ['ruins_cleanse', null, null],  // ce quest a 2 objectives, on les complete tous deux
     ]
     for (const [questId, monster, count] of allQuests) {

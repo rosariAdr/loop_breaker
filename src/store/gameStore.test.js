@@ -213,12 +213,13 @@ describe('gainSkillXp', () => {
     expect(skill.level).toBe(3)
   })
 
-  it('ne dépasse pas Lv3', () => {
-    for (let i = 0; i < 200; i++) {
+  it('monte jusqu\'à Lv5 puis plafonne (SKL01)', () => {
+    // seuils cumulés 20+50+90+140 = 300 XP pour atteindre Lv5
+    for (let i = 0; i < 400; i++) {
       useGameStore.getState().gainSkillXp('savage_bite', 1)
     }
     const skill = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
-    expect(skill.level).toBe(3)
+    expect(skill.level).toBe(5)
   })
 })
 
@@ -286,9 +287,10 @@ describe('processIdleTick', () => {
   })
 
   it("désactive l'idle si HP < 20%", () => {
+    // ashwood_wolf (Lv 1) pour ne PAS déclencher le garde B12 (trop fort)
     useGameStore.setState(state => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'stone_golem' },
-      hero: { ...state.hero, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } }
+      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      hero: { ...state.hero, level: 5, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } }
     }))
     useGameStore.getState().processIdleTick()
     expect(useGameStore.getState().world.isIdleActive).toBe(false)
@@ -299,12 +301,37 @@ describe('processIdleTick', () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
     useGameStore.setState(state => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'stone_golem' },
-      hero: { ...state.hero, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } }
+      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      hero: { ...state.hero, level: 5, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } }
     }))
     useGameStore.getState().processIdleTick()
     const warn = useToastStore.getState().toasts.find(t => t.type === 'warning')
     expect(warn).toBeDefined()
+  })
+
+  // B12 — ennemi trop fort → idle stoppé + combat manuel forcé
+  it("B12 — force un combat manuel quand l'ennemi est trop fort", () => {
+    // stone_golem = Lv 12 ; héros Lv 1 → 12 > 1+5 → trop fort
+    useGameStore.setState(state => ({
+      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'stone_golem' },
+      hero: { ...state.hero, level: 1, stats: { ...state.hero.stats, hp: 100, maxHp: 100 } },
+    }))
+    useGameStore.getState().processIdleTick()
+    const st = useGameStore.getState()
+    expect(st.world.isIdleActive).toBe(false)
+    expect(st.currentScreen).toBe('combat')
+    expect(st.activeCombat?.enemies?.[0]?.monsterId).toBe('stone_golem')
+  })
+
+  it("B12 — n'interrompt PAS si le héros est assez haut niveau", () => {
+    useGameStore.setState(state => ({
+      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'stone_golem' },
+      hero: { ...state.hero, level: 20, stats: { ...state.hero.stats, hp: 100, maxHp: 100, strength: 60 } },
+    }))
+    useGameStore.getState().processIdleTick()
+    const st = useGameStore.getState()
+    expect(st.currentScreen).not.toBe('combat')
+    expect(st.world.isIdleActive).toBe(true)
   })
 
   it("I04 — toast levelup quand le héros monte de niveau en idle", async () => {
@@ -322,6 +349,132 @@ describe('processIdleTick', () => {
     useGameStore.getState().processIdleTick()
     const lvl = useToastStore.getState().toasts.find(t => t.type === 'levelup')
     expect(lvl).toBeDefined()
+  })
+})
+
+// ── CRF01 — Debuffs passifs ───────────────────────────────────────────────────
+describe('CRF01 — debuffs (store)', () => {
+  it('addHeroDebuff ajoute un debuff au héros', () => {
+    useGameStore.getState().addHeroDebuff('fatigue', 7)
+    const d = useGameStore.getState().hero.activeDebuffs
+    expect(d).toHaveLength(1)
+    expect(d[0].debuffId).toBe('fatigue')
+    expect(d[0].duration.remaining).toBe(7)
+  })
+
+  it('sleep décrémente la durée des debuffs temporaires', () => {
+    useGameStore.getState().addHeroDebuff('fatigue', 7)
+    useGameStore.getState().sleep()
+    expect(useGameStore.getState().hero.activeDebuffs[0].duration.remaining).toBe(6)
+  })
+
+  it('sleep retire un debuff arrivé à expiration', () => {
+    useGameStore.getState().addHeroDebuff('fatigue', 1)
+    useGameStore.getState().sleep()
+    expect(useGameStore.getState().hero.activeDebuffs).toHaveLength(0)
+  })
+
+  it('un debuff permanent survit au sommeil', () => {
+    useGameStore.getState().addHeroDebuff('black_smoke', 7, true)
+    useGameStore.getState().sleep()
+    const d = useGameStore.getState().hero.activeDebuffs
+    expect(d).toHaveLength(1)
+    expect(d[0].permanent).toBe(true)
+  })
+})
+
+// ── M01 / T13 — Titres permanents ─────────────────────────────────────────────
+describe('M01 — awardTitle', () => {
+  it('attribue un titre permanent', () => {
+    useGameStore.getState().awardTitle('first_steps')
+    expect(useGameStore.getState().meta.titlesEarned).toContain('first_steps')
+  })
+
+  it('ne duplique pas un titre déjà gagné', () => {
+    useGameStore.getState().awardTitle('first_steps')
+    useGameStore.getState().awardTitle('first_steps')
+    const count = useGameStore.getState().meta.titlesEarned.filter(t => t === 'first_steps').length
+    expect(count).toBe(1)
+  })
+
+  it('ignore un titre inconnu', () => {
+    useGameStore.getState().awardTitle('bogus_title')
+    expect(useGameStore.getState().meta.titlesEarned).not.toContain('bogus_title')
+  })
+})
+
+describe('T13 — Demon Lord Slayer', () => {
+  it('tuer le Demon Lord (clearDungeon grimspire) attribue les titres permanents', () => {
+    useGameStore.setState(state => ({
+      world: {
+        ...state.world,
+        dungeons: { ...state.world.dungeons, grimspire: { active: true, cleared: false, position: 'north', discovered: true } },
+      },
+    }))
+    useGameStore.getState().clearDungeon('grimspire')
+    const earned = useGameStore.getState().meta.titlesEarned
+    expect(earned).toContain('demon_lord_slayer')
+    expect(earned).toContain('malachar_bane')
+  })
+
+  it("un donjon normal n'attribue pas Demon Lord Slayer", () => {
+    useGameStore.setState(state => ({
+      world: {
+        ...state.world,
+        dungeons: { ...state.world.dungeons, ashenvale: { active: true, cleared: false, position: 'north', discovered: true } },
+      },
+    }))
+    useGameStore.getState().clearDungeon('ashenvale')
+    expect(useGameStore.getState().meta.titlesEarned).not.toContain('demon_lord_slayer')
+  })
+})
+
+// ── GLT01-04 — Gluttony ───────────────────────────────────────────────────────
+describe('GLT01/04 — absorbGluttony', () => {
+  it('absorbe une stat choisie et la stocke en boost permanent', () => {
+    const before = useGameStore.getState().hero.stats.strength
+    useGameStore.getState().absorbGluttony({ monsterId: 'malachar', stat: 'strength' }) // atk 90 → +9
+    const st = useGameStore.getState()
+    expect(st.hero.stats.strength).toBe(before + 9)
+    expect(st.meta.permanentStatBoosts.strength).toBe(9)
+    expect(st.meta.gluttonyLastUsed).toBe(st.world.dayCount)
+  })
+
+  it('cumule les boosts permanents', () => {
+    useGameStore.getState().absorbGluttony({ monsterId: 'ashwood_wolf', stat: 'agility' }) // atk 8 → +1
+    useGameStore.getState().absorbGluttony({ monsterId: 'ashwood_wolf', stat: 'agility' })
+    expect(useGameStore.getState().meta.permanentStatBoosts.agility).toBe(2)
+  })
+
+  it('ignore un monstre inconnu', () => {
+    useGameStore.getState().absorbGluttony({ monsterId: 'bogus', stat: 'strength' })
+    expect(useGameStore.getState().meta.permanentStatBoosts.strength ?? 0).toBe(0)
+  })
+})
+
+describe('GLT01 — boosts permanents réappliqués au run', () => {
+  it('applyTransmigration réinjecte les permanentStatBoosts', () => {
+    useGameStore.setState(state => ({
+      meta: {
+        ...state.meta,
+        permanentStatBoosts: { strength: 5 },
+        pendingInheritance: { stat: null, activeSkill: null, passiveSkill: null, bonuses: {} },
+      },
+    }))
+    useGameStore.getState().applyTransmigration({})
+    // INITIAL_HERO strength 10 + boost 5 = 15
+    expect(useGameStore.getState().hero.stats.strength).toBe(15)
+  })
+})
+
+describe('W01 — récompense Demon Lord', () => {
+  it('tuer Malachar (grimspire) donne +200 tokens', () => {
+    const before = useGameStore.getState().hero.reputationTokens ?? 0
+    useGameStore.setState(state => ({
+      world: { ...state.world, dungeons: { ...state.world.dungeons, grimspire: { active: true, cleared: false, position: 'north', discovered: true } } },
+    }))
+    useGameStore.getState().clearDungeon('grimspire')
+    expect(useGameStore.getState().hero.reputationTokens).toBe(before + 200)
   })
 })
 
@@ -545,12 +698,12 @@ describe('Quêtes Q03 — boss donjon', () => {
 })
 
 describe('Quêtes Q08 — NPCs multiples', () => {
-  it('bog_purge : 4 bog_shamblers requis', () => {
+  it('bog_purge : 4 mire_slimes requis', () => {
     const store = useGameStore.getState
     store().startQuest('bog_purge')
-    for (let i = 0; i < 3; i++) store().recordKill('bog_shambler')
+    for (let i = 0; i < 3; i++) store().recordKill('mire_slime')
     expect(store().isQuestComplete('bog_purge')).toBe(false)
-    store().recordKill('bog_shambler')
+    store().recordKill('mire_slime')
     expect(store().isQuestComplete('bog_purge')).toBe(true)
   })
 
@@ -732,12 +885,13 @@ describe('confirmInheritance + applyTransmigration', () => {
     expect(useGameStore.getState().meta.pendingInheritance.activeSkill.skillId).toBe('savage_bite')
   })
 
-  it('applyTransmigration booste la stat héritée de 10%', () => {
+  it('applyTransmigration hérite 40% de la stat du run, plancher = base (TRM01)', () => {
     const baseStr = useGameStore.getState().hero.stats.strength
+    // run où la force a bien monté → 100
+    useGameStore.setState(s => ({ meta: { ...s.meta, lastRunSummary: { stats: { strength: 100 } } } }))
     useGameStore.getState().confirmInheritance('strength', null, null)
     useGameStore.getState().applyTransmigration({ extraSkills: [] })
-    const after = useGameStore.getState().hero.stats.strength
-    expect(after).toBe(Math.round(baseStr * 1.10))
+    expect(useGameStore.getState().hero.stats.strength).toBe(Math.max(baseStr, Math.round(100 * 0.4)))
   })
 
   it('applyTransmigration incrémente runNumber et deathCount', () => {

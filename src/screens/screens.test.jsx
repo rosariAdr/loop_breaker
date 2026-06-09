@@ -56,8 +56,9 @@ describe('Smoke tests — montage de chaque écran', () => {
   })
 
   it('QuestBoard monte', () => {
+    // GLD01 — lieu par défaut = ville (Ironhaven) → titre "Adventurers' Guild"
     render(<QuestBoard />)
-    expect(screen.getByText('Quest Board')).toBeInTheDocument()
+    expect(screen.getByText("Adventurers' Guild")).toBeInTheDocument()
   })
 
   it('PostMortem monte si lastRunSummary existe', () => {
@@ -150,6 +151,30 @@ describe('Navigation entre écrans', () => {
     render(<App />)
     fireEvent.click(screen.getByText(/Begin the Journey/))
     expect(useGameStore.getState().hero.heroNamed).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CRF05 — Affichage des debuffs actifs sur HeroSheet
+// ─────────────────────────────────────────────────────────────────────────────
+describe('CRF05 — HeroSheet debuffs', () => {
+  it("pas de section debuffs si aucun debuff actif", () => {
+    render(<HeroSheet />)
+    expect(screen.queryByTestId('active-debuffs')).toBeNull()
+  })
+
+  it("affiche un debuff temporaire avec sa durée restante", () => {
+    useGameStore.getState().addHeroDebuff('fatigue', 5)
+    render(<HeroSheet />)
+    expect(screen.getByTestId('active-debuffs')).toBeInTheDocument()
+    expect(screen.getByText('Fatigue')).toBeInTheDocument()
+    expect(screen.getByText('5d left')).toBeInTheDocument()
+  })
+
+  it("marque un debuff permanent 'Cure needed'", () => {
+    useGameStore.getState().addHeroDebuff('black_smoke', 7, true)
+    render(<HeroSheet />)
+    expect(screen.getByText('Cure needed')).toBeInTheDocument()
   })
 })
 
@@ -493,7 +518,8 @@ describe('Inventory — régression vieille save (bug user)', () => {
 describe('QuestBoard — affichage quêtes', () => {
   it('affiche au moins une quête disponible (sir_aldric a 3 quêtes)', () => {
     render(<QuestBoard />)
-    expect(screen.getByText('Available')).toBeInTheDocument()
+    // GLD01 — en ville la section s'intitule "Available · Guild Commissions"
+    expect(screen.getByText(/Available/)).toBeInTheDocument()
     expect(screen.getByText('First Blood')).toBeInTheDocument()
   })
 
@@ -529,9 +555,10 @@ describe('QuestBoard — affichage quêtes', () => {
     expect(screen.getByText(/Active \(1\)/)).toBeInTheDocument()
   })
 
-  it('bouton "← Inn" → safe_zone', () => {
+  it('bouton retour → safe_zone', () => {
+    // GLD01 — en ville le retour est libellé "← Guild"
     render(<QuestBoard />)
-    fireEvent.click(screen.getByText('← Inn'))
+    fireEvent.click(screen.getByText('← Guild'))
     expect(useGameStore.getState().currentScreen).toBe('safe_zone')
   })
 })

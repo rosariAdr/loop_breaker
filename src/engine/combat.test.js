@@ -11,8 +11,18 @@ import {
   enemyAI,
   calcTurnOrder,
   getScaledSkillCost,
+  tickStatusEffects,
+  applyStatusEffect,
+  getEffectiveStats,
+  canHeal,
+  isStunned,
+  getStatSacrifice,
+  isEnemyTooStrong,
+  getEnemyCount,
+  generateEnemies,
 } from './combat'
 import { SKILLS } from '../data/skills'
+import { getMonsterLevel } from '../data/zones'
 
 // ── calcBaseDamage ────────────────────────────────────────────────────────────
 describe('calcBaseDamage', () => {
@@ -370,9 +380,9 @@ describe('calcExpGain', () => {
   it('fonctionne avec des ennemis buildEnemy réels', () => {
     const enemies = [
       buildEnemy('ashwood_wolf', 'ashenvale', 1),
-      buildEnemy('rotting_shambler', 'ashenvale', 1),
+      buildEnemy('tuskmaw_boar', 'ashenvale', 1),
     ]
-    expect(calcExpGain(enemies)).toBe(15 + 18) // 33
+    expect(calcExpGain(enemies)).toBe(15 + 20) // 35
   })
 })
 
@@ -442,5 +452,293 @@ describe('calcTurnOrder', () => {
     const order = calcTurnOrder(hero, [slow])
     const heroEntry = order.find(c => c.isHero)
     expect(heroEntry).toBeDefined()
+  })
+})
+
+// ── B05 — Effets de statut ────────────────────────────────────────────────────
+describe('tickStatusEffects — DoT, durées, flags', () => {
+  const poison = { id: 'p1', type: 'poison', duration: 2, tickDamage: 5 }
+  const burn = { id: 'b1', type: 'burn', duration: 2, tickDamage: 4 }
+  const stun = { id: 's1', type: 'stun', duration: 1 }
+
+  it('poison inflige tickDamage et décrémente la durée', () => {
+    const { newStats, remainingEffects } = tickStatusEffects({ hp: 100 }, [{ ...poison }])
+    expect(newStats.hp).toBe(95)
+    expect(remainingEffects).toHaveLength(1)
+    expect(remainingEffects[0].duration).toBe(1)
+  })
+
+  it('un effet à durée 1 expire (retiré après tick)', () => {
+    const { remainingEffects } = tickStatusEffects({ hp: 100 }, [{ ...poison, duration: 1 }])
+    expect(remainingEffects).toHaveLength(0)
+  })
+
+  it('burn inflige des dégâts ET lève le flag noHeal', () => {
+    const { newStats, flags } = tickStatusEffects({ hp: 100 }, [{ ...burn }])
+    expect(newStats.hp).toBe(96)
+    expect(flags.noHeal).toBe(true)
+  })
+
+  it('stun lève le flag skipTurn et se consomme (durée → 0, expiré)', () => {
+    const { flags, remainingEffects } = tickStatusEffects({ hp: 100 }, [{ ...stun }])
+    expect(flags.skipTurn).toBe(true)
+    expect(remainingEffects).toHaveLength(0)
+  })
+
+  it('poison + burn cumulent leurs dégâts', () => {
+    const { newStats } = tickStatusEffects({ hp: 100 }, [{ ...poison }, { ...burn }])
+    expect(newStats.hp).toBe(100 - 5 - 4)
+  })
+
+  it('un DoT ne descend jamais les HP sous 0', () => {
+    const { newStats } = tickStatusEffects({ hp: 3 }, [{ ...poison }])
+    expect(newStats.hp).toBe(0)
+  })
+
+  it('liste vide : aucun changement, flags à false', () => {
+    const { newStats, flags, remainingEffects } = tickStatusEffects({ hp: 50 }, [])
+    expect(newStats.hp).toBe(50)
+    expect(flags.skipTurn).toBe(false)
+    expect(flags.noHeal).toBe(false)
+    expect(remainingEffects).toHaveLength(0)
+  })
+
+  it('ne mute pas le tableau ou les stats en entrée', () => {
+    const stats = { hp: 100 }
+    const effects = [{ ...poison }]
+    tickStatusEffects(stats, effects)
+    expect(stats.hp).toBe(100)
+    expect(effects[0].duration).toBe(2)
+  })
+})
+
+describe('applyStatusEffect — plafond 2 + refresh', () => {
+  const poison = { id: 'p1', type: 'poison', duration: 2, tickDamage: 5 }
+  const burn = { id: 'b1', type: 'burn', duration: 2, tickDamage: 4 }
+  const slow = { id: 's1', type: 'slow', duration: 2, reduction: 0.5 }
+
+  it('ajoute un effet à une liste vide', () => {
+    const result = applyStatusEffect([], poison)
+    expect(result).toHaveLength(1)
+    expect(result[0].type).toBe('poison')
+  })
+
+  it('refuse un 3e type différent (plafond 2)', () => {
+    const result = applyStatusEffect([poison, burn], slow)
+    expect(result).toHaveLength(2)
+    expect(result.some(e => e.type === 'slow')).toBe(false)
+  })
+
+  it('même type : rafraîchit la durée au max sans empiler', () => {
+    const old = { id: 'p0', type: 'poison', duration: 1, tickDamage: 5 }
+    const fresh = { id: 'p1', type: 'poison', duration: 3, tickDamage: 8 }
+    const result = applyStatusEffect([old], fresh)
+    expect(result).toHaveLength(1)
+    expect(result[0].duration).toBe(3)
+    expect(result[0].tickDamage).toBe(8) // prend la valeur la plus forte
+  })
+
+  it('retourne un nouveau tableau (immutable)', () => {
+    const list = [poison]
+    const result = applyStatusEffect(list, burn)
+    expect(result).not.toBe(list)
+    expect(list).toHaveLength(1)
+  })
+})
+
+describe('getEffectiveStats — modificateurs de stats', () => {
+  const base = { strength: 20, intelligence: 15, agility: 12, def: 10, atk: 18, spd: 12, hp: 100, maxHp: 100 }
+
+  it('aucun effet de stat : stats inchangées', () => {
+    expect(getEffectiveStats(base, [])).toEqual(base)
+    expect(getEffectiveStats(base, [{ type: 'poison', duration: 2, tickDamage: 5 }])).toEqual(base)
+  })
+
+  it('slow réduit Agility de 50% (défaut)', () => {
+    const s = getEffectiveStats(base, [{ type: 'slow', duration: 2, reduction: 0.5 }])
+    expect(s.agility).toBe(6)
+    expect(s.spd).toBe(6)
+  })
+
+  it('defense_break réduit DEF', () => {
+    const s = getEffectiveStats(base, [{ type: 'defense_break', duration: 2, reduction: 0.25 }])
+    expect(s.def).toBe(Math.round(10 * 0.75))
+  })
+
+  it('atk_down réduit ATK et Strength', () => {
+    const s = getEffectiveStats(base, [{ type: 'atk_down', duration: 3, reduction: 0.20 }])
+    expect(s.atk).toBe(Math.round(18 * 0.8))
+    expect(s.strength).toBe(Math.round(20 * 0.8))
+  })
+
+  it('all_stats_down réduit toutes les stats principales', () => {
+    const s = getEffectiveStats(base, [{ type: 'all_stats_down', duration: 2, reduction: 0.5 }])
+    expect(s.strength).toBe(10)
+    expect(s.intelligence).toBe(8)
+    expect(s.def).toBe(5)
+  })
+
+  it('slow + all_stats_down : réductions multiplicatives sur Agility', () => {
+    const s = getEffectiveStats(base, [
+      { type: 'slow', duration: 2, reduction: 0.5 },
+      { type: 'all_stats_down', duration: 2, reduction: 0.5 },
+    ])
+    // 12 × 0.5 × 0.5 = 3
+    expect(s.agility).toBe(3)
+  })
+
+  it('ne mute pas les stats de base', () => {
+    getEffectiveStats(base, [{ type: 'slow', duration: 2, reduction: 0.5 }])
+    expect(base.agility).toBe(12)
+  })
+})
+
+// ── B10 — Sacrifice de stat ───────────────────────────────────────────────────
+describe('B10 — sacrifice de stat (cost.stat_sacrifice)', () => {
+  const hero = { mana: 60, maxMana: 60, hp: 100, maxHp: 100, agility: 10, strength: 10, def: 5 }
+
+  it('reckless_blow existe et déclare un sacrifice de stat', () => {
+    expect(SKILLS.reckless_blow).toBeDefined()
+    expect(SKILLS.reckless_blow.cost.stat_sacrifice).toMatchObject({ stat: 'agility', amount: expect.any(Number) })
+  })
+
+  it('applySkillCost réduit la stat sacrifiée (agility -3)', () => {
+    const skill = { skillId: 'reckless_blow', level: 1, currentCooldown: 0 }
+    const result = applySkillCost(skill, hero)
+    expect(result.agility).toBe(10 - SKILLS.reckless_blow.cost.stat_sacrifice.amount)
+  })
+
+  it('applySkillCost réduit aussi le mana en parallèle', () => {
+    const skill = { skillId: 'reckless_blow', level: 1, currentCooldown: 0 }
+    const result = applySkillCost(skill, hero)
+    expect(result.mana).toBe(60 - SKILLS.reckless_blow.cost.mana)
+  })
+
+  it('la stat sacrifiée ne descend jamais sous 0', () => {
+    const skill = { skillId: 'reckless_blow', level: 1, currentCooldown: 0 }
+    const result = applySkillCost(skill, { ...hero, agility: 1 })
+    expect(result.agility).toBe(0)
+  })
+
+  it('un skill sans stat_sacrifice ne touche aucune stat (régression)', () => {
+    const skill = { skillId: 'savage_bite', level: 1, currentCooldown: 0 }
+    const result = applySkillCost(skill, hero)
+    expect(result.agility).toBe(10)
+    expect(result.strength).toBe(10)
+  })
+
+  it('getStatSacrifice retourne le sacrifice ou null', () => {
+    expect(getStatSacrifice(SKILLS.reckless_blow)).toMatchObject({ stat: 'agility' })
+    expect(getStatSacrifice(SKILLS.savage_bite)).toBeNull()
+    expect(getStatSacrifice(null)).toBeNull()
+  })
+})
+
+// ── B12 — Combat manuel forcé (ennemi trop fort en idle) ──────────────────────
+describe('B12 — isEnemyTooStrong + getMonsterLevel', () => {
+  it('getMonsterLevel dérive le niveau depuis le spot de chasse', () => {
+    // ashwood_wolf est dans ashenvale_forest (levelRange [1, 8]) → niveau min 1
+    expect(getMonsterLevel('ashwood_wolf')).toBe(1)
+    // thunderhoof est dans wildmere_hills (levelRange [18, 26]) → niveau min 18
+    expect(getMonsterLevel('thunderhoof')).toBe(18)
+  })
+
+  it('getMonsterLevel retourne 1 pour un monstre inconnu', () => {
+    expect(getMonsterLevel('inexistant')).toBe(1)
+  })
+
+  it('isEnemyTooStrong vrai si niveau ennemi > hero + 5', () => {
+    expect(isEnemyTooStrong(18, 10)).toBe(true)   // 18 > 15
+    expect(isEnemyTooStrong(16, 10)).toBe(true)   // 16 > 15
+  })
+
+  it('isEnemyTooStrong faux si dans la marge de 5', () => {
+    expect(isEnemyTooStrong(15, 10)).toBe(false)  // 15 == 15, pas >
+    expect(isEnemyTooStrong(12, 10)).toBe(false)
+    expect(isEnemyTooStrong(1, 10)).toBe(false)
+  })
+
+  it('isEnemyTooStrong accepte un écart paramétrable', () => {
+    expect(isEnemyTooStrong(13, 10, 2)).toBe(true)  // 13 > 12
+    expect(isEnemyTooStrong(13, 10, 5)).toBe(false) // 13 <= 15
+  })
+})
+
+// ── B03 — Multi-ennemis (comptage par rang / zone) ────────────────────────────
+describe('B03 — getEnemyCount', () => {
+  const common = { rank: 'common' }
+  const elite = { rank: 'elite' }
+  const boss = { rank: 'boss' }
+  const demonLord = { rank: 'demon_lord' }
+
+  it('élite / boss / demon_lord → toujours 1', () => {
+    expect(getEnemyCount(elite, 'ashenvale', () => 0.99)).toBe(1)
+    expect(getEnemyCount(boss, 'grimspire', () => 0.99)).toBe(1)
+    expect(getEnemyCount(demonLord, 'grimspire', () => 0.99)).toBe(1)
+  })
+
+  it('zone 1 (ashenvale) → 1 à 2 ennemis', () => {
+    expect(getEnemyCount(common, 'ashenvale', () => 0)).toBe(1)
+    expect(getEnemyCount(common, 'ashenvale', () => 0.99)).toBe(2)
+  })
+
+  it('zone 2 (blighted_road) → 1 à 3 ennemis', () => {
+    expect(getEnemyCount(common, 'blighted_road', () => 0)).toBe(1)
+    expect(getEnemyCount(common, 'blighted_road', () => 0.99)).toBe(3)
+  })
+
+  it('zone 3 (grimspire) → jusqu’à 3 ennemis', () => {
+    expect(getEnemyCount(common, 'grimspire', () => 0.99)).toBe(3)
+  })
+
+  it('borne toujours ≥ 1', () => {
+    expect(getEnemyCount(common, 'ashenvale', () => 0)).toBeGreaterThanOrEqual(1)
+  })
+
+  it('monstre absent → 0', () => {
+    expect(getEnemyCount(null, 'ashenvale', () => 0.5)).toBe(0)
+  })
+})
+
+describe('B03 — generateEnemies', () => {
+  it('génère au moins 1 ennemi pour un monstre commun', () => {
+    const enemies = generateEnemies('ashwood_wolf', 'ashenvale', 1)
+    expect(enemies.length).toBeGreaterThanOrEqual(1)
+    expect(enemies.length).toBeLessThanOrEqual(2) // zone 1
+  })
+
+  it('un boss/élite est toujours seul', () => {
+    const enemies = generateEnemies('soul_harvester', 'ashenvale', 1) // élite
+    expect(enemies).toHaveLength(1)
+  })
+
+  it('chaque ennemi a un id unique', () => {
+    const enemies = generateEnemies('marsh_serpent', 'ashenvale', 1)
+    const ids = new Set(enemies.map(e => e.id))
+    expect(ids.size).toBe(enemies.length)
+  })
+
+  it('liste vide pour un monstre inconnu', () => {
+    expect(generateEnemies('inexistant', 'ashenvale', 1)).toHaveLength(0)
+  })
+})
+
+describe('canHeal / isStunned', () => {
+  it('canHeal = false si un burn est actif', () => {
+    expect(canHeal([{ type: 'burn', duration: 2, tickDamage: 4 }])).toBe(false)
+  })
+
+  it('canHeal = true sans burn', () => {
+    expect(canHeal([{ type: 'poison', duration: 2, tickDamage: 5 }])).toBe(true)
+    expect(canHeal([])).toBe(true)
+  })
+
+  it('isStunned = true si un stun est présent', () => {
+    expect(isStunned([{ type: 'stun', duration: 1 }])).toBe(true)
+  })
+
+  it('isStunned = false sinon', () => {
+    expect(isStunned([{ type: 'slow', duration: 2, reduction: 0.5 }])).toBe(false)
+    expect(isStunned([])).toBe(false)
   })
 })

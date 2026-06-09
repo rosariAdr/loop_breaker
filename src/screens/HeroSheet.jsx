@@ -1,13 +1,23 @@
 import { useGameStore } from '../store/gameStore'
+import { useToastStore } from '../store/toastStore'
 import { SKILLS } from '../data/skills'
 import { DEITIES } from '../data/deities'
 import { RARITY_CONFIG, calcEquippedStatBonuses } from '../data/equipment'
+import { DEBUFFS } from '../data/debuffs'
+import { TITLES } from '../data/titles'
+import { hasGluttony, isGluttonyReady, gluttonyDaysRemaining } from '../engine/gluttony'
+import { ArtSlot } from '../components/parchment'
 import Tooltip from '../components/Tooltip'
+
+const HERO_SPRITE = '/sprites/hero/idle/00.png'
 
 // UX01 — Descriptions in-game des stats du héros
 const STAT_TOOLTIPS = {
   HP: "Points de vie. À 0 → mort + transmigration.",
   Mana: "Énergie magique. Coût des skills actifs (réduit de 10% par niveau de skill).",
+  Vigor: "Vigueur (Fatigue). −3/combat, −1/voyage, −3/craft. Restaurée à 100 en dormant. Sous 70 → malus de stats croissant.",
+  Aura: "Aura — multiplicateur de dégâts permanent : +0,5% de dégâts par point. Se débloque en utilisant 15 skills en moins de 4 jours, puis +1 tous les 10 skills.",
+  Concentration: "Concentration — qualité de craft (0-150). Chance d'un cran de rareté supérieur = X/150 ; 150 = +1 cran garanti. Gagnée en craftant.",
   Strength: "Augmente les dégâts d'attaque basique et des skills physiques. +1/level-up.",
   Agility: "Vitesse au tour de combat (ordre d'action). Augmente le %fuite.",
   Intelligence: "Augmente les dégâts des skills magiques.",
@@ -15,165 +25,223 @@ const STAT_TOOLTIPS = {
   Defense: "Réduit les dégâts subis : dmg = max(1, atk - DEF/2).",
 }
 
-export default function HeroSheet() {
-  const { hero, setScreen, unequipItem, unequipActiveSkill, unequipPassiveSkill } = useGameStore()
+const EQUIP_SLOTS = ['weapon', 'helmet', 'armor', 'boots']
+const ATTR_DEFS = [
+  { key: 'strength', label: 'Strength' },
+  { key: 'agility', label: 'Agility' },
+  { key: 'intelligence', label: 'Intelligence' },
+  { key: 'chance', label: 'Chance' },
+  { key: 'def', label: 'Defense' },
+]
+
+export default function HeroSheet({ onClose }) {
+  const { hero, meta, world, setScreen, unequipItem } = useGameStore()
+  // ACA02 — équiper est libre partout, mais déséquiper un skill se fait UNIQUEMENT à
+  // l'Académie de magie. Ailleurs, on donne un feedback clair au lieu de déséquiper.
+  const blockSkillUnequip = () => useToastStore.getState().addToast('Visit the Academy of Magic to unequip skills.', 'info')
   const equippedBonuses = calcEquippedStatBonuses(hero.equipped ?? {})
+  const earnedTitles = (meta?.titlesEarned ?? []).map(id => TITLES[id]).filter(Boolean) // M01
+  // GLT03 — statut Gluttony
+  const gluttonyEquipped = hasGluttony(hero.passiveSkills ?? [])
+  const gluttonyReady = isGluttonyReady(world?.dayCount ?? 0, meta?.gluttonyLastUsed)
+  const gluttonyDays = gluttonyDaysRemaining(world?.dayCount ?? 0, meta?.gluttonyLastUsed)
+
+  const back = onClose ?? (() => setScreen('world_map'))
 
   return (
-    <div className="flex h-full" style={{ minHeight: 'calc(100vh - 48px)' }}>
-      <div className="flex-1 flex flex-col p-6 gap-6 overflow-y-auto">
+    <div className="sheet-scrim" onClick={back}>
+      <div className="sheet" onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setScreen('world_map')}
-            style={{ color: '#6a5a4a', fontSize: '0.85rem', fontFamily: 'Cinzel, serif' }}
-          >
-            ← Map
-          </button>
-          <div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '1.3rem' }}>
-              {hero.name}
-            </h2>
-            <p style={{ color: '#6a5a4a', fontSize: '0.78rem' }}>
-              Run #{hero.runNumber} · {hero.deathCount} deaths
-            </p>
+        {/* En-tête */}
+        <div className="sheet-hd">
+          <div className="sh-title">
+            {hero.name}
+            <span className="sh-meta">Wanderer · Run #{hero.runNumber} · Level {hero.level} · {hero.deathCount} deaths</span>
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button className="back-btn" style={{ position: 'static' }} onClick={back}>← Map</button>
+            <div className="sheet-x" onClick={back}>✕</div>
           </div>
         </div>
 
-        {/* Stats */}
-        <Section title="Stats">
-          <div className="grid grid-cols-2 gap-2">
-            <StatRow label="HP" value={`${hero.stats.hp} / ${hero.stats.maxHp}`} color="#c04040" bonus={equippedBonuses.maxHp} />
-            <StatRow label="Mana" value={`${hero.stats.mana} / ${hero.stats.maxMana}`} color="#3060c0" />
-            <StatRow label="Strength" value={hero.stats.strength} color="#c08040" bonus={equippedBonuses.strength} />
-            <StatRow label="Agility" value={hero.stats.agility} color="#40c080" bonus={equippedBonuses.agility} />
-            <StatRow label="Intelligence" value={hero.stats.intelligence} color="#8060c0" bonus={equippedBonuses.intelligence} />
-            <StatRow label="Chance" value={hero.stats.chance} color="#c0c040" bonus={equippedBonuses.chance} />
-            <StatRow label="Defense" value={hero.stats.def} color="#6080a0" bonus={equippedBonuses.def} />
-          </div>
-        </Section>
+        {/* Corps : portrait+équipement | vitals+skills */}
+        <div className="sheet-body" style={{ overflowY: 'auto' }}>
 
-        {/* Équipement */}
-        <Section title="Equipment">
-          <div className="grid grid-cols-2 gap-2">
-            {['weapon', 'helmet', 'armor', 'boots'].map(slot => {
-              const item = hero.equipped?.[slot]
-              const rarityConf = item ? RARITY_CONFIG[item.rarity] : null
-              return (
-                <div
-                  key={slot}
-                  className="p-3 rounded border"
-                  style={{
-                    background: '#0f0c08',
-                    borderColor: rarityConf ? `${rarityConf.color}50` : '#1a1410',
-                    borderLeft: rarityConf ? `3px solid ${rarityConf.color}` : '3px solid #1a1410',
-                  }}
-                >
-                  <p style={{ color: '#4a3a2a', fontSize: '0.68rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
-                    {slot}
-                  </p>
-                  {item ? (
-                    <>
-                      <p style={{ color: rarityConf.color, fontSize: '0.82rem', fontFamily: 'Cinzel, serif' }}>
-                        {item.name}
-                      </p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {Object.entries(item.stats).map(([stat, val]) => (
-                          <span key={stat} style={{ color: '#80c040', fontSize: '0.7rem' }}>
-                            +{val} {stat}
-                          </span>
-                        ))}
+          {/* Colonne gauche */}
+          <div className="hs-left">
+            <div className="lb-slot hs-portrait art-slot">
+              <img src={HERO_SPRITE} alt="" draggable={false} style={{ imageRendering: 'pixelated', height: '88%', objectFit: 'contain' }} />
+            </div>
+
+            <div className="panel-block">
+              <div className="pb-title">Equipment</div>
+              <div className="equip-grid">
+                {EQUIP_SLOTS.map(slot => {
+                  const item = hero.equipped?.[slot]
+                  const rc = item ? RARITY_CONFIG[item.rarity] : null
+                  return (
+                    <div className="equip-cell" key={slot}>
+                      <span className="eq-label">{slot}</span>
+                      <div className="eq-slot art-slot" style={rc ? { borderColor: rc.color, boxShadow: `inset 0 0 0 1px ${rc.color}` } : undefined}>
+                        {item
+                          ? <span className="as-cap" style={{ color: rc?.color, fontSize: 10 }}>{item.name}</span>
+                          : <span className="as-cap" style={{ fontSize: 10 }}>—</span>}
                       </div>
-                      <button
-                        onClick={() => unequipItem(slot)}
-                        style={{ color: '#5a3a2a', fontSize: '0.68rem', marginTop: '0.3rem' }}
-                      >
-                        Unequip
-                      </button>
-                    </>
-                  ) : (
-                    <p style={{ color: '#2a2018', fontSize: '0.78rem', fontStyle: 'italic' }}>Empty</p>
-                  )}
-                </div>
-              )
-            })}
+                      <span className={`eq-name ${item ? '' : 'empty'}`}>
+                        {item ? item.name : '— empty —'}
+                        {item && (
+                          <button className="hs-unequip" onClick={() => unequipItem(slot)} title="Unequip">✕</button>
+                        )}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Provisions (Gold / Tokens / Run) + accès Inventory */}
+            <div className="panel-block">
+              <div className="pb-title">Provisions</div>
+              <div className="derived" style={{ marginBottom: 12 }}>
+                <div className="dv"><div className="dv-num" style={{ color: 'var(--gold)' }}>{hero.inventory.gold}</div><div className="dv-lbl">Gold</div></div>
+                <div className="dv"><div className="dv-num" style={{ color: '#7a3fb0' }}>{hero.reputationTokens}</div><div className="dv-lbl">Tokens</div></div>
+                <div className="dv"><div className="dv-num">#{hero.runNumber}</div><div className="dv-lbl">Run</div></div>
+              </div>
+              <button className="pbtn wide" onClick={() => setScreen('inventory')}>🎒 Inventory</button>
+              <button className="pbtn wide" style={{ marginTop: 6 }} onClick={() => setScreen('codex')}>📖 Bestiary</button>
+            </div>
           </div>
-        </Section>
 
-        {/* Divinité */}
-        <Section title="Deity">
-          {hero.deity ? (
-            <DeityDisplay deityId={hero.deity} hero={hero} />
-          ) : (
-            <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
-              No deity — walk alone, or let one find you.
-            </p>
-          )}
-        </Section>
+          {/* Colonne droite */}
+          <div className="hs-right flex-1 flex flex-col">
 
-        {/* Active Skills */}
-        <Section title={`Active Skills (${hero.activeSkills.length}/6)`}>
-          {hero.activeSkills.length === 0 ? (
-            <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
-              No active skills equipped. Equip from Inventory.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {hero.activeSkills.map(s => <SkillRow key={s.skillId} skill={s} onUnequip={() => unequipActiveSkill(s.skillId)} />)}
+            {/* Vitals & Attributs */}
+            <div className="panel-block">
+              <div className="pb-title">Stats</div>
+              <div className="derived" style={{ marginBottom: 20 }}>
+                <Vital label="HP" tip={STAT_TOOLTIPS.HP} color="var(--danger)" value={`${hero.stats.hp}/${hero.stats.maxHp}`} />
+                <Vital label="Mana" tip={STAT_TOOLTIPS.Mana} color="#2f7fb8" value={`${hero.stats.mana}/${hero.stats.maxMana}`} />
+                {/* STA01 — Vigueur (Fatigue) */}
+                <Vital label="Vigor" tip={STAT_TOOLTIPS.Vigor} color={(hero.vigor ?? 100) >= 70 ? '#4a8020' : (hero.vigor ?? 100) >= 30 ? '#b07a30' : 'var(--danger)'} value={`${hero.vigor ?? 100}/100`} />
+                {/* STA02 — Aura (mult. de dégâts) ; affichée une fois débloquée */}
+                {(hero.aura ?? 0) > 0 && <Vital label="Aura" tip={STAT_TOOLTIPS.Aura} color="#c084fc" value={`${hero.aura} (+${(hero.aura * 0.5).toFixed(1)}% dmg)`} />}
+                {/* STA03 — Concentration (qualité de craft) */}
+                {(hero.concentration ?? 0) > 0 && <Vital label="Concentration" tip={STAT_TOOLTIPS.Concentration} color="#60a0d0" value={`${hero.concentration}/150`} />}
+                <Vital label="Experience" value={`${hero.exp}/${hero.expToNext}`} />
+              </div>
+              <div className="attr-grid">
+                {ATTR_DEFS.map(({ key, label }) => {
+                  const base = hero.stats[key] ?? 0
+                  const bonus = equippedBonuses[key] ?? 0
+                  const total = base + bonus
+                  return (
+                    <div className="attr-row" key={key}>
+                      <Tooltip content={STAT_TOOLTIPS[label]}>
+                        <span className="ar-name" style={{ cursor: 'help' }}>{label}</span>
+                      </Tooltip>
+                      <span className="ar-bar"><i style={{ width: `${Math.min(100, (total / 25) * 100)}%` }} /></span>
+                      <span className="ar-val">{total}{bonus ? <span style={{ color: 'var(--forest-deep)', fontSize: 11 }}> (+{bonus})</span> : null}</span>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          )}
-        </Section>
 
-        {/* Passive Skills */}
-        <Section title={`Passive Skills (${hero.passiveSkills.length}/4)`}>
-          {hero.passiveSkills.length === 0 ? (
-            <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
-              No passive skills equipped.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {hero.passiveSkills.map(s => <SkillRow key={s.skillId} skill={s} onUnequip={() => unequipPassiveSkill(s.skillId)} />)}
+            {/* CRF05 — Debuffs actifs */}
+            {(hero.activeDebuffs?.length ?? 0) > 0 && (
+              <div className="panel-block">
+                <div className="pb-title">Active Debuffs</div>
+                <div className="skill-list" data-testid="active-debuffs">
+                  {hero.activeDebuffs.map((d, i) => {
+                    const def = DEBUFFS[d.debuffId]
+                    if (!def) return null
+                    return (
+                      <div className="skill" key={`${d.debuffId}_${i}`} style={{ borderColor: d.permanent ? 'rgba(192,57,43,.6)' : undefined }}>
+                        <div className="sk-ico" style={{ background: 'var(--danger)' }}>{def.icon}</div>
+                        <div style={{ flex: 1 }}>
+                          <div className="sk-name">{def.name}
+                            <span style={{ color: 'var(--ink-soft)', fontWeight: 400, fontSize: 12, marginLeft: 8 }}>−{Math.round(def.reduction * 100)}% {def.stat}</span>
+                          </div>
+                          <div className="sk-desc">{def.description}</div>
+                        </div>
+                        <span className="hs-pill" style={{ color: d.permanent ? 'var(--danger)' : 'var(--amber-deep)', borderColor: d.permanent ? 'rgba(192,57,43,.5)' : 'var(--parchment-shadow)' }}>
+                          {d.permanent ? 'Cure needed' : `${d.duration?.remaining}d left`}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Active Skills */}
+            <div className="panel-block">
+              <div className="pb-title">Active Skills ({hero.activeSkills.length}/6)</div>
+              {hero.activeSkills.length === 0
+                ? <p className="hs-muted">No active skills equipped. Equip from Inventory.</p>
+                : <div className="skill-list">{hero.activeSkills.map(s => <SkillRow key={s.skillId} skill={s} onUnequip={blockSkillUnequip} />)}</div>}
             </div>
-          )}
-        </Section>
 
-        {/* Titres */}
-        {hero.titles.length > 0 && (
-          <Section title="Titles">
-            <div className="flex flex-wrap gap-2">
-              {hero.titles.map(t => (
-                <span
-                  key={t}
-                  className="px-3 py-1 rounded text-xs"
-                  style={{ background: '#1a0f08', color: '#d4af70', border: '1px solid #5a3818', fontFamily: 'Cinzel, serif' }}
-                >
-                  {t}
-                </span>
-              ))}
+            {/* Passive Skills */}
+            <div className="panel-block">
+              <div className="pb-title">Passive Skills ({hero.passiveSkills.length}/4)</div>
+              {hero.passiveSkills.length === 0
+                ? <p className="hs-muted">No passive skills equipped.</p>
+                : <div className="skill-list">{hero.passiveSkills.map(s => <SkillRow key={s.skillId} skill={s} onUnequip={blockSkillUnequip} />)}</div>}
             </div>
-          </Section>
-        )}
-      </div>
 
-      {/* Sidebar */}
-      <aside
-        className="w-44 p-4 border-l flex flex-col gap-4"
-        style={{ borderColor: '#2a2018', background: '#0a0805' }}
-      >
-        <SideInfo label="Gold" value={`${hero.inventory.gold}g`} color="#d4af70" />
-        <SideInfo label="Tokens" value={hero.reputationTokens} color="#c084fc" />
-        <SideInfo label="Run" value={`#${hero.runNumber}`} color="#6a5a4a" />
-        <div className="mt-auto">
-          <button
-            onClick={() => setScreen('inventory')}
-            className="w-full px-3 py-2 rounded text-xs"
-            style={{ fontFamily: 'Cinzel, serif', background: '#1a1410', color: '#d4af70', border: '1px solid #3a2818' }}
-          >
-            🎒 Inventory
-          </button>
+            {/* GLT03 — Gluttony */}
+            {gluttonyEquipped && (
+              <div className="panel-block">
+                <div className="pb-title">Gluttony</div>
+                <div className="skill" data-testid="gluttony-status">
+                  <div className="sk-ico" style={{ background: '#7a3fb0' }}>👹</div>
+                  <div className="sk-name" style={{ flex: 1 }}>Gluttony</div>
+                  <span className="hs-pill" style={{ color: gluttonyReady ? 'var(--forest-deep)' : 'var(--amber-deep)' }}>
+                    {gluttonyReady ? 'Ready' : `${gluttonyDays}d remaining`}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Allégeance */}
+            <div className="panel-block">
+              <div className="pb-title">Allegiance</div>
+              {hero.deity ? <DeityDisplay deityId={hero.deity} hero={hero} /> : (
+                <div className="faith-row">
+                  <div className="fr"><div className="fr-k">Deity</div><div className="fr-v muted">No deity chosen</div></div>
+                  <div className="fr"><div className="fr-k">Demon Lord</div><div className="fr-v danger" style={{ color: 'var(--danger)' }}>⚡ Malachar the Undying</div></div>
+                </div>
+              )}
+            </div>
+
+            {/* M01 — Titres permanents */}
+            {(earnedTitles.length > 0 || hero.titles.length > 0) && (
+              <div className="panel-block">
+                <div className="pb-title">Titles</div>
+                <div className="hs-titles" data-testid="permanent-titles">
+                  {earnedTitles.map(t => (
+                    <Tooltip key={t.id} content={t.description}>
+                      <span className="hs-title-chip" style={{ cursor: 'help' }}><span>{t.icon}</span> {t.name}</span>
+                    </Tooltip>
+                  ))}
+                  {hero.titles.map(t => <span key={t} className="hs-title-chip legacy">{t}</span>)}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </aside>
+      </div>
+    </div>
+  )
+}
+
+function Vital({ label, value, color, tip }) {
+  const num = <div className="dv-num" style={color ? { color } : undefined}>{value}</div>
+  return (
+    <div className="dv">
+      {tip ? <Tooltip content={tip}>{num}</Tooltip> : num}
+      <div className="dv-lbl">{label}</div>
     </div>
   )
 }
@@ -181,154 +249,48 @@ export default function HeroSheet() {
 function DeityDisplay({ deityId, hero }) {
   const deity = DEITIES[deityId]
   if (!deity) return null
-
   return (
-    <div className="p-3 rounded border" style={{ background: '#0f0a18', borderColor: '#3a2848' }}>
-      <div className="flex items-center gap-2 mb-2">
-        <span style={{ fontSize: '1.2rem' }}>{deity.sigil}</span>
-        <div>
-          <p style={{ fontFamily: 'Cinzel, serif', color: '#c084fc', fontSize: '0.9rem' }}>{deity.name}</p>
-          <p style={{ color: '#6a5a7a', fontSize: '0.75rem' }}>{deity.title}</p>
+    <>
+      <div className="faith-row" style={{ marginBottom: hero.deityBlessing ? 12 : 0 }}>
+        <div className="fr">
+          <div className="fr-k">Deity</div>
+          <div className="fr-v" style={{ color: '#7a3fb0' }}>{deity.sigil} {deity.name} <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>· {deity.title}</span></div>
         </div>
-        <span
-          className="ml-auto px-2 py-0.5 rounded text-xs"
-          style={{
-            background: deity.alignment === 'chaotic' ? '#1a0808' : '#080f08',
-            color: deity.alignment === 'chaotic' ? '#c04040' : '#40c080',
-            border: `1px solid ${deity.alignment === 'chaotic' ? '#5a1818' : '#185a18'}`,
-            fontFamily: 'Cinzel, serif',
-          }}
-        >
-          {deity.alignment}
-        </span>
+        <div className="fr"><div className="fr-k">Demon Lord</div><div className="fr-v danger" style={{ color: 'var(--danger)' }}>⚡ Malachar the Undying</div></div>
       </div>
-      {hero.deityBlessing && (
-        <p style={{ color: '#8060b0', fontSize: '0.78rem', fontStyle: 'italic' }}>
-          ✦ {hero.deityBlessing.description}
-        </p>
-      )}
-      {hero.divineSkill && (
-        <div className="mt-2 pt-2 border-t" style={{ borderColor: '#2a1a3a' }}>
-          <p style={{ color: '#6a5a7a', fontSize: '0.72rem', fontFamily: 'Cinzel, serif', marginBottom: '0.25rem' }}>
-            DIVINE SKILL
-          </p>
-          <SkillRow skill={hero.divineSkill} isDivine />
-        </div>
-      )}
-    </div>
+      {hero.deityBlessing && <p className="hs-muted" style={{ fontStyle: 'italic' }}>✦ {hero.deityBlessing.description}</p>}
+      {hero.divineSkill && <div style={{ marginTop: 10 }}><SkillRow skill={hero.divineSkill} isDivine /></div>}
+    </>
   )
 }
 
 function SkillRow({ skill, isDivine = false, onUnequip }) {
   const template = SKILLS[skill.skillId]
   if (!template) return null
-
   const xpNeeded = skill.level === 1 ? 20 : 50
   const xpPct = Math.min(1, (skill.xp ?? 0) / xpNeeded)
+  const ico = isDivine ? '✦' : template.type === 'active' ? '⚔' : '🛡'
 
   return (
-    <div
-      className="flex items-center gap-3 p-2 rounded"
-      style={{
-        background: isDivine ? '#0f0818' : '#0f0c08',
-        border: `1px solid ${isDivine ? '#3a2048' : '#1a1410'}`,
-      }}
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p style={{ fontFamily: 'Cinzel, serif', color: isDivine ? '#c084fc' : '#d4af70', fontSize: '0.85rem' }}>
-            {template.name}
-          </p>
-          <span
-            className="px-1.5 py-0.5 rounded text-xs"
-            style={{
-              background: template.type === 'active' ? '#1a0f08' : '#080f0a',
-              color: template.type === 'active' ? '#c08040' : '#40c080',
-            }}
-          >
-            {template.type}
-          </span>
-          <span style={{ color: '#d4af70', fontSize: '0.75rem', marginLeft: 'auto' }}>
-            Lv {skill.level}/3
-          </span>
+    <div className="skill">
+      <div className="sk-ico" style={{ background: isDivine ? '#7a3fb0' : template.type === 'active' ? 'var(--amber-deep)' : 'var(--forest)' }}>{ico}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="sk-name">
+          {template.name}
+          <span className="hs-tag" style={{ color: template.type === 'active' ? 'var(--amber-deep)' : 'var(--forest-deep)' }}>{template.type}</span>
+          <span style={{ marginLeft: 'auto', color: 'var(--ink-soft)', fontSize: 12, fontWeight: 400 }}>Lv {skill.level}/3</span>
         </div>
-        <p style={{ color: '#6a5a4a', fontSize: '0.73rem', marginTop: '0.15rem' }}>
-          {template.description}
-        </p>
-        {template.cost.mana > 0 && (
-          <span style={{ color: '#3060c0', fontSize: '0.7rem', marginRight: '0.5rem' }}>
-            {template.cost.mana} MP
-          </span>
-        )}
-        {template.cost.hp > 0 && (
-          <span style={{ color: '#c04040', fontSize: '0.7rem', marginRight: '0.5rem' }}>
-            {template.cost.hp} HP
-          </span>
-        )}
-        {template.cooldown > 0 && (
-          <span style={{ color: '#6a5a4a', fontSize: '0.7rem' }}>
-            CD: {template.cooldown}t
-          </span>
-        )}
+        <div className="sk-desc">{template.description}</div>
+        <div className="sk-meta">
+          {template.cost.mana > 0 && <span style={{ color: '#2f7fb8' }}>{template.cost.mana} MP</span>}
+          {template.cost.hp > 0 && <span style={{ color: 'var(--danger)' }}>{template.cost.hp} HP</span>}
+          {template.cooldown > 0 && <span style={{ color: 'var(--ink-soft)' }}>CD {template.cooldown}t</span>}
+        </div>
         {skill.level < 3 && (
-          <div className="mt-1 w-full h-1 rounded overflow-hidden" style={{ background: '#1a1410' }}>
-            <div
-              className="h-full rounded"
-              style={{ width: `${xpPct * 100}%`, background: isDivine ? '#8040c0' : '#d4af70' }}
-            />
-          </div>
+          <div className="sk-xp"><i style={{ width: `${xpPct * 100}%`, background: isDivine ? '#7a3fb0' : 'var(--gold)' }} /></div>
         )}
       </div>
-      {onUnequip && (
-        <button
-          onClick={onUnequip}
-          title="Unequip"
-          className="unequip-btn"
-          style={{ fontSize: '0.78rem', flexShrink: 0 }}
-        >
-          ✕
-        </button>
-      )}
-    </div>
-  )
-}
-
-function Section({ title, children }) {
-  return (
-    <div>
-      <p className="mb-3 text-xs uppercase tracking-widest" style={{ color: '#4a3a2a', fontFamily: 'Cinzel, serif' }}>
-        {title}
-      </p>
-      {children}
-    </div>
-  )
-}
-
-function StatRow({ label, value, color }) {
-  const tooltip = STAT_TOOLTIPS[label]
-  return (
-    <div className="flex justify-between items-center p-2 rounded" style={{ background: '#0f0c08', border: '1px solid #1a1410' }}>
-      <Tooltip content={tooltip}>
-        <span
-          style={{
-            color: '#6a5a4a', fontSize: '0.8rem', fontFamily: 'Cinzel, serif',
-            cursor: tooltip ? 'help' : 'default',
-            borderBottom: tooltip ? '1px dotted #3a2818' : 'none',
-          }}
-        >
-          {label}
-        </span>
-      </Tooltip>
-      <span style={{ color, fontSize: '0.9rem', fontWeight: 600 }}>{value}</span>
-    </div>
-  )
-}
-
-function SideInfo({ label, value, color }) {
-  return (
-    <div>
-      <p style={{ color: '#4a3a2a', fontSize: '0.7rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-      <p style={{ color, fontSize: '0.9rem' }}>{value}</p>
+      {onUnequip && <button className="hs-unequip" onClick={onUnequip} title="Unequip">✕</button>}
     </div>
   )
 }

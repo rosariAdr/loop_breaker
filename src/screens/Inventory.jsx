@@ -15,7 +15,7 @@ const PROTECTED_RARITIES = new Set(['epic', 'legendary', 'mythic', 'ex', 'exx'])
 
 const TABS = ['skills', 'equipment', 'consumables', 'resources']
 
-export default function Inventory() {
+export default function Inventory({ onClose }) {
   const { hero, setScreen, equipActiveSkill, equipPassiveSkill, equipItem, sellEquipment, markLootAsSeen } = useGameStore()
   const [activeTab, setActiveTab] = useState('skills')
   const [selected, setSelected] = useState(null)
@@ -25,38 +25,32 @@ export default function Inventory() {
     markLootAsSeen()
   }, [markLootAsSeen])
 
-  return (
-    <div className="flex h-full" style={{ minHeight: 'calc(100vh - 48px)' }}>
-      <div className="flex-1 flex flex-col p-6 gap-4 overflow-y-auto">
+  const back = onClose ?? (() => setScreen('world_map'))
 
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setScreen('world_map')}
-            style={{ color: '#6a5a4a', fontSize: '0.85rem', fontFamily: 'Cinzel, serif' }}
-          >
-            ← Map
-          </button>
-          <h2 style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '1.3rem' }}>
+  return (
+    <div className="sheet-scrim" onClick={back}>
+      <div className="sheet" onClick={e => e.stopPropagation()} style={{ width: 1080 }}>
+
+        {/* En-tête */}
+        <div className="sheet-hd">
+          <div className="sh-title">
             Inventory
-          </h2>
-          <span style={{ color: '#6a5a4a', fontSize: '0.8rem', marginLeft: 'auto' }}>
-            {hero.inventory.gold}g
-          </span>
+            <span className="sh-meta">Knapsack</span>
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div className="gold-pill">🪙 {hero.inventory.gold} gold</div>
+            <button className="back-btn" style={{ position: 'static' }} onClick={back}>← Map</button>
+            <div className="sheet-x" onClick={back}>✕</div>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b" style={{ borderColor: '#2a2018' }}>
+        {/* Onglets */}
+        <div className="inv-tabs">
           {TABS.map(tab => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); setSelected(null) }}
-              className="px-4 py-2 text-xs capitalize transition-colors"
-              style={{
-                fontFamily: 'Cinzel, serif',
-                color: activeTab === tab ? '#d4af70' : '#4a3a2a',
-                borderBottom: activeTab === tab ? '2px solid #d4af70' : '2px solid transparent',
-              }}
+              className={`inv-tab ${activeTab === tab ? 'active' : ''}`}
             >
               {/* S06 — label du contenant selon l'univers */}
               {tab === 'skills' && `${getSkillContainer(CURRENT_UNIVERSE).icon} ${getSkillContainer(CURRENT_UNIVERSE).label} (${hero.inventory.manaStones.length})`}
@@ -68,32 +62,34 @@ export default function Inventory() {
         </div>
 
         {/* Contenu */}
-        {activeTab === 'skills' && (
-          <SkillsTab
-            manaStones={hero.inventory.manaStones}
-            hero={hero}
-            selected={selected}
-            setSelected={setSelected}
-            equipActive={equipActiveSkill}
-            equipPassive={equipPassiveSkill}
-          />
-        )}
-        {activeTab === 'equipment' && (
-          <EquipmentTab
-            equipment={hero.inventory.equipment}
-            equipped={hero.equipped}
-            selected={selected}
-            setSelected={setSelected}
-            onEquip={equipItem}
-            onSell={sellEquipment}
-          />
-        )}
-        {activeTab === 'consumables' && (
-          <ConsumablesTab consumables={hero.inventory.consumables} />
-        )}
-        {activeTab === 'resources' && (
-          <ResourcesTab resources={hero.inventory.resources} />
-        )}
+        <div className="inv-content">
+          {activeTab === 'skills' && (
+            <SkillsTab
+              manaStones={hero.inventory.manaStones}
+              hero={hero}
+              selected={selected}
+              setSelected={setSelected}
+              equipActive={equipActiveSkill}
+              equipPassive={equipPassiveSkill}
+            />
+          )}
+          {activeTab === 'equipment' && (
+            <EquipmentTab
+              equipment={hero.inventory.equipment}
+              equipped={hero.equipped}
+              selected={selected}
+              setSelected={setSelected}
+              onEquip={equipItem}
+              onSell={sellEquipment}
+            />
+          )}
+          {activeTab === 'consumables' && (
+            <ConsumablesTab consumables={hero.inventory.consumables} />
+          )}
+          {activeTab === 'resources' && (
+            <ResourcesTab resources={hero.inventory.resources} />
+          )}
+        </div>
       </div>
     </div>
   )
@@ -114,55 +110,33 @@ function SkillsTab({ manaStones, hero, selected, setSelected, equipActive, equip
       {/* Liste */}
       <div className="flex-1 flex flex-col gap-2">
         {manaStones.length === 0 && (
-          <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
-            No mana stones in bag. Defeat monsters to steal their techniques.
-          </p>
+          <p className="inv-empty">No mana stones in bag. Defeat monsters to steal their techniques.</p>
         )}
         {manaStones.length > 0 && !selectedSkill && (
-          <p style={{ color: '#5a4a3a', fontSize: '0.75rem', fontStyle: 'italic', marginBottom: '0.25rem' }}>
-            ← Click a mana stone to see equip options
-          </p>
+          <p className="inv-empty" style={{ fontSize: 12, marginBottom: 2 }}>← Click a mana stone to see equip options</p>
         )}
-        {/* S03 — Stack des doublons : on affiche une entrée par groupe (skillId+level) avec ×N */}
+        {/* S03 — Stack des doublons : une entrée par groupe (skillId+level) avec ×N */}
         {groupManaStones(manaStones).map((group) => {
           const t = SKILLS[group.skillId]
           if (!t) return null
           const i = group.firstIndex
           return (
-            <button
-              key={`${group.skillId}-${group.level}`}
-              onClick={() => setSelected(i === selected ? null : i)}
-              className="p-3 rounded text-left transition-all"
-              style={{
-                background: selected === i ? '#1a1208' : '#0f0c08',
-                border: `1px solid ${selected === i ? '#d4af70' : '#1a1410'}`,
-              }}
-            >
+            <button key={`${group.skillId}-${group.level}`} onClick={() => setSelected(i === selected ? null : i)} className={`inv-li ${selected === i ? 'sel' : ''}`}>
               <div className="flex items-center gap-2">
                 <span style={{ fontSize: '1.1rem' }}>
                   {t.container === 'divine' ? '✦' : t.container === 'supreme' ? '👑' : '💎'}
                 </span>
-                <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.85rem' }}>{t.name}</p>
+                <p className="inv-name" style={{ fontSize: 14 }}>{t.name}</p>
                 {/* S03 — badge ×N si plusieurs copies */}
                 {group.count > 1 && (
-                  <span style={{ color: '#80c040', fontSize: '0.72rem', fontFamily: 'Cinzel, serif' }}>
-                    ×{group.count}
-                  </span>
+                  <span style={{ color: 'var(--forest-deep)', fontSize: 12, fontFamily: 'var(--font-head)', fontWeight: 700 }}>×{group.count}</span>
                 )}
-                <span
-                  className="ml-auto px-1.5 py-0.5 rounded text-xs"
-                  style={{
-                    background: t.type === 'active' ? '#1a0f08' : '#080f0a',
-                    color: t.type === 'active' ? '#c08040' : '#40c080',
-                  }}
-                >
+                <span className="inv-tag ml-auto" style={{ background: t.type === 'active' ? 'rgba(185,122,18,.15)' : 'rgba(45,82,22,.13)', color: t.type === 'active' ? 'var(--amber-deep)' : 'var(--forest-deep)' }}>
                   {t.type}
                 </span>
-                <span style={{ color: '#6a5a4a', fontSize: '0.75rem' }}>Lv {group.level}</span>
+                <span style={{ color: 'var(--ink-soft)', fontSize: 12 }}>Lv {group.level}</span>
               </div>
-              <p style={{ color: '#6a5a4a', fontSize: '0.73rem', marginTop: '0.2rem' }}>
-                {t.description}
-              </p>
+              <p className="inv-sub">{t.description}</p>
             </button>
           )
         })}
@@ -170,48 +144,23 @@ function SkillsTab({ manaStones, hero, selected, setSelected, equipActive, equip
 
       {/* Panneau détail */}
       {selectedSkill && template && (
-        <div
-          className="w-52 p-4 rounded border flex flex-col gap-3"
-          style={{ background: '#0a0a0f', borderColor: '#2a2018', alignSelf: 'flex-start' }}
-        >
-          <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.9rem' }}>{template.name}</p>
-          <p style={{ color: '#7a6a5a', fontSize: '0.78rem', fontStyle: 'italic' }}>{template.description}</p>
-          <div style={{ color: '#6a5a4a', fontSize: '0.75rem' }}>
+        <div className="inv-detail">
+          <p className="inv-name" style={{ fontSize: 16 }}>{template.name}</p>
+          <p className="inv-sub" style={{ fontStyle: 'italic' }}>{template.description}</p>
+          <div style={{ color: 'var(--ink-soft)', fontSize: 12 }}>
             {template.cost.mana > 0 && <p>Mana cost: {template.cost.mana}</p>}
             {template.cost.hp > 0 && <p>HP cost: {template.cost.hp}</p>}
             {template.cooldown > 0 && <p>Cooldown: {template.cooldown} turns</p>}
           </div>
 
           {template.type === 'active' && (
-            <button
-              onClick={() => { equipActive(selectedSkill); setSelected(null) }}
-              disabled={!canEquipActive || alreadyEquippedActive}
-              className="w-full py-2 rounded text-xs transition-all"
-              style={{
-                fontFamily: 'Cinzel, serif',
-                background: canEquipActive && !alreadyEquippedActive ? '#1a0f08' : '#0a0808',
-                color: canEquipActive && !alreadyEquippedActive ? '#d4af70' : '#3a2a1a',
-                border: `1px solid ${canEquipActive && !alreadyEquippedActive ? '#3a2818' : '#1a1410'}`,
-                cursor: canEquipActive && !alreadyEquippedActive ? 'pointer' : 'not-allowed',
-              }}
-            >
+            <button onClick={() => { equipActive(selectedSkill); setSelected(null) }} disabled={!canEquipActive || alreadyEquippedActive} className={`inv-btn ${canEquipActive && !alreadyEquippedActive ? 'primary' : ''}`}>
               {alreadyEquippedActive ? 'Already equipped' : canEquipActive ? 'Equip (Active)' : 'Active slots full'}
             </button>
           )}
 
           {template.type === 'passive' && (
-            <button
-              onClick={() => { equipPassive(selectedSkill); setSelected(null) }}
-              disabled={!canEquipPassive || alreadyEquippedPassive}
-              className="w-full py-2 rounded text-xs transition-all"
-              style={{
-                fontFamily: 'Cinzel, serif',
-                background: canEquipPassive && !alreadyEquippedPassive ? '#080f0a' : '#0a0808',
-                color: canEquipPassive && !alreadyEquippedPassive ? '#40c080' : '#1a3a1a',
-                border: `1px solid ${canEquipPassive && !alreadyEquippedPassive ? '#184018' : '#0a1a0a'}`,
-                cursor: canEquipPassive && !alreadyEquippedPassive ? 'pointer' : 'not-allowed',
-              }}
-            >
+            <button onClick={() => { equipPassive(selectedSkill); setSelected(null) }} disabled={!canEquipPassive || alreadyEquippedPassive} className={`inv-btn ${canEquipPassive && !alreadyEquippedPassive ? 'primary' : ''}`}>
               {alreadyEquippedPassive ? 'Already equipped' : canEquipPassive ? 'Equip (Passive)' : 'Passive slots full'}
             </button>
           )}
@@ -249,11 +198,7 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
   }
 
   if (equipment.length === 0) {
-    return (
-      <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
-        No equipment in bag. Craft or buy some from the blacksmith or merchant.
-      </p>
-    )
+    return <p className="inv-empty">No equipment in bag. Craft or buy some from the blacksmith or merchant.</p>
   }
 
   const SLOT_ICONS = { weapon: '⚔', helmet: '🪖', armor: '🛡', boots: '👢' }
@@ -266,30 +211,15 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
           const rc = RARITY_CONFIG[item.rarity]
           const equipped_ = isEquipped(item)
           return (
-            <button
-              key={item.instanceId}
-              onClick={() => setSelected(i === selected ? null : i)}
-              className="p-3 rounded text-left transition-all"
-              style={{
-                background: selected === i ? '#1a1208' : '#0f0c08',
-                border: `1px solid ${selected === i ? rc.color : '#1a1410'}`,
-                borderLeft: `3px solid ${rc.color}`,
-              }}
-            >
+            <button key={item.instanceId} onClick={() => setSelected(i === selected ? null : i)} className={`inv-li ${selected === i ? 'sel' : ''}`} style={{ borderLeft: `3px solid ${rc.color}` }}>
               <div className="flex items-center gap-2">
                 <span style={{ fontSize: '1rem' }}>{SLOT_ICONS[item.slot] ?? '?'}</span>
-                <p style={{ fontFamily: 'Cinzel, serif', color: rc.color, fontSize: '0.85rem', flex: 1 }}>
-                  {item.name}
-                </p>
+                <p className="inv-name" style={{ color: rc.color, fontSize: 14, flex: 1 }}>{item.name}</p>
                 {equipped_ && (
-                  <span className="px-1.5 py-0.5 rounded text-xs" style={{ background: '#1a3010', color: '#80c040' }}>
-                    equipped
-                  </span>
+                  <span className="inv-tag" style={{ background: 'rgba(45,82,22,.15)', color: 'var(--forest-deep)' }}>equipped</span>
                 )}
               </div>
-              <p style={{ color: '#6a5a4a', fontSize: '0.73rem', marginTop: '0.2rem' }}>
-                {Object.entries(item.stats).map(([s, v]) => `+${v} ${s}`).join(' · ')}
-              </p>
+              <p className="inv-sub">{Object.entries(item.stats).map(([s, v]) => `+${v} ${s}`).join(' · ')}</p>
             </button>
           )
         })}
@@ -297,40 +227,30 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
 
       {/* Panneau détail */}
       {selectedItem && (
-        <div
-          className="w-52 p-4 rounded border flex flex-col gap-3"
-          style={{ background: '#0a0a0f', borderColor: '#2a2018', alignSelf: 'flex-start' }}
-        >
+        <div className="inv-detail">
           {(() => {
             const rc = RARITY_CONFIG[selectedItem.rarity]
             const alreadyEquipped = isEquipped(selectedItem)
             const equippedInSlot = equipped[selectedItem.slot]
-            // UX02 — diff vs équipé actuel (si un item existe dans le slot et c'est pas le même)
+            // UX02 — diff vs équipé actuel
             const showDiff = equippedInSlot && !alreadyEquipped
             return (
               <>
                 <div>
-                  <p style={{ fontFamily: 'Cinzel, serif', color: rc.color, fontSize: '0.9rem' }}>{selectedItem.name}</p>
-                  <p style={{ color: '#4a3a2a', fontSize: '0.72rem', textTransform: 'capitalize' }}>{selectedItem.slot}</p>
+                  <p className="inv-name" style={{ color: rc.color, fontSize: 16 }}>{selectedItem.name}</p>
+                  <p className="inv-sub" style={{ textTransform: 'capitalize' }}>{selectedItem.slot}</p>
                 </div>
                 <div className="flex flex-col gap-1">
                   {Object.entries(selectedItem.stats).map(([s, v]) => {
                     const equippedVal = equippedInSlot?.stats?.[s] ?? 0
                     const diff = v - equippedVal
                     return (
-                      <div key={s} className="flex justify-between items-baseline" style={{ fontSize: '0.78rem' }}>
-                        <span style={{ color: '#6a5a4a', textTransform: 'capitalize' }}>{s}</span>
+                      <div key={s} className="flex justify-between items-baseline" style={{ fontSize: 13 }}>
+                        <span style={{ color: 'var(--ink-soft)', textTransform: 'capitalize' }}>{s}</span>
                         <span className="flex items-baseline gap-2">
-                          <span style={{ color: '#80c040' }}>+{v}</span>
+                          <span style={{ color: 'var(--forest-deep)' }}>+{v}</span>
                           {showDiff && (
-                            <span
-                              data-testid={`diff-${s}`}
-                              style={{
-                                color: diff > 0 ? '#80c040' : diff < 0 ? '#c06040' : '#6a5a4a',
-                                fontSize: '0.7rem',
-                                fontFamily: 'Cinzel, serif',
-                              }}
-                            >
+                            <span data-testid={`diff-${s}`} style={{ color: diff > 0 ? 'var(--forest-deep)' : diff < 0 ? 'var(--danger)' : 'var(--ink-soft)', fontSize: 11, fontFamily: 'var(--font-head)' }}>
                               {diff > 0 ? `↑+${diff}` : diff < 0 ? `↓${diff}` : '—'}
                             </span>
                           )}
@@ -339,36 +259,14 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
                     )
                   })}
                   {showDiff && (
-                    <p style={{ color: '#5a4a3a', fontSize: '0.68rem', fontStyle: 'italic', marginTop: '0.2rem' }}>
-                      vs équipé : {equippedInSlot.name}
-                    </p>
+                    <p className="inv-sub" style={{ fontStyle: 'italic', marginTop: 2 }}>vs équipé : {equippedInSlot.name}</p>
                   )}
                 </div>
-                <p style={{ color: '#4a3a2a', fontSize: '0.72rem' }}>Sell: {selectedItem.sellPrice}g</p>
-                <button
-                  onClick={() => { onEquip(selectedItem.instanceId); setSelected(null) }}
-                  disabled={alreadyEquipped}
-                  className="w-full py-2 rounded text-xs transition-all"
-                  style={{
-                    fontFamily: 'Cinzel, serif',
-                    background: alreadyEquipped ? '#0a0808' : '#1a1208',
-                    color: alreadyEquipped ? '#3a2a1a' : '#d4af70',
-                    border: `1px solid ${alreadyEquipped ? '#1a1410' : '#3a2818'}`,
-                    cursor: alreadyEquipped ? 'not-allowed' : 'pointer',
-                  }}
-                >
+                <p className="inv-sub">Sell: {selectedItem.sellPrice}g</p>
+                <button onClick={() => { onEquip(selectedItem.instanceId); setSelected(null) }} disabled={alreadyEquipped} className={`inv-btn ${alreadyEquipped ? '' : 'primary'}`}>
                   {alreadyEquipped ? 'Already equipped' : 'Equip'}
                 </button>
-                <button
-                  onClick={() => handleSellClick(selectedItem)}
-                  className="w-full py-2 rounded text-xs transition-all"
-                  style={{
-                    fontFamily: 'Cinzel, serif',
-                    background: '#180a0a',
-                    color: '#c06040',
-                    border: '1px solid #3a1818',
-                  }}
-                >
+                <button onClick={() => handleSellClick(selectedItem)} className="inv-btn sell">
                   Sell {selectedItem.sellPrice}g{PROTECTED_RARITIES.has(selectedItem.rarity) ? ' ⚠' : ''}
                 </button>
               </>
@@ -396,11 +294,7 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
 function ConsumablesTab({ consumables }) {
   const entries = Object.entries(consumables).filter(([, qty]) => qty > 0)
   if (entries.length === 0) {
-    return (
-      <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
-        No consumables. Buy some from a merchant.
-      </p>
-    )
+    return <p className="inv-empty">No consumables. Buy some from a merchant.</p>
   }
   return (
     <div className="grid grid-cols-2 gap-2 max-w-lg">
@@ -408,12 +302,12 @@ function ConsumablesTab({ consumables }) {
         const res = RESOURCES[id]
         if (!res) return null
         return (
-          <div key={id} className="p-3 rounded" style={{ background: '#0f0c08', border: '1px solid #1a1410' }}>
+          <div key={id} className="inv-card">
             <div className="flex justify-between items-center mb-1">
-              <p style={{ fontFamily: 'Cinzel, serif', color: '#80c040', fontSize: '0.85rem' }}>{res.name}</p>
-              <span style={{ color: '#d4af70', fontSize: '0.85rem' }}>×{qty}</span>
+              <p className="inv-name" style={{ color: 'var(--forest-deep)', fontSize: 14 }}>{res.name}</p>
+              <span style={{ color: 'var(--ink)', fontSize: 14, fontWeight: 600 }}>×{qty}</span>
             </div>
-            <p style={{ color: '#6a5a4a', fontSize: '0.73rem' }}>{res.description}</p>
+            <p className="inv-sub">{res.description}</p>
           </div>
         )
       })}
@@ -425,11 +319,7 @@ function ConsumablesTab({ consumables }) {
 function ResourcesTab({ resources }) {
   const entries = Object.entries(resources).filter(([, qty]) => qty > 0)
   if (entries.length === 0) {
-    return (
-      <p style={{ color: '#4a3a2a', fontSize: '0.82rem', fontStyle: 'italic' }}>
-        No resources yet. Defeat monsters to collect drops.
-      </p>
-    )
+    return <p className="inv-empty">No resources yet. Defeat monsters to collect drops.</p>
   }
   return (
     <div className="grid grid-cols-2 gap-2 max-w-lg">
@@ -438,15 +328,13 @@ function ResourcesTab({ resources }) {
         if (!res) return null
         const rarityColor = RARITY_COLORS[res.rarity] ?? '#9ca3af'
         return (
-          <div key={id} className="p-3 rounded" style={{ background: '#0f0c08', border: `1px solid #1a1410`, borderLeft: `3px solid ${rarityColor}` }}>
+          <div key={id} className="inv-card" style={{ borderLeft: `3px solid ${rarityColor}` }}>
             <div className="flex justify-between items-center mb-1">
-              <p style={{ fontFamily: 'Cinzel, serif', color: rarityColor, fontSize: '0.82rem' }}>{res.name}</p>
-              <span style={{ color: '#d4af70', fontSize: '0.85rem' }}>×{qty}</span>
+              <p className="inv-name" style={{ color: rarityColor, fontSize: 14 }}>{res.name}</p>
+              <span style={{ color: 'var(--ink)', fontSize: 14, fontWeight: 600 }}>×{qty}</span>
             </div>
-            <p style={{ color: '#6a5a4a', fontSize: '0.72rem' }}>{res.description}</p>
-            <p style={{ color: '#4a3a2a', fontSize: '0.7rem', marginTop: '0.2rem' }}>
-              Sell: {res.sellPrice}g
-            </p>
+            <p className="inv-sub">{res.description}</p>
+            <p className="inv-sub" style={{ marginTop: 2 }}>Sell: {res.sellPrice}g</p>
           </div>
         )
       })}

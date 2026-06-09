@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { QUESTS, QUEST_NPCS } from '../data/quests'
+import { QUEST_NPC_REGISTRY, getBoardQuests, isPrestigiousQuest, PRESTIGE_MIN_TOKENS } from '../data/quests'
+import { getLocationType } from '../data/zones'
 import { SKILLS } from '../data/skills'
+import { RESOURCES } from '../data/resources'
 import ConfirmDialog from '../components/ConfirmDialog'
-
-const ALL_QUESTS = Object.values(QUESTS)
 
 // Q06 — Rangs aventurier basés sur les reputation tokens
 // Seuils : Copper 0-9, Silver 10-29, Gold 30-69, Platinum 70-149, Diamond 150+
@@ -41,17 +41,34 @@ export function getRankInfo(tokens) {
 }
 
 export default function QuestBoard() {
-  const { hero, world, setScreen, startQuest, isQuestComplete, completeQuest, abandonQuest } = useGameStore()
+  const { hero, world, meta, setScreen, startQuest, isQuestComplete, completeQuest, abandonQuest } = useGameStore()
   const [pendingAbandon, setPendingAbandon] = useState(null) // questObject
 
   const activeIds = world.activeQuests ?? []
   const completedIds = world.completedQuests ?? []
+  const visitedSpots = world.visitedSpots ?? []
+  const craftCount = meta?.craftCount ?? 0
 
-  const available = ALL_QUESTS.filter(q => !activeIds.includes(q.id) && !completedIds.includes(q.id))
-  const active    = ALL_QUESTS.filter(q => activeIds.includes(q.id))
-  const completed = ALL_QUESTS.filter(q => completedIds.includes(q.id))
+  // GLD01/GLD02 — venue : la ville = Guilde (tout le board, prestige gardé par le rang),
+  // le village = auberge (pool réduit, sans quêtes prestigieuses).
+  const locationType = getLocationType(world)
+  const isGuild = locationType === 'city'
+  const venue = isGuild ? 'guild' : 'village'
+  const boardQuests = getBoardQuests(venue)
+
+  const available = boardQuests.filter(q => !activeIds.includes(q.id) && !completedIds.includes(q.id))
+  const active    = boardQuests.filter(q => activeIds.includes(q.id))
+  const completed = boardQuests.filter(q => completedIds.includes(q.id))
 
   const rank = getRankInfo(hero.reputationTokens)
+  // une quête prestigieuse ne peut être acceptée qu'à partir du rang Argent
+  const canAcceptPrestige = (hero.reputationTokens ?? 0) >= PRESTIGE_MIN_TOKENS
+  const acceptGuard = (q) => {
+    if (isPrestigiousQuest(q) && !canAcceptPrestige) return
+    startQuest(q.id)
+  }
+  const boardTitle = isGuild ? "Adventurers' Guild" : 'Village Notice Board'
+  const backLabel = isGuild ? '← Guild' : '← Inn'
 
   return (
     <div className="flex h-full" style={{ minHeight: 'calc(100vh - 48px)' }}>
@@ -62,17 +79,24 @@ export default function QuestBoard() {
             onClick={() => setScreen('safe_zone')}
             style={{ color: '#6a5a4a', fontSize: '0.85rem', fontFamily: 'Cinzel, serif' }}
           >
-            ← Inn
+            {backLabel}
           </button>
           <h2 style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '1.3rem' }}>
-            Quest Board
+            {boardTitle}
           </h2>
           <span style={{ marginLeft: 'auto', color: '#c084fc', fontSize: '0.82rem' }}>
             {hero.reputationTokens} 🪙 tokens
           </span>
         </div>
 
-        {/* Q06 — Rang aventurier */}
+        {/* GLD01/GLD02 — sous-titre selon le lieu */}
+        <p style={{ color: '#6a5a4a', fontSize: '0.78rem', fontStyle: 'italic', marginTop: '-0.5rem' }}>
+          {isGuild
+            ? 'Prestigious commissions for proven adventurers — your reputation opens new doors.'
+            : "Local errands posted on the inn's board — and your Adventurer's Card."}
+        </p>
+
+        {/* Q06 — Rang aventurier (la « carte d'aventurier ») */}
         <RankBanner rank={rank} />
 
         {active.length > 0 && (
@@ -84,6 +108,8 @@ export default function QuestBoard() {
                 questStatus="active"
                 heroLevel={hero.level}
                 killCounts={world.monsterKillCounts}
+                visitedSpots={visitedSpots}
+                craftCount={craftCount}
                 canComplete={isQuestComplete(q.id)}
                 onComplete={() => completeQuest(q.id)}
                 onAbandon={() => setPendingAbandon(q)}
@@ -93,17 +119,24 @@ export default function QuestBoard() {
         )}
 
         {available.length > 0 && (
-          <Section title="Available">
-            {available.map(q => (
-              <QuestCard
-                key={q.id}
-                quest={q}
-                questStatus="available"
-                heroLevel={hero.level}
-                killCounts={world.monsterKillCounts}
-                onAccept={() => startQuest(q.id)}
-              />
-            ))}
+          <Section title={isGuild ? 'Available · Guild Commissions' : 'Available'}>
+            {available.map(q => {
+              const locked = isPrestigiousQuest(q) && !canAcceptPrestige
+              return (
+                <QuestCard
+                  key={q.id}
+                  quest={q}
+                  questStatus="available"
+                  heroLevel={hero.level}
+                  killCounts={world.monsterKillCounts}
+                  visitedSpots={visitedSpots}
+                  craftCount={craftCount}
+                  prestige={isPrestigiousQuest(q)}
+                  lockedReason={locked ? `Requires ${PRESTIGE_MIN_TOKENS} 🪙 (Silver rank)` : null}
+                  onAccept={() => acceptGuard(q)}
+                />
+              )
+            })}
           </Section>
         )}
 
@@ -185,20 +218,21 @@ function nextLabel(currentTierId) {
   return next?.label ?? '???'
 }
 
-function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, canComplete, onAccept, onComplete, onAbandon }) {
+export function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, visitedSpots = [], craftCount = 0, skillLevels = {}, prestige = false, lockedReason = null, canComplete, onAccept, onComplete, onAbandon }) {
   const isCompleted = questStatus === 'completed'
   const isActive    = questStatus === 'active'
 
   const borderColor = isCompleted ? '#305030' : isActive ? '#3a2818' : '#2a2018'
   const bgColor     = isCompleted ? '#081008' : '#0a0a08'
 
-  const npc = QUEST_NPCS[quest.giverNpc]
+  const npc = QUEST_NPC_REGISTRY[quest.giverNpc]
 
   return (
     <div className="p-4 rounded border" style={{ background: bgColor, borderColor }}>
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex-1">
           <p style={{ fontFamily: 'Cinzel, serif', color: isCompleted ? '#40c080' : '#d4af70', fontSize: '0.9rem' }}>
+            {prestige && <span title="Guild commission" style={{ color: '#c084fc', marginRight: 4 }}>⚜</span>}
             {quest.name}{isCompleted && ' ✓'}
           </p>
           {npc && (
@@ -226,7 +260,7 @@ function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, canComplete
             Abandon
           </button>
         )}
-        {questStatus === 'available' && (
+        {questStatus === 'available' && !lockedReason && (
           <button
             onClick={onAccept}
             className="px-3 py-1 rounded text-xs"
@@ -234,6 +268,16 @@ function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, canComplete
           >
             Accept
           </button>
+        )}
+        {questStatus === 'available' && lockedReason && (
+          <span
+            data-testid="quest-locked"
+            title={lockedReason}
+            className="px-3 py-1 rounded text-xs"
+            style={{ fontFamily: 'Cinzel, serif', background: '#0a0a08', color: '#7a6a8a', border: '1px solid #2a2038', flexShrink: 0, whiteSpace: 'nowrap' }}
+          >
+            🔒 {lockedReason}
+          </span>
         )}
       </div>
 
@@ -248,8 +292,18 @@ function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, canComplete
               ? Math.min(obj.count, killCounts[obj.monsterId] ?? 0)
               : obj.type === 'level'
                 ? Math.min(obj.targetLevel, heroLevel ?? 1)
-                : 0
-            const target = obj.type === 'kill' ? obj.count : obj.targetLevel
+                : obj.type === 'visit'
+                  ? (visitedSpots.includes(obj.spotId) ? 1 : 0)
+                  : obj.type === 'craft'
+                    ? Math.min(obj.count, craftCount)
+                    : obj.type === 'skill_levelup'
+                      ? Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0)
+                      : 0
+            const target = obj.type === 'kill' ? obj.count
+              : obj.type === 'level' ? obj.targetLevel
+                : obj.type === 'craft' ? obj.count
+                  : obj.type === 'skill_levelup' ? obj.targetLevel
+                    : 1
             const done = current >= target
             const pct = target > 0 ? current / target : 0
 
@@ -299,6 +353,27 @@ function QuestCard({ quest, questStatus, heroLevel, killCounts = {}, canComplete
           <RewardBadge bg="#0a1018" color="#60a0c0" border="#1a3050">
             {SKILLS[quest.reward.skill.skillId]?.name ?? quest.reward.skill.skillId}
           </RewardBadge>
+        )}
+        {quest.reward.consumables && Object.entries(quest.reward.consumables).map(([id, qty]) => (
+          <RewardBadge key={id} bg="#0e1814" color="#70c0a0" border="#0e3828">
+            {qty}× {RESOURCES[id]?.name ?? id}
+          </RewardBadge>
+        ))}
+        {quest.reward.resources && Object.entries(quest.reward.resources).map(([id, qty]) => (
+          <RewardBadge key={id} bg="#181410" color="#c0a060" border="#332810">
+            {qty}× {RESOURCES[id]?.name ?? id}
+          </RewardBadge>
+        ))}
+        {quest.reward.stat && (
+          <RewardBadge bg="#101810" color="#90c070" border="#1a3018">
+            +{quest.reward.stat.amount} {quest.reward.stat.name}
+          </RewardBadge>
+        )}
+        {quest.reward.aura > 0 && (
+          <RewardBadge bg="#1a1228" color="#c084fc" border="#3a1858">+{quest.reward.aura} Aura</RewardBadge>
+        )}
+        {quest.reward.concentration > 0 && (
+          <RewardBadge bg="#0e1a1a" color="#60c0c0" border="#0e3838">+{quest.reward.concentration} Concentration</RewardBadge>
         )}
       </div>
     </div>

@@ -36,17 +36,19 @@ export default function ToastContainer() {
             onClick={() => removeToast(toast.id)}
             className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg anim-pop pointer-events-auto cursor-pointer"
             style={{
-              background: style.bg,
-              border: `1px solid ${style.border}`,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+              // UI09 — langage parchemin : bulle sombre vieillie + liseré doré
+              background: 'rgba(38,24,12,.94)',
+              border: '1.5px solid var(--gold)',
+              boxShadow: `0 8px 24px rgba(0,0,0,0.5), inset 0 0 14px ${style.border}55`,
             }}
           >
-            <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{style.icon}</span>
+            <span style={{ fontSize: '1.1rem', flexShrink: 0, color: style.color }}>{style.icon}</span>
             <span
               style={{
-                fontFamily: 'Crimson Text, serif',
-                fontSize: '0.82rem',
-                color: style.color,
+                fontFamily: 'var(--font-body)',
+                fontStyle: 'italic',
+                fontSize: '0.9rem',
+                color: '#F2E0B6',
                 lineHeight: 1.3,
               }}
             >
