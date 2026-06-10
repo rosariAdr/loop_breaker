@@ -7,11 +7,13 @@
 // désactivée pour ce fichier dans eslint.config.js.
 
 import { Component } from 'react'
+import { logRuntimeError } from '../utils/errorLog'
 
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
     this.state = { hasError: false, error: null }
+    this.entry = null
   }
 
   static getDerivedStateFromError(error) {
@@ -19,7 +21,25 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('[ErrorBoundary]', error, info?.componentStack)
+    // DX-ERRTRACK01 — log structuré + persistance localStorage (Sentry-lite) pour l'alpha,
+    // sinon une erreur de rendu en prod reste invisible.
+    this.entry = logRuntimeError(error, {
+      source: 'react-render',
+      componentStack: info?.componentStack ? String(info.componentStack).slice(0, 2000) : null,
+    })
+  }
+
+  handleCopyDetails = () => {
+    const details = JSON.stringify(
+      this.entry ?? { message: this.state.error?.message ?? 'Unknown error' },
+      null,
+      2,
+    )
+    try {
+      navigator.clipboard?.writeText(details)
+    } catch {
+      // presse-papiers indisponible — pas grave
+    }
   }
 
   handleReload = () => {
@@ -117,6 +137,20 @@ class ErrorBoundary extends Component {
               }}
             >
               ⚠ Reset save (last resort)
+            </button>
+
+            {/* DX-ERRTRACK01 — copier le rapport d'erreur structuré (pour le signaler) */}
+            <button
+              onClick={this.handleCopyDetails}
+              className="w-full py-2 rounded text-xs transition-all hover:opacity-90"
+              style={{
+                fontFamily: 'Cinzel, serif',
+                background: 'transparent',
+                color: '#5a4a3a',
+                border: '1px solid #2a2018',
+              }}
+            >
+              ⧉ Copy error details
             </button>
           </div>
         </div>

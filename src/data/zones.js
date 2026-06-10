@@ -281,6 +281,16 @@ export function scaleMonsterStats(baseStats, zoneId, runCount) {
   }
 }
 
+// WM-LEVEL01 — fourchette de niveau [min, max] d'un spot de chasse (depuis huntingSpots),
+// pour le sous-label « Lv X–Y » de la WorldMap. Retourne null si le spot est inconnu.
+export function getSpotLevelRange(spotId) {
+  for (const zone of Object.values(ZONES)) {
+    const spot = zone.huntingSpots?.find((s) => s.id === spotId)
+    if (spot?.levelRange) return spot.levelRange
+  }
+  return null
+}
+
 // B12 — Niveau nominal d'un monstre, dérivé du levelRange (min) de son spot de chasse.
 // Sert à juger si un ennemi est trop fort pour l'idle. Retourne 1 par défaut.
 export function getMonsterLevel(monsterId) {

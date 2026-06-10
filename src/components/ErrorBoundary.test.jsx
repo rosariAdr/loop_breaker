@@ -119,4 +119,27 @@ describe('ErrorBoundary — TECH01', () => {
     )
     expect(errorSpy).toHaveBeenCalled()
   })
+
+  it('DX-ERRTRACK01 — persiste l’erreur dans le journal localStorage (Sentry-lite)', () => {
+    localStorage.removeItem('lb_errors')
+    render(
+      <ErrorBoundary>
+        <ThrowingChild message="Persisted crash" />
+      </ErrorBoundary>,
+    )
+    const log = JSON.parse(localStorage.getItem('lb_errors') || '[]')
+    expect(log.length).toBeGreaterThanOrEqual(1)
+    expect(log[0].message).toMatch(/Persisted crash/)
+    expect(log[0].source).toBe('react-render')
+    expect(log[0].ts).toBeTruthy()
+  })
+
+  it('DX-ERRTRACK01 — propose un bouton « Copy error details »', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowingChild />
+      </ErrorBoundary>,
+    )
+    expect(screen.getByText(/Copy error details/i)).toBeInTheDocument()
+  })
 })

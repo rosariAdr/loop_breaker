@@ -3,6 +3,19 @@
 
 import { useState, useEffect } from 'react'
 
+/**
+ * DEVBP02 — Emplacement d'illustration : affiche la sprite `src`, ou un placeholder
+ * pointillé légendé si l'image est absente/404 (repli gracieux).
+ * @param {object} props
+ * @param {string} props.caption - légende (placeholder + alt logique)
+ * @param {string} [props.src] - URL de la sprite
+ * @param {number} props.w - largeur (px)
+ * @param {number} props.h - hauteur (px)
+ * @param {boolean} [props.round] - coins arrondis
+ * @param {boolean} [props.glow] - halo doré
+ * @param {object} [props.style] - styles inline additionnels
+ * @param {string} [props.className] - classes CSS additionnelles
+ */
 export function ArtSlot({ caption, src, w, h, round, glow, style, className = '' }) {
   // Fallback gracieux : si l'image (src) est absente/404, on retombe sur le placeholder légendé.
   // On mémorise QUEL src a échoué → si src change, on retente sans useEffect.
@@ -14,7 +27,8 @@ export function ArtSlot({ caption, src, w, h, round, glow, style, className = ''
       style={{ width: w, height: h, ...style }}
     >
       {showImg ? (
-        <img src={src} alt="" draggable={false} onError={() => setFailedSrc(src)} />
+        // PERF-IMG01 — lazy-loading des assets (bâtiments/façades, etc.)
+        <img src={src} alt="" loading="lazy" draggable={false} onError={() => setFailedSrc(src)} />
       ) : (
         <span className="as-cap">{caption}</span>
       )}
@@ -27,6 +41,19 @@ export function ArtSlot({ caption, src, w, h, round, glow, style, className = ''
 // WM-AVATAR — walkFps 14 → 28 : pendant un voyage la POSITION glisse à la même vitesse
 // (transition CSS 1.8s, cf. TRV04) mais le cycle de marche défile 2× plus vite → le perso
 // fait visiblement ~2× plus de pas sur le même trajet (sans aller plus vite sur la carte).
+/**
+ * DEVBP02 — Avatar chibi du héros (sprite animé idle/marche) positionné en %.
+ * @param {object} props
+ * @param {string|number} props.x - position horizontale (ex. '50%')
+ * @param {string|number} props.y - position verticale
+ * @param {string} [props.name] - nom affiché sur la plaque
+ * @param {string} [props.src] - sprite statique (si `idleFrames` ≤ 1)
+ * @param {number} [props.idleFrames] - nb de frames du cycle idle (>1 → animé)
+ * @param {number} [props.fps] - cadence du cycle idle
+ * @param {boolean} [props.walking] - joue le cycle de marche
+ * @param {number} [props.walkFrames] - nb de frames de marche
+ * @param {number} [props.walkFps] - cadence de marche
+ */
 export function HeroAvatar({
   x,
   y,
@@ -124,6 +151,11 @@ export function MapNode({ node, onClick, onHover }) {
 }
 
 // Cadre décoratif parchemin (compass = double-filet + fioritures d'angle ; vine ; wood)
+/**
+ * DEVBP02 — Cadre décoratif « parchemin » (bordure + ornement).
+ * @param {object} props
+ * @param {'compass'|'vine'|string} [props.variant] - style d'ornement
+ */
 export function ParchmentFrame({ variant = 'compass' }) {
   return (
     <>

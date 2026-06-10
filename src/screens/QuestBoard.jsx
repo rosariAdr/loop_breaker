@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import {
+  QUESTS,
   QUEST_NPC_REGISTRY,
-  getBoardQuests,
+  getQuestIssuer,
   isPrestigiousQuest,
   PRESTIGE_MIN_TOKENS,
 } from '../data/quests'
@@ -55,18 +56,24 @@ export default function QuestBoard() {
   const visitedSpots = world.visitedSpots ?? []
   const craftCount = meta?.craftCount ?? 0
 
-  // GLD01/GLD02 — venue : la ville = Guilde (tout le board, prestige gardé par le rang),
-  // le village = auberge (pool réduit, sans quêtes prestigieuses).
+  // GLD01/GLD02 — venue : la ville = Guilde (titre/labels), le village = auberge.
   const locationType = getLocationType(world)
   const isGuild = locationType === 'city'
-  const venue = isGuild ? 'guild' : 'village'
-  const boardQuests = getBoardQuests(venue)
+  const isCity = isGuild
+  const here = world.currentLocation
 
-  const available = boardQuests.filter(
-    (q) => !activeIds.includes(q.id) && !completedIds.includes(q.id),
+  // QSV2-LOCALITY01 — une quête est DISPONIBLE uniquement à son lieu émetteur.
+  // QSV2-TURNIN01 — une quête active/terminée est rendable (Claim) au lieu émetteur OU en ville
+  // (la ville = point de rendu universel). Les villages d'une même zone PvE ont donc des
+  // quêtes distinctes (pas de partage par adjacence).
+  const allBoardQuests = Object.values(QUESTS)
+  const canTurnInHere = (q) => getQuestIssuer(q) === here || isCity
+
+  const available = allBoardQuests.filter(
+    (q) => getQuestIssuer(q) === here && !activeIds.includes(q.id) && !completedIds.includes(q.id),
   )
-  const active = boardQuests.filter((q) => activeIds.includes(q.id))
-  const completed = boardQuests.filter((q) => completedIds.includes(q.id))
+  const active = allBoardQuests.filter((q) => activeIds.includes(q.id) && canTurnInHere(q))
+  const completed = allBoardQuests.filter((q) => completedIds.includes(q.id) && canTurnInHere(q))
 
   const rank = getRankInfo(hero.reputationTokens)
   // une quête prestigieuse ne peut être acceptée qu'à partir du rang Argent
@@ -80,7 +87,7 @@ export default function QuestBoard() {
 
   return (
     <div className="flex h-full" style={{ minHeight: 'calc(100vh - 48px)' }}>
-      <div className="flex-1 flex flex-col p-6 gap-6 overflow-y-auto max-w-2xl">
+      <div className="flex-1 flex flex-col p-6 gap-6 overflow-y-auto">
         <div className="flex items-center gap-4">
           <button
             onClick={() => setScreen('safe_zone')}
@@ -124,6 +131,7 @@ export default function QuestBoard() {
                 killCounts={world.monsterKillCounts}
                 visitedSpots={visitedSpots}
                 craftCount={craftCount}
+                base={world.questProgress?.[q.id] ?? {}}
                 canComplete={isQuestComplete(q.id)}
                 onComplete={() => completeQuest(q.id)}
                 onAbandon={() => setPendingAbandon(q)}
@@ -260,6 +268,7 @@ export function QuestCard({
   visitedSpots = [],
   craftCount = 0,
   skillLevels = {},
+  base = {}, // FIX-QUESTSNAP01 — snapshot { baseKills, baseCraft } pour la progression en delta
   prestige = false,
   lockedReason = null,
   canComplete,
@@ -267,6 +276,8 @@ export function QuestCard({
   onComplete,
   onAbandon,
 }) {
+  const baseKills = base.baseKills ?? {}
+  const baseCraft = base.baseCraft ?? 0
   const isCompleted = questStatus === 'completed'
   const isActive = questStatus === 'active'
 
@@ -388,7 +399,10 @@ export function QuestCard({
           {quest.objectives.map((obj) => {
             const current =
               obj.type === 'kill'
-                ? Math.min(obj.count, killCounts[obj.monsterId] ?? 0)
+                ? Math.min(
+                    obj.count,
+                    Math.max(0, (killCounts[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0)),
+                  )
                 : obj.type === 'level'
                   ? Math.min(obj.targetLevel, heroLevel ?? 1)
                   : obj.type === 'visit'
@@ -396,7 +410,7 @@ export function QuestCard({
                       ? 1
                       : 0
                     : obj.type === 'craft'
-                      ? Math.min(obj.count, craftCount)
+                      ? Math.min(obj.count, Math.max(0, craftCount - baseCraft))
                       : obj.type === 'skill_levelup'
                         ? Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0)
                         : 0
@@ -516,7 +530,8 @@ function Section({ title, children }) {
       >
         {title}
       </p>
-      {children}
+      {/* QB-LAYOUT01 — grille responsive pleine largeur (2-3 colonnes) */}
+      <div className="qb-grid">{children}</div>
     </div>
   )
 }

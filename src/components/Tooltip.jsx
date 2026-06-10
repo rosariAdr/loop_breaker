@@ -4,6 +4,14 @@
 
 import { useState, useRef } from 'react'
 
+/**
+ * DEVBP02 — Tooltip au survol (UX01). Si `content` est vide, rend les enfants tels quels.
+ * @param {object} props
+ * @param {import('react').ReactNode} props.content - contenu de l'infobulle
+ * @param {import('react').ReactNode} props.children - élément déclencheur (survol/tap)
+ * @param {'top'|'bottom'|'left'|'right'} [props.position] - position de l'infobulle
+ * @param {number} [props.maxWidth] - largeur max (px)
+ */
 export default function Tooltip({ content, children, position = 'top', maxWidth = 240 }) {
   const [visible, setVisible] = useState(false)
   const wrapperRef = useRef(null)

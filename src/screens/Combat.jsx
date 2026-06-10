@@ -89,6 +89,7 @@ function StatusIcons({ effects = [] }) {
 }
 import { calcEquippedStatBonuses } from '../data/equipment'
 import { applyDebuffsToStats } from '../utils/debuffs'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 // Emoji par type de monstre
 const MONSTER_EMOJI = {
@@ -256,6 +257,7 @@ export default function Combat() {
   const [heroEffects, setHeroEffects] = useState([]) // B05 — effets de statut sur le héros
   const [phase, setPhase] = useState('player')
   const [result, setResult] = useState(null)
+  const [confirmEscape, setConfirmEscape] = useState(false) // CMB-ESCAPE01 — filet anti-blocage
   const [selectedAction, setSelectedAction] = useState('attack')
   const [log, setLog] = useState([])
   const [loot, setLoot] = useState([])
@@ -940,6 +942,32 @@ export default function Combat() {
       className="flex flex-col select-none"
       style={{ minHeight: 'calc(100vh - 48px)', background: arenaBg }}
     >
+      {/* CMB-ESCAPE01 — filet anti-blocage : bouton toujours dispo (hors résultat) qui résout
+          le combat comme une victoire propre, pour que le joueur ne soit JAMAIS coincé. */}
+      {phase !== 'result' && (
+        <button
+          className="cmb-escape-btn"
+          data-testid="combat-escape"
+          onClick={() => setConfirmEscape(true)}
+          title="Safety net — end this combat as a clean victory"
+        >
+          🚪 Exit Combat
+        </button>
+      )}
+      <ConfirmDialog
+        open={confirmEscape}
+        variant="warn"
+        title="Exit this combat?"
+        message="Safety net: the fight ends now and is resolved as a clean victory. Use this only if the combat seems stuck."
+        confirmLabel="Exit (count as win)"
+        cancelLabel="Keep fighting"
+        onConfirm={() => {
+          setConfirmEscape(false)
+          handleVictory(enemies)
+        }}
+        onCancel={() => setConfirmEscape(false)}
+      />
+
       {/* ── Arène ── */}
       {/* ANIM01 — screen shake quand le héros encaisse ; ANIM02 — secousse sur gros skill/AoE */}
       <div
@@ -1881,6 +1909,10 @@ function CombatLog({ log }) {
               opacity: i === 0 ? 1 : Math.max(0.3, 1 - i * 0.08),
               lineHeight: '1.4',
               transition: 'opacity 0.3s ease',
+              // UX-COMBATLOG01 — accent latéral coloré par type (scannable) + dernière action en gras
+              borderLeft: `3px solid ${LOG_COLORS[entry.type] ?? LOG_COLORS.info}`,
+              paddingLeft: '7px',
+              fontWeight: i === 0 ? 600 : 400,
             }}
           >
             {entry.text}

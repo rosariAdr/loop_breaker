@@ -78,6 +78,22 @@ export const createWorldSlice = (set, get) => ({
       return { world: { ...state.world, tickCount: newTick } }
     }),
 
+  // WAIT01 — Patienter jusqu'à une heure cible (0–23). Avance `tickCount` ; si l'heure
+  // est déjà atteinte/passée aujourd'hui, on bascule au lendemain. NE restaure RIEN
+  // (≠ sommeil : ni HP/Mana, ni vigueur). Comme advanceTick, `isNight` n'est pas touché.
+  waitUntilHour: (targetHour) =>
+    set((state) => {
+      const h = Math.max(0, Math.min(23, Math.floor(targetHour)))
+      const passed = h <= state.world.tickCount
+      return {
+        world: {
+          ...state.world,
+          tickCount: h,
+          dayCount: state.world.dayCount + (passed ? 1 : 0),
+        },
+      }
+    }),
+
   // TRV01/TRV03 — Voyage vers un node adjacent : déplace le héros sur la carte et
   // avance le temps de 3 tics (avec rollover de jour). N'exécute PAS l'idle
   // (on ne farme pas en marchant — décision 2026-06-06).

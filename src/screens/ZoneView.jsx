@@ -6,6 +6,7 @@ import { RESOURCES, RARITY_COLORS } from '../data/resources'
 import { SKILLS } from '../data/skills'
 import { generateEnemies } from '../engine/combat'
 import { ParchmentFrame } from '../components/parchment'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 // S02 — seuil de kills pour révéler le skill droppable d'un monstre
 const SKILL_REVEAL_THRESHOLD = 5
@@ -13,6 +14,10 @@ const SKILL_REVEAL_THRESHOLD = 5
 export default function ZoneView() {
   const { world, setScreen, recordVisit } = useGameStore()
   const zone = ZONES[world.currentZone]
+  // ZV-CARDS01 — bloc stats des cartes monstres masquable (off par défaut → cartes épurées)
+  const [showStats, setShowStats] = useState(false)
+  // UX-LEAVE-CONFIRM01 — confirmation avant de quitter une zone de donjon/danger en cours
+  const [confirmLeave, setConfirmLeave] = useState(false)
 
   // Q04 — enregistre la visite du spot de chasse courant (quêtes d'exploration)
   useEffect(() => {
@@ -39,9 +44,27 @@ export default function ZoneView() {
     <div className={`parchment fill forest ${isBlightedRoad ? 'blighted' : ''}`}>
       <ParchmentFrame variant="vine" />
 
-      <button className="back-btn" onClick={() => setScreen('world_map')}>
+      <button
+        className="back-btn"
+        onClick={() => (isBlightedRoad ? setConfirmLeave(true) : setScreen('world_map'))}
+      >
         ← Map
       </button>
+
+      {/* UX-LEAVE-CONFIRM01 — quitter la Blighted Road (zone de danger) demande confirmation */}
+      <ConfirmDialog
+        open={confirmLeave}
+        variant="warn"
+        title="Leave the Blighted Road?"
+        message="This cursed crossing is no place to linger. Head back to the map?"
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+        onConfirm={() => {
+          setConfirmLeave(false)
+          setScreen('world_map')
+        }}
+        onCancel={() => setConfirmLeave(false)}
+      />
 
       <div className="zone-header vil-header">
         <div className="t-zone zh-title">
@@ -67,9 +90,19 @@ export default function ZoneView() {
 
           {/* Monstres → clairières */}
           <Section title="Clearings">
+            {/* ZV-CARDS01 — afficher/masquer le bloc de stats des cartes */}
+            <label className="zv-stats-toggle">
+              <input
+                type="checkbox"
+                checked={showStats}
+                onChange={(e) => setShowStats(e.target.checked)}
+                data-testid="zv-stats-toggle"
+              />{' '}
+              Show stats
+            </label>
             <div className="mcard-grid">
               {monsterList.map((monsterId) => (
-                <MonsterRow key={monsterId} monsterId={monsterId} />
+                <MonsterRow key={monsterId} monsterId={monsterId} showStats={showStats} />
               ))}
             </div>
           </Section>
@@ -99,6 +132,7 @@ function MonsterSprite({ id, elite }) {
       className="ms-img"
       src={`/monsters/${id}.png`}
       alt=""
+      loading="lazy"
       draggable={false}
       onError={() => setErr(true)}
     />
@@ -106,7 +140,7 @@ function MonsterSprite({ id, elite }) {
 }
 
 // ── Clairière d'un monstre ────────────────────────────────────────────────────
-function MonsterRow({ monsterId }) {
+function MonsterRow({ monsterId, showStats = false }) {
   const { world, hero, toggleIdle, startCombat } = useGameStore()
   const monster = MONSTERS[monsterId]
   if (!monster) return null
@@ -134,12 +168,14 @@ function MonsterRow({ monsterId }) {
         {isIdleActive && <span className="mcard-idle">◆ IDLE</span>}
       </div>
 
-      <div className="mcard-stats">
-        <span>HP {monster.baseStats.hp}</span>
-        <span>ATK {monster.baseStats.atk}</span>
-        <span>DEF {monster.baseStats.def}</span>
-        <span>SPD {monster.baseStats.spd}</span>
-      </div>
+      {showStats && (
+        <div className="mcard-stats">
+          <span>HP {monster.baseStats.hp}</span>
+          <span>ATK {monster.baseStats.atk}</span>
+          <span>DEF {monster.baseStats.def}</span>
+          <span>SPD {monster.baseStats.spd}</span>
+        </div>
+      )}
 
       <div className="kbar-row">
         <div className="kbar">

@@ -1154,6 +1154,41 @@ describe('sleep', () => {
   })
 })
 
+// ── WAIT01 — patienter jusqu'à une heure ──────────────────────────────────────
+describe('waitUntilHour (WAIT01)', () => {
+  it('avance à une heure future du même jour', () => {
+    useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 8, dayCount: 3 } }))
+    useGameStore.getState().waitUntilHour(14)
+    expect(useGameStore.getState().world.tickCount).toBe(14)
+    expect(useGameStore.getState().world.dayCount).toBe(3)
+  })
+
+  it("si l'heure cible est déjà passée → lendemain", () => {
+    useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 14, dayCount: 3 } }))
+    useGameStore.getState().waitUntilHour(6)
+    expect(useGameStore.getState().world.tickCount).toBe(6)
+    expect(useGameStore.getState().world.dayCount).toBe(4)
+  })
+
+  it('ne restaure NI HP/Mana NI vigueur (≠ sommeil)', () => {
+    useGameStore.setState((s) => ({
+      hero: { ...s.hero, vigor: 40, stats: { ...s.hero.stats, hp: 10, mana: 5 } },
+      world: { ...s.world, tickCount: 8 },
+    }))
+    useGameStore.getState().waitUntilHour(20)
+    const h = useGameStore.getState().hero
+    expect(h.stats.hp).toBe(10)
+    expect(h.stats.mana).toBe(5)
+    expect(h.vigor).toBe(40)
+  })
+
+  it("clamp l'heure dans [0,23]", () => {
+    useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 5 } }))
+    useGameStore.getState().waitUntilHour(99)
+    expect(useGameStore.getState().world.tickCount).toBe(23)
+  })
+})
+
 // ── Heal / Restore (caps) ─────────────────────────────────────────────────────
 describe('healHero / restoreHeroMana', () => {
   it('healHero ne dépasse jamais maxHp', () => {

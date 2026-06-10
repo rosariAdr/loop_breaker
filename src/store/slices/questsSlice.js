@@ -1,6 +1,6 @@
 // REFAC01 — Slice « quests » du store (extrait de gameStore.js, comportement inchangé).
 import { createEquipmentInstance } from '../../data/equipment'
-import { getQuestById, heroSkillLevels } from '../../data/quests'
+import { getQuestById, snapshotForQuest, isQuestCompleteState } from '../../data/quests'
 import { RESOURCES } from '../../data/resources'
 import { SKILLS } from '../../data/skills'
 import { ZONES } from '../../data/zones'
@@ -13,7 +13,16 @@ export const createQuestsSlice = (set, get) => ({
       const { activeQuests, completedQuests } = state.world
       if (completedQuests.includes(questId)) return state
       if (activeQuests.includes(questId)) return state
-      return { world: { ...state.world, activeQuests: [...activeQuests, questId] } }
+      // FIX-QUESTSNAP01 — fige les compteurs cumulés au moment de l'acceptation.
+      const quest = getQuestById(questId)
+      const snapshot = quest ? snapshotForQuest(quest, state) : { baseKills: {}, baseCraft: 0 }
+      return {
+        world: {
+          ...state.world,
+          activeQuests: [...activeQuests, questId],
+          questProgress: { ...(state.world.questProgress ?? {}), [questId]: snapshot },
+        },
+      }
     }),
 
   // UX03 — Abandonner une quête active (perte de progression, mais retirable des actives)
@@ -29,19 +38,11 @@ export const createQuestsSlice = (set, get) => ({
       }
     }),
 
+  // FIX-QUESTSNAP01 — complétude calculée en DELTA depuis l'acceptation (source unique
+  // `isQuestCompleteState`, partagée avec l'affichage du board/overlay).
   isQuestComplete: (questId) => {
-    const { hero, world, meta } = get()
     const quest = getQuestById(questId)
-    if (!quest) return false
-    return quest.objectives.every((obj) => {
-      if (obj.type === 'kill') return (world.monsterKillCounts[obj.monsterId] ?? 0) >= obj.count
-      if (obj.type === 'level') return hero.level >= obj.targetLevel
-      if (obj.type === 'visit') return (world.visitedSpots ?? []).includes(obj.spotId) // Q04
-      if (obj.type === 'craft') return (meta.craftCount ?? 0) >= obj.count // Q05
-      if (obj.type === 'skill_levelup')
-        return (heroSkillLevels(hero)[obj.skillId] ?? 0) >= obj.targetLevel // ACA04
-      return false
-    })
+    return isQuestCompleteState(quest, get())
   },
 
   completeQuest: (questId) =>

@@ -208,11 +208,12 @@ describe('HeroSheet — layout', () => {
     expect(screen.getByText(/Passive Skills/)).toBeInTheDocument()
   })
 
-  it('affiche la sidebar avec gold/tokens/run', () => {
+  it('affiche les Currencies (gold/tokens, sans carte « Run » — HS-CURR01)', () => {
     render(<HeroSheet />)
+    expect(screen.getByText('Currencies')).toBeInTheDocument()
     expect(screen.getByText('Gold')).toBeInTheDocument()
     expect(screen.getByText('Tokens')).toBeInTheDocument()
-    expect(screen.getByText('Run')).toBeInTheDocument()
+    expect(screen.queryByText('Run')).toBeNull() // carte « Run » retirée (HS-CURR01)
   })
 })
 
@@ -575,7 +576,9 @@ describe('QuestBoard — affichage quêtes', () => {
     expect(screen.getByText('End the Demon')).toBeInTheDocument()
   })
 
-  it('affiche les nouvelles quêtes Q08 (greywatch)', () => {
+  it('affiche les nouvelles quêtes Q08 (greywatch) — disponibles à Greywatch (QSV2)', () => {
+    // QSV2-LOCALITY01 — les quêtes de Greywatch ne sont disponibles qu'à Greywatch.
+    useGameStore.setState((s) => ({ world: { ...s.world, currentLocation: 'greywatch' } }))
     render(<QuestBoard />)
     expect(screen.getByText('Bog Purge')).toBeInTheDocument()
     expect(screen.getByText('Cleanse the Ruins')).toBeInTheDocument()

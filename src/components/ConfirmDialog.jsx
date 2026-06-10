@@ -1,6 +1,18 @@
 // UX03 — Modal de confirmation pour actions destructives
 // Pattern : <ConfirmDialog open={x} onConfirm={...} onCancel={...} ... />
 
+/**
+ * DEVBP02 — Modale de confirmation réutilisable (UX03).
+ * @param {object} props
+ * @param {boolean} props.open - affiche la modale si vrai (sinon rend `null`)
+ * @param {string} [props.title] - titre de la modale
+ * @param {string} [props.message] - texte explicatif
+ * @param {string} [props.confirmLabel] - libellé du bouton de confirmation
+ * @param {string} [props.cancelLabel] - libellé du bouton d'annulation
+ * @param {'destructive'|'warn'|'info'} [props.variant] - palette de couleur
+ * @param {() => void} props.onConfirm - appelé à la confirmation
+ * @param {() => void} props.onCancel - appelé à l'annulation
+ */
 export default function ConfirmDialog({
   open,
   title = 'Are you sure?',

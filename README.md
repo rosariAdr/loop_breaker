@@ -1,5 +1,7 @@
 # Loop Breaker — Roguelite Idle RPG
 
+[![CI](https://github.com/rosariAdr/loop_breaker/actions/workflows/ci.yml/badge.svg)](https://github.com/rosariAdr/loop_breaker/actions/workflows/ci.yml)
+
 Un **Roguelite Idle RPG dark-medieval** avec transmigration entre univers. Le héros meurt souvent ; à chaque mort il choisit ce qu'il emporte (1 stat + 1 skill actif + 1 skill passif) et renaît dans un nouveau monde via la **Boutique des Dieux**.
 
 > **État : POC complet et gagnable de bout en bout** (la win condition — tuer le Demon Lord Malachar — est implémentée). Pré-alpha, solo dev.
