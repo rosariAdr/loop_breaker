@@ -1,0 +1,97 @@
+==============================================================================
+ LOOP BREAKER — ASPECTS À SURVEILLER EN PLAYTEST
+ (créé 2026-06-08 ; à mettre à jour au fil des décisions de balance)
+ Voir aussi : PLAYTESTS.md (journal structuré), PROC04 (spreadsheet de balance).
+==============================================================================
+
+------------------------------------------------------------------------------
+ A. ÉQUILIBRAGE — VALEURS DÉCIDÉES (BAL-AUDIT01 / BAL-CSV01)
+------------------------------------------------------------------------------
+[ ] Courbe d'XP ×1.32/niveau : la progression niveau 1→10 ne paraît ni trop
+    rapide ni trop grindy ? (noter le nb de kills/niveau ressenti)
+[ ] Récompenses XP ×5 : monter de niveau reste régulier après le buff ?
+[ ] Récompenses gold ×8 : l'or gagné permet d'acheter potions/équipement à un
+    rythme satisfaisant (sans être trop riche) ? (noter gold/heure)
+[ ] CSV de balance (BAL-CSV01) : modifier une valeur dans le CSV change bien le
+    jeu sans rebuild ? fallback OK si CSV absent/cassé ?
+
+------------------------------------------------------------------------------
+ B. NIVEAU DES MONSTRES (MONLV01) — *** POINTS CHAUDS ***
+------------------------------------------------------------------------------
+[ ] *** CHEVAUCHEMENT zoneMult × niveau *** : les deux scalent la difficulté de
+    zone. Les monstres d'une zone haute sont-ils trop costauds (double scaling) ?
+    -> si oui : réduire/retirer zoneMult une fois le niveau en place.
+[ ] Stats +25%/niveau (×1.25^Δ) : l'écart de puissance entre Lv bas et Lv haut
+    d'un même monstre est-il lisible mais pas brutal ?
+[ ] Run-scaling 1.03 (ex-1.08) : le power creep entre transmigrations est-il
+    encore assez sensible (progression méta) mais pas écrasant ?
+[ ] Bande de niveau random_int(max(start,hero-3), max(min(hero,end),start)) :
+    la variété de niveau est-elle agréable (pas trop d'écart trivial<->dur) ?
+[ ] Edge case héros < start_lvl (zone trop haute) : le monstre reste au niveau
+    'start' (pas de range inversée / crash) ?
+[ ] Récompenses exp/gold ×1.25^Δ + bonus drop/niveau : tuer un monstre de niveau
+    élevé vaut bien plus le coup qu'un bas niveau (sinon farm pénible) ?
+[ ] Affichage range "Lv X-Y" sur carte de spot + bestiaire, niveau réel en combat
+    : clair pour le joueur ?
+[ ] Élites : restent-ils nettement plus durs/gratifiants que les communs ?
+
+------------------------------------------------------------------------------
+ C. COMBAT
+------------------------------------------------------------------------------
+[ ] Aucun combat bloqué (CMB-INVARIANT01) : AoE qui tue le dernier ennemi,
+    ennemi tué par DoT au tour ennemi, fuite, multi-cibles -> on atteint
+    toujours l'écran de résultat ?
+[ ] Bouton "Sortir du combat" (CMB-ESCAPE01) : filet de secours fonctionnel,
+    confirmation OK, sortie traitée comme victoire propre ?
+[ ] Durée d'un combat : ni expéditif ni interminable (noter nb de tours moyen).
+[ ] Dégâts héros vs monstres : ratio cohérent avec le niveau ?
+
+------------------------------------------------------------------------------
+ D. ÉCONOMIE & PROGRESSION
+------------------------------------------------------------------------------
+[ ] Prix boutique (potions/équip) vs gold gagné : achats accessibles ?
+[ ] Coût des skills académie (×1.15^lvl) : trop cher / juste / trop facile ?
+[ ] Économie de tokens (quêtes -> God's Shop) : on accumule à un bon rythme ?
+[ ] Coûts de vigueur (-3 combat / -1 voyage / -3 craft) + dormir : le joueur
+    est-il forcé de gérer sa fatigue sans que ce soit pénible ?
+[ ] Drop rates : on récupère assez de matériaux pour craft sans être noyé ?
+
+------------------------------------------------------------------------------
+ E. PROGRESSION DE ZONE (PROG / START)
+------------------------------------------------------------------------------
+[ ] Déblocage des zones (niveau/kills/quête/info) : rythme satisfaisant ?
+[ ] Fog of war : clair quelles zones sont verrouillées et pourquoi ?
+[ ] Démarrage à Greywatch : le début (forêt seule) n'est pas frustrant ?
+
+------------------------------------------------------------------------------
+ F. SAVE / ROBUSTESSE (SAVE-AUDIT01)
+------------------------------------------------------------------------------
+[ ] Charger une vieille save (version antérieure) : pas de crash, champs
+    backfillés (vigor/aura/concentration/unlockedZones/...) ?
+[ ] Compteurs de kills bien actualisés (combat + idle) -> idle unlock, bestiaire,
+    quêtes, succès (QA01) ?
+[ ] Quêtes : une quête acceptée se valide bien sur la progression DEPUIS
+    l'acceptation, pas sur le cumul à vie (FIX-QUESTSNAP01) ?
+
+------------------------------------------------------------------------------
+ G. ITEMS & COHÉRENCE (DROP-FIX01 / QA01)
+------------------------------------------------------------------------------
+[ ] Drops cohérents avec le monstre (plus de wolf_pelt sur le lièvre/renard) ?
+[ ] Effets d'items fonctionnels ET logiques (potion soigne, tome -> bonne stat,
+    équipement applique ses stats) ?
+[ ] Toutes les références d'items existent (pas d'id mort dans drops/recettes/
+    récompenses/boutique) ?
+
+------------------------------------------------------------------------------
+ H. UX / RESSENTI
+------------------------------------------------------------------------------
+[ ] Réveil à 8h en dormant (INN-WAKE01) ; affichage de l'heure lisible.
+[ ] Lisibilité des écrans (HeroSheet, spots, village, combat) : pas de surcharge.
+[ ] Feedback clair sur chaque action (toasts, anims, sons à venir).
+[ ] Performances : pas de lag perceptible (combat, WorldMap) ; temps de
+    chargement des assets (carte 9.7Mo -> PERF-IMG01) acceptable ?
+
+==============================================================================
+ RÈGLE : après chaque session, reporter les écarts ici + dans PLAYTESTS.md,
+ puis ajuster les valeurs dans le CSV de balance (BAL-CSV01).
+==============================================================================
