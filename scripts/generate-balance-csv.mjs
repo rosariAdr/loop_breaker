@@ -64,26 +64,28 @@ for (const [monsterId, monster] of Object.entries(MONSTERS)) {
     const scaled = scaleMonsterStats(monster.baseStats, effZoneId, runCount)
     const effectiveScale = zoneMult * runScale
 
-    rows.push([
-      monsterId,
-      escapeCsv(monster.name),
-      monster.zone,
-      monster.rank,
-      effZoneId,
-      zoneMult.toFixed(2),
-      runCount,
-      runScale.toFixed(3),
-      effectiveScale.toFixed(3),
-      monster.baseStats.hp,
-      monster.baseStats.atk,
-      monster.baseStats.def,
-      monster.baseStats.spd,
-      scaled.hp,
-      scaled.atk,
-      scaled.def,
-      scaled.spd,
-      monster.expReward,
-    ].join(','))
+    rows.push(
+      [
+        monsterId,
+        escapeCsv(monster.name),
+        monster.zone,
+        monster.rank,
+        effZoneId,
+        zoneMult.toFixed(2),
+        runCount,
+        runScale.toFixed(3),
+        effectiveScale.toFixed(3),
+        monster.baseStats.hp,
+        monster.baseStats.atk,
+        monster.baseStats.def,
+        monster.baseStats.spd,
+        scaled.hp,
+        scaled.atk,
+        scaled.def,
+        scaled.spd,
+        monster.expReward,
+      ].join(','),
+    )
   }
 }
 
@@ -95,35 +97,45 @@ const totalRows = rows.length - 1 // -1 pour le header
 
 console.log(`✓ ${outPath}`)
 console.log(`  ${totalMonsters} monstres × ${RUN_LEVELS.length} niveaux = ${totalRows} lignes`)
-console.log(`  Zones rencontrées : ${[...new Set(Object.values(MONSTERS).map(m => getEffectiveZoneId(m)))].join(', ')}`)
+console.log(
+  `  Zones rencontrées : ${[...new Set(Object.values(MONSTERS).map((m) => getEffectiveZoneId(m)))].join(', ')}`,
+)
 console.log(`  Cross-check : zone_mult × 1.08^run_count = effective_scale`)
 
 // ── PROC04 — Second CSV : récap des drops par monstre ────────────────────────
 const dropHeaders = [
-  'monster_id', 'name', 'zone', 'rank',
-  'gold_min', 'gold_max', 'exp_reward',
-  'skill_drop_id', 'skill_drop_chance',
-  'resource_drops',  // "resId:chance:minQty-maxQty;..."
+  'monster_id',
+  'name',
+  'zone',
+  'rank',
+  'gold_min',
+  'gold_max',
+  'exp_reward',
+  'skill_drop_id',
+  'skill_drop_chance',
+  'resource_drops', // "resId:chance:minQty-maxQty;..."
 ]
 const dropRows = [dropHeaders.join(',')]
 
 for (const [monsterId, monster] of Object.entries(MONSTERS)) {
   const resourceSummary = (monster.resourceDrops ?? [])
-    .map(d => `${d.resourceId}:${d.chance}:${d.qty.min}-${d.qty.max}`)
+    .map((d) => `${d.resourceId}:${d.chance}:${d.qty.min}-${d.qty.max}`)
     .join(';')
 
-  dropRows.push([
-    monsterId,
-    escapeCsv(monster.name),
-    monster.zone,
-    monster.rank,
-    monster.goldReward?.min ?? 0,
-    monster.goldReward?.max ?? 0,
-    monster.expReward,
-    monster.skillDrop?.skillId ?? '',
-    monster.skillDrop?.chance ?? 0,
-    escapeCsv(resourceSummary),
-  ].join(','))
+  dropRows.push(
+    [
+      monsterId,
+      escapeCsv(monster.name),
+      monster.zone,
+      monster.rank,
+      monster.goldReward?.min ?? 0,
+      monster.goldReward?.max ?? 0,
+      monster.expReward,
+      monster.skillDrop?.skillId ?? '',
+      monster.skillDrop?.chance ?? 0,
+      escapeCsv(resourceSummary),
+    ].join(','),
+  )
 }
 
 const dropPath = join(__dirname, '..', 'balance', 'drops_summary.csv')

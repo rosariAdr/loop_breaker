@@ -24,7 +24,9 @@ describe('worldGraph — adjacence', () => {
 
   it('neighborsOf liste tous les voisins (symétrique)', () => {
     const n = neighborsOf('ironhaven')
-    expect(n).toEqual(expect.arrayContaining(['millhaven', 'thornmarsh', 'wildmere_hills', 'crypt']))
+    expect(n).toEqual(
+      expect.arrayContaining(['millhaven', 'thornmarsh', 'wildmere_hills', 'crypt']),
+    )
     expect(n).toHaveLength(4)
   })
 
@@ -36,7 +38,7 @@ describe('worldGraph — adjacence', () => {
     NODES.forEach((n) => expect(POS[n.id]).toBeDefined())
   })
 
-  it('chaque extrémité d\'arête a une position', () => {
+  it("chaque extrémité d'arête a une position", () => {
     EDGES.flat().forEach((id) => expect(POS[id]).toBeDefined())
   })
 })

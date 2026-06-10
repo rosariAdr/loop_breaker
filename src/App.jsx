@@ -33,10 +33,17 @@ const OVERLAY_SCREENS = ['hero_sheet', 'inventory', 'codex', 'quests']
 
 function App() {
   const {
-    currentScreen, loadGame, saveGame,
-    pendingDivineCall, pendingLevelUp,
-    processIdleTick, advanceTick,
-    hero, world, setScreen, sleep,
+    currentScreen,
+    loadGame,
+    saveGame,
+    pendingDivineCall,
+    pendingLevelUp,
+    processIdleTick,
+    advanceTick,
+    hero,
+    world,
+    setScreen,
+    sleep,
   } = useGameStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const animationsOn = useGameStore((s) => s.meta.settings?.animations ?? true)
@@ -68,7 +75,11 @@ function App() {
     const interval = setInterval(() => {
       const { world, activeCombat } = useGameStore.getState()
       if (world.isIdleActive && !activeCombat) {
-        try { processIdleTick() } catch (e) { console.error('[idle tick]', e) }
+        try {
+          processIdleTick()
+        } catch (e) {
+          console.error('[idle tick]', e)
+        }
       }
     }, 3000)
     return () => clearInterval(interval)
@@ -109,9 +120,15 @@ function App() {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Escape') return
-      if (settingsOpen) { setSettingsOpen(false); return }
+      if (settingsOpen) {
+        setSettingsOpen(false)
+        return
+      }
       const screen = useGameStore.getState().currentScreen
-      if (OVERLAY_SCREENS.includes(screen)) { setScreen(underScreen); return }
+      if (OVERLAY_SCREENS.includes(screen)) {
+        setScreen(underScreen)
+        return
+      }
       if (screen === 'safe_zone' || screen === 'zone_view') setScreen('world_map')
     }
     window.addEventListener('keydown', onKey)
@@ -120,19 +137,32 @@ function App() {
 
   const renderScreen = (screen = currentScreen) => {
     switch (screen) {
-      case 'world_map':   return <WorldMap />
-      case 'zone_view':   return <ZoneView />
-      case 'combat':      return <Combat />
-      case 'hero_sheet':  return <HeroSheet onClose={overlayClose} />
-      case 'inventory':   return <Inventory onClose={overlayClose} />
-      case 'codex':       return <CodexOverlay onClose={overlayClose} />
-      case 'quests':      return <QuestsOverlay onClose={overlayClose} />
-      case 'safe_zone':   return <SafeZone />
-      case 'post_mortem': return <PostMortem />
-      case 'gods_shop':   return <GodsShop />
-      case 'divine_call': return <WorldMap />
-      case 'quest_board': return <QuestBoard />
-      default:            return <WorldMap />
+      case 'world_map':
+        return <WorldMap />
+      case 'zone_view':
+        return <ZoneView />
+      case 'combat':
+        return <Combat />
+      case 'hero_sheet':
+        return <HeroSheet onClose={overlayClose} />
+      case 'inventory':
+        return <Inventory onClose={overlayClose} />
+      case 'codex':
+        return <CodexOverlay onClose={overlayClose} />
+      case 'quests':
+        return <QuestsOverlay onClose={overlayClose} />
+      case 'safe_zone':
+        return <SafeZone />
+      case 'post_mortem':
+        return <PostMortem />
+      case 'gods_shop':
+        return <GodsShop />
+      case 'divine_call':
+        return <WorldMap />
+      case 'quest_board':
+        return <QuestBoard />
+      default:
+        return <WorldMap />
     }
   }
 
@@ -141,13 +171,18 @@ function App() {
 
   // Sidebar partagée (réf design) — pour l'instant sur le world_map (autres écrans à porter)
   const zone = ZONES[world.currentZone]
-  const locName = zone?.city?.id === world.currentLocation ? zone.city.name
-    : zone?.villages?.find(v => v.id === world.currentLocation)?.name ?? zone?.name ?? 'Eldenmoor'
+  const locName =
+    zone?.city?.id === world.currentLocation
+      ? zone.city.name
+      : (zone?.villages?.find((v) => v.id === world.currentLocation)?.name ??
+        zone?.name ??
+        'Eldenmoor')
   const showSidebar = baseScreen === 'world_map'
   // UI-ACHIEVE-PREVIEW — accomplissement dont on est le plus proche (encart panneau droit)
   const nextAchievement = getClosestAchievement({ hero, world, meta })
   const sbProps = {
-    location: locName, zone: zone?.name ?? 'Ashenvale',
+    location: locName,
+    zone: zone?.name ?? 'Ashenvale',
     deity: hero.deity ? hero.deity[0].toUpperCase() + hero.deity.slice(1) : null,
     demonLord: world.demonLordDefeated ? 'Malachar (defeated)' : 'Malachar the Undying',
     tokens: hero.reputationTokens ?? 0,
@@ -165,13 +200,17 @@ function App() {
     <div className="lb-stage">
       <div className="lb-canvas">
         {/* UI09 — déroulé de parchemin (≤340ms, non bloquant ; neutralisé par le réglage Animations) */}
-        {zoneWipe > 0 && <div key={zoneWipe} className="parch-wipe" data-testid="zone-wipe" aria-hidden="true" />}
+        {zoneWipe > 0 && (
+          <div key={zoneWipe} className="parch-wipe" data-testid="zone-wipe" aria-hidden="true" />
+        )}
         {!fullscreen && <Topbar onOpenSettings={() => setSettingsOpen(true)} />}
         {!fullscreen && <Breadcrumb />}
 
         {fullscreen ? (
           <ErrorBoundary>
-            <div key={currentScreen} className="anim-screen-fade fill">{renderScreen()}</div>
+            <div key={currentScreen} className="anim-screen-fade fill">
+              {renderScreen()}
+            </div>
           </ErrorBoundary>
         ) : (
           <div className="map-area parch-sheet">
@@ -213,19 +252,29 @@ function Meter({ kind, value, max, label }) {
     <div className={`meter m-${kind}`}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
         <span className="tb-label">{label}</span>
-        <span className="m-num">{value}/{max}</span>
+        <span className="m-num">
+          {value}/{max}
+        </span>
       </div>
-      <div className="m-track"><div className="m-fill" style={{ width: pct + '%' }} /></div>
+      <div className="m-track">
+        <div className="m-fill" style={{ width: pct + '%' }} />
+      </div>
     </div>
   )
 }
 
 function Topbar({ onOpenSettings }) {
-  const { setScreen, currentScreen, hero, world, saveGame, unseenLoot, exportSave, importSave } = useGameStore()
+  const { setScreen, currentScreen, hero, world, saveGame, unseenLoot, exportSave, importSave } =
+    useGameStore()
   const [saveFlash, setSaveFlash] = useState(false)
   const [saveMenuOpen, setSaveMenuOpen] = useState(false)
   const fileRef = useRef(null)
-  const handleSave = () => { saveGame(); setSaveFlash(true); setTimeout(() => setSaveFlash(false), 1500); setSaveMenuOpen(false) }
+  const handleSave = () => {
+    saveGame()
+    setSaveFlash(true)
+    setTimeout(() => setSaveFlash(false), 1500)
+    setSaveMenuOpen(false)
+  }
 
   // TECH07 — export téléchargé
   const doExport = () => {
@@ -246,7 +295,9 @@ function Topbar({ onOpenSettings }) {
     const reader = new FileReader()
     reader.onload = () => {
       const ok = importSave(String(reader.result))
-      useToastStore.getState().addToast(ok ? 'Save imported.' : 'Invalid save file.', ok ? 'levelup' : 'warning')
+      useToastStore
+        .getState()
+        .addToast(ok ? 'Save imported.' : 'Invalid save file.', ok ? 'levelup' : 'warning')
       setSaveMenuOpen(false)
     }
     reader.readAsText(file)
@@ -259,18 +310,28 @@ function Topbar({ onOpenSettings }) {
     { id: 'inventory', label: 'Bag' },
     { id: 'save', label: saveFlash ? '✓' : 'Save' },
   ]
-  const activeTab = currentScreen === 'hero_sheet' ? 'hero_sheet'
-    : currentScreen === 'inventory' ? 'inventory'
-    : currentScreen === 'quests' ? 'quests' : 'world_map'
+  const activeTab =
+    currentScreen === 'hero_sheet'
+      ? 'hero_sheet'
+      : currentScreen === 'inventory'
+        ? 'inventory'
+        : currentScreen === 'quests'
+          ? 'quests'
+          : 'world_map'
 
   return (
     <div className="topbar">
       <div className="tb-group">
         <div className="center-col">
-          <span className="tb-label">Run #{hero.runNumber} · Lv {hero.level}</span>
+          <span className="tb-label">
+            Run #{hero.runNumber} · Lv {hero.level}
+          </span>
           <div className="meter m-xp" style={{ width: 120, marginTop: 3 }}>
             <div className="m-track" style={{ height: 8 }}>
-              <div className="m-fill" style={{ width: Math.min(100, (hero.exp / hero.expToNext) * 100) + '%' }} />
+              <div
+                className="m-fill"
+                style={{ width: Math.min(100, (hero.exp / hero.expToNext) * 100) + '%' }}
+              />
             </div>
           </div>
         </div>
@@ -282,35 +343,78 @@ function Topbar({ onOpenSettings }) {
       </div>
       <div style={{ flex: 1 }} />
       <div className="tb-group">
-        <div className="tb-stat"><span className="tb-ico">{world.isNight ? '🌙' : '☀'}</span><span className="tb-val">Day {world.dayCount}</span></div>
-        <div className="tb-stat"><span className="tb-label">T</span><span className="tb-val">{world.tickCount}/24</span></div>
-        <div className="tb-stat"><span className="tb-ico">🪙</span><span className="tb-val">{hero.reputationTokens ?? 0}</span></div>
+        <div className="tb-stat">
+          <span className="tb-ico">{world.isNight ? '🌙' : '☀'}</span>
+          <span className="tb-val">Day {world.dayCount}</span>
+        </div>
+        <div className="tb-stat">
+          <span className="tb-label">T</span>
+          <span className="tb-val">{world.tickCount}/24</span>
+        </div>
+        <div className="tb-stat">
+          <span className="tb-ico">🪙</span>
+          <span className="tb-val">{hero.reputationTokens ?? 0}</span>
+        </div>
       </div>
       <div className="tb-divider" />
       <div className="tb-tabs">
-        {tabs.map(t => {
+        {tabs.map((t) => {
           const showBadge = t.id === 'inventory' && unseenLoot && currentScreen !== 'inventory'
-          const onClick = () => { if (t.id === 'save') setSaveMenuOpen(o => !o); else setScreen(t.id) }
+          const onClick = () => {
+            if (t.id === 'save') setSaveMenuOpen((o) => !o)
+            else setScreen(t.id)
+          }
           return (
-            <div key={t.id} className={`tb-tab ${activeTab === t.id || (t.id === 'save' && saveMenuOpen) ? 'active' : ''}`} onClick={onClick} style={{ position: 'relative' }}>
+            <div
+              key={t.id}
+              className={`tb-tab ${activeTab === t.id || (t.id === 'save' && saveMenuOpen) ? 'active' : ''}`}
+              onClick={onClick}
+              style={{ position: 'relative' }}
+            >
               {t.label}
               {showBadge && (
-                <span data-testid="unseen-loot-badge" aria-label="new loot"
-                  style={{ position: 'absolute', top: -4, right: -4, width: 8, height: 8, borderRadius: '50%', background: 'var(--danger)', border: '1px solid #1a0808', boxShadow: '0 0 6px var(--danger)' }} />
+                <span
+                  data-testid="unseen-loot-badge"
+                  aria-label="new loot"
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: 'var(--danger)',
+                    border: '1px solid #1a0808',
+                    boxShadow: '0 0 6px var(--danger)',
+                  }}
+                />
               )}
               {/* TECH07 — menu Save / Export / Import */}
               {t.id === 'save' && saveMenuOpen && (
-                <div className="tb-save-menu" onClick={e => e.stopPropagation()}>
+                <div className="tb-save-menu" onClick={(e) => e.stopPropagation()}>
                   <button onClick={handleSave}>💾 Save now</button>
                   <button onClick={doExport}>⬇ Export to file…</button>
                   <button onClick={() => fileRef.current?.click()}>⬆ Import from file…</button>
-                  <button onClick={() => { setSaveMenuOpen(false); onOpenSettings?.() }}>⚙ Options…</button>
+                  <button
+                    onClick={() => {
+                      setSaveMenuOpen(false)
+                      onOpenSettings?.()
+                    }}
+                  >
+                    ⚙ Options…
+                  </button>
                 </div>
               )}
             </div>
           )
         })}
-        <input ref={fileRef} type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={onImportFile} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          style={{ display: 'none' }}
+          onChange={onImportFile}
+        />
       </div>
     </div>
   )
@@ -324,16 +428,20 @@ function Breadcrumb() {
 
   const trail = ['Eldenmoor']
   if (currentScreen === 'safe_zone') {
-    const loc = zone?.city?.id === world.currentLocation ? zone?.city
-      : zone?.villages?.find(v => v.id === world.currentLocation)
+    const loc =
+      zone?.city?.id === world.currentLocation
+        ? zone?.city
+        : zone?.villages?.find((v) => v.id === world.currentLocation)
     trail.push(zoneName, loc?.name ?? 'Settlement')
   } else if (currentScreen === 'zone_view') {
-    const spot = zone?.huntingSpots?.find(s => s.id === world.currentHuntingSpot)
+    const spot = zone?.huntingSpots?.find((s) => s.id === world.currentHuntingSpot)
     trail.push(zoneName, spot?.name ?? 'Wilds')
   } else {
     // world_map : Eldenmoor › <lieu courant>
-    const loc = zone?.city?.id === world.currentLocation ? zone?.city
-      : zone?.villages?.find(v => v.id === world.currentLocation)
+    const loc =
+      zone?.city?.id === world.currentLocation
+        ? zone?.city
+        : zone?.villages?.find((v) => v.id === world.currentLocation)
     trail.push(loc?.name ?? zoneName)
   }
 

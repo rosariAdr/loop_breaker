@@ -21,10 +21,10 @@ export const MONSTERS = {
     expReward: 15,
     goldReward: { min: 1, max: 3 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.10, skillId: 'savage_bite' },
+    skillDrop: { chance: 0.1, skillId: 'savage_bite' },
     resourceDrops: [
-      { resourceId: 'wolf_fang', chance: 0.70, qty: { min: 1, max: 2 } },
-      { resourceId: 'wolf_pelt', chance: 0.40, qty: { min: 1, max: 1 } },
+      { resourceId: 'wolf_fang', chance: 0.7, qty: { min: 1, max: 2 } },
+      { resourceId: 'wolf_pelt', chance: 0.4, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -39,8 +39,8 @@ export const MONSTERS = {
     goldReward: { min: 1, max: 2 },
     skillDropType: 'none',
     resourceDrops: [
-      { resourceId: 'wolf_pelt', chance: 0.80, qty: { min: 1, max: 2 } },
-      { resourceId: 'wolf_fang', chance: 0.30, qty: { min: 1, max: 1 } },
+      { resourceId: 'wolf_pelt', chance: 0.8, qty: { min: 1, max: 2 } },
+      { resourceId: 'wolf_fang', chance: 0.3, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -54,10 +54,10 @@ export const MONSTERS = {
     expReward: 20,
     goldReward: { min: 2, max: 4 },
     skillDropType: 'passive',
-    skillDrop: { chance: 0.10, skillId: 'thick_hide' },
+    skillDrop: { chance: 0.1, skillId: 'thick_hide' },
     resourceDrops: [
-      { resourceId: 'wolf_fang', chance: 0.70, qty: { min: 1, max: 2 } },
-      { resourceId: 'wolf_pelt', chance: 0.50, qty: { min: 1, max: 2 } },
+      { resourceId: 'wolf_fang', chance: 0.7, qty: { min: 1, max: 2 } },
+      { resourceId: 'wolf_pelt', chance: 0.5, qty: { min: 1, max: 2 } },
     ],
   },
 
@@ -74,7 +74,7 @@ export const MONSTERS = {
     skillDrop: { chance: 0.18, skillId: 'bramble_slam' },
     resourceDrops: [
       { resourceId: 'briar_thorn', chance: 0.85, qty: { min: 1, max: 3 } },
-      { resourceId: 'earth_crystal', chance: 0.30, qty: { min: 1, max: 1 } },
+      { resourceId: 'earth_crystal', chance: 0.3, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -89,10 +89,10 @@ export const MONSTERS = {
     expReward: 22,
     goldReward: { min: 1, max: 4 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.10, skillId: 'venom_strike' },
+    skillDrop: { chance: 0.1, skillId: 'venom_strike' },
     resourceDrops: [
       { resourceId: 'serpent_scale', chance: 0.65, qty: { min: 1, max: 3 } },
-      { resourceId: 'marsh_venom', chance: 0.30, qty: { min: 1, max: 1 } },
+      { resourceId: 'marsh_venom', chance: 0.3, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -106,9 +106,9 @@ export const MONSTERS = {
     expReward: 20,
     goldReward: { min: 2, max: 4 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.10, skillId: 'thorn_lash' },
+    skillDrop: { chance: 0.1, skillId: 'thorn_lash' },
     resourceDrops: [
-      { resourceId: 'ectoplasm', chance: 0.60, qty: { min: 1, max: 2 } },
+      { resourceId: 'ectoplasm', chance: 0.6, qty: { min: 1, max: 2 } },
       { resourceId: 'briar_thorn', chance: 0.45, qty: { min: 1, max: 3 } },
     ],
   },
@@ -123,10 +123,10 @@ export const MONSTERS = {
     expReward: 26,
     goldReward: { min: 2, max: 5 },
     skillDropType: 'passive',
-    skillDrop: { chance: 0.10, skillId: 'caustic_coat' },
+    skillDrop: { chance: 0.1, skillId: 'caustic_coat' },
     resourceDrops: [
-      { resourceId: 'marsh_venom', chance: 0.70, qty: { min: 1, max: 2 } },
-      { resourceId: 'rotten_flesh', chance: 0.50, qty: { min: 1, max: 2 } },
+      { resourceId: 'marsh_venom', chance: 0.7, qty: { min: 1, max: 2 } },
+      { resourceId: 'rotten_flesh', chance: 0.5, qty: { min: 1, max: 2 } },
     ],
   },
 
@@ -143,7 +143,7 @@ export const MONSTERS = {
     skillDrop: { chance: 0.18, skillId: 'plague_maw' },
     resourceDrops: [
       { resourceId: 'marsh_venom', chance: 0.85, qty: { min: 1, max: 3 } },
-      { resourceId: 'ancient_bone', chance: 0.40, qty: { min: 1, max: 2 } },
+      { resourceId: 'ancient_bone', chance: 0.4, qty: { min: 1, max: 2 } },
     ],
   },
 
@@ -158,10 +158,10 @@ export const MONSTERS = {
     expReward: 30,
     goldReward: { min: 2, max: 5 },
     skillDropType: 'passive',
-    skillDrop: { chance: 0.10, skillId: 'stoneskin' },
+    skillDrop: { chance: 0.1, skillId: 'stoneskin' },
     resourceDrops: [
       { resourceId: 'stone_shard', chance: 0.75, qty: { min: 2, max: 4 } },
-      { resourceId: 'earth_crystal', chance: 0.20, qty: { min: 1, max: 1 } },
+      { resourceId: 'earth_crystal', chance: 0.2, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -175,9 +175,9 @@ export const MONSTERS = {
     expReward: 35,
     goldReward: { min: 3, max: 7 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.10, skillId: 'cursed_cleave' },
+    skillDrop: { chance: 0.1, skillId: 'cursed_cleave' },
     resourceDrops: [
-      { resourceId: 'rusted_iron', chance: 0.70, qty: { min: 1, max: 2 } },
+      { resourceId: 'rusted_iron', chance: 0.7, qty: { min: 1, max: 2 } },
       { resourceId: 'hollow_shard', chance: 0.25, qty: { min: 1, max: 1 } },
     ],
   },
@@ -194,7 +194,7 @@ export const MONSTERS = {
     skillDropType: 'active',
     skillDrop: { chance: 0.12, skillId: 'soul_chill' },
     resourceDrops: [
-      { resourceId: 'ectoplasm', chance: 0.80, qty: { min: 1, max: 3 } },
+      { resourceId: 'ectoplasm', chance: 0.8, qty: { min: 1, max: 3 } },
       { resourceId: 'hollow_shard', chance: 0.35, qty: { min: 1, max: 2 } },
     ],
   },
@@ -211,8 +211,8 @@ export const MONSTERS = {
     skillDropType: 'active',
     skillDrop: { chance: 0.18, skillId: 'tomb_judgment' },
     resourceDrops: [
-      { resourceId: 'rusted_iron', chance: 0.80, qty: { min: 1, max: 3 } },
-      { resourceId: 'ancient_bone', chance: 0.50, qty: { min: 1, max: 2 } },
+      { resourceId: 'rusted_iron', chance: 0.8, qty: { min: 1, max: 3 } },
+      { resourceId: 'ancient_bone', chance: 0.5, qty: { min: 1, max: 2 } },
       { resourceId: 'cursed_gem', chance: 0.15, qty: { min: 1, max: 1 } },
     ],
   },
@@ -228,10 +228,10 @@ export const MONSTERS = {
     expReward: 50,
     goldReward: { min: 5, max: 10 },
     skillDropType: 'passive',
-    skillDrop: { chance: 0.10, skillId: 'mossy_hide' },
+    skillDrop: { chance: 0.1, skillId: 'mossy_hide' },
     resourceDrops: [
-      { resourceId: 'rotten_flesh', chance: 0.60, qty: { min: 1, max: 2 } },
-      { resourceId: 'earth_crystal', chance: 0.30, qty: { min: 1, max: 1 } },
+      { resourceId: 'rotten_flesh', chance: 0.6, qty: { min: 1, max: 2 } },
+      { resourceId: 'earth_crystal', chance: 0.3, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -246,8 +246,8 @@ export const MONSTERS = {
     goldReward: { min: 4, max: 8 },
     skillDropType: 'none',
     resourceDrops: [
-      { resourceId: 'wolf_pelt', chance: 0.80, qty: { min: 1, max: 2 } },
-      { resourceId: 'wolf_fang', chance: 0.40, qty: { min: 1, max: 1 } },
+      { resourceId: 'wolf_pelt', chance: 0.8, qty: { min: 1, max: 2 } },
+      { resourceId: 'wolf_fang', chance: 0.4, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -261,10 +261,10 @@ export const MONSTERS = {
     expReward: 55,
     goldReward: { min: 6, max: 12 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.10, skillId: 'cheap_shot' },
+    skillDrop: { chance: 0.1, skillId: 'cheap_shot' },
     resourceDrops: [
-      { resourceId: 'rusted_iron', chance: 0.60, qty: { min: 1, max: 2 } },
-      { resourceId: 'bone_fragment', chance: 0.40, qty: { min: 1, max: 2 } },
+      { resourceId: 'rusted_iron', chance: 0.6, qty: { min: 1, max: 2 } },
+      { resourceId: 'bone_fragment', chance: 0.4, qty: { min: 1, max: 2 } },
     ],
   },
 
@@ -280,8 +280,8 @@ export const MONSTERS = {
     skillDropType: 'active',
     skillDrop: { chance: 0.18, skillId: 'trample_charge' },
     resourceDrops: [
-      { resourceId: 'wolf_pelt', chance: 0.80, qty: { min: 1, max: 3 } },
-      { resourceId: 'ancient_bone', chance: 0.50, qty: { min: 1, max: 2 } },
+      { resourceId: 'wolf_pelt', chance: 0.8, qty: { min: 1, max: 3 } },
+      { resourceId: 'ancient_bone', chance: 0.5, qty: { min: 1, max: 2 } },
     ],
   },
 
@@ -298,10 +298,10 @@ export const MONSTERS = {
     expReward: 45,
     goldReward: { min: 4, max: 8 },
     skillDropType: 'passive',
-    skillDrop: { chance: 0.10, skillId: 'iron_resolve' },
+    skillDrop: { chance: 0.1, skillId: 'iron_resolve' },
     resourceDrops: [
-      { resourceId: 'bone_fragment', chance: 0.80, qty: { min: 1, max: 3 } },
-      { resourceId: 'ancient_bone', chance: 0.30, qty: { min: 1, max: 1 } },
+      { resourceId: 'bone_fragment', chance: 0.8, qty: { min: 1, max: 3 } },
+      { resourceId: 'ancient_bone', chance: 0.3, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -316,10 +316,10 @@ export const MONSTERS = {
     expReward: 100,
     goldReward: { min: 10, max: 20 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.20, skillId: 'soul_crush' },
+    skillDrop: { chance: 0.2, skillId: 'soul_crush' },
     resourceDrops: [
-      { resourceId: 'ectoplasm', chance: 0.90, qty: { min: 2, max: 4 } },
-      { resourceId: 'ancient_bone', chance: 0.60, qty: { min: 1, max: 2 } },
+      { resourceId: 'ectoplasm', chance: 0.9, qty: { min: 2, max: 4 } },
+      { resourceId: 'ancient_bone', chance: 0.6, qty: { min: 1, max: 2 } },
     ],
   },
 
@@ -335,8 +335,8 @@ export const MONSTERS = {
     skillDropType: 'active',
     skillDrop: { chance: 0.175, skillId: 'cursed_blade' },
     resourceDrops: [
-      { resourceId: 'cursed_steel', chance: 0.90, qty: { min: 1, max: 2 } },
-      { resourceId: 'warlord_crest', chance: 0.50, qty: { min: 1, max: 1 } },
+      { resourceId: 'cursed_steel', chance: 0.9, qty: { min: 1, max: 2 } },
+      { resourceId: 'warlord_crest', chance: 0.5, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -351,8 +351,8 @@ export const MONSTERS = {
     skillDropType: 'active',
     skillDrop: { chance: 0.175, skillId: 'bone_crush' },
     resourceDrops: [
-      { resourceId: 'giant_bone', chance: 0.90, qty: { min: 2, max: 4 } },
-      { resourceId: 'colossus_marrow', chance: 0.40, qty: { min: 1, max: 1 } },
+      { resourceId: 'giant_bone', chance: 0.9, qty: { min: 2, max: 4 } },
+      { resourceId: 'colossus_marrow', chance: 0.4, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -366,7 +366,7 @@ export const MONSTERS = {
     expReward: 80,
     goldReward: { min: 6, max: 12 },
     skillDropType: 'passive',
-    skillDrop: { chance: 0.10, skillId: 'troll_regeneration' },
+    skillDrop: { chance: 0.1, skillId: 'troll_regeneration' },
     resourceDrops: [
       { resourceId: 'grimstone', chance: 0.75, qty: { min: 1, max: 3 } },
       { resourceId: 'troll_blood', chance: 0.35, qty: { min: 1, max: 2 } },
@@ -382,9 +382,9 @@ export const MONSTERS = {
     expReward: 90,
     goldReward: { min: 8, max: 15 },
     skillDropType: 'passive',
-    skillDrop: { chance: 0.10, skillId: 'sentinel_watch' },
+    skillDrop: { chance: 0.1, skillId: 'sentinel_watch' },
     resourceDrops: [
-      { resourceId: 'cursed_armor_shard', chance: 0.70, qty: { min: 1, max: 2 } },
+      { resourceId: 'cursed_armor_shard', chance: 0.7, qty: { min: 1, max: 2 } },
       { resourceId: 'dark_essence', chance: 0.25, qty: { min: 1, max: 1 } },
     ],
   },
@@ -398,10 +398,10 @@ export const MONSTERS = {
     expReward: 85,
     goldReward: { min: 5, max: 10 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.10, skillId: 'abyss_howl' },
+    skillDrop: { chance: 0.1, skillId: 'abyss_howl' },
     resourceDrops: [
       { resourceId: 'shadow_fur', chance: 0.65, qty: { min: 1, max: 2 } },
-      { resourceId: 'void_fang', chance: 0.30, qty: { min: 1, max: 1 } },
+      { resourceId: 'void_fang', chance: 0.3, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -414,10 +414,10 @@ export const MONSTERS = {
     expReward: 95,
     goldReward: { min: 8, max: 18 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.10, skillId: 'wing_gust' },
+    skillDrop: { chance: 0.1, skillId: 'wing_gust' },
     resourceDrops: [
-      { resourceId: 'wyvern_scale', chance: 0.70, qty: { min: 1, max: 3 } },
-      { resourceId: 'wyvern_talon', chance: 0.30, qty: { min: 1, max: 1 } },
+      { resourceId: 'wyvern_scale', chance: 0.7, qty: { min: 1, max: 3 } },
+      { resourceId: 'wyvern_talon', chance: 0.3, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -430,10 +430,10 @@ export const MONSTERS = {
     expReward: 88,
     goldReward: { min: 6, max: 14 },
     skillDropType: 'passive',
-    skillDrop: { chance: 0.10, skillId: 'plague_aura' },
+    skillDrop: { chance: 0.1, skillId: 'plague_aura' },
     resourceDrops: [
-      { resourceId: 'plague_herb', chance: 0.60, qty: { min: 1, max: 3 } },
-      { resourceId: 'corrupted_scroll', chance: 0.20, qty: { min: 1, max: 1 } },
+      { resourceId: 'plague_herb', chance: 0.6, qty: { min: 1, max: 3 } },
+      { resourceId: 'corrupted_scroll', chance: 0.2, qty: { min: 1, max: 1 } },
     ],
   },
 
@@ -446,7 +446,7 @@ export const MONSTERS = {
     expReward: 92,
     goldReward: { min: 7, max: 16 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.10, skillId: 'iron_shroud' },
+    skillDrop: { chance: 0.1, skillId: 'iron_shroud' },
     resourceDrops: [
       { resourceId: 'spectral_iron', chance: 0.65, qty: { min: 1, max: 2 } },
       { resourceId: 'wraith_essence', chance: 0.25, qty: { min: 1, max: 1 } },
@@ -463,11 +463,11 @@ export const MONSTERS = {
     expReward: 300,
     goldReward: { min: 30, max: 60 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.60, skillId: 'soul_crush' },
+    skillDrop: { chance: 0.6, skillId: 'soul_crush' },
     resourceDrops: [
       { resourceId: 'crypt_seal', chance: 1.0, qty: { min: 1, max: 1 } },
       { resourceId: 'ancient_bone', chance: 1.0, qty: { min: 2, max: 4 } },
-      { resourceId: 'cursed_gem', chance: 0.50, qty: { min: 1, max: 1 } },
+      { resourceId: 'cursed_gem', chance: 0.5, qty: { min: 1, max: 1 } },
     ],
     // BSS01 (léger) — enrage à 50% HP (stand-in invocation ; BSS01b = vraie invocation de 2 adds)
     bossMechanics: { type: 'enrage', triggerHp: 0.5 },
@@ -482,11 +482,11 @@ export const MONSTERS = {
     expReward: 700,
     goldReward: { min: 80, max: 150 },
     skillDropType: 'active',
-    skillDrop: { chance: 0.60, skillId: 'forsaken_curse' },
+    skillDrop: { chance: 0.6, skillId: 'forsaken_curse' },
     resourceDrops: [
       { resourceId: 'forsaken_seal', chance: 1.0, qty: { min: 1, max: 1 } },
       { resourceId: 'void_crystal', chance: 1.0, qty: { min: 1, max: 2 } },
-      { resourceId: 'dark_lord_relic', chance: 0.40, qty: { min: 1, max: 1 } },
+      { resourceId: 'dark_lord_relic', chance: 0.4, qty: { min: 1, max: 1 } },
     ],
     // BSS02 (léger) — Cursed Strike (STR−20%, 2 tours) ; BSS02b = couche d'armure régénérante
     bossMechanics: { type: 'cursed_strike', chance: 0.4 },
@@ -521,13 +521,32 @@ export const MONSTERS_RESERVE = Object.keys(MONSTERS).filter((id) => MONSTERS[id
 // Monstres par zone principale (pour unlock + idle indicator) — exclut la réserve
 export const MONSTERS_BY_ZONE = {
   ashenvale: [
-    'ashwood_wolf', 'thicket_hare', 'tuskmaw_boar', 'old_oakheart',
-    'marsh_serpent', 'briar_wraith', 'mire_slime', 'fenrot_devourer',
-    'stone_golem', 'hollow_knight', 'ruin_specter', 'graven_sentinel',
-    'hill_slime', 'russet_fox', 'knoll_goblin', 'thunderhoof',
+    'ashwood_wolf',
+    'thicket_hare',
+    'tuskmaw_boar',
+    'old_oakheart',
+    'marsh_serpent',
+    'briar_wraith',
+    'mire_slime',
+    'fenrot_devourer',
+    'stone_golem',
+    'hollow_knight',
+    'ruin_specter',
+    'graven_sentinel',
+    'hill_slime',
+    'russet_fox',
+    'knoll_goblin',
+    'thunderhoof',
   ],
   blighted_road: ['cursed_warlord', 'bone_colossus'],
-  grimspire: ['grimstone_troll', 'cursed_sentinel', 'abyssal_hound', 'wyvern_scout', 'plague_monk', 'iron_wraith'],
+  grimspire: [
+    'grimstone_troll',
+    'cursed_sentinel',
+    'abyssal_hound',
+    'wyvern_scout',
+    'plague_monk',
+    'iron_wraith',
+  ],
 }
 
 // Monstres par spot de chasse Ashenvale (4 clearings de surface) — exclut la réserve

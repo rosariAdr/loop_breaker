@@ -2,10 +2,11 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import prettier from 'eslint-config-prettier/flat'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'design']),
+  globalIgnores(['dist', 'design', 'coverage']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -59,4 +60,7 @@ export default defineConfig([
       'react-refresh/only-export-components': 'off',
     },
   },
+  // DEVBP01 — doit rester en dernier : désactive les règles ESLint de mise en forme
+  // qui entreraient en conflit avec Prettier (Prettier gère seul le formatage).
+  prettier,
 ])

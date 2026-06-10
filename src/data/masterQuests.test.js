@@ -21,9 +21,12 @@ describe('ACA04 — heroSkillLevels', () => {
 })
 
 describe('ACA04 — objectif skill_levelup', () => {
-  beforeEach(() => { store().resetGame(); localStorage.clear() })
+  beforeEach(() => {
+    store().resetGame()
+    localStorage.clear()
+  })
 
-  it('chaque quête de maître cible un skill_levelup et récompense de l\'or', () => {
+  it("chaque quête de maître cible un skill_levelup et récompense de l'or", () => {
     for (const q of Object.values(MASTER_QUESTS)) {
       expect(q.objectives[0].type).toBe('skill_levelup')
       expect(q.objectives[0].targetLevel).toBeGreaterThanOrEqual(2)
@@ -31,15 +34,19 @@ describe('ACA04 — objectif skill_levelup', () => {
     }
   })
 
-  it('isQuestComplete = false tant que le skill n\'a pas atteint le niveau', () => {
+  it("isQuestComplete = false tant que le skill n'a pas atteint le niveau", () => {
     const q = MASTER_QUESTS.master_sharpen_strike // counter_strike Lv2
     store().startQuest(q.id)
     expect(store().isQuestComplete(q.id)).toBe(false)
     // skill au niveau 1 → toujours incomplet
-    useGameStore.setState((s) => ({ hero: { ...s.hero, activeSkills: [{ skillId: 'counter_strike', level: 1, xp: 0 }] } }))
+    useGameStore.setState((s) => ({
+      hero: { ...s.hero, activeSkills: [{ skillId: 'counter_strike', level: 1, xp: 0 }] },
+    }))
     expect(store().isQuestComplete(q.id)).toBe(false)
     // niveau 2 → complet
-    useGameStore.setState((s) => ({ hero: { ...s.hero, activeSkills: [{ skillId: 'counter_strike', level: 2, xp: 0 }] } }))
+    useGameStore.setState((s) => ({
+      hero: { ...s.hero, activeSkills: [{ skillId: 'counter_strike', level: 2, xp: 0 }] },
+    }))
     expect(store().isQuestComplete(q.id)).toBe(true)
   })
 
@@ -48,7 +55,9 @@ describe('ACA04 — objectif skill_levelup', () => {
     const goldBefore = store().hero.inventory.gold
     const auraBefore = store().hero.aura ?? 0
     store().startQuest(q.id)
-    useGameStore.setState((s) => ({ hero: { ...s.hero, activeSkills: [{ skillId: 'counter_strike', level: 2, xp: 0 }] } }))
+    useGameStore.setState((s) => ({
+      hero: { ...s.hero, activeSkills: [{ skillId: 'counter_strike', level: 2, xp: 0 }] },
+    }))
     store().completeQuest(q.id)
     expect(store().hero.inventory.gold).toBe(goldBefore + 80)
     expect(store().hero.aura).toBe(auraBefore + 5)
@@ -58,7 +67,9 @@ describe('ACA04 — objectif skill_levelup', () => {
     const q = MASTER_QUESTS.master_focus_cleave // gold 100 + concentration 5
     const concBefore = store().hero.concentration ?? 0
     store().startQuest(q.id)
-    useGameStore.setState((s) => ({ hero: { ...s.hero, activeSkills: [{ skillId: 'cleave', level: 2, xp: 0 }] } }))
+    useGameStore.setState((s) => ({
+      hero: { ...s.hero, activeSkills: [{ skillId: 'cleave', level: 2, xp: 0 }] },
+    }))
     store().completeQuest(q.id)
     expect(store().hero.concentration).toBe(concBefore + 5)
   })

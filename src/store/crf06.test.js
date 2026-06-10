@@ -6,7 +6,10 @@ import { RESOURCES } from '../data/resources'
 const store = () => useGameStore.getState()
 
 describe('CRF06 — antidote / cure des debuffs', () => {
-  beforeEach(() => { store().resetGame(); localStorage.clear() })
+  beforeEach(() => {
+    store().resetGame()
+    localStorage.clear()
+  })
 
   it('antidote_basic déclare bien cureDebuffs', () => {
     expect(RESOURCES.antidote_basic.effect.cureDebuffs).toBe(true)

@@ -31,16 +31,18 @@ describe('CHQ01 — rotation du pool de quêtes', () => {
   })
 
   it('même journée → même sélection (déterministe)', () => {
-    expect(getActiveChurchQuests(1).map(q => q.id)).toEqual(getActiveChurchQuests(2).map(q => q.id))
+    expect(getActiveChurchQuests(1).map((q) => q.id)).toEqual(
+      getActiveChurchQuests(2).map((q) => q.id),
+    )
   })
 
-  it('la sélection change d\'un bloc à l\'autre', () => {
-    const block0 = getActiveChurchQuests(1).map(q => q.id)
-    const block1 = getActiveChurchQuests(3).map(q => q.id)
+  it("la sélection change d'un bloc à l'autre", () => {
+    const block0 = getActiveChurchQuests(1).map((q) => q.id)
+    const block1 = getActiveChurchQuests(3).map((q) => q.id)
     expect(block0).not.toEqual(block1)
   })
 
-  it('aucune quête d\'église ne récompense de l\'or', () => {
+  it("aucune quête d'église ne récompense de l'or", () => {
     for (const q of Object.values(CHURCH_QUESTS)) {
       expect(q.reward.gold ?? 0).toBe(0)
       expect(q.reward.consumables || q.reward.reputationTokens).toBeTruthy()
@@ -49,9 +51,12 @@ describe('CHQ01 — rotation du pool de quêtes', () => {
 })
 
 describe('CHQ01 — récompense via completeQuest (tokens + consommables, sans or)', () => {
-  beforeEach(() => { store().resetGame(); localStorage.clear() })
+  beforeEach(() => {
+    store().resetGame()
+    localStorage.clear()
+  })
 
-  it('compléter une quête d\'église octroie tokens + consommables et PAS d\'or', () => {
+  it("compléter une quête d'église octroie tokens + consommables et PAS d'or", () => {
     const quest = CHURCH_QUESTS.church_thin_the_pack // 5 ashwood_wolf → 1 token + 3 stamina_ration
     const goldBefore = store().hero.inventory.gold
     const tokensBefore = store().hero.reputationTokens
@@ -59,7 +64,9 @@ describe('CHQ01 — récompense via completeQuest (tokens + consommables, sans o
 
     // accepte + remplit l'objectif
     store().startQuest(quest.id)
-    useGameStore.setState((s) => ({ world: { ...s.world, monsterKillCounts: { ...s.world.monsterKillCounts, ashwood_wolf: 5 } } }))
+    useGameStore.setState((s) => ({
+      world: { ...s.world, monsterKillCounts: { ...s.world.monsterKillCounts, ashwood_wolf: 5 } },
+    }))
     expect(store().isQuestComplete(quest.id)).toBe(true)
 
     store().completeQuest(quest.id)
@@ -70,7 +77,7 @@ describe('CHQ01 — récompense via completeQuest (tokens + consommables, sans o
     expect(store().world.completedQuests).toContain(quest.id)
   })
 
-  it('une quête d\'église est résolue par le registre (startQuest/isQuestComplete)', () => {
+  it("une quête d'église est résolue par le registre (startQuest/isQuestComplete)", () => {
     const quest = CHURCH_QUESTS.church_purge_slimes
     store().startQuest(quest.id)
     expect(store().world.activeQuests).toContain(quest.id)

@@ -27,7 +27,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <NormalChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(screen.getByText('Normal content')).toBeInTheDocument()
   })
@@ -36,7 +36,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(screen.getByText(/Something broke/i)).toBeInTheDocument()
   })
@@ -45,7 +45,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild message="Test crash 42" />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(screen.getByText(/Test crash 42/)).toBeInTheDocument()
   })
@@ -54,7 +54,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(screen.getByText(/Reload page/i)).toBeInTheDocument()
     expect(screen.getByText(/Reset save/i)).toBeInTheDocument()
@@ -69,7 +69,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     fireEvent.click(screen.getByText(/Reload page/i))
     expect(reloadMock).toHaveBeenCalled()
@@ -87,7 +87,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     fireEvent.click(screen.getByText(/Reset save/i))
 
@@ -103,7 +103,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     fireEvent.click(screen.getByText(/Reset save/i))
 
@@ -115,7 +115,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild message="Logged error" />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(errorSpy).toHaveBeenCalled()
   })

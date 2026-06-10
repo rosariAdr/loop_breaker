@@ -8,7 +8,12 @@ beforeEach(() => {
   useGameStore.getState().resetGame()
   useGameStore.setState((s) => ({
     currentScreen: 'safe_zone',
-    world: { ...s.world, currentZone: 'ashenvale', currentLocation: 'millhaven', currentHuntingSpot: null },
+    world: {
+      ...s.world,
+      currentZone: 'ashenvale',
+      currentLocation: 'millhaven',
+      currentHuntingSpot: null,
+    },
   }))
   localStorage.clear()
 })

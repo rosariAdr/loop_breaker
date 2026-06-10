@@ -24,7 +24,13 @@ export const MASTER_QUESTS = {
     isMasterQuest: true,
     flavorText: '"A technique half-learned is a wound waiting to happen. Master it."',
     objectives: [
-      { id: 'lvl_counter', type: 'skill_levelup', skillId: 'counter_strike', targetLevel: 2, label: 'Raise Counter Strike to Lv2' },
+      {
+        id: 'lvl_counter',
+        type: 'skill_levelup',
+        skillId: 'counter_strike',
+        targetLevel: 2,
+        label: 'Raise Counter Strike to Lv2',
+      },
     ],
     reward: { gold: 80, aura: 5 },
   },
@@ -37,7 +43,13 @@ export const MASTER_QUESTS = {
     isMasterQuest: true,
     flavorText: '"Power without focus is noise. Show me focus."',
     objectives: [
-      { id: 'lvl_cleave', type: 'skill_levelup', skillId: 'cleave', targetLevel: 2, label: 'Raise Cleave to Lv2' },
+      {
+        id: 'lvl_cleave',
+        type: 'skill_levelup',
+        skillId: 'cleave',
+        targetLevel: 2,
+        label: 'Raise Cleave to Lv2',
+      },
     ],
     reward: { gold: 100, concentration: 5 },
   },
@@ -50,7 +62,13 @@ export const MASTER_QUESTS = {
     isMasterQuest: true,
     flavorText: '"The body breaks where the will is soft. Temper yours."',
     objectives: [
-      { id: 'lvl_resolve', type: 'skill_levelup', skillId: 'veterans_resolve', targetLevel: 2, label: "Raise Veteran's Resolve to Lv2" },
+      {
+        id: 'lvl_resolve',
+        type: 'skill_levelup',
+        skillId: 'veterans_resolve',
+        targetLevel: 2,
+        label: "Raise Veteran's Resolve to Lv2",
+      },
     ],
     reward: { gold: 90, skill: { skillId: 'battle_focus', level: 1 } },
   },

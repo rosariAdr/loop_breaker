@@ -15,16 +15,21 @@ afterEach(cleanup)
 describe('ACA02 — déséquiper hors Académie', () => {
   it('clic « Unequip » sur un skill actif dans le HeroSheet → bloqué (reste équipé)', () => {
     useGameStore.setState((s) => ({
-      hero: { ...s.hero, activeSkills: [{ skillId: 'power_strike', level: 1, xp: 0, currentCooldown: 0 }] },
+      hero: {
+        ...s.hero,
+        activeSkills: [{ skillId: 'power_strike', level: 1, xp: 0, currentCooldown: 0 }],
+      },
     }))
     render(<HeroSheet onClose={() => {}} />)
     // Pas d'équipement → le seul bouton "Unequip" est celui du skill
     fireEvent.click(screen.getByTitle('Unequip'))
     // Le skill reste équipé (déséquipement interdit ailleurs qu'à l'Académie)
-    expect(useGameStore.getState().hero.activeSkills.some((s) => s.skillId === 'power_strike')).toBe(true)
+    expect(
+      useGameStore.getState().hero.activeSkills.some((s) => s.skillId === 'power_strike'),
+    ).toBe(true)
   })
 
-  it('un feedback (toast) informe d\'aller à l\'Académie', () => {
+  it("un feedback (toast) informe d'aller à l'Académie", () => {
     useGameStore.setState((s) => ({
       hero: { ...s.hero, passiveSkills: [{ skillId: 'veterans_resolve', level: 1, xp: 0 }] },
     }))
@@ -33,6 +38,8 @@ describe('ACA02 — déséquiper hors Académie', () => {
     const toasts = useToastStore.getState().toasts ?? []
     expect(toasts.some((t) => /Academy/i.test(t.message ?? t.text ?? ''))).toBe(true)
     // et le passif reste équipé
-    expect(useGameStore.getState().hero.passiveSkills.some((s) => s.skillId === 'veterans_resolve')).toBe(true)
+    expect(
+      useGameStore.getState().hero.passiveSkills.some((s) => s.skillId === 'veterans_resolve'),
+    ).toBe(true)
   })
 })

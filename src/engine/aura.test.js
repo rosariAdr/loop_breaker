@@ -8,7 +8,7 @@ const store = () => useGameStore.getState()
 describe('STA02 — helpers', () => {
   it('countWithinDays = fenêtre glissante', () => {
     expect(countWithinDays([1, 1, 2, 3], 4, 4)).toBe(4) // tous < 4 jours
-    expect(countWithinDays([1, 1, 1], 6, 4)).toBe(0)    // 6-1=5 ≥ 4
+    expect(countWithinDays([1, 1, 1], 6, 4)).toBe(0) // 6-1=5 ≥ 4
     expect(countWithinDays([], 5, 4)).toBe(0)
   })
   it('auraDamageMult = 1 + 0.5%/point', () => {
@@ -19,9 +19,12 @@ describe('STA02 — helpers', () => {
 })
 
 describe('STA02 — recordSkillUse (déblocage + gain)', () => {
-  beforeEach(() => { store().resetGame(); localStorage.clear() })
+  beforeEach(() => {
+    store().resetGame()
+    localStorage.clear()
+  })
 
-  it('Aura se débloque à 15 skills en <4 jours (= 15 d\'Aura)', () => {
+  it("Aura se débloque à 15 skills en <4 jours (= 15 d'Aura)", () => {
     expect(store().hero.aura).toBe(0)
     for (let i = 0; i < 14; i++) store().recordSkillUse()
     expect(store().hero.aura).toBe(0) // pas encore

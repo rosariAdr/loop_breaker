@@ -25,12 +25,15 @@ describe('CRF01 — data/debuffs', () => {
 describe('CRF01 — makeDebuff', () => {
   it('temporaire : remaining = days', () => {
     expect(makeDebuff('fatigue', 7)).toMatchObject({
-      debuffId: 'fatigue', permanent: false, duration: { type: 'days', remaining: 7 },
+      debuffId: 'fatigue',
+      permanent: false,
+      duration: { type: 'days', remaining: 7 },
     })
   })
   it('permanent : remaining null', () => {
     expect(makeDebuff('black_smoke', 7, true)).toMatchObject({
-      permanent: true, duration: { remaining: null },
+      permanent: true,
+      duration: { remaining: null },
     })
   })
 })
@@ -88,8 +91,8 @@ describe('CRF01 — getDebuffStatModifiers / applyDebuffsToStats', () => {
 
   it('agrège les réductions par stat', () => {
     const mods = getDebuffStatModifiers([makeDebuff('burnt_hands'), makeDebuff('fatigue')])
-    expect(mods.strength).toBeCloseTo(0.10)
-    expect(mods.agility).toBeCloseTo(0.20)
+    expect(mods.strength).toBeCloseTo(0.1)
+    expect(mods.agility).toBeCloseTo(0.2)
   })
 
   it('applique les réductions aux stats', () => {
@@ -101,7 +104,7 @@ describe('CRF01 — getDebuffStatModifiers / applyDebuffsToStats', () => {
   it('cumule deux debuffs sur la même stat (additif, plafonné)', () => {
     const out = applyDebuffsToStats(base, [makeDebuff('fatigue'), makeDebuff('fatigue')])
     // note : addDebuff empêche le doublon, mais applyDebuffsToStats reste additif si forcé
-    expect(out.agility).toBe(Math.round(10 * (1 - 0.40)))
+    expect(out.agility).toBe(Math.round(10 * (1 - 0.4)))
   })
 
   it('ne mute pas les stats de base', () => {

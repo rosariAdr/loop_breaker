@@ -34,8 +34,8 @@ describe('calcBaseDamage', () => {
     // atk=10, def=4 → base = 10 - 2 = 8, variance ±10%
     for (let i = 0; i < 50; i++) {
       const dmg = calcBaseDamage(10, 4)
-      expect(dmg).toBeGreaterThanOrEqual(7)  // 8 * 0.9 ≈ 7
-      expect(dmg).toBeLessThanOrEqual(9)     // 8 * 1.1 ≈ 9
+      expect(dmg).toBeGreaterThanOrEqual(7) // 8 * 0.9 ≈ 7
+      expect(dmg).toBeLessThanOrEqual(9) // 8 * 1.1 ≈ 9
     }
   })
 
@@ -45,8 +45,10 @@ describe('calcBaseDamage', () => {
   })
 
   it("ATK élevée produit plus de dégâts qu'ATK faible (même DEF)", () => {
-    const lowAvg = Array.from({ length: 100 }, () => calcBaseDamage(5, 0)).reduce((a, b) => a + b, 0) / 100
-    const highAvg = Array.from({ length: 100 }, () => calcBaseDamage(20, 0)).reduce((a, b) => a + b, 0) / 100
+    const lowAvg =
+      Array.from({ length: 100 }, () => calcBaseDamage(5, 0)).reduce((a, b) => a + b, 0) / 100
+    const highAvg =
+      Array.from({ length: 100 }, () => calcBaseDamage(20, 0)).reduce((a, b) => a + b, 0) / 100
     expect(highAvg).toBeGreaterThan(lowAvg)
   })
 
@@ -148,8 +150,8 @@ describe('applySkillCost', () => {
 
 // ── getScaledSkillCost (S07) ──────────────────────────────────────────────────
 describe('getScaledSkillCost — S07', () => {
-  const tplPhys = SKILLS.savage_bite          // mana: 15, costReduction Lv2=0.10, Lv3=0.20
-  const tplVenom = SKILLS.venom_bite          // mana: 18, costReduction Lv2=0.10, Lv3=0.20
+  const tplPhys = SKILLS.savage_bite // mana: 15, costReduction Lv2=0.10, Lv3=0.20
+  const tplVenom = SKILLS.venom_bite // mana: 18, costReduction Lv2=0.10, Lv3=0.20
 
   it('Lv 1 : aucun changement de coût', () => {
     expect(getScaledSkillCost(tplPhys, 1)).toEqual({ mana: 15, hp: 0 })
@@ -163,16 +165,16 @@ describe('getScaledSkillCost — S07', () => {
     expect(getScaledSkillCost(tplPhys, 3)).toEqual({ mana: Math.round(15 * 0.8), hp: 0 })
   })
 
-  it("retourne {mana:0, hp:0} si template manquant", () => {
+  it('retourne {mana:0, hp:0} si template manquant', () => {
     expect(getScaledSkillCost(null, 1)).toEqual({ mana: 0, hp: 0 })
     expect(getScaledSkillCost(undefined, 2)).toEqual({ mana: 0, hp: 0 })
   })
 
-  it("venom_bite Lv 3 (18 mana → 14 arrondi)", () => {
+  it('venom_bite Lv 3 (18 mana → 14 arrondi)', () => {
     expect(getScaledSkillCost(tplVenom, 3)).toEqual({ mana: Math.round(18 * 0.8), hp: 0 })
   })
 
-  it("ne va jamais sous 0", () => {
+  it('ne va jamais sous 0', () => {
     const cheap = { cost: { mana: 1, hp: 0 }, levelBonuses: { 3: { costReduction: 0.99 } } }
     expect(getScaledSkillCost(cheap, 3).mana).toBeGreaterThanOrEqual(0)
   })
@@ -195,7 +197,7 @@ describe('applySkillCost — S07 réduction au niveau', () => {
 
 // ── canUseSkill — B09 cost.hp + S07 ──────────────────────────────────────────
 describe('canUseSkill — B09 cost.hp + S07 niveau', () => {
-  it("refuse si cost.hp >= hp courant", () => {
+  it('refuse si cost.hp >= hp courant', () => {
     // En réalité aucun skill du jeu n'a cost.hp > 0 actuellement, donc on prouve
     // la logique sur un cas où le HP est très bas mais le skill ne coûte pas de HP.
     const heroLowHp = { mana: 60, hp: 5, maxHp: 100, maxMana: 60 }
@@ -209,8 +211,8 @@ describe('canUseSkill — B09 cost.hp + S07 niveau', () => {
     const heroLowMana = { mana: 13, hp: 100, maxHp: 100, maxMana: 60 }
     const skillLv1 = { skillId: 'savage_bite', level: 1, currentCooldown: 0 }
     const skillLv3 = { skillId: 'savage_bite', level: 3, currentCooldown: 0 }
-    expect(canUseSkill(skillLv1, heroLowMana)).toBe(false)  // 15 > 13
-    expect(canUseSkill(skillLv3, heroLowMana)).toBe(true)   // 12 <= 13
+    expect(canUseSkill(skillLv1, heroLowMana)).toBe(false) // 15 > 13
+    expect(canUseSkill(skillLv3, heroLowMana)).toBe(true) // 12 <= 13
   })
 })
 
@@ -264,8 +266,8 @@ describe('calcDrops', () => {
 
   it('stone_golem droppe des stone_shard ou earth_crystal', () => {
     const drops = calcDrops('stone_golem', 5)
-    const ids = drops.resources.map(r => r.id)
-    const valid = ids.every(id => ['stone_shard', 'earth_crystal'].includes(id))
+    const ids = drops.resources.map((r) => r.id)
+    const valid = ids.every((id) => ['stone_shard', 'earth_crystal'].includes(id))
     expect(valid).toBe(true)
   })
 
@@ -275,15 +277,15 @@ describe('calcDrops', () => {
       // chance: 1.0 → garanti sur 50 itérations
       for (let i = 0; i < 50; i++) {
         const drops = calcDrops('hollow_crypt_boss', 5)
-        const ids = drops.resources.map(r => r.id)
+        const ids = drops.resources.map((r) => r.id)
         expect(ids).toContain('crypt_seal')
       }
     })
 
-    it('hollow_crypt_boss droppe TOUJOURS de l\'ancient_bone', () => {
+    it("hollow_crypt_boss droppe TOUJOURS de l'ancient_bone", () => {
       for (let i = 0; i < 50; i++) {
         const drops = calcDrops('hollow_crypt_boss', 5)
-        const ids = drops.resources.map(r => r.id)
+        const ids = drops.resources.map((r) => r.id)
         expect(ids).toContain('ancient_bone')
       }
     })
@@ -291,7 +293,7 @@ describe('calcDrops', () => {
     it('forsaken_citadel_boss droppe TOUJOURS forsaken_seal + void_crystal', () => {
       for (let i = 0; i < 30; i++) {
         const drops = calcDrops('forsaken_citadel_boss', 5)
-        const ids = drops.resources.map(r => r.id)
+        const ids = drops.resources.map((r) => r.id)
         expect(ids).toContain('forsaken_seal')
         expect(ids).toContain('void_crystal')
       }
@@ -300,7 +302,7 @@ describe('calcDrops', () => {
     it('malachar droppe TOUJOURS le demon_lord_heart + void_crystal', () => {
       for (let i = 0; i < 30; i++) {
         const drops = calcDrops('malachar', 5)
-        const ids = drops.resources.map(r => r.id)
+        const ids = drops.resources.map((r) => r.id)
         expect(ids).toContain('demon_lord_heart')
         expect(ids).toContain('void_crystal')
       }
@@ -347,7 +349,7 @@ describe('buildEnemy', () => {
 
   it('stats scalées selon la zone (grimspire > ashenvale)', () => {
     const ashenvale = buildEnemy('ashwood_wolf', 'ashenvale', 1)
-    const grimspire  = buildEnemy('ashwood_wolf', 'grimspire', 1)
+    const grimspire = buildEnemy('ashwood_wolf', 'grimspire', 1)
     expect(grimspire.stats.hp).toBeGreaterThan(ashenvale.stats.hp)
   })
 
@@ -361,10 +363,7 @@ describe('buildEnemy', () => {
 // ── calcExpGain ───────────────────────────────────────────────────────────────
 describe('calcExpGain', () => {
   it("somme correctement l'expReward des ennemis", () => {
-    const enemies = [
-      { expReward: 15 },
-      { expReward: 18 },
-    ]
+    const enemies = [{ expReward: 15 }, { expReward: 18 }]
     expect(calcExpGain(enemies)).toBe(33)
   })
 
@@ -427,16 +426,16 @@ describe('enemyAI', () => {
 
 // ── calcTurnOrder ─────────────────────────────────────────────────────────────
 describe('calcTurnOrder', () => {
-  const hero   = { agility: 15 }
-  const slow   = { id: 'slow',   stats: { spd: 5  } }
-  const fast   = { id: 'fast',   stats: { spd: 20 } }
+  const hero = { agility: 15 }
+  const slow = { id: 'slow', stats: { spd: 5 } }
+  const fast = { id: 'fast', stats: { spd: 20 } }
   const medium = { id: 'medium', stats: { spd: 10 } }
 
   it('trie du plus rapide au plus lent', () => {
     const order = calcTurnOrder(hero, [slow, fast, medium])
     expect(order[0].agility ?? order[0].id).toBeDefined()
     // fast (20) > hero (15) > medium (10) > slow (5)
-    const ids = order.map(c => c.id ?? 'hero')
+    const ids = order.map((c) => c.id ?? 'hero')
     expect(ids[0]).toBe('fast')
     expect(ids[1]).toBe('hero')
     expect(ids[2]).toBe('medium')
@@ -450,7 +449,7 @@ describe('calcTurnOrder', () => {
 
   it('héros est identifié par isHero: true', () => {
     const order = calcTurnOrder(hero, [slow])
-    const heroEntry = order.find(c => c.isHero)
+    const heroEntry = order.find((c) => c.isHero)
     expect(heroEntry).toBeDefined()
   })
 })
@@ -526,7 +525,7 @@ describe('applyStatusEffect — plafond 2 + refresh', () => {
   it('refuse un 3e type différent (plafond 2)', () => {
     const result = applyStatusEffect([poison, burn], slow)
     expect(result).toHaveLength(2)
-    expect(result.some(e => e.type === 'slow')).toBe(false)
+    expect(result.some((e) => e.type === 'slow')).toBe(false)
   })
 
   it('même type : rafraîchit la durée au max sans empiler', () => {
@@ -547,7 +546,16 @@ describe('applyStatusEffect — plafond 2 + refresh', () => {
 })
 
 describe('getEffectiveStats — modificateurs de stats', () => {
-  const base = { strength: 20, intelligence: 15, agility: 12, def: 10, atk: 18, spd: 12, hp: 100, maxHp: 100 }
+  const base = {
+    strength: 20,
+    intelligence: 15,
+    agility: 12,
+    def: 10,
+    atk: 18,
+    spd: 12,
+    hp: 100,
+    maxHp: 100,
+  }
 
   it('aucun effet de stat : stats inchangées', () => {
     expect(getEffectiveStats(base, [])).toEqual(base)
@@ -566,7 +574,7 @@ describe('getEffectiveStats — modificateurs de stats', () => {
   })
 
   it('atk_down réduit ATK et Strength', () => {
-    const s = getEffectiveStats(base, [{ type: 'atk_down', duration: 3, reduction: 0.20 }])
+    const s = getEffectiveStats(base, [{ type: 'atk_down', duration: 3, reduction: 0.2 }])
     expect(s.atk).toBe(Math.round(18 * 0.8))
     expect(s.strength).toBe(Math.round(20 * 0.8))
   })
@@ -599,7 +607,10 @@ describe('B10 — sacrifice de stat (cost.stat_sacrifice)', () => {
 
   it('reckless_blow existe et déclare un sacrifice de stat', () => {
     expect(SKILLS.reckless_blow).toBeDefined()
-    expect(SKILLS.reckless_blow.cost.stat_sacrifice).toMatchObject({ stat: 'agility', amount: expect.any(Number) })
+    expect(SKILLS.reckless_blow.cost.stat_sacrifice).toMatchObject({
+      stat: 'agility',
+      amount: expect.any(Number),
+    })
   })
 
   it('applySkillCost réduit la stat sacrifiée (agility -3)', () => {
@@ -648,18 +659,18 @@ describe('B12 — isEnemyTooStrong + getMonsterLevel', () => {
   })
 
   it('isEnemyTooStrong vrai si niveau ennemi > hero + 5', () => {
-    expect(isEnemyTooStrong(18, 10)).toBe(true)   // 18 > 15
-    expect(isEnemyTooStrong(16, 10)).toBe(true)   // 16 > 15
+    expect(isEnemyTooStrong(18, 10)).toBe(true) // 18 > 15
+    expect(isEnemyTooStrong(16, 10)).toBe(true) // 16 > 15
   })
 
   it('isEnemyTooStrong faux si dans la marge de 5', () => {
-    expect(isEnemyTooStrong(15, 10)).toBe(false)  // 15 == 15, pas >
+    expect(isEnemyTooStrong(15, 10)).toBe(false) // 15 == 15, pas >
     expect(isEnemyTooStrong(12, 10)).toBe(false)
     expect(isEnemyTooStrong(1, 10)).toBe(false)
   })
 
   it('isEnemyTooStrong accepte un écart paramétrable', () => {
-    expect(isEnemyTooStrong(13, 10, 2)).toBe(true)  // 13 > 12
+    expect(isEnemyTooStrong(13, 10, 2)).toBe(true) // 13 > 12
     expect(isEnemyTooStrong(13, 10, 5)).toBe(false) // 13 <= 15
   })
 })
@@ -714,7 +725,7 @@ describe('B03 — generateEnemies', () => {
 
   it('chaque ennemi a un id unique', () => {
     const enemies = generateEnemies('marsh_serpent', 'ashenvale', 1)
-    const ids = new Set(enemies.map(e => e.id))
+    const ids = new Set(enemies.map((e) => e.id))
     expect(ids.size).toBe(enemies.length)
   })
 

@@ -5,7 +5,7 @@ import { SKILLS } from '../data/skills'
 
 export default function DivineCall() {
   const { pendingDivineCall, acceptDeity, refuseDeity, meta } = useGameStore()
-  const [phase, setPhase] = useState('message')   // 'message' | 'choose_skill' | 'confirm_refuse'
+  const [phase, setPhase] = useState('message') // 'message' | 'choose_skill' | 'confirm_refuse'
   const [chosenSkill, setChosenSkill] = useState(null)
 
   if (!pendingDivineCall) return null
@@ -17,7 +17,7 @@ export default function DivineCall() {
   const universeId = deity.universe ?? 'medieval_fantasy'
   const isReturningDeity = meta.divineBonds?.[universeId] === deity.id
 
-  const skillOptions = deity.divineSkillOptions.map(id => ({
+  const skillOptions = deity.divineSkillOptions.map((id) => ({
     id,
     template: SKILLS[id],
   }))
@@ -65,7 +65,14 @@ export default function DivineCall() {
               >
                 {deity.sigil}
               </div>
-              <p style={{ fontFamily: 'Cinzel, serif', color: deity.color, fontSize: '1.3rem', letterSpacing: '0.08em' }}>
+              <p
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  color: deity.color,
+                  fontSize: '1.3rem',
+                  letterSpacing: '0.08em',
+                }}
+              >
                 {deity.name}
               </p>
               <p style={{ color: '#6a5a7a', fontSize: '0.78rem', marginTop: '0.2rem' }}>
@@ -80,10 +87,24 @@ export default function DivineCall() {
                 className="p-2.5 rounded text-center"
                 style={{ background: `${deity.color}12`, border: `1px solid ${deity.color}40` }}
               >
-                <p style={{ color: deity.color, fontSize: '0.78rem', fontFamily: 'Cinzel, serif', letterSpacing: '0.04em' }}>
+                <p
+                  style={{
+                    color: deity.color,
+                    fontSize: '0.78rem',
+                    fontFamily: 'Cinzel, serif',
+                    letterSpacing: '0.04em',
+                  }}
+                >
                   ✦ {deity.name} remembers you ✦
                 </p>
-                <p style={{ color: '#8a7a9a', fontSize: '0.72rem', fontStyle: 'italic', marginTop: '0.2rem' }}>
+                <p
+                  style={{
+                    color: '#8a7a9a',
+                    fontSize: '0.72rem',
+                    fontStyle: 'italic',
+                    marginTop: '0.2rem',
+                  }}
+                >
                   "We have walked together before. I knew you would return."
                 </p>
               </div>
@@ -145,7 +166,14 @@ export default function DivineCall() {
               <p style={{ fontFamily: 'Cinzel, serif', color: deity.color, fontSize: '1.1rem' }}>
                 {deity.sigil} Choose your gift
               </p>
-              <p style={{ color: '#6a5a7a', fontSize: '0.8rem', marginTop: '0.3rem', fontStyle: 'italic' }}>
+              <p
+                style={{
+                  color: '#6a5a7a',
+                  fontSize: '0.8rem',
+                  marginTop: '0.3rem',
+                  fontStyle: 'italic',
+                }}
+              >
                 "{deity.acceptMessage}"
               </p>
             </div>
@@ -164,13 +192,22 @@ export default function DivineCall() {
                       border: `1px solid ${isChosen ? deity.color : `${deity.color}25`}`,
                     }}
                   >
-                    <p style={{ fontFamily: 'Cinzel, serif', color: deity.color, fontSize: '0.9rem' }}>
+                    <p
+                      style={{
+                        fontFamily: 'Cinzel, serif',
+                        color: deity.color,
+                        fontSize: '0.9rem',
+                      }}
+                    >
                       {template.name}
                     </p>
                     <p style={{ color: '#7a6a8a', fontSize: '0.78rem', marginTop: '0.3rem' }}>
                       {template.description}
                     </p>
-                    <div className="flex gap-3 mt-2" style={{ color: '#5a4a6a', fontSize: '0.72rem' }}>
+                    <div
+                      className="flex gap-3 mt-2"
+                      style={{ color: '#5a4a6a', fontSize: '0.72rem' }}
+                    >
                       {template.cost.mana > 0 && <span>{template.cost.mana} MP</span>}
                       {template.cost.hp > 0 && <span>{template.cost.hp} HP</span>}
                       {template.cooldown > 0 && <span>CD: {template.cooldown}t</span>}

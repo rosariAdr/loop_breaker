@@ -48,7 +48,13 @@ export const QUESTS = {
     giverNpc: 'sir_aldric',
     flavorText: '"The wolves grow bold. Show them what fear looks like."',
     objectives: [
-      { id: 'kill_wolves', type: 'kill', monsterId: 'ashwood_wolf', count: 5, label: 'Kill Ashwood Wolves' },
+      {
+        id: 'kill_wolves',
+        type: 'kill',
+        monsterId: 'ashwood_wolf',
+        count: 5,
+        label: 'Kill Ashwood Wolves',
+      },
     ],
     reward: {
       skill: { skillId: 'counter_strike', level: 1 },
@@ -60,12 +66,10 @@ export const QUESTS = {
   proof_of_worth: {
     id: 'proof_of_worth',
     name: 'Proof of Worth',
-    description: 'Grow strong enough to earn Sir Aldric\'s respect.',
+    description: "Grow strong enough to earn Sir Aldric's respect.",
     giverNpc: 'sir_aldric',
     flavorText: '"Strength is earned through trials. Return when you have grown."',
-    objectives: [
-      { id: 'reach_level', type: 'level', targetLevel: 3, label: 'Reach Level 3' },
-    ],
+    objectives: [{ id: 'reach_level', type: 'level', targetLevel: 3, label: 'Reach Level 3' }],
     reward: {
       skill: { skillId: 'veterans_resolve', level: 1 },
       gold: 30,
@@ -80,7 +84,13 @@ export const QUESTS = {
     giverNpc: 'sir_aldric',
     flavorText: '"Three merchants lost this week alone. The marsh must be cleansed."',
     objectives: [
-      { id: 'kill_serpents', type: 'kill', monsterId: 'marsh_serpent', count: 3, label: 'Kill Marsh Serpents' },
+      {
+        id: 'kill_serpents',
+        type: 'kill',
+        monsterId: 'marsh_serpent',
+        count: 3,
+        label: 'Kill Marsh Serpents',
+      },
     ],
     reward: {
       skill: { skillId: 'cleave', level: 1 },
@@ -97,7 +107,13 @@ export const QUESTS = {
     giverNpc: 'ironhaven_captain',
     flavorText: '"Our scouts have not returned. The crypt must fall, or no one is safe."',
     objectives: [
-      { id: 'kill_crypt_keeper', type: 'kill', monsterId: 'hollow_crypt_boss', count: 1, label: 'Slay the Crypt Keeper' },
+      {
+        id: 'kill_crypt_keeper',
+        type: 'kill',
+        monsterId: 'hollow_crypt_boss',
+        count: 1,
+        label: 'Slay the Crypt Keeper',
+      },
     ],
     reward: {
       skill: { skillId: 'soul_crush', level: 1 },
@@ -113,7 +129,13 @@ export const QUESTS = {
     giverNpc: 'ironhaven_captain',
     flavorText: '"No army has taken the Citadel. A lone hero might. Go — prove us wrong."',
     objectives: [
-      { id: 'kill_forsaken_lord', type: 'kill', monsterId: 'forsaken_citadel_boss', count: 1, label: 'Slay the Lord of the Forsaken' },
+      {
+        id: 'kill_forsaken_lord',
+        type: 'kill',
+        monsterId: 'forsaken_citadel_boss',
+        count: 1,
+        label: 'Slay the Lord of the Forsaken',
+      },
     ],
     reward: {
       skill: { skillId: 'forsaken_curse', level: 1 },
@@ -129,7 +151,13 @@ export const QUESTS = {
     giverNpc: 'ironhaven_captain',
     flavorText: '"Four champions have tried. None returned. Yet here you stand."',
     objectives: [
-      { id: 'kill_malachar', type: 'kill', monsterId: 'malachar', count: 1, label: 'Slay Malachar' },
+      {
+        id: 'kill_malachar',
+        type: 'kill',
+        monsterId: 'malachar',
+        count: 1,
+        label: 'Slay Malachar',
+      },
     ],
     reward: {
       gold: 1000,
@@ -146,7 +174,13 @@ export const QUESTS = {
     flavorText: '"My grandson fell last harvest. Do this, and the village remembers you."',
     objectives: [
       // MON01 — re-ciblé depuis bog_shambler (retiré du Thornmarsh) vers mire_slime.
-      { id: 'kill_mire_slimes', type: 'kill', monsterId: 'mire_slime', count: 4, label: 'Kill Mire Slimes' },
+      {
+        id: 'kill_mire_slimes',
+        type: 'kill',
+        monsterId: 'mire_slime',
+        count: 4,
+        label: 'Kill Mire Slimes',
+      },
     ],
     reward: {
       gold: 120,
@@ -161,8 +195,20 @@ export const QUESTS = {
     giverNpc: 'greywatch_elder',
     flavorText: '"The dead do not rest here. They remember. They hunger."',
     objectives: [
-      { id: 'kill_ruin_specters', type: 'kill', monsterId: 'ruin_specter', count: 3, label: 'Kill Ruin Specters' },
-      { id: 'kill_hollow_knights', type: 'kill', monsterId: 'hollow_knight', count: 2, label: 'Kill Hollow Knights' },
+      {
+        id: 'kill_ruin_specters',
+        type: 'kill',
+        monsterId: 'ruin_specter',
+        count: 3,
+        label: 'Kill Ruin Specters',
+      },
+      {
+        id: 'kill_hollow_knights',
+        type: 'kill',
+        monsterId: 'hollow_knight',
+        count: 2,
+        label: 'Kill Hollow Knights',
+      },
     ],
     reward: {
       gold: 180,
@@ -181,7 +227,13 @@ export const QUESTS = {
     giverNpc: 'sir_aldric',
     flavorText: '"They\'ve gored two oxen this week. Put them down before it\'s a farmhand."',
     objectives: [
-      { id: 'kill_boars', type: 'kill', monsterId: 'tuskmaw_boar', count: 4, label: 'Kill Tuskmaw Boars' },
+      {
+        id: 'kill_boars',
+        type: 'kill',
+        monsterId: 'tuskmaw_boar',
+        count: 4,
+        label: 'Kill Tuskmaw Boars',
+      },
     ],
     reward: { gold: 60, reputationTokens: 1, consumables: { hp_potion_small: 2 } },
   },
@@ -193,9 +245,19 @@ export const QUESTS = {
     giverNpc: 'sir_aldric',
     flavorText: '"Some say it remembers the first fire. I say it burns like any other."',
     objectives: [
-      { id: 'kill_oakheart', type: 'kill', monsterId: 'old_oakheart', count: 1, label: 'Slay Old Oakheart (elite)' },
+      {
+        id: 'kill_oakheart',
+        type: 'kill',
+        monsterId: 'old_oakheart',
+        count: 1,
+        label: 'Slay Old Oakheart (elite)',
+      },
     ],
-    reward: { gold: 120, reputationTokens: 2, equipment: { templateId: 'leather_armor', rarity: 'rare' } },
+    reward: {
+      gold: 120,
+      reputationTokens: 2,
+      equipment: { templateId: 'leather_armor', rarity: 'rare' },
+    },
   },
 
   nc_scout_marsh: {
@@ -217,7 +279,12 @@ export const QUESTS = {
     giverNpc: 'merchant_pell',
     flavorText: '"Don\'t open it. Don\'t shake it. Just get it there in one piece."',
     objectives: [
-      { id: 'visit_ruins', type: 'visit', spotId: 'crumbled_ruins', label: 'Deliver to the Crumbled Ruins' },
+      {
+        id: 'visit_ruins',
+        type: 'visit',
+        spotId: 'crumbled_ruins',
+        label: 'Deliver to the Crumbled Ruins',
+      },
     ],
     reward: { gold: 80, reputationTokens: 1, consumables: { stamina_ration: 2 } },
   },
@@ -228,9 +295,7 @@ export const QUESTS = {
     description: 'Pell needs crafted goods to resell. Craft a few items of any kind.',
     giverNpc: 'merchant_pell',
     flavorText: '"Make me something I can sell, and I\'ll make it worth your while."',
-    objectives: [
-      { id: 'craft_three', type: 'craft', count: 3, label: 'Craft 3 items' },
-    ],
+    objectives: [{ id: 'craft_three', type: 'craft', count: 3, label: 'Craft 3 items' }],
     reward: { gold: 70, reputationTokens: 1, resources: { rusted_iron: 3 } },
   },
 
@@ -242,9 +307,19 @@ export const QUESTS = {
     giverNpc: 'greywatch_elder',
     flavorText: '"It swallowed my brother\'s hound whole. Bring me its fangs."',
     objectives: [
-      { id: 'kill_fenrot', type: 'kill', monsterId: 'fenrot_devourer', count: 1, label: 'Slay Fenrot the Devourer (elite)' },
+      {
+        id: 'kill_fenrot',
+        type: 'kill',
+        monsterId: 'fenrot_devourer',
+        count: 1,
+        label: 'Slay Fenrot the Devourer (elite)',
+      },
     ],
-    reward: { gold: 160, reputationTokens: 2, equipment: { templateId: 'serpent_dagger', rarity: 'rare' } },
+    reward: {
+      gold: 160,
+      reputationTokens: 2,
+      equipment: { templateId: 'serpent_dagger', rarity: 'rare' },
+    },
   },
 
   nc_graven_elite: {
@@ -254,7 +329,13 @@ export const QUESTS = {
     giverNpc: 'ironhaven_captain',
     flavorText: '"It has stood there a thousand years. Make it kneel."',
     objectives: [
-      { id: 'kill_graven', type: 'kill', monsterId: 'graven_sentinel', count: 1, label: 'Destroy the Graven Sentinel (elite)' },
+      {
+        id: 'kill_graven',
+        type: 'kill',
+        monsterId: 'graven_sentinel',
+        count: 1,
+        label: 'Destroy the Graven Sentinel (elite)',
+      },
     ],
     reward: { gold: 180, reputationTokens: 3, skill: { skillId: 'power_strike', level: 1 } },
   },
@@ -266,22 +347,44 @@ export const QUESTS = {
     giverNpc: 'ironhaven_captain',
     flavorText: '"You hear it before you see it. Make sure it never charges again."',
     objectives: [
-      { id: 'kill_thunderhoof', type: 'kill', monsterId: 'thunderhoof', count: 1, label: 'Slay Thunderhoof (elite)' },
+      {
+        id: 'kill_thunderhoof',
+        type: 'kill',
+        monsterId: 'thunderhoof',
+        count: 1,
+        label: 'Slay Thunderhoof (elite)',
+      },
     ],
-    reward: { gold: 200, reputationTokens: 3, equipment: { templateId: 'iron_helm', rarity: 'rare' } },
+    reward: {
+      gold: 200,
+      reputationTokens: 3,
+      equipment: { templateId: 'iron_helm', rarity: 'rare' },
+    },
   },
 
   nc_explore_hills: {
     id: 'nc_explore_hills',
     name: 'Beyond the Treeline',
-    description: 'Chart the Wildmere Hills for the Ironhaven survey — and find the pass to Grimspire.',
+    description:
+      'Chart the Wildmere Hills for the Ironhaven survey — and find the pass to Grimspire.',
     giverNpc: 'greywatch_elder',
-    flavorText: '"The maps end where the hills begin. Help us draw the rest — and the road beyond."',
+    flavorText:
+      '"The maps end where the hills begin. Help us draw the rest — and the road beyond."',
     objectives: [
-      { id: 'visit_hills', type: 'visit', spotId: 'wildmere_hills', label: 'Explore the Wildmere Hills' },
+      {
+        id: 'visit_hills',
+        type: 'visit',
+        spotId: 'wildmere_hills',
+        label: 'Explore the Wildmere Hills',
+      },
     ],
     // PROG03 — voie « quête » : terminer cette exploration révèle Grimspire.
-    reward: { gold: 90, reputationTokens: 2, stat: { name: 'strength', amount: 1 }, unlockZone: 'grimspire' },
+    reward: {
+      gold: 90,
+      reputationTokens: 2,
+      stat: { name: 'strength', amount: 1 },
+      unlockZone: 'grimspire',
+    },
   },
 
   nc_artisans_trial: {
@@ -290,10 +393,12 @@ export const QUESTS = {
     description: 'Prove your craft to the Ironhaven guild: forge a full batch of goods.',
     giverNpc: 'merchant_pell',
     flavorText: '"Five clean pieces, no excuses. Then we\'ll talk about real commissions."',
-    objectives: [
-      { id: 'craft_five', type: 'craft', count: 5, label: 'Craft 5 items' },
-    ],
-    reward: { gold: 150, reputationTokens: 2, equipment: { templateId: 'bone_plate', rarity: 'epic' } },
+    objectives: [{ id: 'craft_five', type: 'craft', count: 5, label: 'Craft 5 items' }],
+    reward: {
+      gold: 150,
+      reputationTokens: 2,
+      equipment: { templateId: 'bone_plate', rarity: 'epic' },
+    },
   },
 }
 
@@ -348,7 +453,7 @@ export function heroSkillLevels(hero) {
   const map = {}
   const all = [...(hero?.activeSkills ?? []), ...(hero?.passiveSkills ?? [])]
   if (hero?.divineSkill) all.push(hero.divineSkill)
-  for (const s of (hero?.inventory?.manaStones ?? [])) all.push(s)
+  for (const s of hero?.inventory?.manaStones ?? []) all.push(s)
   for (const s of all) {
     if (!s?.skillId) continue
     map[s.skillId] = Math.max(map[s.skillId] ?? 0, s.level ?? 1)

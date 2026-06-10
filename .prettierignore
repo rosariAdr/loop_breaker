@@ -1,0 +1,17 @@
+# Build & deps
+dist
+node_modules
+coverage
+
+# Assets & design sources (non gérés par Prettier)
+design
+public
+src/assets
+
+# Docs & data (mise en forme manuelle — tableaux/ASCII à préserver)
+*.md
+*.txt
+*.csv
+
+# Verrou de dépendances (volumineux, généré)
+package-lock.json

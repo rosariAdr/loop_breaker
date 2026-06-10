@@ -14,10 +14,20 @@ export default function ConfirmDialog({
   if (!open) return null
 
   const palette = {
-    destructive: { border: '#5a1818', accent: '#c04040', confirmBg: '#1a0808', confirmColor: '#e06060' },
-    warn:        { border: '#5a4818', accent: '#c08040', confirmBg: '#1a1408', confirmColor: '#e0a050' },
-    info:        { border: '#5a3818', accent: '#d4af70', confirmBg: '#1a1208', confirmColor: '#d4af70' },
-  }[variant] ?? { border: '#5a3818', accent: '#d4af70', confirmBg: '#1a1208', confirmColor: '#d4af70' }
+    destructive: {
+      border: '#5a1818',
+      accent: '#c04040',
+      confirmBg: '#1a0808',
+      confirmColor: '#e06060',
+    },
+    warn: { border: '#5a4818', accent: '#c08040', confirmBg: '#1a1408', confirmColor: '#e0a050' },
+    info: { border: '#5a3818', accent: '#d4af70', confirmBg: '#1a1208', confirmColor: '#d4af70' },
+  }[variant] ?? {
+    border: '#5a3818',
+    accent: '#d4af70',
+    confirmBg: '#1a1208',
+    confirmColor: '#d4af70',
+  }
 
   return (
     <div
@@ -45,7 +55,14 @@ export default function ConfirmDialog({
           {title}
         </p>
         {message && (
-          <p style={{ color: '#8a7a6a', fontSize: '0.82rem', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+          <p
+            style={{
+              color: '#8a7a6a',
+              fontSize: '0.82rem',
+              marginBottom: '1.25rem',
+              lineHeight: 1.5,
+            }}
+          >
             {message}
           </p>
         )}

@@ -5,7 +5,11 @@ import { MONSTERS } from '../data/monsters'
 import { SKILLS, getLevelBonus } from '../data/skills'
 import { RESOURCES } from '../data/resources'
 import { scaleMonsterStats, ZONE_MULTS, ZONE_ORDER } from '../data/zones'
-import { checkIgnarethAwakening, checkSylvaraAwakening, checkVoltarisAwakening } from '../data/deities'
+import {
+  checkIgnarethAwakening,
+  checkSylvaraAwakening,
+  checkVoltarisAwakening,
+} from '../data/deities'
 
 // ── Calcul de dégâts ──────────────────────────────────────────────────────────
 
@@ -32,13 +36,12 @@ export function calcSkillDamage(skill, heroStats, level = 1) {
   const effect = template.effect
   if (!effect?.damage) return 0
 
-  const baseStat = effect.damage.baseStat === 'intelligence'
-    ? heroStats.intelligence
-    : heroStats.strength
+  const baseStat =
+    effect.damage.baseStat === 'intelligence' ? heroStats.intelligence : heroStats.strength
 
   let multiplier = effect.damage.multiplier
   // Bonus de niveau : +30% par niveau au-delà de 1
-  multiplier += (level - 1) * 0.30
+  multiplier += (level - 1) * 0.3
 
   return Math.max(1, Math.round(baseStat * multiplier))
 }
@@ -53,7 +56,7 @@ export function calcSkillDamage(skill, heroStats, level = 1) {
 export function calcTurnOrder(hero, enemies) {
   const combatants = [
     { id: 'hero', agility: hero.agility, isHero: true },
-    ...enemies.map(e => ({ id: e.id, agility: e.stats.spd, isHero: false })),
+    ...enemies.map((e) => ({ id: e.id, agility: e.stats.spd, isHero: false })),
   ]
   return combatants.sort((a, b) => b.agility - a.agility)
 }
@@ -143,7 +146,7 @@ export function tickStatusEffects(stats, activeEffects = []) {
   const log = []
   const flags = { skipTurn: false, noHeal: false }
 
-  activeEffects.forEach(effect => {
+  activeEffects.forEach((effect) => {
     if (DOT_TYPES.includes(effect.type)) {
       const dmg = effect.tickDamage ?? 0
       newStats.hp = Math.max(0, (newStats.hp ?? 0) - dmg)
@@ -156,8 +159,8 @@ export function tickStatusEffects(stats, activeEffects = []) {
 
   // Décrémente les durées et retire les effets arrivés à expiration.
   const remainingEffects = activeEffects
-    .map(e => ({ ...e, duration: e.duration - 1 }))
-    .filter(e => e.duration > 0)
+    .map((e) => ({ ...e, duration: e.duration - 1 }))
+    .filter((e) => e.duration > 0)
 
   return { newStats, remainingEffects, log, flags }
 }
@@ -169,9 +172,9 @@ export function tickStatusEffects(stats, activeEffects = []) {
  * Retourne un nouveau tableau.
  */
 export function applyStatusEffect(activeEffects = [], newEffect, max = MAX_ACTIVE_EFFECTS) {
-  const existing = activeEffects.find(e => e.type === newEffect.type)
+  const existing = activeEffects.find((e) => e.type === newEffect.type)
   if (existing) {
-    return activeEffects.map(e => {
+    return activeEffects.map((e) => {
       if (e.type !== newEffect.type) return e
       return {
         ...e,
@@ -196,11 +199,11 @@ export function applyStatusEffect(activeEffects = [], newEffect, max = MAX_ACTIV
  */
 export function getEffectiveStats(baseStats, activeEffects = []) {
   const stats = { ...baseStats }
-  activeEffects.forEach(effect => {
+  activeEffects.forEach((effect) => {
     const targets = STAT_EFFECT_TARGETS[effect.type]
     if (!targets) return
     const reduction = effect.reduction ?? DEFAULT_REDUCTION[effect.type] ?? 0
-    targets.forEach(key => {
+    targets.forEach((key) => {
       if (typeof stats[key] === 'number') {
         stats[key] = Math.max(0, Math.round(stats[key] * (1 - reduction)))
       }
@@ -211,12 +214,12 @@ export function getEffectiveStats(baseStats, activeEffects = []) {
 
 /** Le soin est interdit tant qu'un effet `burn` est actif. */
 export function canHeal(activeEffects = []) {
-  return !activeEffects.some(e => e.type === 'burn')
+  return !activeEffects.some((e) => e.type === 'burn')
 }
 
 /** Vrai si un effet `stun` est présent (la cible saute son tour). */
 export function isStunned(activeEffects = []) {
-  return activeEffects.some(e => e.type === 'stun')
+  return activeEffects.some((e) => e.type === 'stun')
 }
 
 /**
@@ -262,7 +265,7 @@ export function calcDrops(monsterId, heroChance = 5) {
   const resources = []
   let atLeastOne = false
 
-  monster.resourceDrops.forEach(drop => {
+  monster.resourceDrops.forEach((drop) => {
     const adjustedChance = drop.chance + chanceBonus
     if (Math.random() < adjustedChance) {
       const qty = drop.qty.min + Math.floor(Math.random() * (drop.qty.max - drop.qty.min + 1))
@@ -278,7 +281,8 @@ export function calcDrops(monsterId, heroChance = 5) {
   }
 
   // Gold
-  const gold = monster.goldReward.min +
+  const gold =
+    monster.goldReward.min +
     Math.floor(Math.random() * (monster.goldReward.max - monster.goldReward.min + 1))
 
   return { skillDrop, resources, gold, exp: monster.expReward }
@@ -325,8 +329,8 @@ export function getEnemyCount(monster, zoneId, rng = Math.random) {
   if (!monster) return 0
   if (['elite', 'boss', 'demon_lord'].includes(monster.rank)) return 1
   const zoneIndex = ZONE_ORDER.indexOf(zoneId)
-  const max = zoneIndex <= 0 ? 2 : 3   // zone 1 → max 2, zone 2+ → max 3
-  return 1 + Math.floor(rng() * max)   // 1..max
+  const max = zoneIndex <= 0 ? 2 : 3 // zone 1 → max 2, zone 2+ → max 3
+  return 1 + Math.floor(rng() * max) // 1..max
 }
 
 /**
@@ -439,8 +443,8 @@ export function applyExpGain(heroStats, currentExp, expToNext, expGain) {
       newExp: newExp - expToNext,
       newExpToNext: Math.round(expToNext * 1.5),
       statBonuses: {
-        maxHp: Math.round(heroStats.maxHp * 0.10),
-        maxMana: Math.round(heroStats.maxMana * 0.10),
+        maxHp: Math.round(heroStats.maxHp * 0.1),
+        maxMana: Math.round(heroStats.maxMana * 0.1),
         strength: Math.round(heroStats.strength * 0.05),
         intelligence: Math.round(heroStats.intelligence * 0.05),
         def: Math.round(heroStats.def * 0.05),

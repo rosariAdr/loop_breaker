@@ -4,9 +4,9 @@
 
 export const SKILL_CONTAINERS = {
   medieval_fantasy: { id: 'mana_stone', label: 'Mana Stones', singular: 'Mana Stone', icon: '💎' },
-  wushu:            { id: 'manuscript', label: 'Manuscripts', singular: 'Manuscript', icon: '📜' },
-  tower:            { id: 'data_chip',  label: 'Data Chips',  singular: 'Data Chip',  icon: '🔲' },
-  post_apo:         { id: 'fragment',   label: 'Fragments',   singular: 'Fragment',   icon: '🧩' },
+  wushu: { id: 'manuscript', label: 'Manuscripts', singular: 'Manuscript', icon: '📜' },
+  tower: { id: 'data_chip', label: 'Data Chips', singular: 'Data Chip', icon: '🔲' },
+  post_apo: { id: 'fragment', label: 'Fragments', singular: 'Fragment', icon: '🧩' },
 }
 
 const DEFAULT_CONTAINER = SKILL_CONTAINERS.medieval_fantasy

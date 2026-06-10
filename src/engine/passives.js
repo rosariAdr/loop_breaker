@@ -29,7 +29,8 @@ export function getPassiveModifiers(passiveSkills = []) {
     // SKL01 — anti-régression au-delà du niveau 3 (passifs peuvent monter à 5)
     const bonus = getLevelBonus(tpl, s.level)
     if (eff.maxHpBonus != null) maxHpBonus += eff.maxHpBonus + (bonus.maxHpBonusBonus ?? 0)
-    if (eff.damageReduction != null) damageReduction += eff.damageReduction + (bonus.reductionBonus ?? 0)
+    if (eff.damageReduction != null)
+      damageReduction += eff.damageReduction + (bonus.reductionBonus ?? 0)
   }
   return { maxHpBonus, damageReduction: Math.min(MAX_DAMAGE_REDUCTION, damageReduction) }
 }

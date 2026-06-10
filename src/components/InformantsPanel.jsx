@@ -14,9 +14,15 @@ export default function InformantsPanel({ onBack }) {
   return (
     <div data-testid="informants-panel">
       <div className="flex items-center gap-3" style={{ marginBottom: 14 }}>
-        <button className="back-btn" style={{ position: 'static' }} onClick={onBack}>← Back</button>
-        <div className="pb-title" style={{ margin: 0, border: 0 }}>Whispers &amp; Rumors</div>
-        <div className="gold-pill" style={{ marginLeft: 'auto' }}>🪙 {gold} gold</div>
+        <button className="back-btn" style={{ position: 'static' }} onClick={onBack}>
+          ← Back
+        </button>
+        <div className="pb-title" style={{ margin: 0, border: 0 }}>
+          Whispers &amp; Rumors
+        </div>
+        <div className="gold-pill" style={{ marginLeft: 'auto' }}>
+          🪙 {gold} gold
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -27,19 +33,30 @@ export default function InformantsPanel({ onBack }) {
             <div key={inf.id} className="inv-card">
               <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
                 <span>{KIND_ICON[inf.kind] ?? '🗣'}</span>
-                <span className="inv-name" style={{ fontSize: 14 }}>{inf.name}</span>
-                {bought
-                  ? <span className="inv-tag" style={{ marginLeft: 'auto', background: 'rgba(45,82,22,.15)', color: 'var(--forest-deep)' }}>✓ Known</span>
-                  : (
-                    <button
-                      className={`inv-btn ${canAfford ? 'primary' : ''}`}
-                      style={{ marginLeft: 'auto', width: 'auto' }}
-                      disabled={!canAfford}
-                      onClick={() => buyInfo(inf.id, inf.price)}
-                    >
-                      Pay {inf.price}🪙
-                    </button>
-                  )}
+                <span className="inv-name" style={{ fontSize: 14 }}>
+                  {inf.name}
+                </span>
+                {bought ? (
+                  <span
+                    className="inv-tag"
+                    style={{
+                      marginLeft: 'auto',
+                      background: 'rgba(45,82,22,.15)',
+                      color: 'var(--forest-deep)',
+                    }}
+                  >
+                    ✓ Known
+                  </span>
+                ) : (
+                  <button
+                    className={`inv-btn ${canAfford ? 'primary' : ''}`}
+                    style={{ marginLeft: 'auto', width: 'auto' }}
+                    disabled={!canAfford}
+                    onClick={() => buyInfo(inf.id, inf.price)}
+                  >
+                    Pay {inf.price}🪙
+                  </button>
+                )}
               </div>
               <p className="inv-sub" style={{ fontStyle: 'italic' }}>
                 “{bought ? inf.reveal : inf.teaser}”

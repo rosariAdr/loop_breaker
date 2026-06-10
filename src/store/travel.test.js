@@ -13,7 +13,9 @@ describe('TRV — travelTo', () => {
   })
 
   it('déplace currentNode et avance le temps de 3 tics', () => {
-    useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 5, dayCount: 1, currentNode: 'ironhaven' } }))
+    useGameStore.setState((s) => ({
+      world: { ...s.world, tickCount: 5, dayCount: 1, currentNode: 'ironhaven' },
+    }))
     useGameStore.getState().travelTo('millhaven')
     const w = useGameStore.getState().world
     expect(w.currentNode).toBe('millhaven')
@@ -29,17 +31,23 @@ describe('TRV — travelTo', () => {
     expect(w.dayCount).toBe(3) // + floor(26 / 24)
   })
 
-  it('ne crédite PAS de kills/gold (pas d\'idle pendant le voyage)', () => {
+  it("ne crédite PAS de kills/gold (pas d'idle pendant le voyage)", () => {
     useGameStore.setState((s) => ({
       world: { ...s.world, tickCount: 0, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
     }))
     const goldBefore = useGameStore.getState().hero.inventory.gold
-    const killsBefore = Object.values(useGameStore.getState().world.monsterKillCounts).reduce((a, b) => a + b, 0)
+    const killsBefore = Object.values(useGameStore.getState().world.monsterKillCounts).reduce(
+      (a, b) => a + b,
+      0,
+    )
 
     useGameStore.getState().travelTo('millhaven')
 
     expect(useGameStore.getState().hero.inventory.gold).toBe(goldBefore)
-    const killsAfter = Object.values(useGameStore.getState().world.monsterKillCounts).reduce((a, b) => a + b, 0)
+    const killsAfter = Object.values(useGameStore.getState().world.monsterKillCounts).reduce(
+      (a, b) => a + b,
+      0,
+    )
     expect(killsAfter).toBe(killsBefore)
   })
 

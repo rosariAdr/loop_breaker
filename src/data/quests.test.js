@@ -13,7 +13,7 @@ describe('QUEST_NPCS — Q08', () => {
   })
 
   it('chaque NPC a id, name, title, location, sigil', () => {
-    Object.values(QUEST_NPCS).forEach(npc => {
+    Object.values(QUEST_NPCS).forEach((npc) => {
       expect(npc).toHaveProperty('id')
       expect(npc).toHaveProperty('name')
       expect(npc).toHaveProperty('title')
@@ -31,7 +31,7 @@ describe('QUEST_NPCS — Q08', () => {
 
 describe('QUESTS — structure valide', () => {
   it('toutes les quêtes ont les champs requis', () => {
-    Object.values(QUESTS).forEach(q => {
+    Object.values(QUESTS).forEach((q) => {
       expect(q).toHaveProperty('id')
       expect(q).toHaveProperty('name')
       expect(q).toHaveProperty('description')
@@ -44,7 +44,7 @@ describe('QUESTS — structure valide', () => {
   })
 
   it('chaque giverNpc existe dans QUEST_NPCS', () => {
-    Object.values(QUESTS).forEach(q => {
+    Object.values(QUESTS).forEach((q) => {
       expect(QUEST_NPCS[q.giverNpc]).toBeDefined()
     })
   })
@@ -56,15 +56,17 @@ describe('QUESTS — structure valide', () => {
   })
 
   it("tous les monsterId dans les objectifs 'kill' existent dans MONSTERS", () => {
-    Object.values(QUESTS).forEach(q => {
-      q.objectives.filter(o => o.type === 'kill').forEach(o => {
-        expect(MONSTERS[o.monsterId]).toBeDefined()
-      })
+    Object.values(QUESTS).forEach((q) => {
+      q.objectives
+        .filter((o) => o.type === 'kill')
+        .forEach((o) => {
+          expect(MONSTERS[o.monsterId]).toBeDefined()
+        })
     })
   })
 
   it('tous les skillId de récompense existent dans SKILLS', () => {
-    Object.values(QUESTS).forEach(q => {
+    Object.values(QUESTS).forEach((q) => {
       if (q.reward.skill) {
         expect(SKILLS[q.reward.skill.skillId]).toBeDefined()
       }
@@ -122,17 +124,17 @@ describe('Q08 — Quêtes Greywatch Elder', () => {
 
 describe('Répartition des quêtes par NPC', () => {
   it('sir_aldric a au moins 3 quêtes de départ', () => {
-    const count = Object.values(QUESTS).filter(q => q.giverNpc === 'sir_aldric').length
+    const count = Object.values(QUESTS).filter((q) => q.giverNpc === 'sir_aldric').length
     expect(count).toBeGreaterThanOrEqual(3)
   })
 
   it('ironhaven_captain a au moins 3 quêtes boss', () => {
-    const count = Object.values(QUESTS).filter(q => q.giverNpc === 'ironhaven_captain').length
+    const count = Object.values(QUESTS).filter((q) => q.giverNpc === 'ironhaven_captain').length
     expect(count).toBeGreaterThanOrEqual(3)
   })
 
   it('greywatch_elder a au moins 2 quêtes', () => {
-    const count = Object.values(QUESTS).filter(q => q.giverNpc === 'greywatch_elder').length
+    const count = Object.values(QUESTS).filter((q) => q.giverNpc === 'greywatch_elder').length
     expect(count).toBeGreaterThanOrEqual(2)
   })
 })

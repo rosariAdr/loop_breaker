@@ -4,14 +4,14 @@
 import { useToastStore } from '../store/toastStore'
 
 const TYPE_STYLE = {
-  loot:     { icon: '💎', color: '#80c040', border: '#304820', bg: '#0f1808' },
-  levelup:  { icon: '✦',  color: '#60d0ff', border: '#1060b0', bg: '#08182a' },
-  quest:    { icon: '📜', color: '#d4af70', border: '#5a4010', bg: '#1c1408' },
-  divine:   { icon: '✦',  color: '#c084fc', border: '#4030a8', bg: '#1a0f28' },
+  loot: { icon: '💎', color: '#80c040', border: '#304820', bg: '#0f1808' },
+  levelup: { icon: '✦', color: '#60d0ff', border: '#1060b0', bg: '#08182a' },
+  quest: { icon: '📜', color: '#d4af70', border: '#5a4010', bg: '#1c1408' },
+  divine: { icon: '✦', color: '#c084fc', border: '#4030a8', bg: '#1a0f28' },
   gluttony: { icon: '👹', color: '#e08060', border: '#6a3020', bg: '#1a0808' },
-  warning:  { icon: '⚠',  color: '#e0a050', border: '#6a4818', bg: '#1a1408' },
-  error:    { icon: '✕',  color: '#e04040', border: '#5a2020', bg: '#1a0808' },
-  info:     { icon: 'ℹ',  color: '#a0a0c0', border: '#2a2a4a', bg: '#0a0a14' },
+  warning: { icon: '⚠', color: '#e0a050', border: '#6a4818', bg: '#1a1408' },
+  error: { icon: '✕', color: '#e04040', border: '#5a2020', bg: '#1a0808' },
+  info: { icon: 'ℹ', color: '#a0a0c0', border: '#2a2a4a', bg: '#0a0a14' },
 }
 
 export default function ToastContainer() {
@@ -42,7 +42,9 @@ export default function ToastContainer() {
               boxShadow: `0 8px 24px rgba(0,0,0,0.5), inset 0 0 14px ${style.border}55`,
             }}
           >
-            <span style={{ fontSize: '1.1rem', flexShrink: 0, color: style.color }}>{style.icon}</span>
+            <span style={{ fontSize: '1.1rem', flexShrink: 0, color: style.color }}>
+              {style.icon}
+            </span>
             <span
               style={{
                 fontFamily: 'var(--font-body)',

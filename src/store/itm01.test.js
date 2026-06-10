@@ -5,13 +5,25 @@ import { RESOURCES } from '../data/resources'
 
 const store = () => useGameStore.getState()
 const giveBook = (id, n = 1) =>
-  useGameStore.setState((s) => ({ hero: { ...s.hero, inventory: { ...s.hero.inventory, consumables: { ...s.hero.inventory.consumables, [id]: n } } } }))
+  useGameStore.setState((s) => ({
+    hero: {
+      ...s.hero,
+      inventory: { ...s.hero.inventory, consumables: { ...s.hero.inventory.consumables, [id]: n } },
+    },
+  }))
 
 describe('ITM01 — livres de stats', () => {
-  beforeEach(() => { store().resetGame(); localStorage.clear() })
+  beforeEach(() => {
+    store().resetGame()
+    localStorage.clear()
+  })
 
   it('les livres déclarent bien un effet gain_stat', () => {
-    expect(RESOURCES.tome_of_focus.effect).toEqual({ type: 'gain_stat', stat: 'concentration', amount: 10 })
+    expect(RESOURCES.tome_of_focus.effect).toEqual({
+      type: 'gain_stat',
+      stat: 'concentration',
+      amount: 10,
+    })
     expect(RESOURCES.tome_of_might.isBook).toBe(true)
   })
 

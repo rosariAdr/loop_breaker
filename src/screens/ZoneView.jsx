@@ -25,12 +25,12 @@ export default function ZoneView() {
 
   // Si on est sur un spot de chasse Ashenvale, utiliser la liste spécifique
   const spot = world.currentHuntingSpot
-    ? zone.huntingSpots?.find(s => s.id === world.currentHuntingSpot)
+    ? zone.huntingSpots?.find((s) => s.id === world.currentHuntingSpot)
     : null
 
   const monsterList = spot
-    ? MONSTERS_BY_SPOT[world.currentHuntingSpot] ?? []
-    : MONSTERS_BY_ZONE[world.currentZone] ?? []
+    ? (MONSTERS_BY_SPOT[world.currentHuntingSpot] ?? [])
+    : (MONSTERS_BY_ZONE[world.currentZone] ?? [])
 
   const displayName = spot ? spot.name : zone.name
   const displayDesc = spot ? spot.description : zone.description
@@ -39,7 +39,9 @@ export default function ZoneView() {
     <div className={`parchment fill forest ${isBlightedRoad ? 'blighted' : ''}`}>
       <ParchmentFrame variant="vine" />
 
-      <button className="back-btn" onClick={() => setScreen('world_map')}>← Map</button>
+      <button className="back-btn" onClick={() => setScreen('world_map')}>
+        ← Map
+      </button>
 
       <div className="zone-header vil-header">
         <div className="t-zone zh-title">
@@ -73,7 +75,9 @@ export default function ZoneView() {
           </Section>
 
           {/* Donjon (seulement sur la zone principale, pas sur les spots) */}
-          {!spot && zone.dungeon && <DungeonSection zone={zone} world={world} setScreen={setScreen} />}
+          {!spot && zone.dungeon && (
+            <DungeonSection zone={zone} world={world} setScreen={setScreen} />
+          )}
 
           {/* Demon Lord */}
           {zone.demonLord && <DemonLordSection world={world} setScreen={setScreen} />}
@@ -90,7 +94,15 @@ export default function ZoneView() {
 function MonsterSprite({ id, elite }) {
   const [err, setErr] = useState(false)
   if (err) return <span className="ms-emoji">{elite ? '👹' : '🐾'}</span>
-  return <img className="ms-img" src={`/monsters/${id}.png`} alt="" draggable={false} onError={() => setErr(true)} />
+  return (
+    <img
+      className="ms-img"
+      src={`/monsters/${id}.png`}
+      alt=""
+      draggable={false}
+      onError={() => setErr(true)}
+    />
+  )
 }
 
 // ── Clairière d'un monstre ────────────────────────────────────────────────────
@@ -113,7 +125,9 @@ function MonsterRow({ monsterId }) {
 
   return (
     <div className={`mcard ${isElite ? 'elite' : ''} ${isIdleActive ? 'idle-on' : ''}`}>
-      <div className="mcard-sprite"><MonsterSprite id={monsterId} elite={isElite} /></div>
+      <div className="mcard-sprite">
+        <MonsterSprite id={monsterId} elite={isElite} />
+      </div>
       <div className="mcard-head">
         <span className="mcard-name">{monster.name}</span>
         {isElite && <span className="mcard-elite">ELITE</span>}
@@ -129,9 +143,17 @@ function MonsterRow({ monsterId }) {
 
       <div className="kbar-row">
         <div className="kbar">
-          <i style={{ width: `${Math.min(100, (killCount / 5) * 100)}%`, background: idleUnlocked ? 'var(--safe-green)' : 'var(--gold)' }} />
+          <i
+            style={{
+              width: `${Math.min(100, (killCount / 5) * 100)}%`,
+              background: idleUnlocked ? 'var(--safe-green)' : 'var(--gold)',
+            }}
+          />
         </div>
-        <span className="kbar-label" style={{ color: idleUnlocked ? 'var(--forest-deep)' : 'var(--ink-soft)' }}>
+        <span
+          className="kbar-label"
+          style={{ color: idleUnlocked ? 'var(--forest-deep)' : 'var(--ink-soft)' }}
+        >
           {idleUnlocked ? '✓ Idle unlocked' : `${killCount}/5 kills`}
         </span>
       </div>
@@ -141,11 +163,16 @@ function MonsterRow({ monsterId }) {
 
       <div className="mcard-actions">
         {idleUnlocked && !isElite && (
-          <button className={`fbtn ${isIdleActive ? 'on' : ''}`} onClick={() => toggleIdle(monsterId)}>
+          <button
+            className={`fbtn ${isIdleActive ? 'on' : ''}`}
+            onClick={() => toggleIdle(monsterId)}
+          >
             {isIdleActive ? '⏸ Idle ON' : '▶ Idle'}
           </button>
         )}
-        <button className="fbtn fight" onClick={handleFight}>⚔ Fight</button>
+        <button className="fbtn fight" onClick={handleFight}>
+          ⚔ Fight
+        </button>
       </div>
     </div>
   )
@@ -162,7 +189,9 @@ function SkillDropPreview({ monster, killCount }) {
 
   return (
     <div className="skill-drop" data-testid="skill-drop-preview">
-      <span style={{ color: 'var(--ink-soft)', fontSize: '0.68rem', fontFamily: 'var(--font-head)' }}>
+      <span
+        style={{ color: 'var(--ink-soft)', fontSize: '0.68rem', fontFamily: 'var(--font-head)' }}
+      >
         ✦ Technique:
       </span>
       <span
@@ -203,7 +232,10 @@ function DungeonSection({ zone, world }) {
         >
           <div className="fsec-row">
             <div>
-              <p className="fsec-title" style={{ color: dungeon.discovered ? '#7a3fb0' : '#8a7a92' }}>
+              <p
+                className="fsec-title"
+                style={{ color: dungeon.discovered ? '#7a3fb0' : '#8a7a92' }}
+              >
                 {dungeon.discovered ? zone.dungeon.name : '??? Unknown Dungeon'}
               </p>
               <p className="fsec-sub">
@@ -255,8 +287,12 @@ function DemonLordSection({ world }) {
         <div className="fsec-card danger" onClick={handleChallenge}>
           <div className="fsec-row">
             <div>
-              <p className="fsec-title" style={{ color: 'var(--danger)' }}>⚡ Malachar the Undying</p>
-              <p className="fsec-sub" style={{ color: '#9a5048' }}>Demon Lord of Eldenmoor · Grimspire Depths</p>
+              <p className="fsec-title" style={{ color: 'var(--danger)' }}>
+                ⚡ Malachar the Undying
+              </p>
+              <p className="fsec-sub" style={{ color: '#9a5048' }}>
+                Demon Lord of Eldenmoor · Grimspire Depths
+              </p>
             </div>
             <span className="fsec-cta danger">Challenge ➜</span>
           </div>
@@ -276,7 +312,9 @@ function IdleSidebar() {
     <aside className="forest-log">
       <div className="scroll-panel style-scroll" style={{ height: '100%' }}>
         {/* I08 — réglage du seuil de PV d'auto-stop */}
-        <div className="t-label" style={{ marginBottom: 6 }}>Auto-stop at HP</div>
+        <div className="t-label" style={{ marginBottom: 6 }}>
+          Auto-stop at HP
+        </div>
         <div className="flex gap-1" style={{ marginBottom: 12 }} data-testid="idle-hp-threshold">
           {THRESHOLDS.map((t) => {
             const active = Math.abs(threshold - t) < 0.001
@@ -301,23 +339,48 @@ function IdleSidebar() {
           })}
         </div>
 
-        <div className="t-label" style={{ marginBottom: 8 }}>Idle Log</div>
+        <div className="t-label" style={{ marginBottom: 8 }}>
+          Idle Log
+        </div>
 
         {world.isIdleActive ? (
           <div className="idle-log">
             <div className="idle-entry" style={{ color: 'var(--forest-deep)' }}>
-              <span className="w-2 h-2 rounded-full animate-pulse" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--safe-green)' }} />
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{
+                  display: 'inline-block',
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: 'var(--safe-green)',
+                }}
+              />
               <span>Active</span>
             </div>
             {world.idleLog.length > 0 ? (
               world.idleLog.map((entry, i) => (
                 <div className="idle-entry" key={i}>
-                  <span className="dot" style={{ color: entry.type === 'drop' ? '#7a3fb0' : entry.type === 'kill' ? 'var(--forest-deep)' : 'var(--ink-soft)' }}>◆</span>
+                  <span
+                    className="dot"
+                    style={{
+                      color:
+                        entry.type === 'drop'
+                          ? '#7a3fb0'
+                          : entry.type === 'kill'
+                            ? 'var(--forest-deep)'
+                            : 'var(--ink-soft)',
+                    }}
+                  >
+                    ◆
+                  </span>
                   <span>{entry.text}</span>
                 </div>
               ))
             ) : (
-              <div className="sb-val muted" style={{ fontSize: 13 }}>Waiting...</div>
+              <div className="sb-val muted" style={{ fontSize: 13 }}>
+                Waiting...
+              </div>
             )}
           </div>
         ) : (
@@ -334,7 +397,9 @@ function IdleSidebar() {
 function Section({ title, children }) {
   return (
     <div className="fsec">
-      <div className="t-label" style={{ marginBottom: 10 }}>{title}</div>
+      <div className="t-label" style={{ marginBottom: 10 }}>
+        {title}
+      </div>
       {children}
     </div>
   )
