@@ -20,10 +20,21 @@ export default function CodexOverlay({ onClose }) {
 
   return (
     <div className="sheet-scrim" onClick={back}>
-      <div className="sheet" style={{ width: 1000, maxWidth: '94%' }} onClick={(e) => e.stopPropagation()}>
+      <div
+        className="sheet"
+        style={{ width: 1000, maxWidth: '94%' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sheet-hd">
-          <div className="sh-title">Bestiary<span className="sh-meta">{seenCount} / {allIds.length} discovered</span></div>
-          <div className="sheet-x" onClick={back}>✕</div>
+          <div className="sh-title">
+            Bestiary
+            <span className="sh-meta">
+              {seenCount} / {allIds.length} discovered
+            </span>
+          </div>
+          <div className="sheet-x" onClick={back}>
+            ✕
+          </div>
         </div>
         <div className="sheet-body" style={{ display: 'block', overflowY: 'auto' }}>
           {zones.map((zoneId) => (
@@ -38,14 +49,22 @@ export default function CodexOverlay({ onClose }) {
                   const statsKnown = k >= STATS_REVEAL
                   const skillTpl = m.skillDrop ? SKILLS[m.skillDrop.skillId] : null
                   return (
-                    <div key={id} className={`codex-card ${seen ? '' : 'unseen'}`} data-testid={`codex-${id}`}>
+                    <div
+                      key={id}
+                      className={`codex-card ${seen ? '' : 'unseen'}`}
+                      data-testid={`codex-${id}`}
+                    >
                       <div className="codex-name">{seen ? m.name : '??? Undiscovered'}</div>
                       {seen && <div className="codex-kills">{k} slain</div>}
                       {seen && (
                         <div className="codex-stats">
-                          {statsKnown
-                            ? `HP ${m.baseStats.hp} · ATK ${m.baseStats.atk} · DEF ${m.baseStats.def} · SPD ${m.baseStats.spd}`
-                            : <span className="codex-locked">Defeat {STATS_REVEAL} to reveal stats</span>}
+                          {statsKnown ? (
+                            `HP ${m.baseStats.hp} · ATK ${m.baseStats.atk} · DEF ${m.baseStats.def} · SPD ${m.baseStats.spd}`
+                          ) : (
+                            <span className="codex-locked">
+                              Defeat {STATS_REVEAL} to reveal stats
+                            </span>
+                          )}
                         </div>
                       )}
                       {seen && skillTpl && (

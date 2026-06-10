@@ -4,14 +4,61 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Loop Breaker — a medieval-fantasy roguelite idle RPG. Hunt, craft, ascend through the gods, and break the loop." />
+    <meta
+      name="description"
+      content="Loop Breaker — a medieval-fantasy roguelite idle RPG. Hunt, craft, ascend through the gods, and break the loop."
+    />
     <!-- U03 — Preconnect pour réduire le FOIT/FOUT sur Google Fonts (Cinzel + Crimson Text) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- UX-LOADING01 — fond sombre dès le 1er paint (anti flash blanc au boot) + splash -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #0a0a0f;
+      }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        background: #0a0a0f;
+        color: #d4af70;
+        font-family: Georgia, 'Times New Roman', serif;
+        z-index: 9999;
+      }
+      #boot-splash .bs-title {
+        font-size: 30px;
+        letter-spacing: 0.09em;
+      }
+      #boot-splash .bs-spin {
+        width: 42px;
+        height: 42px;
+        border: 3px solid rgba(212, 175, 112, 0.25);
+        border-top-color: #d4af70;
+        border-radius: 50%;
+        animation: bootspin 0.9s linear infinite;
+      }
+      @keyframes bootspin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
     <title>Loop Breaker</title>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- UX-LOADING01 — le splash vit DANS #root : React le remplace au montage de l'App. -->
+    <div id="root">
+      <div id="boot-splash">
+        <div class="bs-title">Loop Breaker</div>
+        <div class="bs-spin"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

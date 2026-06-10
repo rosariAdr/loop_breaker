@@ -93,7 +93,7 @@ export const RESOURCES = {
   rusted_iron: {
     id: 'rusted_iron',
     name: 'Rusted Iron',
-    description: 'Corroded iron from a Hollow Knight\'s armor.',
+    description: "Corroded iron from a Hollow Knight's armor.",
     zone: 'ashenvale',
     rarity: 'common',
     sellPrice: 3,
@@ -247,7 +247,7 @@ export const RESOURCES = {
     zone: 'ashenvale',
     rarity: 'epic',
     sellPrice: 100,
-    category: 'dungeon_seal',  // D04 — monnaie alternative future
+    category: 'dungeon_seal', // D04 — monnaie alternative future
   },
   ancient_bone: {
     id: 'ancient_bone',
@@ -268,11 +268,11 @@ export const RESOURCES = {
   forsaken_seal: {
     id: 'forsaken_seal',
     name: 'Forsaken Seal',
-    description: 'The seal of the Forsaken Citadel\'s lord.',
+    description: "The seal of the Forsaken Citadel's lord.",
     zone: 'grimspire',
     rarity: 'epic',
     sellPrice: 250,
-    category: 'dungeon_seal',  // D04
+    category: 'dungeon_seal', // D04
   },
   void_crystal: {
     id: 'void_crystal',
@@ -293,11 +293,11 @@ export const RESOURCES = {
   demon_lord_heart: {
     id: 'demon_lord_heart',
     name: "Malachar's Heart",
-    description: "The still-beating heart of Malachar the Undying. Pulsates with terrible power.",
+    description: 'The still-beating heart of Malachar the Undying. Pulsates with terrible power.',
     zone: 'grimspire',
     rarity: 'legendary',
     sellPrice: 2000,
-    category: 'dungeon_seal',  // D04 — relique ultime (sceau Demon Lord)
+    category: 'dungeon_seal', // D04 — relique ultime (sceau Demon Lord)
   },
 
   // ── Consommables (achetables chez le marchand) ────────────────────────
@@ -308,7 +308,7 @@ export const RESOURCES = {
     rarity: 'common',
     sellPrice: 5,
     buyPrice: 12,
-    effect: { type: 'heal_percent', value: 0.30 },
+    effect: { type: 'heal_percent', value: 0.3 },
     isConsumable: true,
   },
   hp_potion_medium: {
@@ -318,7 +318,7 @@ export const RESOURCES = {
     rarity: 'uncommon',
     sellPrice: 12,
     buyPrice: 28,
-    effect: { type: 'heal_percent', value: 0.60 },
+    effect: { type: 'heal_percent', value: 0.6 },
     isConsumable: true,
   },
   mana_potion_small: {
@@ -328,7 +328,7 @@ export const RESOURCES = {
     rarity: 'common',
     sellPrice: 5,
     buyPrice: 12,
-    effect: { type: 'mana_restore_percent', value: 0.30 },
+    effect: { type: 'mana_restore_percent', value: 0.3 },
     isConsumable: true,
   },
   mana_potion_medium: {
@@ -338,7 +338,7 @@ export const RESOURCES = {
     rarity: 'uncommon',
     sellPrice: 12,
     buyPrice: 28,
-    effect: { type: 'mana_restore_percent', value: 0.60 },
+    effect: { type: 'mana_restore_percent', value: 0.6 },
     isConsumable: true,
   },
 
@@ -360,7 +360,7 @@ export const RESOURCES = {
     rarity: 'uncommon',
     sellPrice: 18,
     buyPrice: 42,
-    effect: { type: 'restore_both', value: 0.50 },
+    effect: { type: 'restore_both', value: 0.5 },
     isConsumable: true,
   },
   mana_crystal: {
@@ -386,22 +386,40 @@ export const RESOURCES = {
 
   // ── ITM01 — Livres de stats (consommables `gain_stat`) ──────────────────────
   tome_of_focus: {
-    id: 'tome_of_focus', name: 'Tome of Focus', category: 'book',
+    id: 'tome_of_focus',
+    name: 'Tome of Focus',
+    category: 'book',
     description: 'Studying it sharpens your crafting focus. +10 Concentration.',
-    rarity: 'uncommon', sellPrice: 30, buyPrice: 90,
-    effect: { type: 'gain_stat', stat: 'concentration', amount: 10 }, isConsumable: true, isBook: true,
+    rarity: 'uncommon',
+    sellPrice: 30,
+    buyPrice: 90,
+    effect: { type: 'gain_stat', stat: 'concentration', amount: 10 },
+    isConsumable: true,
+    isBook: true,
   },
   tome_of_might: {
-    id: 'tome_of_might', name: 'Tome of Might', category: 'book',
+    id: 'tome_of_might',
+    name: 'Tome of Might',
+    category: 'book',
     description: 'Forbidden techniques flow into you. +5 Aura.',
-    rarity: 'rare', sellPrice: 50, buyPrice: 150,
-    effect: { type: 'gain_stat', stat: 'aura', amount: 5 }, isConsumable: true, isBook: true,
+    rarity: 'rare',
+    sellPrice: 50,
+    buyPrice: 150,
+    effect: { type: 'gain_stat', stat: 'aura', amount: 5 },
+    isConsumable: true,
+    isBook: true,
   },
   tome_of_wisdom: {
-    id: 'tome_of_wisdom', name: 'Tome of Wisdom', category: 'book',
+    id: 'tome_of_wisdom',
+    name: 'Tome of Wisdom',
+    category: 'book',
     description: 'Ancient knowledge permanently sharpens your mind. +1 Intelligence.',
-    rarity: 'rare', sellPrice: 60, buyPrice: 180,
-    effect: { type: 'gain_stat', stat: 'intelligence', amount: 1 }, isConsumable: true, isBook: true,
+    rarity: 'rare',
+    sellPrice: 60,
+    buyPrice: 180,
+    effect: { type: 'gain_stat', stat: 'intelligence', amount: 1 },
+    isConsumable: true,
+    isBook: true,
   },
 }
 

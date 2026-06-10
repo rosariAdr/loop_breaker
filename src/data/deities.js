@@ -10,7 +10,8 @@ export const DEITIES = {
     domain: ['war', 'fire'],
     alignment: 'chaotic',
     universe: 'medieval_fantasy',
-    description: 'A fierce deity who favors the bold and the relentless. He takes notice of those who seek battle without hesitation.',
+    description:
+      'A fierce deity who favors the bold and the relentless. He takes notice of those who seek battle without hesitation.',
     color: '#c04040',
     sigil: '🔥',
 
@@ -35,9 +36,11 @@ export const DEITIES = {
     divineSkillOptions: ['inferno_strike', 'battle_fury'],
 
     // Dialogues
-    callMessage: "I have watched you, mortal. You do not flinch. You do not hesitate. Every battle, you threw yourself forward without regard for your own flesh. This... pleases me. I am Ignareth, Lord of War and Flame. Will you carry my fire into this world?",
-    acceptMessage: "Then burn, warrior. Burn bright. Let your enemies know the name of my chosen.",
-    refuseMessage: "...So be it. Walk your path alone. But do not forget — my fire still watches you.",
+    callMessage:
+      'I have watched you, mortal. You do not flinch. You do not hesitate. Every battle, you threw yourself forward without regard for your own flesh. This... pleases me. I am Ignareth, Lord of War and Flame. Will you carry my fire into this world?',
+    acceptMessage: 'Then burn, warrior. Burn bright. Let your enemies know the name of my chosen.',
+    refuseMessage:
+      '...So be it. Walk your path alone. But do not forget — my fire still watches you.',
   },
 
   sylvara: {
@@ -47,7 +50,8 @@ export const DEITIES = {
     domain: ['nature', 'calm', 'rest'],
     alignment: 'lawful',
     universe: 'medieval_fantasy',
-    description: 'A serene deity who values preparation, patience, and respect for life. She takes notice of those who enter battle whole, never broken.',
+    description:
+      'A serene deity who values preparation, patience, and respect for life. She takes notice of those who enter battle whole, never broken.',
     color: '#80c040',
     sigil: '🌿',
 
@@ -72,9 +76,10 @@ export const DEITIES = {
     divineSkillOptions: ['natures_veil', 'healing_bloom'],
 
     // Dialogues
-    callMessage: "You come to me whole, mortal. Again and again, you have faced the darkness without letting it break you first. You understand what so many forget — that strength begins before the first blow. I am Sylvara. Will you walk under my canopy?",
-    acceptMessage: "Then grow, child. Roots deep, branches wide. Let nothing uproot you.",
-    refuseMessage: "The forest does not mourn those who leave it. Return if you change your mind.",
+    callMessage:
+      'You come to me whole, mortal. Again and again, you have faced the darkness without letting it break you first. You understand what so many forget — that strength begins before the first blow. I am Sylvara. Will you walk under my canopy?',
+    acceptMessage: 'Then grow, child. Roots deep, branches wide. Let nothing uproot you.',
+    refuseMessage: 'The forest does not mourn those who leave it. Return if you change your mind.',
   },
 
   // ── DV04 — Voltaris : Foudre + Action, Chaotique ─────────────────────────
@@ -85,7 +90,8 @@ export const DEITIES = {
     domain: ['lightning', 'action', 'speed'],
     alignment: 'chaotic',
     universe: 'medieval_fantasy',
-    description: 'A reckless deity of thunder and momentum. He favors those who fight at the edge of death, never slowing, never yielding.',
+    description:
+      'A reckless deity of thunder and momentum. He favors those who fight at the edge of death, never slowing, never yielding.',
     color: '#60a0ff',
     sigil: '⚡',
 
@@ -93,7 +99,7 @@ export const DEITIES = {
     awakeningCondition: {
       type: 'wins_below_hp',
       wins: 5,
-      hpThreshold: 0.30,
+      hpThreshold: 0.3,
       description: 'Win 5 battles while below 30% HP',
     },
 
@@ -102,16 +108,18 @@ export const DEITIES = {
       id: 'voltaris_blessing',
       name: "Voltaris's Blessing",
       description: 'The storm courses through you. Permanently increases Agility by 20%.',
-      effect: { stat: 'agility', multiplier: 0.20 },
+      effect: { stat: 'agility', multiplier: 0.2 },
     },
 
     // Deux skills divins au choix
     divineSkillOptions: ['chain_lightning', 'overclock'],
 
     // Dialogues
-    callMessage: "Ha! You dance on the knife's edge and laugh at the fall. Most mortals flee when their blood runs low — you charge harder. I am Voltaris, the Storm Untamed. Ride the lightning with me!",
-    acceptMessage: "YES! Faster, mortal! Let them never catch their breath — strike like thunder, vanish like the bolt!",
-    refuseMessage: "Bah! Your loss. The storm waits for no one... but it remembers a coward.",
+    callMessage:
+      "Ha! You dance on the knife's edge and laugh at the fall. Most mortals flee when their blood runs low — you charge harder. I am Voltaris, the Storm Untamed. Ride the lightning with me!",
+    acceptMessage:
+      'YES! Faster, mortal! Let them never catch their breath — strike like thunder, vanish like the bolt!',
+    refuseMessage: 'Bah! Your loss. The storm waits for no one... but it remembers a coward.',
   },
 }
 
@@ -121,9 +129,9 @@ export const ACTIVE_DEITIES = ['ignareth', 'sylvara', 'voltaris']
 // Relations inter-divines : score symétrique -10 à +10
 // Paliers : Ennemi (-10/-6) | Rival (-5/-1) | Neutre (0) | Allié (1/5) | Allié fort (6/10)
 export const DIVINE_RELATIONS = {
-  ignareth_sylvara:  -3, // Rival — le feu et la nature s'opposent, mais se respectent
-  ignareth_voltaris:  6, // Allié fort — deux chaotiques belliqueux, ils s'admirent
-  sylvara_voltaris:  -4, // Rival — le calme contre la tempête
+  ignareth_sylvara: -3, // Rival — le feu et la nature s'opposent, mais se respectent
+  ignareth_voltaris: 6, // Allié fort — deux chaotiques belliqueux, ils s'admirent
+  sylvara_voltaris: -4, // Rival — le calme contre la tempête
 }
 
 // Utilitaire : récupérer le score de relation entre deux dieux
@@ -167,14 +175,19 @@ export function applyDeityBlessing(stats, deityId) {
 export function checkIgnarethAwakening(worldState) {
   const { battleLog } = worldState
   if (!battleLog || battleLog.length < 20) {
-    if (isDebug()) console.debug('[Ignareth]', { wins: battleLog?.length ?? 0, needed: 20, status: 'building up' })
+    if (isDebug())
+      console.debug('[Ignareth]', {
+        wins: battleLog?.length ?? 0,
+        needed: 20,
+        status: 'building up',
+      })
     return false
   }
 
   // Chercher 20 victoires dans les 5 derniers jours in-game
   const currentDay = worldState.dayCount
   const recentWins = battleLog.filter(
-    (entry) => entry.type === 'victory' && entry.day >= currentDay - 5
+    (entry) => entry.type === 'victory' && entry.day >= currentDay - 5,
   )
   const ready = recentWins.length >= 20
   if (isDebug()) {
@@ -193,7 +206,12 @@ export function checkIgnarethAwakening(worldState) {
 export function checkSylvaraAwakening(worldState) {
   const { combatEntryLog } = worldState
   if (!combatEntryLog || combatEntryLog.length < 8) {
-    if (isDebug()) console.debug('[Sylvara]', { entries: combatEntryLog?.length ?? 0, needed: 8, status: 'building up' })
+    if (isDebug())
+      console.debug('[Sylvara]', {
+        entries: combatEntryLog?.length ?? 0,
+        needed: 8,
+        status: 'building up',
+      })
     return false
   }
 
@@ -202,7 +220,7 @@ export function checkSylvaraAwakening(worldState) {
   const ready = lastEight.every((entry) => entry.hpPercent >= 0.85)
   if (isDebug()) {
     console.debug('[Sylvara]', {
-      lastEightHp: lastEight.map(e => Math.round(e.hpPercent * 100) + '%'),
+      lastEightHp: lastEight.map((e) => Math.round(e.hpPercent * 100) + '%'),
       threshold: '85%',
       status: ready ? 'AWAKENING' : 'building up',
     })
@@ -220,7 +238,7 @@ export function checkVoltarisAwakening(worldState) {
 
   // Compter les victoires terminées sous 30% HP
   const lowHpWins = battleLog.filter(
-    (entry) => entry.type === 'victory' && (entry.hpPercent ?? 1) < 0.30
+    (entry) => entry.type === 'victory' && (entry.hpPercent ?? 1) < 0.3,
   ).length
   const ready = lowHpWins >= 5
   if (isDebug()) {

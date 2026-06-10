@@ -9,7 +9,7 @@ describe('IDLE-OFF — applyOfflineProgress (store)', () => {
     localStorage.clear()
   })
 
-  it('crédite gold + kills + récap quand l\'idle était actif', () => {
+  it("crédite gold + kills + récap quand l'idle était actif", () => {
     const now = 1_000_000
     useGameStore.setState((s) => ({
       world: { ...s.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
@@ -42,7 +42,7 @@ describe('IDLE-OFF — applyOfflineProgress (store)', () => {
     expect(useGameStore.getState().world.monsterKillCounts.ashwood_wolf).toBe(killsAfter1)
   })
 
-  it('no-op si l\'idle n\'était pas actif', () => {
+  it("no-op si l'idle n'était pas actif", () => {
     const now = 1_000_000
     useGameStore.setState((s) => ({
       world: { ...s.world, isIdleActive: false },

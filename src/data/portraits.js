@@ -7,11 +7,19 @@ export const PORTRAIT_EMOTIONS = ['talk', 'calm', 'smile', 'sadness', 'aggressio
 
 // rôle → dossier public/portraits/<folder>/<emotion>.png + origine du pack
 export const PORTRAITS = {
-  aldric:   { folder: 'aldric',   source: 'NPC_1 (barbu blanc)', role: 'Sir Aldric — Knight Trainer / maître guerrier' },
-  smith:    { folder: 'smith',    source: 'NPC_2 (chauve roux)', role: 'Master Smith / forgeron' },
-  marta:    { folder: 'marta',    source: 'NPC_3 (rousse)',      role: 'Marta — Innkeeper' },
-  merchant: { folder: 'merchant', source: 'NPC_4 (brun)',        role: 'Marchand / maître de Guilde' },
-  mage:     { folder: 'mage',     source: 'Queen (elfe noire)',  role: 'Maître mage (Académie) / PNJ spécial' },
+  aldric: {
+    folder: 'aldric',
+    source: 'NPC_1 (barbu blanc)',
+    role: 'Sir Aldric — Knight Trainer / maître guerrier',
+  },
+  smith: { folder: 'smith', source: 'NPC_2 (chauve roux)', role: 'Master Smith / forgeron' },
+  marta: { folder: 'marta', source: 'NPC_3 (rousse)', role: 'Marta — Innkeeper' },
+  merchant: { folder: 'merchant', source: 'NPC_4 (brun)', role: 'Marchand / maître de Guilde' },
+  mage: {
+    folder: 'mage',
+    source: 'Queen (elfe noire)',
+    role: 'Maître mage (Académie) / PNJ spécial',
+  },
 }
 
 // Bâtiments/PNJ sans portrait dédié pour l'instant → fallback (emoji/placeholder) :

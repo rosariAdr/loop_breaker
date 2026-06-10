@@ -11,7 +11,8 @@ export const INFORMANTS = [
     name: 'Grizzled Veteran',
     kind: 'boss',
     teaser: 'The thing in the Hollow Crypt… I know how it fights.',
-    reveal: 'The Crypt Keeper enrages below half health — burn it down fast, or brace for a beating.',
+    reveal:
+      'The Crypt Keeper enrages below half health — burn it down fast, or brace for a beating.',
     price: 30,
   },
   {

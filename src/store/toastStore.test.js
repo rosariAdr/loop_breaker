@@ -7,11 +7,11 @@ beforeEach(() => {
 })
 
 describe('toastStore — U01', () => {
-  it("toasts vide au départ", () => {
+  it('toasts vide au départ', () => {
     expect(useToastStore.getState().toasts).toEqual([])
   })
 
-  it("addToast ajoute un toast avec message et type", () => {
+  it('addToast ajoute un toast avec message et type', () => {
     useToastStore.getState().addToast('Hello', 'loot')
     const toasts = useToastStore.getState().toasts
     expect(toasts).toHaveLength(1)
@@ -19,7 +19,7 @@ describe('toastStore — U01', () => {
     expect(toasts[0].type).toBe('loot')
   })
 
-  it("addToast retourne un id unique", () => {
+  it('addToast retourne un id unique', () => {
     const id1 = useToastStore.getState().addToast('A')
     const id2 = useToastStore.getState().addToast('B')
     expect(id1).not.toBe(id2)
@@ -35,7 +35,7 @@ describe('toastStore — U01', () => {
     expect(useToastStore.getState().toasts[0].type).toBe('info')
   })
 
-  it("removeToast retire le toast ciblé", () => {
+  it('removeToast retire le toast ciblé', () => {
     const id = useToastStore.getState().addToast('A')
     useToastStore.getState().addToast('B')
     useToastStore.getState().removeToast(id)
@@ -44,14 +44,14 @@ describe('toastStore — U01', () => {
     expect(toasts[0].message).toBe('B')
   })
 
-  it("clearToasts vide tout", () => {
+  it('clearToasts vide tout', () => {
     useToastStore.getState().addToast('A')
     useToastStore.getState().addToast('B')
     useToastStore.getState().clearToasts()
     expect(useToastStore.getState().toasts).toHaveLength(0)
   })
 
-  it("auto-dismiss après duration (fake timers)", () => {
+  it('auto-dismiss après duration (fake timers)', () => {
     vi.useFakeTimers()
     useToastStore.getState().addToast('Temp', 'info', 1000)
     expect(useToastStore.getState().toasts).toHaveLength(1)
@@ -68,14 +68,14 @@ describe('toastStore — U01', () => {
     vi.useRealTimers()
   })
 
-  it("plusieurs toasts coexistent", () => {
+  it('plusieurs toasts coexistent', () => {
     useToastStore.getState().addToast('A', 'loot', 0)
     useToastStore.getState().addToast('B', 'quest', 0)
     useToastStore.getState().addToast('C', 'divine', 0)
     expect(useToastStore.getState().toasts).toHaveLength(3)
   })
 
-  it("TOAST_TYPES exporte les types attendus", () => {
+  it('TOAST_TYPES exporte les types attendus', () => {
     expect(TOAST_TYPES).toContain('loot')
     expect(TOAST_TYPES).toContain('quest')
     expect(TOAST_TYPES).toContain('divine')

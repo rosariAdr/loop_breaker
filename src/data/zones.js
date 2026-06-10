@@ -6,10 +6,24 @@ export const ZONES = {
   ashenvale: {
     id: 'ashenvale',
     name: 'Ashenvale',
-    description: 'Ancient forests shrouded in ash and mist. Ruins of a forgotten civilization hide among the twisted trees.',
+    description:
+      'Ancient forests shrouded in ash and mist. Ruins of a forgotten civilization hide among the twisted trees.',
     levelRange: [1, 26],
     zoneMult: 1.0,
-    monsters: ['ashwood_wolf', 'rotting_shambler', 'gloom_bat', 'marsh_serpent', 'briar_wraith', 'bog_shambler', 'stone_golem', 'hollow_knight', 'ruin_specter', 'barrow_wight', 'grave_knight', 'soul_harvester'],
+    monsters: [
+      'ashwood_wolf',
+      'rotting_shambler',
+      'gloom_bat',
+      'marsh_serpent',
+      'briar_wraith',
+      'bog_shambler',
+      'stone_golem',
+      'hollow_knight',
+      'ruin_specter',
+      'barrow_wight',
+      'grave_knight',
+      'soul_harvester',
+    ],
     // ── Spots de chasse (4 zones distinctes) ──────────────────────────
     huntingSpots: [
       {
@@ -73,9 +87,9 @@ export const ZONES = {
         buildings: ['inn', 'church', 'knight_trainer'], // Sir Aldric est ici
         optionalBuildings: [
           { id: 'merchant', chance: 0.65 },
-          { id: 'alchemy', chance: 0.40 },
-          { id: 'blacksmith', chance: 0.20 },
-          { id: 'master_smith', chance: 0.10 }, // Z06 — maître forgeron, rare
+          { id: 'alchemy', chance: 0.4 },
+          { id: 'blacksmith', chance: 0.2 },
+          { id: 'master_smith', chance: 0.1 }, // Z06 — maître forgeron, rare
         ],
       },
       {
@@ -86,9 +100,9 @@ export const ZONES = {
         buildings: ['inn', 'church'],
         optionalBuildings: [
           { id: 'merchant', chance: 0.65 },
-          { id: 'alchemy', chance: 0.40 },
-          { id: 'blacksmith', chance: 0.20 },
-          { id: 'master_smith', chance: 0.10 }, // Z06 — maître forgeron, rare
+          { id: 'alchemy', chance: 0.4 },
+          { id: 'blacksmith', chance: 0.2 },
+          { id: 'master_smith', chance: 0.1 }, // Z06 — maître forgeron, rare
         ],
       },
     ],
@@ -106,18 +120,38 @@ export const ZONES = {
     city: null,
     villages: [],
     // PROG01 — déblocage data-driven (conditions en OU ; visible mais voilée tant que verrouillée)
-    unlock: { hidden: false, conditions: [{ type: 'level', value: 3 }, { type: 'kills', zone: 'ashenvale', value: 10 }] },
+    unlock: {
+      hidden: false,
+      conditions: [
+        { type: 'level', value: 3 },
+        { type: 'kills', zone: 'ashenvale', value: 10 },
+      ],
+    },
   },
 
   grimspire: {
     id: 'grimspire',
     name: 'Grimspire',
-    description: 'Ancient cursed mountains and fortresses. The air itself feels heavy with dark magic.',
+    description:
+      'Ancient cursed mountains and fortresses. The air itself feels heavy with dark magic.',
     levelRange: [21, 40],
     zoneMult: 2.5,
-    monsters: ['grimstone_troll', 'cursed_sentinel', 'abyssal_hound', 'wyvern_scout', 'plague_monk', 'iron_wraith'],
+    monsters: [
+      'grimstone_troll',
+      'cursed_sentinel',
+      'abyssal_hound',
+      'wyvern_scout',
+      'plague_monk',
+      'iron_wraith',
+    ],
     // PROG01 — déblocage data-driven (niveau 8 OU 40 kills d'Ashenvale, OU déblocage explicite PROG03)
-    unlock: { hidden: false, conditions: [{ type: 'level', value: 8 }, { type: 'kills', zone: 'ashenvale', value: 40 }] },
+    unlock: {
+      hidden: false,
+      conditions: [
+        { type: 'level', value: 8 },
+        { type: 'kills', zone: 'ashenvale', value: 40 },
+      ],
+    },
     dungeon: {
       id: 'forsaken_citadel',
       name: 'The Forsaken Citadel',
@@ -145,9 +179,9 @@ export const ZONES = {
         buildings: ['inn', 'church'],
         optionalBuildings: [
           { id: 'merchant', chance: 0.65 },
-          { id: 'alchemy', chance: 0.40 },
-          { id: 'blacksmith', chance: 0.20 },
-          { id: 'master_smith', chance: 0.10 }, // Z06 — maître forgeron, rare
+          { id: 'alchemy', chance: 0.4 },
+          { id: 'blacksmith', chance: 0.2 },
+          { id: 'master_smith', chance: 0.1 }, // Z06 — maître forgeron, rare
         ],
       },
       {
@@ -157,9 +191,9 @@ export const ZONES = {
         buildings: ['inn', 'church'],
         optionalBuildings: [
           { id: 'merchant', chance: 0.65 },
-          { id: 'alchemy', chance: 0.40 },
-          { id: 'blacksmith', chance: 0.20 },
-          { id: 'master_smith', chance: 0.10 }, // Z06 — maître forgeron, rare
+          { id: 'alchemy', chance: 0.4 },
+          { id: 'blacksmith', chance: 0.2 },
+          { id: 'master_smith', chance: 0.1 }, // Z06 — maître forgeron, rare
         ],
       },
     ],
@@ -247,13 +281,23 @@ export function scaleMonsterStats(baseStats, zoneId, runCount) {
   }
 }
 
+// WM-LEVEL01 — fourchette de niveau [min, max] d'un spot de chasse (depuis huntingSpots),
+// pour le sous-label « Lv X–Y » de la WorldMap. Retourne null si le spot est inconnu.
+export function getSpotLevelRange(spotId) {
+  for (const zone of Object.values(ZONES)) {
+    const spot = zone.huntingSpots?.find((s) => s.id === spotId)
+    if (spot?.levelRange) return spot.levelRange
+  }
+  return null
+}
+
 // B12 — Niveau nominal d'un monstre, dérivé du levelRange (min) de son spot de chasse.
 // Sert à juger si un ennemi est trop fort pour l'idle. Retourne 1 par défaut.
 export function getMonsterLevel(monsterId) {
   const monster = MONSTERS[monsterId]
   if (!monster) return 1
   for (const zone of Object.values(ZONES)) {
-    const spot = zone.huntingSpots?.find(s => s.id === monster.huntingSpot)
+    const spot = zone.huntingSpots?.find((s) => s.id === monster.huntingSpot)
     if (spot?.levelRange) return spot.levelRange[0]
   }
   const zone = ZONES[monster.zone]

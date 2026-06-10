@@ -212,9 +212,10 @@ describe('myAction', () => {
 Avant chaque commit qui clôt une session de travail :
 
 ```
-□ npm run test:run        → vert (322+ tests passent)
+□ npm run test:run        → vert (1000+ tests passent)
 □ npm run build           → OK (build prod sans erreur)
-□ npm run lint            → OK (pas de warning)
+□ npm run lint            → OK (0 erreur ; warnings exhaustive-deps connus tolérés)
+□ npm run format:check    → OK (sinon `npm run format` ; normalement déjà fait par le hook)
 □ TASKS.md                → ticket déplacé en Done avec date
 □ CONTEXT.md              → compteurs/sections mis à jour si feature impactante
 □ CHANGELOG.md            → entrée [Unreleased] enrichie
@@ -290,13 +291,44 @@ it('migration : ajoute newField avec valeur par défaut si absent', () => {
 ### Scripts npm
 
 ```bash
-npm run dev        # Dev server avec HMR
-npm test           # Vitest watch (TDD)
-npm run test:run   # Vitest single run (CI / fin de session)
-npm run build      # Build prod (vérifier avant merge)
-npm run lint       # ESLint check
-npm run preview    # Preview du build prod
+npm run dev            # Dev server avec HMR
+npm test               # Vitest watch (TDD)
+npm run test:run       # Vitest single run (CI / fin de session)
+npm run test:coverage  # Vitest single run + rapport de couverture (seuil 80% lignes)
+npm run build          # Build prod (vérifier avant merge)
+npm run lint           # ESLint check
+npm run format         # Prettier --write (reformate tout le repo)
+npm run format:check   # Prettier --check (échoue si un fichier n'est pas formaté)
+npm run preview        # Preview du build prod
 ```
+
+### Formatage automatique (Prettier + EditorConfig) — DEVBP01
+
+Le projet utilise **Prettier** comme unique source de vérité du formatage. La config est dans
+`.prettierrc.json` (no semicolons, single quotes, `printWidth: 100`, `trailingComma: all`).
+ESLint ne gère **plus** le formatage : `eslint-config-prettier` (dernier de `eslint.config.js`)
+désactive toute règle de style conflictuelle. ESLint reste responsable de la **qualité** (bugs,
+hooks, imports inutilisés), Prettier de la **mise en forme**.
+
+`.editorconfig` aligne les éditeurs (UTF-8, LF, indentation 2 espaces, newline finale). `.prettierignore`
+exclut le build, les assets, et les docs à mise en forme manuelle (`*.md`, `*.txt`, `*.csv` — tableaux
+ASCII de `TASKS.md` à préserver).
+
+> Ne reformate jamais à la main : laisse `npm run format` (ou le hook pre-commit) s'en charger.
+
+### Hook pre-commit (husky + lint-staged) — DEVBP01
+
+Un hook **pre-commit** (`.husky/pre-commit`) lance **lint-staged** sur les fichiers _stagés_ uniquement :
+
+| Fichiers stagés | Actions |
+|---|---|
+| `**/*.{js,jsx}` | `eslint --fix` puis `prettier --write` |
+| `**/*.{css,json,html}` | `prettier --write` |
+
+Le hook s'installe automatiquement via le script `prepare` (`husky`) au `npm install`. Si les hooks
+ne se déclenchent pas après un clone, relancer `npm run prepare`. Les fichiers corrigés sont
+re-stagés automatiquement avant le commit. Le hook ne lance **pas** la suite de tests (trop lent par
+commit) — `npm run test:run` reste à la checklist de fin de session (§5) et/ou en CI.
 
 ### GitKraken (workflow recommandé)
 
@@ -337,5 +369,5 @@ Les décisions structurantes sont documentées dans **`CONTEXT.md` §11**. Avant
 ## Questions ouvertes / à formaliser
 
 - **Branche `release/*`** ? Pour stabiliser une version avant merge master. Pas mis en place pour le moment (équipe solo, friction inutile).
-- **Automatisation** ? Pas de CI GitHub Actions pour l'instant. À considérer en v1 si le projet grossit (`npm run test:run` + `npm run build` à chaque PR).
-- **Pré-commit hook** ? `husky` + `lint-staged` non installés — tests/lint manuels à la checklist.
+- **Automatisation** ? Pas de CI GitHub Actions pour l'instant (ticket DX-CI01). À considérer en v1 si le projet grossit (`npm run lint` + `npm run test:run` + `npm run build` à chaque PR).
+- ~~**Pré-commit hook** ?~~ ✅ Fait (DEVBP01) : `husky` + `lint-staged` installés, hook pre-commit actif (eslint --fix + prettier sur les fichiers stagés). Voir §8.

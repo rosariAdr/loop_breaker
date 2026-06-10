@@ -11,19 +11,19 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('DivineCall — flow de base', () => {
-  it("ne rend rien sans pendingDivineCall", () => {
+  it('ne rend rien sans pendingDivineCall', () => {
     render(<DivineCall />)
     expect(screen.queryByText(/Accept/)).toBeNull()
   })
 
-  it("affiche le dieu invoqué (Ignareth)", () => {
+  it('affiche le dieu invoqué (Ignareth)', () => {
     useGameStore.getState().triggerDivineCall('ignareth')
     render(<DivineCall />)
     expect(screen.getByText('Ignareth')).toBeInTheDocument()
     expect(screen.getByText('Accept')).toBeInTheDocument()
   })
 
-  it("affiche Voltaris correctement (DV04 intégration)", () => {
+  it('affiche Voltaris correctement (DV04 intégration)', () => {
     useGameStore.getState().triggerDivineCall('voltaris')
     render(<DivineCall />)
     expect(screen.getByText('Voltaris')).toBeInTheDocument()
@@ -31,14 +31,14 @@ describe('DivineCall — flow de base', () => {
 })
 
 describe('DV03 — Fidélité inter-run', () => {
-  it("PAS de bannière de reconnaissance si jamais lié", () => {
+  it('PAS de bannière de reconnaissance si jamais lié', () => {
     useGameStore.getState().triggerDivineCall('ignareth')
     render(<DivineCall />)
     expect(screen.queryByTestId('returning-deity-banner')).toBeNull()
   })
 
-  it("affiche la bannière si déjà lié dans cet univers", () => {
-    useGameStore.setState(state => ({
+  it('affiche la bannière si déjà lié dans cet univers', () => {
+    useGameStore.setState((state) => ({
       meta: { ...state.meta, divineBonds: { medieval_fantasy: 'ignareth' } },
     }))
     useGameStore.getState().triggerDivineCall('ignareth')
@@ -47,8 +47,8 @@ describe('DV03 — Fidélité inter-run', () => {
     expect(screen.getByText(/Ignareth remembers you/)).toBeInTheDocument()
   })
 
-  it("PAS de bannière si lié à un AUTRE dieu", () => {
-    useGameStore.setState(state => ({
+  it('PAS de bannière si lié à un AUTRE dieu', () => {
+    useGameStore.setState((state) => ({
       meta: { ...state.meta, divineBonds: { medieval_fantasy: 'sylvara' } },
     }))
     useGameStore.getState().triggerDivineCall('ignareth')
@@ -58,7 +58,7 @@ describe('DV03 — Fidélité inter-run', () => {
 })
 
 describe('DV07 — Refus depuis DivineCall', () => {
-  it("le bouton Refuse → confirm → Walk alone lève soloRun", () => {
+  it('le bouton Refuse → confirm → Walk alone lève soloRun', () => {
     useGameStore.getState().triggerDivineCall('ignareth')
     render(<DivineCall />)
     fireEvent.click(screen.getByText('Refuse'))

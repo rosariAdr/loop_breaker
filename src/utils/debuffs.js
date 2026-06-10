@@ -24,9 +24,9 @@ export function makeDebuff(debuffId, days = 7, permanent = false) {
  */
 export function addDebuff(active = [], debuffId, days = 7, permanent = false) {
   if (!DEBUFFS[debuffId]) return [...active]
-  const existing = active.find(d => d.debuffId === debuffId)
+  const existing = active.find((d) => d.debuffId === debuffId)
   if (!existing) return [...active, makeDebuff(debuffId, days, permanent)]
-  return active.map(d => {
+  return active.map((d) => {
     if (d.debuffId !== debuffId) return d
     const nowPermanent = d.permanent || permanent
     return {
@@ -46,10 +46,12 @@ export function addDebuff(active = [], debuffId, days = 7, permanent = false) {
  */
 export function tickDebuffsOneDay(active = []) {
   return active
-    .map(d => (d.permanent
-      ? d
-      : { ...d, duration: { ...d.duration, remaining: (d.duration.remaining ?? 0) - 1 } }))
-    .filter(d => d.permanent || (d.duration.remaining ?? 0) > 0)
+    .map((d) =>
+      d.permanent
+        ? d
+        : { ...d, duration: { ...d.duration, remaining: (d.duration.remaining ?? 0) - 1 } },
+    )
+    .filter((d) => d.permanent || (d.duration.remaining ?? 0) > 0)
 }
 
 /**
@@ -57,7 +59,7 @@ export function tickDebuffsOneDay(active = []) {
  */
 export function getDebuffStatModifiers(active = []) {
   const mods = {}
-  active.forEach(d => {
+  active.forEach((d) => {
     const def = DEBUFFS[d.debuffId]
     if (!def) return
     mods[def.stat] = (mods[def.stat] ?? 0) + def.reduction

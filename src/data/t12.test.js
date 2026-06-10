@@ -11,15 +11,28 @@ describe('T12 — Soul Rend alwaysInheritable', () => {
     expect(isDivineSkillInheritable({ ...SKILLS.soul_rend, level: 1 })).toBe(true)
   })
 
-  it('alwaysInheritable force l\'héritage même pour un skill divin non évolué', () => {
+  it("alwaysInheritable force l'héritage même pour un skill divin non évolué", () => {
     // un skill divin niveau 1 n'est normalement PAS héritable (DV10)…
-    expect(isDivineSkillInheritable({ container: 'divine', inheritable: true, level: 1 })).toBe(false)
+    expect(isDivineSkillInheritable({ container: 'divine', inheritable: true, level: 1 })).toBe(
+      false,
+    )
     // …sauf s'il porte alwaysInheritable
-    expect(isDivineSkillInheritable({ container: 'divine', inheritable: true, level: 1, alwaysInheritable: true })).toBe(true)
+    expect(
+      isDivineSkillInheritable({
+        container: 'divine',
+        inheritable: true,
+        level: 1,
+        alwaysInheritable: true,
+      }),
+    ).toBe(true)
   })
 
   it('les autres skills ne sont pas affectés (DV10 préservé)', () => {
-    expect(isDivineSkillInheritable({ container: 'divine', inheritable: true, level: 2 })).toBe(true)
-    expect(isDivineSkillInheritable({ container: 'mana', inheritable: false, level: 5 })).toBe(false)
+    expect(isDivineSkillInheritable({ container: 'divine', inheritable: true, level: 2 })).toBe(
+      true,
+    )
+    expect(isDivineSkillInheritable({ container: 'mana', inheritable: false, level: 5 })).toBe(
+      false,
+    )
   })
 })

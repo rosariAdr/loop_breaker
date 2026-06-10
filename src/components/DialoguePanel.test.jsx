@@ -14,13 +14,13 @@ describe('NPC01 — DialoguePanel', () => {
     expect(screen.getByText(/troubled times/)).toBeInTheDocument()
   })
 
-  it("clic sur une option navigue vers le nœud cible", () => {
+  it('clic sur une option navigue vers le nœud cible', () => {
     render(<DialoguePanel dialogue={d} />)
     fireEvent.click(screen.getByText('What troubles you?'))
     expect(screen.getByText(/Beasts from the forest/)).toBeInTheDocument()
   })
 
-  it("(Back) revient au nœud précédent", () => {
+  it('(Back) revient au nœud précédent', () => {
     render(<DialoguePanel dialogue={d} />)
     fireEvent.click(screen.getByText('Is there work for me?'))
     expect(screen.getByText(/keeps the quest board/)).toBeInTheDocument()

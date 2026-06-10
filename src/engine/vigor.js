@@ -18,10 +18,14 @@ export const VIGOR_COST = { combat: 3, distance: 1, craft: 3, failedCraft: 40 }
 export function getVigorMalus(vigor) {
   const v = Math.max(0, Math.min(VIGOR_MAX, vigor ?? VIGOR_MAX))
   if (v >= 70) return { mult: {}, craftFailMult: 1, tier: 'fresh' }
-  if (v >= 50) return { mult: { strength: 0.90 }, craftFailMult: 1, tier: 'tired' }
+  if (v >= 50) return { mult: { strength: 0.9 }, craftFailMult: 1, tier: 'tired' }
   if (v >= 30) return { mult: { strength: 0.85, agility: 0.85 }, craftFailMult: 1, tier: 'weary' }
   const all = 0.65
-  return { mult: { strength: all, agility: all, intelligence: all, chance: all, def: all }, craftFailMult: 4, tier: 'exhausted' }
+  return {
+    mult: { strength: all, agility: all, intelligence: all, chance: all, def: all },
+    craftFailMult: 4,
+    tier: 'exhausted',
+  }
 }
 
 /**
@@ -44,14 +48,18 @@ export function applyVigorMalus(stats, vigor, buffer = 0) {
 function bufferAt(value, p100, p200, p300) {
   const v = Math.max(0, value ?? 0)
   if (v >= 300) return p300
-  if (v >= 200) return p200 + (p300 - p200) * (v - 200) / 100
-  if (v >= 100) return p100 + (p200 - p100) * (v - 100) / 100
-  return p100 * v / 100
+  if (v >= 200) return p200 + ((p300 - p200) * (v - 200)) / 100
+  if (v >= 100) return p100 + ((p200 - p100) * (v - 100)) / 100
+  return (p100 * v) / 100
 }
 /** Aura tamponne le malus de Fatigue en COMBAT : 50% à 100, 70% à 200, 85% à 300. */
-export function combatFatigueBuffer(aura) { return bufferAt(aura, 0.50, 0.70, 0.85) }
+export function combatFatigueBuffer(aura) {
+  return bufferAt(aura, 0.5, 0.7, 0.85)
+}
 /** Concentration tamponne le malus de Fatigue au CRAFT : 70% à 100, 85% à 200, 100% à 300. */
-export function craftFatigueBuffer(concentration) { return bufferAt(concentration, 0.70, 0.85, 1.00) }
+export function craftFatigueBuffer(concentration) {
+  return bufferAt(concentration, 0.7, 0.85, 1.0)
+}
 
 /** Multiplicateur de risque d'échec de craft (4 si épuisé). */
 export function craftFailMultiplier(vigor) {

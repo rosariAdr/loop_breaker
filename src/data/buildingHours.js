@@ -5,15 +5,15 @@
 
 // `null` = ouvert en permanence. Sinon { from, to } en ticks (to exclus). Pas d'overnight ici.
 export const BUILDING_HOURS = {
-  inn:            null,                 // 24/24
-  church:         { from: 5,  to: 21 }, // aube → soirée
-  merchant:       { from: 7,  to: 19 },
-  alchemy:        { from: 8,  to: 20 },
-  blacksmith:     { from: 6,  to: 18 },
-  master_smith:   { from: 8,  to: 18 },
-  knight_trainer: { from: 7,  to: 17 },
-  guild:          { from: 8,  to: 20 }, // v1.2
-  academy:        { from: 8,  to: 20 }, // v1.2
+  inn: null, // 24/24
+  church: { from: 5, to: 21 }, // aube → soirée
+  merchant: { from: 7, to: 19 },
+  alchemy: { from: 8, to: 20 },
+  blacksmith: { from: 6, to: 18 },
+  master_smith: { from: 8, to: 18 },
+  knight_trainer: { from: 7, to: 17 },
+  guild: { from: 8, to: 20 }, // v1.2
+  academy: { from: 8, to: 20 }, // v1.2
 }
 
 /** Vrai si le bâtiment est ouvert au tick donné (0-23). 24/24 si pas d'horaires. */
@@ -22,7 +22,7 @@ export function isBuildingOpen(buildingId, tick) {
   if (!h) return true
   const t = (((tick ?? 0) % 24) + 24) % 24
   // gère un éventuel créneau qui passe minuit (from > to)
-  return h.from <= h.to ? (t >= h.from && t < h.to) : (t >= h.from || t < h.to)
+  return h.from <= h.to ? t >= h.from && t < h.to : t >= h.from || t < h.to
 }
 
 /** Prochaine heure d'ouverture (tick), ou null si 24/24. */

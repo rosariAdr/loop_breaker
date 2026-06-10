@@ -31,7 +31,11 @@ describe('normalizeSave — backfill des champs par défaut (toutes versions)', 
   it('NE perd PAS les données existantes de la save', () => {
     const out = normalizeSave({
       saveVersion: 2,
-      meta: { totalDeaths: 8, knownInfo: ['loot_thornmarsh'], divineBonds: { medieval_fantasy: 'sylvara' } },
+      meta: {
+        totalDeaths: 8,
+        knownInfo: ['loot_thornmarsh'],
+        divineBonds: { medieval_fantasy: 'sylvara' },
+      },
       world: { monsterKillCounts: { ashwood_wolf: 4 }, dayCount: 10 },
       hero: { name: 'Innoryu', level: 8 },
     })
@@ -87,7 +91,7 @@ describe('recordKill — RÉGRESSION compteur bloqué', () => {
   })
 })
 
-describe('MON01 — remap d\'id de spot renommé (barrow_hills → wildmere_hills)', () => {
+describe("MON01 — remap d'id de spot renommé (barrow_hills → wildmere_hills)", () => {
   it('normalizeSave remappe currentHuntingSpot et currentNode', () => {
     const out = normalizeSave({
       saveVersion: 2,

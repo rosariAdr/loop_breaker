@@ -5,15 +5,15 @@
 // remplacée, réajuster ce seul tableau (doc : CONTEXT.md §WorldMap).
 
 export const POS = {
-  greywatch:        { x: 13, y: 16 },
+  greywatch: { x: 13, y: 16 },
   ashenvale_forest: { x: 43, y: 16 },
-  millhaven:        { x: 41, y: 41 },
-  ironhaven:        { x: 60, y: 56 },
-  crumbled_ruins:   { x: 21, y: 59 },
-  thornmarsh:       { x: 34, y: 79 },
-  wildmere_hills:   { x: 51, y: 89 },
-  crypt:            { x: 68, y: 83 }, // donjon (grotte)
-  grimspire:        { x: 90, y: 45 }, // locked (overlay sur les montagnes)
+  millhaven: { x: 41, y: 41 },
+  ironhaven: { x: 60, y: 56 },
+  crumbled_ruins: { x: 21, y: 59 },
+  thornmarsh: { x: 34, y: 79 },
+  wildmere_hills: { x: 51, y: 89 },
+  crypt: { x: 68, y: 83 }, // donjon (grotte)
+  grimspire: { x: 90, y: 45 }, // locked (overlay sur les montagnes)
 }
 
 export const NODES = [

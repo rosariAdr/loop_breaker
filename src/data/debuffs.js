@@ -12,7 +12,7 @@ export const DEBUFFS = {
     name: 'Burnt Hands',
     icon: '🔥',
     stat: 'strength',
-    reduction: 0.10, // STR −10%
+    reduction: 0.1, // STR −10%
     description: 'Scorched hands from a botched forging. Strength is reduced.',
   },
   poisoned: {
@@ -28,7 +28,7 @@ export const DEBUFFS = {
     name: 'Fatigue',
     icon: '😩',
     stat: 'agility',
-    reduction: 0.20, // AGI −20%
+    reduction: 0.2, // AGI −20%
     description: 'Exhaustion dulls your reflexes. Agility is reduced.',
   },
   black_smoke: {

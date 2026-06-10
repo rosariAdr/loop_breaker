@@ -13,14 +13,14 @@ describe('UI09 — isZoneTransition', () => {
     expect(isZoneTransition('zone_view', 'world_map')).toBe(true)
   })
 
-  it('pas de déroulé pour les autres changements d\'écran', () => {
+  it("pas de déroulé pour les autres changements d'écran", () => {
     expect(isZoneTransition('world_map', 'combat')).toBe(false)
     expect(isZoneTransition('safe_zone', 'quest_board')).toBe(false)
     expect(isZoneTransition('zone_view', 'combat')).toBe(false)
     expect(isZoneTransition('combat', 'world_map')).toBe(false)
   })
 
-  it('pas de déroulé si l\'écran ne change pas / valeurs nulles', () => {
+  it("pas de déroulé si l'écran ne change pas / valeurs nulles", () => {
     expect(isZoneTransition('world_map', 'world_map')).toBe(false)
     expect(isZoneTransition(null, 'safe_zone')).toBe(false)
     expect(isZoneTransition('safe_zone', undefined)).toBe(false)

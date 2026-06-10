@@ -27,7 +27,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <NormalChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(screen.getByText('Normal content')).toBeInTheDocument()
   })
@@ -36,7 +36,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(screen.getByText(/Something broke/i)).toBeInTheDocument()
   })
@@ -45,7 +45,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild message="Test crash 42" />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(screen.getByText(/Test crash 42/)).toBeInTheDocument()
   })
@@ -54,7 +54,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(screen.getByText(/Reload page/i)).toBeInTheDocument()
     expect(screen.getByText(/Reset save/i)).toBeInTheDocument()
@@ -69,7 +69,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     fireEvent.click(screen.getByText(/Reload page/i))
     expect(reloadMock).toHaveBeenCalled()
@@ -87,7 +87,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     fireEvent.click(screen.getByText(/Reset save/i))
 
@@ -103,7 +103,7 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     fireEvent.click(screen.getByText(/Reset save/i))
 
@@ -115,8 +115,31 @@ describe('ErrorBoundary — TECH01', () => {
     render(
       <ErrorBoundary>
         <ThrowingChild message="Logged error" />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     )
     expect(errorSpy).toHaveBeenCalled()
+  })
+
+  it('DX-ERRTRACK01 — persiste l’erreur dans le journal localStorage (Sentry-lite)', () => {
+    localStorage.removeItem('lb_errors')
+    render(
+      <ErrorBoundary>
+        <ThrowingChild message="Persisted crash" />
+      </ErrorBoundary>,
+    )
+    const log = JSON.parse(localStorage.getItem('lb_errors') || '[]')
+    expect(log.length).toBeGreaterThanOrEqual(1)
+    expect(log[0].message).toMatch(/Persisted crash/)
+    expect(log[0].source).toBe('react-render')
+    expect(log[0].ts).toBeTruthy()
+  })
+
+  it('DX-ERRTRACK01 — propose un bouton « Copy error details »', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowingChild />
+      </ErrorBoundary>,
+    )
+    expect(screen.getByText(/Copy error details/i)).toBeInTheDocument()
   })
 })

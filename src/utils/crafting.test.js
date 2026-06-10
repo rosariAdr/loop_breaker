@@ -1,6 +1,13 @@
 // CRF04 — Tests résolution de craft
 import { describe, it, expect } from 'vitest'
-import { bumpRarity, scoreToTier, resolveCraftOutcome, hitAccuracy, averageAccuracy, alchemyQuantity } from './crafting'
+import {
+  bumpRarity,
+  scoreToTier,
+  resolveCraftOutcome,
+  hitAccuracy,
+  averageAccuracy,
+  alchemyQuantity,
+} from './crafting'
 
 describe('Z04 — alchemyQuantity', () => {
   it('mappe le palier à la quantité produite', () => {
@@ -54,16 +61,19 @@ describe('CRF04 — scoreToTier', () => {
   it('mappe la précision au bon palier', () => {
     expect(scoreToTier(1.0)).toBe('perfect')
     expect(scoreToTier(0.96)).toBe('perfect')
-    expect(scoreToTier(0.80)).toBe('good')
-    expect(scoreToTier(0.50)).toBe('neutral')
-    expect(scoreToTier(0.20)).toBe('fail')
+    expect(scoreToTier(0.8)).toBe('good')
+    expect(scoreToTier(0.5)).toBe('neutral')
+    expect(scoreToTier(0.2)).toBe('fail')
     expect(scoreToTier(0.05)).toBe('catastrophe')
   })
 })
 
 describe('CRF04 — resolveCraftOutcome', () => {
   it('parfait → rareté +2', () => {
-    expect(resolveCraftOutcome('common', 'perfect')).toMatchObject({ success: true, rarity: 'epic' })
+    expect(resolveCraftOutcome('common', 'perfect')).toMatchObject({
+      success: true,
+      rarity: 'epic',
+    })
   })
   it('bon → rareté +1', () => {
     expect(resolveCraftOutcome('common', 'good')).toMatchObject({ success: true, rarity: 'rare' })

@@ -4,15 +4,15 @@ import { SKILLS } from './skills'
 // Catalogue d'achat (skillId → prix de base en or, au niveau 1).
 // On vend les techniques « de base » du joueur (pas les skills de boss / divins / suprêmes).
 export const ACADEMY_CATALOG = {
-  power_strike:    120,
-  cleave:          150,
-  counter_strike:  140,
-  shield_stance:   130,
-  savage_bite:     110,
-  venom_bite:      160,
-  healing_bloom:   200,
+  power_strike: 120,
+  cleave: 150,
+  counter_strike: 140,
+  shield_stance: 130,
+  savage_bite: 110,
+  venom_bite: 160,
+  healing_bloom: 200,
   veterans_resolve: 180, // passif
-  stone_skin:      170,  // passif
+  stone_skin: 170, // passif
 }
 
 // Prix de base de revente pour un skill hors catalogue (drops de boss, etc.).

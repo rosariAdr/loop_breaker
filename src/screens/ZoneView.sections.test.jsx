@@ -13,7 +13,9 @@ afterEach(cleanup)
 
 describe('ZoneView — sections', () => {
   it('affiche la section Dungeon sur la zone principale (pas un spot)', () => {
-    useGameStore.setState((s) => ({ world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: null } }))
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: null },
+    }))
     render(<ZoneView />)
     expect(screen.getByText('Dungeon')).toBeInTheDocument()
   })
@@ -22,13 +24,17 @@ describe('ZoneView — sections', () => {
     // Trouver une zone avec un demonLord
     const zoneId = Object.keys(ZONES).find((z) => ZONES[z].demonLord)
     expect(zoneId).toBeTruthy()
-    useGameStore.setState((s) => ({ world: { ...s.world, currentZone: zoneId, currentHuntingSpot: null } }))
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentZone: zoneId, currentHuntingSpot: null },
+    }))
     render(<ZoneView />)
     expect(screen.getByText('Demon Lord')).toBeInTheDocument()
   })
 
   it('affiche le journal Idle', () => {
-    useGameStore.setState((s) => ({ world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: 'ashenvale_forest' } }))
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: 'ashenvale_forest' },
+    }))
     render(<ZoneView />)
     expect(screen.getByText('Idle Log')).toBeInTheDocument()
   })

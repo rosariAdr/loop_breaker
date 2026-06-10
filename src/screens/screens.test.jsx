@@ -17,7 +17,7 @@ import LevelUpModal from './LevelUpModal'
 beforeEach(() => {
   useGameStore.getState().resetGame()
   // Évite la modal CharacterCreation pour les tests qui ne la concernent pas
-  useGameStore.setState(state => ({ hero: { ...state.hero, heroNamed: true, name: 'Tester' } }))
+  useGameStore.setState((state) => ({ hero: { ...state.hero, heroNamed: true, name: 'Tester' } }))
   localStorage.clear()
 })
 
@@ -62,7 +62,7 @@ describe('Smoke tests — montage de chaque écran', () => {
   })
 
   it('PostMortem monte si lastRunSummary existe', () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       meta: {
         ...state.meta,
         lastRunSummary: {
@@ -140,14 +140,18 @@ describe('Navigation entre écrans', () => {
 
   it("CharacterCreation bloque l'accès aux autres écrans tant qu'on n'a pas confirmé", () => {
     // Reset heroNamed à false pour forcer CharacterCreation
-    useGameStore.setState(state => ({ hero: { ...state.hero, heroNamed: false, name: 'The Wanderer' } }))
+    useGameStore.setState((state) => ({
+      hero: { ...state.hero, heroNamed: false, name: 'The Wanderer' },
+    }))
     render(<App />)
     // CharacterCreation doit être visible
     expect(screen.getByText(/The Wanderer Awakes/)).toBeInTheDocument()
   })
 
   it('CharacterCreation : valider un nom débloque les écrans', () => {
-    useGameStore.setState(state => ({ hero: { ...state.hero, heroNamed: false, name: 'The Wanderer' } }))
+    useGameStore.setState((state) => ({
+      hero: { ...state.hero, heroNamed: false, name: 'The Wanderer' },
+    }))
     render(<App />)
     fireEvent.click(screen.getByText(/Begin the Journey/))
     expect(useGameStore.getState().hero.heroNamed).toBe(true)
@@ -158,12 +162,12 @@ describe('Navigation entre écrans', () => {
 // CRF05 — Affichage des debuffs actifs sur HeroSheet
 // ─────────────────────────────────────────────────────────────────────────────
 describe('CRF05 — HeroSheet debuffs', () => {
-  it("pas de section debuffs si aucun debuff actif", () => {
+  it('pas de section debuffs si aucun debuff actif', () => {
     render(<HeroSheet />)
     expect(screen.queryByTestId('active-debuffs')).toBeNull()
   })
 
-  it("affiche un debuff temporaire avec sa durée restante", () => {
+  it('affiche un debuff temporaire avec sa durée restante', () => {
     useGameStore.getState().addHeroDebuff('fatigue', 5)
     render(<HeroSheet />)
     expect(screen.getByTestId('active-debuffs')).toBeInTheDocument()
@@ -190,7 +194,7 @@ describe('HeroSheet — layout', () => {
     expect(mainContent.className).not.toMatch(/max-w-2xl/)
   })
 
-  it('affiche les 4 slots d\'équipement', () => {
+  it("affiche les 4 slots d'équipement", () => {
     render(<HeroSheet />)
     // Les 4 slots sont rendus en uppercase
     expect(screen.getAllByText(/weapon|helmet|armor|boots/i).length).toBeGreaterThanOrEqual(4)
@@ -204,11 +208,12 @@ describe('HeroSheet — layout', () => {
     expect(screen.getByText(/Passive Skills/)).toBeInTheDocument()
   })
 
-  it('affiche la sidebar avec gold/tokens/run', () => {
+  it('affiche les Currencies (gold/tokens, sans carte « Run » — HS-CURR01)', () => {
     render(<HeroSheet />)
+    expect(screen.getByText('Currencies')).toBeInTheDocument()
     expect(screen.getByText('Gold')).toBeInTheDocument()
     expect(screen.getByText('Tokens')).toBeInTheDocument()
-    expect(screen.getByText('Run')).toBeInTheDocument()
+    expect(screen.queryByText('Run')).toBeNull() // carte « Run » retirée (HS-CURR01)
   })
 })
 
@@ -272,7 +277,7 @@ describe('Inventory — flow équipement skill', () => {
     expect(screen.getByText(/Click a mana stone/)).toBeInTheDocument()
   })
 
-  it("clic sur une stone affiche le panneau détail avec bouton Equip", () => {
+  it('clic sur une stone affiche le panneau détail avec bouton Equip', () => {
     const { container } = render(<Inventory />)
     // Trouve le premier bouton dans la liste de stones
     const stoneList = container.querySelector('.flex.gap-4 > .flex-1')
@@ -322,7 +327,7 @@ describe('Inventory — flow équipement item', () => {
     expect(screen.getByText('Iron Sword')).toBeInTheDocument()
   })
 
-  it('clic sur l\'item → détail avec bouton Equip', () => {
+  it("clic sur l'item → détail avec bouton Equip", () => {
     render(<Inventory />)
     fireEvent.click(screen.getByText(/Equipment/))
     fireEvent.click(screen.getByText('Iron Sword'))
@@ -343,7 +348,7 @@ describe('Inventory — flow équipement item', () => {
 // UX05 — Badge "nouveau loot" NavBar
 // ─────────────────────────────────────────────────────────────────────────────
 describe('UX05 — Badge unseen loot dans NavBar', () => {
-  it("PAS de badge si unseenLoot = false par défaut", () => {
+  it('PAS de badge si unseenLoot = false par défaut', () => {
     render(<App />)
     expect(screen.queryByTestId('unseen-loot-badge')).toBeNull()
   })
@@ -362,7 +367,7 @@ describe('UX05 — Badge unseen loot dans NavBar', () => {
     expect(screen.queryByTestId('unseen-loot-badge')).toBeNull()
   })
 
-  it("clic sur Bag depuis world_map masque le badge", () => {
+  it('clic sur Bag depuis world_map masque le badge', () => {
     useGameStore.setState({ unseenLoot: true, currentScreen: 'world_map' })
     render(<App />)
     expect(screen.getByTestId('unseen-loot-badge')).toBeInTheDocument()
@@ -378,38 +383,61 @@ describe('UX05 — Badge unseen loot dans NavBar', () => {
 describe('UX02 — Diff comparée équipement', () => {
   beforeEach(() => {
     // Équipement actuel : Iron Sword (+5 str)
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: {
         ...state.hero,
         equipped: {
           ...state.hero.equipped,
-          weapon: { instanceId: 'equipped_sword', name: 'Iron Sword', slot: 'weapon', rarity: 'common', stats: { strength: 5 }, sellPrice: 20 },
+          weapon: {
+            instanceId: 'equipped_sword',
+            name: 'Iron Sword',
+            slot: 'weapon',
+            rarity: 'common',
+            stats: { strength: 5 },
+            sellPrice: 20,
+          },
         },
         inventory: {
           ...state.hero.inventory,
           equipment: [
-            { instanceId: 'new_sword', templateId: 'steel_sword', name: 'Steel Sword', slot: 'weapon', rarity: 'rare', stats: { strength: 12 }, sellPrice: 80 },
-            { instanceId: 'weak_sword', templateId: 'tin_sword', name: 'Tin Sword', slot: 'weapon', rarity: 'common', stats: { strength: 2 }, sellPrice: 5 },
+            {
+              instanceId: 'new_sword',
+              templateId: 'steel_sword',
+              name: 'Steel Sword',
+              slot: 'weapon',
+              rarity: 'rare',
+              stats: { strength: 12 },
+              sellPrice: 80,
+            },
+            {
+              instanceId: 'weak_sword',
+              templateId: 'tin_sword',
+              name: 'Tin Sword',
+              slot: 'weapon',
+              rarity: 'common',
+              stats: { strength: 2 },
+              sellPrice: 5,
+            },
           ],
         },
       },
     }))
   })
 
-  it("affiche un ↑ vert quand le nouvel item est meilleur", () => {
+  it('affiche un ↑ vert quand le nouvel item est meilleur', () => {
     render(<Inventory />)
     fireEvent.click(screen.getByText(/Equipment/))
     fireEvent.click(screen.getByText('Steel Sword'))
     const diff = screen.getByTestId('diff-strength')
-    expect(diff.textContent).toContain('↑+7')  // 12 - 5 = +7
+    expect(diff.textContent).toContain('↑+7') // 12 - 5 = +7
   })
 
-  it("affiche un ↓ rouge quand le nouvel item est pire", () => {
+  it('affiche un ↓ rouge quand le nouvel item est pire', () => {
     render(<Inventory />)
     fireEvent.click(screen.getByText(/Equipment/))
     fireEvent.click(screen.getByText('Tin Sword'))
     const diff = screen.getByTestId('diff-strength')
-    expect(diff.textContent).toContain('↓-3')  // 2 - 5 = -3
+    expect(diff.textContent).toContain('↓-3') // 2 - 5 = -3
   })
 
   it("affiche le nom de l'item équipé pour comparaison", () => {
@@ -421,7 +449,7 @@ describe('UX02 — Diff comparée équipement', () => {
 
   it("n'affiche PAS de diff quand l'item est l'équipement actuel", () => {
     // Ajoute le sword équipé aussi à l'inventaire (cas où on l'a sélectionné)
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: {
         ...state.hero,
         inventory: {
@@ -440,7 +468,7 @@ describe('UX02 — Diff comparée équipement', () => {
   })
 
   it("n'affiche PAS de diff si aucun item équipé dans le slot", () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, equipped: { ...state.hero.equipped, weapon: null } },
     }))
     render(<Inventory />)
@@ -459,8 +487,20 @@ describe('Inventory — régression vieille save (bug user)', () => {
     const oldSave = {
       hero: {
         name: 'OldHero',
-        stats: { hp: 100, maxHp: 121, mana: 73, maxMana: 73, strength: 10, agility: 10, intelligence: 8, chance: 5, def: 5 },
-        level: 3, exp: 149, expToNext: 225,
+        stats: {
+          hp: 100,
+          maxHp: 121,
+          mana: 73,
+          maxMana: 73,
+          strength: 10,
+          agility: 10,
+          intelligence: 8,
+          chance: 5,
+          def: 5,
+        },
+        level: 3,
+        exp: 149,
+        expToNext: 225,
         activeSkills: [],
         passiveSkills: [],
         deity: 'sylvara',
@@ -497,7 +537,7 @@ describe('Inventory — régression vieille save (bug user)', () => {
     const oldSave = {
       hero: {
         ...useGameStore.getState().hero,
-        inventory: { resources: {}, consumables: {}, gold: 0 },  // ni equipment ni manaStones
+        inventory: { resources: {}, consumables: {}, gold: 0 }, // ni equipment ni manaStones
       },
       world: useGameStore.getState().world,
       meta: useGameStore.getState().meta,
@@ -536,7 +576,9 @@ describe('QuestBoard — affichage quêtes', () => {
     expect(screen.getByText('End the Demon')).toBeInTheDocument()
   })
 
-  it('affiche les nouvelles quêtes Q08 (greywatch)', () => {
+  it('affiche les nouvelles quêtes Q08 (greywatch) — disponibles à Greywatch (QSV2)', () => {
+    // QSV2-LOCALITY01 — les quêtes de Greywatch ne sont disponibles qu'à Greywatch.
+    useGameStore.setState((s) => ({ world: { ...s.world, currentLocation: 'greywatch' } }))
     render(<QuestBoard />)
     expect(screen.getByText('Bog Purge')).toBeInTheDocument()
     expect(screen.getByText('Cleanse the Ruins')).toBeInTheDocument()
@@ -579,13 +621,13 @@ describe('LevelUpModal — flow', () => {
     expect(confirmBtn).not.toBeDisabled()
   })
 
-  it("Confirm sans choix ne fait rien", () => {
+  it('Confirm sans choix ne fait rien', () => {
     render(<LevelUpModal />)
     const confirmBtn = screen.getByText(/Confirm & Continue/)
     expect(confirmBtn).toBeDisabled()
   })
 
-  it("Confirm avec choix applique le bonus + clear pendingLevelUp", () => {
+  it('Confirm avec choix applique le bonus + clear pendingLevelUp', () => {
     const before = useGameStore.getState().hero.stats.strength
     render(<LevelUpModal />)
     fireEvent.click(screen.getByText('Strength'))
@@ -600,7 +642,7 @@ describe('LevelUpModal — flow', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('PostMortem — actions', () => {
   beforeEach(() => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       meta: {
         ...state.meta,
         lastRunSummary: {
@@ -617,14 +659,14 @@ describe('PostMortem — actions', () => {
     }))
   })
 
-  it("affiche la cause de mort (T01)", () => {
+  it('affiche la cause de mort (T01)', () => {
     render(<PostMortem />)
     expect(screen.getByText('Stone Golem')).toBeInTheDocument()
   })
 
   // TUT03 — Hint première transmigration
-  it("TUT03 — affiche le hint si firstDeathSeen=false et totalDeaths<=1", () => {
-    useGameStore.setState(state => ({
+  it('TUT03 — affiche le hint si firstDeathSeen=false et totalDeaths<=1', () => {
+    useGameStore.setState((state) => ({
       meta: { ...state.meta, firstDeathSeen: false, totalDeaths: 1 },
     }))
     render(<PostMortem />)
@@ -632,16 +674,16 @@ describe('PostMortem — actions', () => {
     expect(screen.getByText(/First Transmigration/)).toBeInTheDocument()
   })
 
-  it("TUT03 — PAS de hint si déjà vu (firstDeathSeen=true)", () => {
-    useGameStore.setState(state => ({
+  it('TUT03 — PAS de hint si déjà vu (firstDeathSeen=true)', () => {
+    useGameStore.setState((state) => ({
       meta: { ...state.meta, firstDeathSeen: true, totalDeaths: 1 },
     }))
     render(<PostMortem />)
     expect(screen.queryByTestId('first-death-hint')).toBeNull()
   })
 
-  it("TUT03 — PAS de hint après plusieurs morts (totalDeaths>1)", () => {
-    useGameStore.setState(state => ({
+  it('TUT03 — PAS de hint après plusieurs morts (totalDeaths>1)', () => {
+    useGameStore.setState((state) => ({
       meta: { ...state.meta, firstDeathSeen: false, totalDeaths: 5 },
     }))
     render(<PostMortem />)
@@ -649,7 +691,7 @@ describe('PostMortem — actions', () => {
   })
 
   it("TUT03 — clic sur 'Got it' marque le hint comme vu", () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       meta: { ...state.meta, firstDeathSeen: false, totalDeaths: 1 },
     }))
     render(<PostMortem />)
@@ -694,7 +736,7 @@ describe('PostMortem — actions', () => {
   // W03 — Bannière Malachar defeated
   describe('W03 — Bannière Malachar slain', () => {
     it("affiche la bannière 'MALACHAR THE UNDYING' si meta.malacharDefeatedThisRun=true", () => {
-      useGameStore.setState(state => ({
+      useGameStore.setState((state) => ({
         meta: { ...state.meta, malacharDefeatedThisRun: true },
       }))
       render(<PostMortem />)
@@ -704,8 +746,8 @@ describe('PostMortem — actions', () => {
       expect(screen.getByText(/To be continued/)).toBeInTheDocument()
     })
 
-    it("PAS de bannière si Malachar pas killed ce run", () => {
-      useGameStore.setState(state => ({
+    it('PAS de bannière si Malachar pas killed ce run', () => {
+      useGameStore.setState((state) => ({
         meta: { ...state.meta, malacharDefeatedThisRun: false },
       }))
       render(<PostMortem />)
@@ -713,7 +755,7 @@ describe('PostMortem — actions', () => {
     })
 
     it("clic sur 'Continue to Transmigration' bascule vers le PostMortem normal", () => {
-      useGameStore.setState(state => ({
+      useGameStore.setState((state) => ({
         meta: { ...state.meta, malacharDefeatedThisRun: true },
       }))
       render(<PostMortem />)

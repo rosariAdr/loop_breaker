@@ -34,10 +34,19 @@ export default function DebugPanel() {
           onClick={() => setOpen(true)}
           title="Test harness (Ctrl+Shift+D)"
           style={{
-            position: 'fixed', bottom: 14, right: 14, zIndex: 200,
-            fontFamily: 'monospace', fontSize: 11, letterSpacing: '.08em',
-            padding: '7px 11px', borderRadius: 8, cursor: 'pointer',
-            background: '#10102a', color: '#8080ff', border: '1px solid #4040a0',
+            position: 'fixed',
+            bottom: 14,
+            right: 14,
+            zIndex: 200,
+            fontFamily: 'monospace',
+            fontSize: 11,
+            letterSpacing: '.08em',
+            padding: '7px 11px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            background: '#10102a',
+            color: '#8080ff',
+            border: '1px solid #4040a0',
             boxShadow: '0 4px 16px rgba(0,0,0,.5)',
           }}
         >
@@ -61,11 +70,20 @@ function DebugPanelContent({ onClose }) {
   const nav = [
     cmd('🗺 World Map', () => get().setScreen('world_map')),
     cmd('🏘 Village', () => {
-      store.setState((s) => ({ world: { ...s.world, currentZone: 'ashenvale', currentLocation: 'millhaven', currentHuntingSpot: null } }))
+      store.setState((s) => ({
+        world: {
+          ...s.world,
+          currentZone: 'ashenvale',
+          currentLocation: 'millhaven',
+          currentHuntingSpot: null,
+        },
+      }))
       get().setScreen('safe_zone')
     }),
     cmd('🌲 Forest', () => {
-      store.setState((s) => ({ world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: 'ashenvale_forest' } }))
+      store.setState((s) => ({
+        world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: 'ashenvale_forest' },
+      }))
       get().setScreen('zone_view')
     }),
     cmd('⚔ Hero Sheet', () => get().setScreen('hero_sheet')),
@@ -94,38 +112,56 @@ function DebugPanelContent({ onClose }) {
     cmd('+1 tick', () => get().advanceTick()),
     cmd('Set run #10', () => store.setState((s) => ({ hero: { ...s.hero, runNumber: 10 } }))),
     // PROC07 — give stats
-    cmd('+5 all attrs', () => store.setState((s) => ({
-      hero: { ...s.hero, stats: {
-        ...s.hero.stats,
-        strength: s.hero.stats.strength + 5,
-        agility: s.hero.stats.agility + 5,
-        intelligence: s.hero.stats.intelligence + 5,
-        chance: s.hero.stats.chance + 5,
-        def: s.hero.stats.def + 5,
-      } },
-    }))),
-    cmd('+50 maxHP/MP', () => store.setState((s) => ({
-      hero: { ...s.hero, stats: {
-        ...s.hero.stats,
-        maxHp: s.hero.stats.maxHp + 50, hp: s.hero.stats.hp + 50,
-        maxMana: s.hero.stats.maxMana + 50, mana: s.hero.stats.mana + 50,
-      } },
-    }))),
+    cmd('+5 all attrs', () =>
+      store.setState((s) => ({
+        hero: {
+          ...s.hero,
+          stats: {
+            ...s.hero.stats,
+            strength: s.hero.stats.strength + 5,
+            agility: s.hero.stats.agility + 5,
+            intelligence: s.hero.stats.intelligence + 5,
+            chance: s.hero.stats.chance + 5,
+            def: s.hero.stats.def + 5,
+          },
+        },
+      })),
+    ),
+    cmd('+50 maxHP/MP', () =>
+      store.setState((s) => ({
+        hero: {
+          ...s.hero,
+          stats: {
+            ...s.hero.stats,
+            maxHp: s.hero.stats.maxHp + 50,
+            hp: s.hero.stats.hp + 50,
+            maxMana: s.hero.stats.maxMana + 50,
+            mana: s.hero.stats.mana + 50,
+          },
+        },
+      })),
+    ),
     cmd('Force Ignareth', () => get().acceptDeity('ignareth', 'inferno_strike')),
     cmd('Force Sylvara', () => get().acceptDeity('sylvara', 'healing_bloom')),
     cmd('Force Voltaris', () => get().acceptDeity('voltaris', 'chain_lightning')),
     cmd('Kill Malachar', () => get().clearDungeon('grimspire')),
-    cmd('Give savage_bite', () => get().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })),
+    cmd('Give savage_bite', () =>
+      get().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 }),
+    ),
     cmd('+5 wolf_pelt', () => get().addResource('wolf_pelt', 5)),
     cmd('+3 hp potions', () => get().addConsumable('hp_potion_medium', 3)),
-    cmd('Unlock all idle', () => store.setState((s) => ({
-      world: {
-        ...s.world,
-        monsterKillCounts: Object.fromEntries(
-          ['ashwood_wolf', 'rotting_shambler', 'gloom_bat', 'marsh_serpent', 'stone_golem'].map((m) => [m, 10])
-        ),
-      },
-    }))),
+    cmd('Unlock all idle', () =>
+      store.setState((s) => ({
+        world: {
+          ...s.world,
+          monsterKillCounts: Object.fromEntries(
+            ['ashwood_wolf', 'rotting_shambler', 'gloom_bat', 'marsh_serpent', 'stone_golem'].map(
+              (m) => [m, 10],
+            ),
+          ),
+        },
+      })),
+    ),
     cmd('Reset game', () => get().resetGame()),
   ]
 
@@ -134,22 +170,50 @@ function DebugPanelContent({ onClose }) {
       data-testid="debug-panel"
       className="fixed z-[200] rounded-lg overflow-hidden"
       style={{
-        bottom: '16px', right: '16px', width: '300px',
-        background: '#0a0a12', border: '1px solid #4040a0',
+        bottom: '16px',
+        right: '16px',
+        width: '300px',
+        background: '#0a0a12',
+        border: '1px solid #4040a0',
         boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
       }}
     >
-      <div className="flex items-center justify-between px-3 py-2" style={{ background: '#10102a', borderBottom: '1px solid #2a2a5a' }}>
-        <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#8080ff', letterSpacing: '0.05em' }}>
+      <div
+        className="flex items-center justify-between px-3 py-2"
+        style={{ background: '#10102a', borderBottom: '1px solid #2a2a5a' }}
+      >
+        <span
+          style={{
+            fontFamily: 'monospace',
+            fontSize: '0.75rem',
+            color: '#8080ff',
+            letterSpacing: '0.05em',
+          }}
+        >
           ⚙ TEST HARNESS (DEV)
         </span>
-        <button onClick={onClose} style={{ color: '#6060a0', fontSize: '0.9rem', cursor: 'pointer', background: 'none', border: 'none' }}>✕</button>
+        <button
+          onClick={onClose}
+          style={{
+            color: '#6060a0',
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            background: 'none',
+            border: 'none',
+          }}
+        >
+          ✕
+        </button>
       </div>
 
-      <div className="px-2 py-1.5" style={{ fontFamily: 'monospace', fontSize: '0.62rem', color: '#5a5a8a' }}>
+      <div
+        className="px-2 py-1.5"
+        style={{ fontFamily: 'monospace', fontSize: '0.62rem', color: '#5a5a8a' }}
+      >
         Run #{hero.runNumber} · Lv{hero.level} · {hero.inventory.gold}g · 🪙{hero.reputationTokens}
         <br />
-        Day {world.dayCount} · T{world.tickCount}/24 · {hero.deity ?? 'no deity'} · [{world.currentZone}]
+        Day {world.dayCount} · T{world.tickCount}/24 · {hero.deity ?? 'no deity'} · [
+        {world.currentZone}]
       </div>
 
       <div className="max-h-[420px] overflow-y-auto px-2 pb-2">
@@ -164,7 +228,17 @@ function DebugPanelContent({ onClose }) {
 function Section({ title, commands, accent }) {
   return (
     <div className="mt-1.5">
-      <p style={{ fontFamily: 'monospace', fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: accent, opacity: 0.8, margin: '6px 2px 4px' }}>
+      <p
+        style={{
+          fontFamily: 'monospace',
+          fontSize: '0.58rem',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: accent,
+          opacity: 0.8,
+          margin: '6px 2px 4px',
+        }}
+      >
         {title}
       </p>
       <div className="grid grid-cols-2 gap-1">
@@ -173,7 +247,13 @@ function Section({ title, commands, accent }) {
             key={c.label}
             onClick={c.fn}
             className="px-2 py-1.5 rounded text-left transition-all hover:opacity-80"
-            style={{ fontFamily: 'monospace', fontSize: '0.62rem', background: '#16162e', color: '#a0a0e0', border: '1px solid #2a2a5a' }}
+            style={{
+              fontFamily: 'monospace',
+              fontSize: '0.62rem',
+              background: '#16162e',
+              color: '#a0a0e0',
+              border: '1px solid #2a2a5a',
+            }}
           >
             {c.label}
           </button>

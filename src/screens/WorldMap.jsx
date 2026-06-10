@@ -4,18 +4,20 @@ import { MONSTERS } from '../data/monsters'
 import QTEBar from '../components/QTEBar'
 import { HeroAvatar } from '../components/parchment'
 import { POS, NODES, EDGES, areAdjacent } from '../data/worldGraph'
-import { isZoneUnlocked } from '../data/zones'
+import { isZoneUnlocked, getSpotLevelRange } from '../data/zones'
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
 
 // Marqueur discret (anneau + plaque de nom) — n'occulte pas l'illustration
-function WmNode({ id, name, glow, locked, dungeon, tag, onClick, onHover }) {
+function WmNode({ id, name, glow, locked, dungeon, tag, sub, onClick, onHover }) {
   const pos = POS[id]
   return (
     <div
       className={`wm-node ${locked ? 'locked' : ''} ${dungeon ? 'dungeon' : ''}`}
       style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-      onClick={() => { if (!locked && onClick) onClick() }}
+      onClick={() => {
+        if (!locked && onClick) onClick()
+      }}
       onMouseEnter={() => onHover && onHover(true)}
       onMouseLeave={() => onHover && onHover(false)}
     >
@@ -24,7 +26,12 @@ function WmNode({ id, name, glow, locked, dungeon, tag, onClick, onHover }) {
         {locked && <span className="wm-lock">🔒</span>}
       </div>
       {name && <div className="wm-name">{name}</div>}
-      {tag && <div className="wm-tag" style={{ color: tag.color }}>{tag.text}</div>}
+      {sub && <div className="wm-sub">{sub}</div>}
+      {tag && (
+        <div className="wm-tag" style={{ color: tag.color }}>
+          {tag.text}
+        </div>
+      )}
     </div>
   )
 }
@@ -44,15 +51,26 @@ export default function WorldMap() {
   const grimspireUnlocked = isZoneUnlocked('grimspire', { world, hero })
 
   // TRV01 — position du héros sur la carte (fallback pour les saves sans currentNode)
-  const heroNode = world.currentNode ?? world.currentHuntingSpot ?? world.currentLocation ?? 'ironhaven'
+  const heroNode =
+    world.currentNode ?? world.currentHuntingSpot ?? world.currentLocation ?? 'ironhaven'
   const heroPos = POS[heroNode] ?? POS.ironhaven
 
   const goSafe = (id) => {
-    useGameStore.setState(s => ({ world: { ...s.world, currentZone: 'ashenvale', currentLocation: id, currentHuntingSpot: null, currentNode: id } }))
+    useGameStore.setState((s) => ({
+      world: {
+        ...s.world,
+        currentZone: 'ashenvale',
+        currentLocation: id,
+        currentHuntingSpot: null,
+        currentNode: id,
+      },
+    }))
     setScreen('safe_zone')
   }
   const goHunt = (id) => {
-    useGameStore.setState(s => ({ world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: id, currentNode: id } }))
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: id, currentNode: id },
+    }))
     setScreen('zone_view')
   }
   // TRV01 — clic node : entrer (node courant) · voyager (adjacent, +3 tics) · bloqué (sinon)
@@ -76,27 +94,54 @@ export default function WorldMap() {
   }
 
   const dungeon = world.dungeons?.ashenvale
-  const onCrypt = () => { if (!dungeon?.discovered) discoverDungeon('ashenvale') }
+  const onCrypt = () => {
+    if (!dungeon?.discovered) discoverDungeon('ashenvale')
+  }
 
   const enterBlighted = () => {
-    useGameStore.setState(s => ({ world: { ...s.world, currentZone: 'blighted_road', currentHuntingSpot: null } }))
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentZone: 'blighted_road', currentHuntingSpot: null },
+    }))
     setScreen('zone_view')
   }
-  const onQteSuccess = () => { setQteOpen(false); enterBlighted() }
+  const onQteSuccess = () => {
+    setQteOpen(false)
+    enterBlighted()
+  }
   const onQteFailure = () => {
     setQteOpen(false)
-    useGameStore.setState(s => ({ hero: { ...s.hero, stats: { ...s.hero.stats, hp: Math.max(1, s.hero.stats.hp - Math.round(s.hero.stats.maxHp * 0.05)) } } }))
+    useGameStore.setState((s) => ({
+      hero: {
+        ...s.hero,
+        stats: {
+          ...s.hero.stats,
+          hp: Math.max(1, s.hero.stats.hp - Math.round(s.hero.stats.maxHp * 0.05)),
+        },
+      },
+    }))
     enterBlighted()
   }
   const onGrimspire = () => {
     if (!grimspireUnlocked) return
-    useGameStore.setState(s => ({ world: { ...s.world, currentZone: 'grimspire', currentHuntingSpot: null } }))
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentZone: 'grimspire', currentHuntingSpot: null },
+    }))
     setScreen('zone_view')
   }
 
   const linePct = (a, b, props) => {
-    const na = POS[a], nb = POS[b]
-    return <line key={`${a}-${b}`} x1={`${na.x}%`} y1={`${na.y}%`} x2={`${nb.x}%`} y2={`${nb.y}%`} {...props} />
+    const na = POS[a],
+      nb = POS[b]
+    return (
+      <line
+        key={`${a}-${b}`}
+        x1={`${na.x}%`}
+        y1={`${na.y}%`}
+        x2={`${nb.x}%`}
+        y2={`${nb.y}%`}
+        {...props}
+      />
+    )
   }
 
   return (
@@ -107,38 +152,98 @@ export default function WorldMap() {
 
       {/* Trails (coordonnées % via SVG) — sous les marqueurs */}
       <svg className="wm-trails">
-        {EDGES.map(([a, b]) => linePct(a, b, { stroke: 'var(--ink)', strokeWidth: 2.5, strokeDasharray: '2 7', strokeLinecap: 'round', opacity: 0.5 }))}
+        {EDGES.map(([a, b]) =>
+          linePct(a, b, {
+            stroke: 'var(--ink)',
+            strokeWidth: 2.5,
+            strokeDasharray: '2 7',
+            strokeLinecap: 'round',
+            opacity: 0.5,
+          }),
+        )}
         {/* Blighted Road : Ironhaven → Grimspire (liseré rouge) */}
-        {linePct('ironhaven', 'grimspire', { stroke: 'var(--danger)', strokeWidth: 3, strokeDasharray: '3 6', strokeLinecap: 'round', opacity: grimspireUnlocked ? 0.4 : 0.8 })}
+        {linePct('ironhaven', 'grimspire', {
+          stroke: 'var(--danger)',
+          strokeWidth: 3,
+          strokeDasharray: '3 6',
+          strokeLinecap: 'round',
+          opacity: grimspireUnlocked ? 0.4 : 0.8,
+        })}
       </svg>
 
       {/* Nodes */}
-      {NODES.map(n => <WmNode key={n.id} {...n} onClick={() => onNode(n)} />)}
+      {NODES.map((n) => {
+        // WM-LEVEL01 — sous-label « Lv X–Y » sous le nom des spots de chasse
+        const lr = n.kind === 'spot' ? getSpotLevelRange(n.id) : null
+        return (
+          <WmNode
+            key={n.id}
+            {...n}
+            sub={lr ? `Lv ${lr[0]}–${lr[1]}` : undefined}
+            onClick={() => onNode(n)}
+          />
+        )
+      })}
 
       {/* Donjon */}
       {dungeon?.active && (
         <WmNode
-          id="crypt" dungeon name={dungeon.discovered ? 'The Hollow Crypt' : ''}
+          id="crypt"
+          dungeon
+          name={dungeon.discovered ? 'The Hollow Crypt' : ''}
           tag={dungeon.discovered ? { text: 'Lv 12–16', color: 'var(--dungeon)' } : null}
           onClick={onCrypt}
-          onHover={(on) => setTip(on ? { x: POS.crypt.x, y: POS.crypt.y - 8, text: 'A mysterious portal hums with dark energy…' } : null)}
+          onHover={(on) =>
+            setTip(
+              on
+                ? {
+                    x: POS.crypt.x,
+                    y: POS.crypt.y - 8,
+                    text: 'A mysterious portal hums with dark energy…',
+                  }
+                : null,
+            )
+          }
         />
       )}
 
       {/* PROG01 — Fog of war : nuage sur les zones non débloquées */}
       {!grimspireUnlocked && (
-        <div className="wm-fog" data-testid="fog-grimspire" style={{ left: `${POS.grimspire.x}%`, top: `${POS.grimspire.y}%` }} aria-hidden="true">
-          <span>☁</span><span>☁</span><span>☁</span>
+        <div
+          className="wm-fog"
+          data-testid="fog-grimspire"
+          style={{ left: `${POS.grimspire.x}%`, top: `${POS.grimspire.y}%` }}
+          aria-hidden="true"
+        >
+          <span>☁</span>
+          <span>☁</span>
+          <span>☁</span>
         </div>
       )}
 
       {/* Grimspire (locked) — marqueur overlay sur les montagnes */}
       <WmNode
-        id="grimspire" name="Grimspire" locked={!grimspireUnlocked}
+        id="grimspire"
+        name="Grimspire"
+        locked={!grimspireUnlocked}
         glow={grimspireUnlocked ? 'amber' : undefined}
-        tag={{ text: grimspireUnlocked ? 'Lv 21–40' : 'Lv 8+ to unlock', color: grimspireUnlocked ? 'var(--ink-soft)' : 'var(--stone)' }}
+        tag={{
+          text: grimspireUnlocked ? 'Lv 21–40' : 'Lv 8+ to unlock',
+          color: grimspireUnlocked ? 'var(--ink-soft)' : 'var(--stone)',
+        }}
         onClick={grimspireUnlocked ? onGrimspire : undefined}
-        onHover={(on) => !grimspireUnlocked && setTip(on ? { x: POS.grimspire.x, y: POS.grimspire.y - 8, text: '⚠ Grimspire — Reach Level 8 to unlock' } : null)}
+        onHover={(on) =>
+          !grimspireUnlocked &&
+          setTip(
+            on
+              ? {
+                  x: POS.grimspire.x,
+                  y: POS.grimspire.y - 8,
+                  text: '⚠ Grimspire — Reach Level 8 to unlock',
+                }
+              : null,
+          )
+        }
       />
 
       {/* Blighted Road — chip cliquable (QTE) */}
@@ -154,17 +259,51 @@ export default function WorldMap() {
       </div>
 
       {/* Héros (légèrement au-dessus du node courant) */}
-      <HeroAvatar x={`${heroPos.x}%`} y={`${heroPos.y - 1.5}%`} name={hero.name} src={HERO_SPRITE} walking={walking} />
+      <HeroAvatar
+        x={`${heroPos.x}%`}
+        y={`${heroPos.y - 1.5}%`}
+        name={hero.name}
+        src={HERO_SPRITE}
+        walking={walking}
+      />
+
+      {/* UX-MAPCLARITY01 — légende des symboles de la carte (cohérente PROG/fog) */}
+      <div className="wm-legend" data-testid="wm-legend">
+        <div className="wl-title">Legend</div>
+        <div className="wl-row">
+          <span className="wl-ico">◉</span> Open — click to enter / travel
+        </div>
+        <div className="wl-row">
+          <span className="wl-ico">🔒</span> Locked — quest, NPC info or level
+        </div>
+        <div className="wl-row">
+          <span className="wl-ico">?</span> Undiscovered dungeon
+        </div>
+        <div className="wl-row">
+          <span className="wl-ico">☁</span> Fog — zone not yet unlocked
+        </div>
+        <div className="wl-row">
+          <span className="wl-ico">Lv</span> Spot level range
+        </div>
+      </div>
 
       {/* Tooltip */}
-      {tip && <div className="lb-tip" style={{ left: `${tip.x}%`, top: `${tip.y}%` }}>{tip.text}</div>}
+      {tip && (
+        <div className="lb-tip" style={{ left: `${tip.x}%`, top: `${tip.y}%` }}>
+          {tip.text}
+        </div>
+      )}
 
       <QTEBar
         open={qteOpen}
         title="⚠ Cross the Blighted Road"
         hint="Time your dash through the cursed mist. Hit NOW when the cursor is in the green zone."
-        durationMs={1400} zoneStart={42} zoneEnd={58} timeoutMs={5000}
-        onSuccess={onQteSuccess} onFailure={onQteFailure}
+        durationMs={1400}
+        zoneStart={42}
+        zoneEnd={58}
+        timeoutMs={5000}
+        onSuccess={onQteSuccess}
+        onFailure={onQteFailure}
       />
     </div>
   )

@@ -16,7 +16,7 @@ describe('Navigation — setScreen', () => {
 
   it('accepte tous les screens valides', () => {
     const screens = ['world_map', 'zone_view', 'combat', 'hero_sheet', 'inventory', 'safe_zone']
-    screens.forEach(s => {
+    screens.forEach((s) => {
       useGameStore.getState().setScreen(s)
       expect(useGameStore.getState().currentScreen).toBe(s)
     })
@@ -24,7 +24,17 @@ describe('Navigation — setScreen', () => {
 })
 
 describe('Navigation — startCombat / endCombat', () => {
-  const mockEnemies = [{ id: 'wolf_0', monsterId: 'ashwood_wolf', name: 'Ashwood Wolf', stats: { hp: 40 }, currentHp: 40, rank: 'common', expReward: 15 }]
+  const mockEnemies = [
+    {
+      id: 'wolf_0',
+      monsterId: 'ashwood_wolf',
+      name: 'Ashwood Wolf',
+      stats: { hp: 40 },
+      currentHp: 40,
+      rank: 'common',
+      expReward: 15,
+    },
+  ]
 
   it('startCombat positionne activeCombat et passe en screen combat', () => {
     useGameStore.getState().startCombat(mockEnemies)
@@ -120,8 +130,15 @@ describe('equipActiveSkill', () => {
 
   it("refuse d'équiper si 6 slots actifs déjà remplis", () => {
     // Remplir les 6 slots
-    const skills = ['savage_bite','putrid_slam','spectral_veil','venom_bite','stone_skin','iron_resolve']
-    skills.forEach(id => {
+    const skills = [
+      'savage_bite',
+      'putrid_slam',
+      'spectral_veil',
+      'venom_bite',
+      'stone_skin',
+      'iron_resolve',
+    ]
+    skills.forEach((id) => {
       useGameStore.getState().addSkillToInventory({ skillId: id, level: 1, xp: 0 })
       useGameStore.getState().equipActiveSkill({ skillId: id, level: 1, xp: 0 })
     })
@@ -130,18 +147,24 @@ describe('equipActiveSkill', () => {
     useGameStore.getState().equipActiveSkill({ skillId: 'cleave', level: 1, xp: 0 })
     expect(useGameStore.getState().hero.activeSkills).toHaveLength(6)
     // cleave doit rester dans manaStones
-    expect(useGameStore.getState().hero.inventory.manaStones.some(s => s.skillId === 'cleave')).toBe(true)
+    expect(
+      useGameStore.getState().hero.inventory.manaStones.some((s) => s.skillId === 'cleave'),
+    ).toBe(true)
   })
 
   // S03 — équiper ne retire qu'UNE copie + pas de doublon en slot
-  it("S03 — équiper retire UNE seule copie quand on en a plusieurs", () => {
+  it('S03 — équiper retire UNE seule copie quand on en a plusieurs', () => {
     // 3 copies de savage_bite (1 du beforeEach + 2 ici)
     useGameStore.getState().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })
     useGameStore.getState().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })
-    expect(useGameStore.getState().hero.inventory.manaStones.filter(s => s.skillId === 'savage_bite')).toHaveLength(3)
+    expect(
+      useGameStore.getState().hero.inventory.manaStones.filter((s) => s.skillId === 'savage_bite'),
+    ).toHaveLength(3)
     useGameStore.getState().equipActiveSkill({ skillId: 'savage_bite', level: 1, xp: 0 })
     // 2 copies restent dans le sac (pas 0 !)
-    expect(useGameStore.getState().hero.inventory.manaStones.filter(s => s.skillId === 'savage_bite')).toHaveLength(2)
+    expect(
+      useGameStore.getState().hero.inventory.manaStones.filter((s) => s.skillId === 'savage_bite'),
+    ).toHaveLength(2)
     expect(useGameStore.getState().hero.activeSkills).toHaveLength(1)
   })
 
@@ -151,7 +174,9 @@ describe('equipActiveSkill', () => {
     const beforeStones = useGameStore.getState().hero.inventory.manaStones.length
     // Re-équiper le même → refusé (pas de doublon)
     useGameStore.getState().equipActiveSkill({ skillId: 'savage_bite', level: 1, xp: 0 })
-    expect(useGameStore.getState().hero.activeSkills.filter(s => s.skillId === 'savage_bite')).toHaveLength(1)
+    expect(
+      useGameStore.getState().hero.activeSkills.filter((s) => s.skillId === 'savage_bite'),
+    ).toHaveLength(1)
     expect(useGameStore.getState().hero.inventory.manaStones.length).toBe(beforeStones)
   })
 })
@@ -166,8 +191,8 @@ describe('equipPassiveSkill', () => {
   })
 
   it("refuse d'équiper si 4 slots passifs remplis", () => {
-    const passives = ['iron_resolve','troll_regeneration','veterans_resolve','stone_skin']
-    passives.forEach(id => {
+    const passives = ['iron_resolve', 'troll_regeneration', 'veterans_resolve', 'stone_skin']
+    passives.forEach((id) => {
       useGameStore.getState().addSkillToInventory({ skillId: id, level: 1, xp: 0 })
       useGameStore.getState().equipPassiveSkill({ skillId: id, level: 1, xp: 0 })
     })
@@ -185,7 +210,7 @@ describe('gainSkillXp', () => {
 
   it("accumule l'xp du skill", () => {
     useGameStore.getState().gainSkillXp('savage_bite', 5)
-    const skill = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const skill = useGameStore.getState().hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(skill.xp).toBe(5)
   })
 
@@ -193,7 +218,7 @@ describe('gainSkillXp', () => {
     for (let i = 0; i < 20; i++) {
       useGameStore.getState().gainSkillXp('savage_bite', 1)
     }
-    const skill = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const skill = useGameStore.getState().hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(skill.level).toBe(2)
   })
 
@@ -201,7 +226,7 @@ describe('gainSkillXp', () => {
     for (let i = 0; i < 20; i++) {
       useGameStore.getState().gainSkillXp('savage_bite', 1)
     }
-    const skill = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const skill = useGameStore.getState().hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(skill.xp).toBe(0)
   })
 
@@ -209,16 +234,16 @@ describe('gainSkillXp', () => {
     for (let i = 0; i < 70; i++) {
       useGameStore.getState().gainSkillXp('savage_bite', 1)
     }
-    const skill = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const skill = useGameStore.getState().hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(skill.level).toBe(3)
   })
 
-  it('monte jusqu\'à Lv5 puis plafonne (SKL01)', () => {
+  it("monte jusqu'à Lv5 puis plafonne (SKL01)", () => {
     // seuils cumulés 20+50+90+140 = 300 XP pour atteindre Lv5
     for (let i = 0; i < 400; i++) {
       useGameStore.getState().gainSkillXp('savage_bite', 1)
     }
-    const skill = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const skill = useGameStore.getState().hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(skill.level).toBe(5)
   })
 })
@@ -230,7 +255,7 @@ describe('unequipActiveSkill / unequipPassiveSkill', () => {
     useGameStore.getState().unequipActiveSkill('savage_bite')
     const state = useGameStore.getState()
     expect(state.hero.activeSkills).toHaveLength(0)
-    expect(state.hero.inventory.manaStones.some(s => s.skillId === 'savage_bite')).toBe(true)
+    expect(state.hero.inventory.manaStones.some((s) => s.skillId === 'savage_bite')).toBe(true)
   })
 
   it('retourne le skill passif dans manaStones', () => {
@@ -239,14 +264,16 @@ describe('unequipActiveSkill / unequipPassiveSkill', () => {
     useGameStore.getState().unequipPassiveSkill('iron_resolve')
     const state = useGameStore.getState()
     expect(state.hero.passiveSkills).toHaveLength(0)
-    expect(state.hero.inventory.manaStones.some(s => s.skillId === 'iron_resolve')).toBe(true)
+    expect(state.hero.inventory.manaStones.some((s) => s.skillId === 'iron_resolve')).toBe(true)
   })
 
   it('conserve le niveau du skill après déséquipement', () => {
     useGameStore.getState().addSkillToInventory({ skillId: 'savage_bite', level: 2, xp: 10 })
     useGameStore.getState().equipActiveSkill({ skillId: 'savage_bite', level: 2, xp: 10 })
     useGameStore.getState().unequipActiveSkill('savage_bite')
-    const stone = useGameStore.getState().hero.inventory.manaStones.find(s => s.skillId === 'savage_bite')
+    const stone = useGameStore
+      .getState()
+      .hero.inventory.manaStones.find((s) => s.skillId === 'savage_bite')
     expect(stone.level).toBe(2)
     expect(stone.xp).toBe(10)
   })
@@ -261,8 +288,8 @@ describe('processIdleTick', () => {
   })
 
   it("ajoute de l'or et des ressources quand actif", () => {
-    useGameStore.setState(state => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' }
+    useGameStore.setState((state) => ({
+      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
     }))
     const before = useGameStore.getState().hero.inventory.gold
     useGameStore.getState().processIdleTick()
@@ -270,17 +297,19 @@ describe('processIdleTick', () => {
   })
 
   it('incrémente le kill count', () => {
-    useGameStore.setState(state => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' }
+    useGameStore.setState((state) => ({
+      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
     }))
     useGameStore.getState().processIdleTick()
-    expect(useGameStore.getState().world.monsterKillCounts['ashwood_wolf']).toBeGreaterThanOrEqual(1)
+    expect(useGameStore.getState().world.monsterKillCounts['ashwood_wolf']).toBeGreaterThanOrEqual(
+      1,
+    )
   })
 
   it('réduit les HP du héros (combat idle)', () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
-      hero: { ...state.hero, stats: { ...state.hero.stats, hp: 100 } }
+      hero: { ...state.hero, stats: { ...state.hero.stats, hp: 100 } },
     }))
     useGameStore.getState().processIdleTick()
     expect(useGameStore.getState().hero.stats.hp).toBeLessThan(100)
@@ -288,9 +317,9 @@ describe('processIdleTick', () => {
 
   it("désactive l'idle si HP < 20%", () => {
     // ashwood_wolf (Lv 1) pour ne PAS déclencher le garde B12 (trop fort)
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
-      hero: { ...state.hero, level: 5, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } }
+      hero: { ...state.hero, level: 5, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } },
     }))
     useGameStore.getState().processIdleTick()
     expect(useGameStore.getState().world.isIdleActive).toBe(false)
@@ -300,19 +329,19 @@ describe('processIdleTick', () => {
   it("I04 — toast warning quand idle s'arrête pour HP bas", async () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
-      hero: { ...state.hero, level: 5, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } }
+      hero: { ...state.hero, level: 5, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } },
     }))
     useGameStore.getState().processIdleTick()
-    const warn = useToastStore.getState().toasts.find(t => t.type === 'warning')
+    const warn = useToastStore.getState().toasts.find((t) => t.type === 'warning')
     expect(warn).toBeDefined()
   })
 
   // B12 — ennemi trop fort → idle stoppé + combat manuel forcé
   it("B12 — force un combat manuel quand l'ennemi est trop fort", () => {
     // stone_golem = Lv 12 ; héros Lv 1 → 12 > 1+5 → trop fort
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: { ...state.world, isIdleActive: true, idleTargetMonster: 'stone_golem' },
       hero: { ...state.hero, level: 1, stats: { ...state.hero.stats, hp: 100, maxHp: 100 } },
     }))
@@ -324,9 +353,13 @@ describe('processIdleTick', () => {
   })
 
   it("B12 — n'interrompt PAS si le héros est assez haut niveau", () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: { ...state.world, isIdleActive: true, idleTargetMonster: 'stone_golem' },
-      hero: { ...state.hero, level: 20, stats: { ...state.hero.stats, hp: 100, maxHp: 100, strength: 60 } },
+      hero: {
+        ...state.hero,
+        level: 20,
+        stats: { ...state.hero.stats, hp: 100, maxHp: 100, strength: 60 },
+      },
     }))
     useGameStore.getState().processIdleTick()
     const st = useGameStore.getState()
@@ -334,20 +367,21 @@ describe('processIdleTick', () => {
     expect(st.world.isIdleActive).toBe(true)
   })
 
-  it("I04 — toast levelup quand le héros monte de niveau en idle", async () => {
+  it('I04 — toast levelup quand le héros monte de niveau en idle', async () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
     // Héros proche du level up + idle actif sur un monstre rentable
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
       hero: {
         ...state.hero,
-        exp: 99, expToNext: 100,  // 1 xp suffit ? ashwood_wolf = 15 xp
+        exp: 99,
+        expToNext: 100, // 1 xp suffit ? ashwood_wolf = 15 xp
         stats: { ...state.hero.stats, hp: 100, maxHp: 100, strength: 50 },
       },
     }))
     useGameStore.getState().processIdleTick()
-    const lvl = useToastStore.getState().toasts.find(t => t.type === 'levelup')
+    const lvl = useToastStore.getState().toasts.find((t) => t.type === 'levelup')
     expect(lvl).toBeDefined()
   })
 })
@@ -393,7 +427,9 @@ describe('M01 — awardTitle', () => {
   it('ne duplique pas un titre déjà gagné', () => {
     useGameStore.getState().awardTitle('first_steps')
     useGameStore.getState().awardTitle('first_steps')
-    const count = useGameStore.getState().meta.titlesEarned.filter(t => t === 'first_steps').length
+    const count = useGameStore
+      .getState()
+      .meta.titlesEarned.filter((t) => t === 'first_steps').length
     expect(count).toBe(1)
   })
 
@@ -405,10 +441,13 @@ describe('M01 — awardTitle', () => {
 
 describe('T13 — Demon Lord Slayer', () => {
   it('tuer le Demon Lord (clearDungeon grimspire) attribue les titres permanents', () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: {
         ...state.world,
-        dungeons: { ...state.world.dungeons, grimspire: { active: true, cleared: false, position: 'north', discovered: true } },
+        dungeons: {
+          ...state.world.dungeons,
+          grimspire: { active: true, cleared: false, position: 'north', discovered: true },
+        },
       },
     }))
     useGameStore.getState().clearDungeon('grimspire')
@@ -418,10 +457,13 @@ describe('T13 — Demon Lord Slayer', () => {
   })
 
   it("un donjon normal n'attribue pas Demon Lord Slayer", () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: {
         ...state.world,
-        dungeons: { ...state.world.dungeons, ashenvale: { active: true, cleared: false, position: 'north', discovered: true } },
+        dungeons: {
+          ...state.world.dungeons,
+          ashenvale: { active: true, cleared: false, position: 'north', discovered: true },
+        },
       },
     }))
     useGameStore.getState().clearDungeon('ashenvale')
@@ -454,7 +496,7 @@ describe('GLT01/04 — absorbGluttony', () => {
 
 describe('GLT01 — boosts permanents réappliqués au run', () => {
   it('applyTransmigration réinjecte les permanentStatBoosts', () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       meta: {
         ...state.meta,
         permanentStatBoosts: { strength: 5 },
@@ -470,8 +512,14 @@ describe('GLT01 — boosts permanents réappliqués au run', () => {
 describe('W01 — récompense Demon Lord', () => {
   it('tuer Malachar (grimspire) donne +200 tokens', () => {
     const before = useGameStore.getState().hero.reputationTokens ?? 0
-    useGameStore.setState(state => ({
-      world: { ...state.world, dungeons: { ...state.world.dungeons, grimspire: { active: true, cleared: false, position: 'north', discovered: true } } },
+    useGameStore.setState((state) => ({
+      world: {
+        ...state.world,
+        dungeons: {
+          ...state.world.dungeons,
+          grimspire: { active: true, cleared: false, position: 'north', discovered: true },
+        },
+      },
     }))
     useGameStore.getState().clearDungeon('grimspire')
     expect(useGameStore.getState().hero.reputationTokens).toBe(before + 200)
@@ -534,8 +582,8 @@ describe('Système de quêtes', () => {
   })
 
   it('startQuest ignore les quêtes déjà complétées', () => {
-    useGameStore.setState(state => ({
-      world: { ...state.world, completedQuests: ['first_blood'], activeQuests: [] }
+    useGameStore.setState((state) => ({
+      world: { ...state.world, completedQuests: ['first_blood'], activeQuests: [] },
     }))
     useGameStore.getState().startQuest('first_blood')
     expect(useGameStore.getState().world.activeQuests).toHaveLength(0)
@@ -547,23 +595,23 @@ describe('Système de quêtes', () => {
   })
 
   it('isQuestComplete retourne true si kills suffisants', () => {
-    useGameStore.setState(state => ({
-      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } }
+    useGameStore.setState((state) => ({
+      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
     }))
     expect(useGameStore.getState().isQuestComplete('first_blood')).toBe(true)
   })
 
   it('isQuestComplete — quête de niveau', () => {
-    useGameStore.setState(state => ({
-      hero: { ...state.hero, level: 3 }
+    useGameStore.setState((state) => ({
+      hero: { ...state.hero, level: 3 },
     }))
     expect(useGameStore.getState().isQuestComplete('proof_of_worth')).toBe(true)
   })
 
   it("completeQuest retire la quête des actives et l'ajoute aux complètes", () => {
     useGameStore.getState().startQuest('first_blood')
-    useGameStore.setState(state => ({
-      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } }
+    useGameStore.setState((state) => ({
+      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
     }))
     useGameStore.getState().completeQuest('first_blood')
     const state = useGameStore.getState()
@@ -587,18 +635,18 @@ describe('Système de quêtes', () => {
 
   it('completeQuest ajoute le skill de récompense dans manaStones', () => {
     useGameStore.getState().startQuest('first_blood')
-    useGameStore.setState(state => ({
-      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } }
+    useGameStore.setState((state) => ({
+      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
     }))
     useGameStore.getState().completeQuest('first_blood')
     const stones = useGameStore.getState().hero.inventory.manaStones
-    expect(stones.some(s => s.skillId === 'counter_strike')).toBe(true)
+    expect(stones.some((s) => s.skillId === 'counter_strike')).toBe(true)
   })
 
   it('clear_the_marsh donne 2 tokens (pas 1 par défaut)', () => {
     useGameStore.getState().startQuest('clear_the_marsh')
-    useGameStore.setState(state => ({
-      world: { ...state.world, monsterKillCounts: { marsh_serpent: 3 } }
+    useGameStore.setState((state) => ({
+      world: { ...state.world, monsterKillCounts: { marsh_serpent: 3 } },
     }))
     const before = useGameStore.getState().hero.reputationTokens
     useGameStore.getState().completeQuest('clear_the_marsh')
@@ -620,23 +668,23 @@ describe('Système de quêtes', () => {
     useGameStore.getState().completeQuest('first_blood')
     const toasts = useToastStore.getState().toasts
     expect(toasts.length).toBeGreaterThanOrEqual(1)
-    const questToast = toasts.find(t => t.type === 'quest')
+    const questToast = toasts.find((t) => t.type === 'quest')
     expect(questToast).toBeDefined()
     expect(questToast.message).toMatch(/First Blood/)
   })
 
-  it("Q07 — le toast inclut les récompenses (gold + tokens + skill)", async () => {
+  it('Q07 — le toast inclut les récompenses (gold + tokens + skill)', async () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
-    useGameStore.getState().startQuest('first_blood')  // 50g + 1 token + counter_strike
+    useGameStore.getState().startQuest('first_blood') // 50g + 1 token + counter_strike
     useGameStore.getState().completeQuest('first_blood')
-    const questToast = useToastStore.getState().toasts.find(t => t.type === 'quest')
+    const questToast = useToastStore.getState().toasts.find((t) => t.type === 'quest')
     expect(questToast.message).toMatch(/50g/)
     expect(questToast.message).toMatch(/🪙/)
   })
 
   // UX03 — abandonQuest
-  it("abandonQuest retire la quête active sans la marquer complétée", () => {
+  it('abandonQuest retire la quête active sans la marquer complétée', () => {
     useGameStore.getState().startQuest('first_blood')
     expect(useGameStore.getState().world.activeQuests).toContain('first_blood')
     useGameStore.getState().abandonQuest('first_blood')
@@ -644,13 +692,13 @@ describe('Système de quêtes', () => {
     expect(useGameStore.getState().world.completedQuests).not.toContain('first_blood')
   })
 
-  it("abandonQuest sur une quête non active ne change rien", () => {
+  it('abandonQuest sur une quête non active ne change rien', () => {
     const before = useGameStore.getState().world.activeQuests
     useGameStore.getState().abandonQuest('first_blood')
     expect(useGameStore.getState().world.activeQuests).toEqual(before)
   })
 
-  it("abandonQuest permet de re-accepter la même quête plus tard", () => {
+  it('abandonQuest permet de re-accepter la même quête plus tard', () => {
     useGameStore.getState().startQuest('first_blood')
     useGameStore.getState().abandonQuest('first_blood')
     useGameStore.getState().startQuest('first_blood')
@@ -675,7 +723,7 @@ describe('Quêtes Q03 — boss donjon', () => {
     store().completeQuest('silence_the_crypt')
     expect(store().hero.inventory.gold).toBe(goldBefore + 200)
     expect(store().hero.reputationTokens).toBe(tokensBefore + 3)
-    expect(store().hero.inventory.manaStones.some(s => s.skillId === 'soul_crush')).toBe(true)
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(true)
   })
 
   it('end_the_demon : 10 tokens + 1000 gold pour Malachar', () => {
@@ -693,7 +741,7 @@ describe('Quêtes Q03 — boss donjon', () => {
     store().startQuest('storm_the_citadel')
     store().recordKill('forsaken_citadel_boss')
     store().completeQuest('storm_the_citadel')
-    expect(store().hero.inventory.manaStones.some(s => s.skillId === 'forsaken_curse')).toBe(true)
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'forsaken_curse')).toBe(true)
   })
 })
 
@@ -718,9 +766,9 @@ describe('Quêtes Q08 — NPCs multiples', () => {
 
   it('accepter plusieurs quêtes de NPCs différents simultanément', () => {
     const store = useGameStore.getState
-    store().startQuest('first_blood')          // sir_aldric
-    store().startQuest('silence_the_crypt')    // ironhaven_captain
-    store().startQuest('bog_purge')            // greywatch_elder
+    store().startQuest('first_blood') // sir_aldric
+    store().startQuest('silence_the_crypt') // ironhaven_captain
+    store().startQuest('bog_purge') // greywatch_elder
     expect(store().world.activeQuests).toHaveLength(3)
   })
 })
@@ -738,7 +786,7 @@ describe('renameHero', () => {
     expect(useGameStore.getState().hero.heroNamed).toBe(true)
   })
 
-  it("trim les espaces autour du nom", () => {
+  it('trim les espaces autour du nom', () => {
     useGameStore.getState().renameHero('  Kael  ')
     expect(useGameStore.getState().hero.name).toBe('Kael')
   })
@@ -775,7 +823,7 @@ describe('acceptDeity', () => {
   it('pousse le divine skill dans activeSkills (DV02)', () => {
     useGameStore.getState().acceptDeity('ignareth', 'inferno_strike')
     const { activeSkills } = useGameStore.getState().hero
-    expect(activeSkills.some(s => s.skillId === 'inferno_strike')).toBe(true)
+    expect(activeSkills.some((s) => s.skillId === 'inferno_strike')).toBe(true)
   })
 
   it('évite la duplication si le skill est déjà équipé', () => {
@@ -783,7 +831,7 @@ describe('acceptDeity', () => {
     useGameStore.getState().equipActiveSkill({ skillId: 'inferno_strike', level: 2, xp: 5 })
     useGameStore.getState().acceptDeity('ignareth', 'inferno_strike')
     const active = useGameStore.getState().hero.activeSkills
-    const count = active.filter(s => s.skillId === 'inferno_strike').length
+    const count = active.filter((s) => s.skillId === 'inferno_strike').length
     expect(count).toBe(1)
   })
 
@@ -811,7 +859,7 @@ describe('refuseDeity', () => {
   })
 
   // DV07 — Refus = run solo
-  it("DV07 — refuseDeity lève le flag hero.soloRun", () => {
+  it('DV07 — refuseDeity lève le flag hero.soloRun', () => {
     useGameStore.getState().resetGame()
     expect(useGameStore.getState().hero.soloRun).toBe(false)
     useGameStore.getState().triggerDivineCall('ignareth')
@@ -819,13 +867,19 @@ describe('refuseDeity', () => {
     expect(useGameStore.getState().hero.soloRun).toBe(true)
   })
 
-  it("DV07 — soloRun garantit le bonus T11 (+1 lvl skills) même si une divinité existait", () => {
+  it('DV07 — soloRun garantit le bonus T11 (+1 lvl skills) même si une divinité existait', () => {
     useGameStore.getState().resetGame()
     // Simule : a une divinité MAIS soloRun=true (a refusé une 2e divinité)
-    useGameStore.setState(state => ({ hero: { ...state.hero, deity: 'ignareth', soloRun: true } }))
-    useGameStore.getState().confirmInheritance('strength', { skillId: 'savage_bite', level: 1, xp: 0 }, null)
+    useGameStore.setState((state) => ({
+      hero: { ...state.hero, deity: 'ignareth', soloRun: true },
+    }))
+    useGameStore
+      .getState()
+      .confirmInheritance('strength', { skillId: 'savage_bite', level: 1, xp: 0 }, null)
     useGameStore.getState().applyTransmigration({})
-    const active = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const active = useGameStore
+      .getState()
+      .hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(active.level).toBe(2) // base 1 + solo bonus 1
   })
 })
@@ -854,13 +908,23 @@ describe('heroDeath', () => {
   })
 
   it('nettoie activeCombat', () => {
-    useGameStore.getState().startCombat([{ id: 'x', monsterId: 'ashwood_wolf', name: 'W', stats: { hp: 10 }, currentHp: 0, rank: 'common', expReward: 15 }])
+    useGameStore.getState().startCombat([
+      {
+        id: 'x',
+        monsterId: 'ashwood_wolf',
+        name: 'W',
+        stats: { hp: 10 },
+        currentHp: 0,
+        rank: 'common',
+        expReward: 15,
+      },
+    ])
     useGameStore.getState().heroDeath('W')
     expect(useGameStore.getState().activeCombat).toBeNull()
   })
 
   it('lastRunSummary inclut level, kills, tokens, stats', () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, level: 3, reputationTokens: 5 },
       world: { ...state.world, monsterKillCounts: { ashwood_wolf: 4, marsh_serpent: 2 } },
     }))
@@ -880,7 +944,9 @@ describe('confirmInheritance + applyTransmigration', () => {
   })
 
   it('confirmInheritance stocke pendingInheritance', () => {
-    useGameStore.getState().confirmInheritance('agility', { skillId: 'savage_bite', level: 2, xp: 0 }, null)
+    useGameStore
+      .getState()
+      .confirmInheritance('agility', { skillId: 'savage_bite', level: 2, xp: 0 }, null)
     expect(useGameStore.getState().meta.pendingInheritance.stat).toBe('agility')
     expect(useGameStore.getState().meta.pendingInheritance.activeSkill.skillId).toBe('savage_bite')
   })
@@ -888,14 +954,18 @@ describe('confirmInheritance + applyTransmigration', () => {
   it('applyTransmigration hérite 40% de la stat du run, plancher = base (TRM01)', () => {
     const baseStr = useGameStore.getState().hero.stats.strength
     // run où la force a bien monté → 100
-    useGameStore.setState(s => ({ meta: { ...s.meta, lastRunSummary: { stats: { strength: 100 } } } }))
+    useGameStore.setState((s) => ({
+      meta: { ...s.meta, lastRunSummary: { stats: { strength: 100 } } },
+    }))
     useGameStore.getState().confirmInheritance('strength', null, null)
     useGameStore.getState().applyTransmigration({ extraSkills: [] })
-    expect(useGameStore.getState().hero.stats.strength).toBe(Math.max(baseStr, Math.round(100 * 0.4)))
+    expect(useGameStore.getState().hero.stats.strength).toBe(
+      Math.max(baseStr, Math.round(100 * 0.4)),
+    )
   })
 
   it('applyTransmigration incrémente runNumber et deathCount', () => {
-    useGameStore.setState(state => ({ hero: { ...state.hero, runNumber: 1, deathCount: 0 } }))
+    useGameStore.setState((state) => ({ hero: { ...state.hero, runNumber: 1, deathCount: 0 } }))
     useGameStore.getState().confirmInheritance('strength', null, null)
     useGameStore.getState().applyTransmigration({ extraSkills: [] })
     const h = useGameStore.getState().hero
@@ -910,7 +980,7 @@ describe('confirmInheritance + applyTransmigration', () => {
     useGameStore.getState().confirmInheritance('strength', skill, null)
     useGameStore.getState().applyTransmigration({ extraSkills: [] })
     const active = useGameStore.getState().hero.activeSkills
-    expect(active.some(s => s.skillId === 'savage_bite' && s.level === 2)).toBe(true)
+    expect(active.some((s) => s.skillId === 'savage_bite' && s.level === 2)).toBe(true)
   })
 
   it('applyTransmigration nettoie pendingInheritance', () => {
@@ -920,7 +990,7 @@ describe('confirmInheritance + applyTransmigration', () => {
   })
 
   it('applyTransmigration reset le monde (nouveau jour 1)', () => {
-    useGameStore.setState(state => ({ world: { ...state.world, dayCount: 12 } }))
+    useGameStore.setState((state) => ({ world: { ...state.world, dayCount: 12 } }))
     useGameStore.getState().confirmInheritance('strength', null, null)
     useGameStore.getState().applyTransmigration({ extraSkills: [] })
     expect(useGameStore.getState().world.dayCount).toBe(1)
@@ -940,18 +1010,18 @@ describe('confirmInheritance + applyTransmigration', () => {
     })
 
     it("compteur s'incrémente à 1 après transmigration si Malachar killed", () => {
-      useGameStore.getState().clearDungeon('grimspire')  // tue Malachar
+      useGameStore.getState().clearDungeon('grimspire') // tue Malachar
       transmigrate()
       expect(useGameStore.getState().world.demonLordResurrectionCounter).toBe(1)
       expect(useGameStore.getState().world.demonLordDefeated).toBe(true)
     })
 
-    it("après 4 transmigrations post-kill : Malachar respawn (counter reset + defeated=false)", () => {
+    it('après 4 transmigrations post-kill : Malachar respawn (counter reset + defeated=false)', () => {
       useGameStore.getState().clearDungeon('grimspire')
-      transmigrate()  // 1
-      transmigrate()  // 2
-      transmigrate()  // 3
-      transmigrate()  // 4 → respawn
+      transmigrate() // 1
+      transmigrate() // 2
+      transmigrate() // 3
+      transmigrate() // 4 → respawn
       expect(useGameStore.getState().world.demonLordResurrectionCounter).toBe(0)
       expect(useGameStore.getState().world.demonLordDefeated).toBe(false)
       // Le donjon grimspire est aussi reset (cleared/discovered)
@@ -959,19 +1029,19 @@ describe('confirmInheritance + applyTransmigration', () => {
       expect(useGameStore.getState().world.dungeons.grimspire.discovered).toBe(false)
     })
 
-    it("après respawn, prochain kill remet le counter à 1", () => {
+    it('après respawn, prochain kill remet le counter à 1', () => {
       useGameStore.getState().clearDungeon('grimspire')
       transmigrate()
       transmigrate()
       transmigrate()
-      transmigrate()  // respawn
+      transmigrate() // respawn
       // Re-kill
       useGameStore.getState().clearDungeon('grimspire')
       transmigrate()
       expect(useGameStore.getState().world.demonLordResurrectionCounter).toBe(1)
     })
 
-    it("W03 — flag malacharDefeatedThisRun reset à la transmigration", () => {
+    it('W03 — flag malacharDefeatedThisRun reset à la transmigration', () => {
       useGameStore.getState().clearDungeon('grimspire')
       expect(useGameStore.getState().meta.malacharDefeatedThisRun).toBe(true)
       transmigrate()
@@ -1012,35 +1082,35 @@ describe('advanceTick', () => {
 describe('CAL01 — prayAtChurch', () => {
   beforeEach(() => {
     useGameStore.getState().resetGame()
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, hp: 30, mana: 10 } },
       world: { ...state.world, tickCount: 5 },
     }))
   })
 
-  it("restaure 40% HP et 40% mana", () => {
+  it('restaure 40% HP et 40% mana', () => {
     const before = useGameStore.getState().hero.stats
     useGameStore.getState().prayAtChurch()
     const after = useGameStore.getState().hero.stats
-    expect(after.hp).toBe(before.hp + Math.round(before.maxHp * 0.40))
-    expect(after.mana).toBe(before.mana + Math.round(before.maxMana * 0.40))
+    expect(after.hp).toBe(before.hp + Math.round(before.maxHp * 0.4))
+    expect(after.mana).toBe(before.mana + Math.round(before.maxMana * 0.4))
   })
 
-  it("consomme 1 tick (tickCount + 1)", () => {
+  it('consomme 1 tick (tickCount + 1)', () => {
     const beforeTick = useGameStore.getState().world.tickCount
     useGameStore.getState().prayAtChurch()
     expect(useGameStore.getState().world.tickCount).toBe(beforeTick + 1)
   })
 
-  it("passe au jour suivant si pray est fait au tick 23", () => {
-    useGameStore.setState(state => ({ world: { ...state.world, tickCount: 23, dayCount: 1 } }))
+  it('passe au jour suivant si pray est fait au tick 23', () => {
+    useGameStore.setState((state) => ({ world: { ...state.world, tickCount: 23, dayCount: 1 } }))
     useGameStore.getState().prayAtChurch()
     expect(useGameStore.getState().world.tickCount).toBe(0)
     expect(useGameStore.getState().world.dayCount).toBe(2)
   })
 
   it("HP cap au max (pas d'overflow)", () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, hp: state.hero.stats.maxHp - 5 } },
     }))
     useGameStore.getState().prayAtChurch()
@@ -1051,7 +1121,7 @@ describe('CAL01 — prayAtChurch', () => {
 
 describe('sleep', () => {
   it('restaure HP et MP au max', () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, hp: 10, mana: 5 } },
     }))
     useGameStore.getState().sleep()
@@ -1060,16 +1130,22 @@ describe('sleep', () => {
     expect(mana).toBe(maxMana)
   })
 
-  it('avance au jour suivant et remet tickCount à 0', () => {
-    useGameStore.setState(state => ({ world: { ...state.world, tickCount: 15, dayCount: 3 } }))
+  it('avance au jour suivant et réveille à 8h (INN-WAKE01)', () => {
+    useGameStore.setState((state) => ({ world: { ...state.world, tickCount: 15, dayCount: 3 } }))
     useGameStore.getState().sleep()
     expect(useGameStore.getState().world.dayCount).toBe(4)
-    expect(useGameStore.getState().world.tickCount).toBe(0)
+    expect(useGameStore.getState().world.tickCount).toBe(8)
+    expect(useGameStore.getState().world.isNight).toBe(false)
   })
 
   it("respawn les donjons 'cleared'", () => {
-    useGameStore.setState(state => ({
-      world: { ...state.world, dungeons: { ashenvale: { active: true, cleared: true, position: 'east', discovered: true } } },
+    useGameStore.setState((state) => ({
+      world: {
+        ...state.world,
+        dungeons: {
+          ashenvale: { active: true, cleared: true, position: 'east', discovered: true },
+        },
+      },
     }))
     useGameStore.getState().sleep()
     const d = useGameStore.getState().world.dungeons.ashenvale
@@ -1078,10 +1154,45 @@ describe('sleep', () => {
   })
 })
 
+// ── WAIT01 — patienter jusqu'à une heure ──────────────────────────────────────
+describe('waitUntilHour (WAIT01)', () => {
+  it('avance à une heure future du même jour', () => {
+    useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 8, dayCount: 3 } }))
+    useGameStore.getState().waitUntilHour(14)
+    expect(useGameStore.getState().world.tickCount).toBe(14)
+    expect(useGameStore.getState().world.dayCount).toBe(3)
+  })
+
+  it("si l'heure cible est déjà passée → lendemain", () => {
+    useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 14, dayCount: 3 } }))
+    useGameStore.getState().waitUntilHour(6)
+    expect(useGameStore.getState().world.tickCount).toBe(6)
+    expect(useGameStore.getState().world.dayCount).toBe(4)
+  })
+
+  it('ne restaure NI HP/Mana NI vigueur (≠ sommeil)', () => {
+    useGameStore.setState((s) => ({
+      hero: { ...s.hero, vigor: 40, stats: { ...s.hero.stats, hp: 10, mana: 5 } },
+      world: { ...s.world, tickCount: 8 },
+    }))
+    useGameStore.getState().waitUntilHour(20)
+    const h = useGameStore.getState().hero
+    expect(h.stats.hp).toBe(10)
+    expect(h.stats.mana).toBe(5)
+    expect(h.vigor).toBe(40)
+  })
+
+  it("clamp l'heure dans [0,23]", () => {
+    useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 5 } }))
+    useGameStore.getState().waitUntilHour(99)
+    expect(useGameStore.getState().world.tickCount).toBe(23)
+  })
+})
+
 // ── Heal / Restore (caps) ─────────────────────────────────────────────────────
 describe('healHero / restoreHeroMana', () => {
-  it("healHero ne dépasse jamais maxHp", () => {
-    useGameStore.setState(state => ({
+  it('healHero ne dépasse jamais maxHp', () => {
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, hp: 50, maxHp: 100 } },
     }))
     useGameStore.getState().healHero(9999)
@@ -1089,15 +1200,15 @@ describe('healHero / restoreHeroMana', () => {
   })
 
   it('healHero additionne correctement sous le cap', () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, hp: 30, maxHp: 100 } },
     }))
     useGameStore.getState().healHero(40)
     expect(useGameStore.getState().hero.stats.hp).toBe(70)
   })
 
-  it("restoreHeroMana ne dépasse jamais maxMana", () => {
-    useGameStore.setState(state => ({
+  it('restoreHeroMana ne dépasse jamais maxMana', () => {
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, mana: 10, maxMana: 60 } },
     }))
     useGameStore.getState().restoreHeroMana(500)
@@ -1118,7 +1229,7 @@ describe('Gold management', () => {
     expect(useGameStore.getState().hero.inventory.gold).toBe(20)
   })
 
-  it("spendGold avec montant > gold ne va pas sous 0", () => {
+  it('spendGold avec montant > gold ne va pas sous 0', () => {
     useGameStore.getState().addGold(10)
     useGameStore.getState().spendGold(100)
     expect(useGameStore.getState().hero.inventory.gold).toBeGreaterThanOrEqual(0)
@@ -1148,7 +1259,7 @@ describe('Resources', () => {
 
 // ── Donjons ──────────────────────────────────────────────────────────────────
 describe('Donjons', () => {
-  it("discoverDungeon marque le donjon comme découvert", () => {
+  it('discoverDungeon marque le donjon comme découvert', () => {
     useGameStore.getState().discoverDungeon('ashenvale')
     expect(useGameStore.getState().world.dungeons.ashenvale.discovered).toBe(true)
   })
@@ -1165,7 +1276,7 @@ describe('Donjons', () => {
     expect(useGameStore.getState().world.dungeons.ashenvale.cleared).toBe(true)
   })
 
-  it("clearDungeon sur grimspire flag demonLordDefeated", () => {
+  it('clearDungeon sur grimspire flag demonLordDefeated', () => {
     useGameStore.getState().clearDungeon('grimspire')
     expect(useGameStore.getState().world.demonLordDefeated).toBe(true)
   })
@@ -1189,8 +1300,8 @@ describe('Donjons', () => {
   })
 
   // D05 — Warp à la sortie
-  it("D05 — clearDungeon warpe le hero vers la city de la zone", () => {
-    useGameStore.setState(state => ({
+  it('D05 — clearDungeon warpe le hero vers la city de la zone', () => {
+    useGameStore.setState((state) => ({
       world: { ...state.world, currentLocation: 'millhaven', currentHuntingSpot: 'crumbled_ruins' },
     }))
     useGameStore.getState().clearDungeon('ashenvale')
@@ -1199,7 +1310,7 @@ describe('Donjons', () => {
   })
 
   it("D05 — clearDungeon stop l'idle (cohérence D07)", () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: {
         ...state.world,
         isIdleActive: true,
@@ -1211,7 +1322,7 @@ describe('Donjons', () => {
     expect(useGameStore.getState().world.idleTargetMonster).toBeNull()
   })
 
-  it("D05 — clearDungeon grimspire warpe vers stonehaven", () => {
+  it('D05 — clearDungeon grimspire warpe vers stonehaven', () => {
     useGameStore.getState().clearDungeon('grimspire')
     expect(useGameStore.getState().world.currentLocation).toBe('stonehaven')
   })
@@ -1223,7 +1334,7 @@ describe('Donjons', () => {
     expect(useGameStore.getState().meta.malacharDefeatedThisRun).toBe(true)
   })
 
-  it("W03 — clearDungeon ashenvale NE lève PAS malacharDefeatedThisRun", () => {
+  it('W03 — clearDungeon ashenvale NE lève PAS malacharDefeatedThisRun', () => {
     useGameStore.getState().clearDungeon('ashenvale')
     expect(useGameStore.getState().meta.malacharDefeatedThisRun).toBe(false)
   })
@@ -1237,7 +1348,7 @@ describe('toggleIdle', () => {
   })
 
   it('active si kills >= 5', () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
     }))
     useGameStore.getState().toggleIdle('ashwood_wolf')
@@ -1246,7 +1357,7 @@ describe('toggleIdle', () => {
   })
 
   it('désactive si on toggle à nouveau', () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
     }))
     useGameStore.getState().toggleIdle('ashwood_wolf')
@@ -1256,7 +1367,7 @@ describe('toggleIdle', () => {
 
   // D07 — Idle interdit dans certaines zones / écrans
   it("D07 — refuse l'activation idle sur la Blighted Road (idleAllowed=false)", () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: {
         ...state.world,
         currentZone: 'blighted_road',
@@ -1268,7 +1379,7 @@ describe('toggleIdle', () => {
   })
 
   it("D07 — refuse l'activation idle sur écran dungeon", () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       currentScreen: 'dungeon',
       world: {
         ...state.world,
@@ -1280,8 +1391,8 @@ describe('toggleIdle', () => {
     expect(useGameStore.getState().world.isIdleActive).toBe(false)
   })
 
-  it("D07 — autorise idle sur ashenvale (zone normale)", () => {
-    useGameStore.setState(state => ({
+  it('D07 — autorise idle sur ashenvale (zone normale)', () => {
+    useGameStore.setState((state) => ({
       currentScreen: 'zone_view',
       world: {
         ...state.world,
@@ -1318,7 +1429,7 @@ describe('resetGame', () => {
     expect(useGameStore.getState().activeCombat).toBeNull()
   })
 
-  it("réinitialise heroNamed à false (re-déclenche CharacterCreation)", () => {
+  it('réinitialise heroNamed à false (re-déclenche CharacterCreation)', () => {
     useGameStore.getState().renameHero('Kael')
     useGameStore.getState().resetGame()
     expect(useGameStore.getState().hero.heroNamed).toBe(false)
@@ -1351,28 +1462,28 @@ describe('recordKill', () => {
   })
 
   // TUT02 — Hint idle unlock
-  it("TUT02 — toast hint au 5e kill (idle unlock) + flag seenHints", async () => {
+  it('TUT02 — toast hint au 5e kill (idle unlock) + flag seenHints', async () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
     useGameStore.getState().resetGame()
     for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('ashwood_wolf')
     expect(useGameStore.getState().meta.seenHints).toContain('idle_unlock')
-    const hint = useToastStore.getState().toasts.find(t => /Idle combat unlocked/.test(t.message))
+    const hint = useToastStore.getState().toasts.find((t) => /Idle combat unlocked/.test(t.message))
     expect(hint).toBeDefined()
   })
 
-  it("TUT02 — hint affiché UNE seule fois (pas au 2e mob qui atteint 5)", async () => {
+  it('TUT02 — hint affiché UNE seule fois (pas au 2e mob qui atteint 5)', async () => {
     const { useToastStore } = await import('./toastStore')
     useGameStore.getState().resetGame()
     for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('ashwood_wolf')
     useToastStore.getState().clearToasts()
     // 2e mob atteint 5 → pas de nouveau hint
     for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('marsh_serpent')
-    const hint = useToastStore.getState().toasts.find(t => /Idle combat unlocked/.test(t.message))
+    const hint = useToastStore.getState().toasts.find((t) => /Idle combat unlocked/.test(t.message))
     expect(hint).toBeUndefined()
   })
 
-  it("TUT02 — pas de hint avant le 5e kill", async () => {
+  it('TUT02 — pas de hint avant le 5e kill', async () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
     useGameStore.getState().resetGame()
@@ -1395,7 +1506,7 @@ describe('Migration save — heroNamed (C01)', () => {
     expect(useGameStore.getState().hero.heroNamed).toBe(false)
   })
 
-  it("infère heroNamed=true si le héros a un nom perso", () => {
+  it('infère heroNamed=true si le héros a un nom perso', () => {
     const oldSave = {
       hero: { ...useGameStore.getState().hero, name: 'Kael' },
       world: useGameStore.getState().world,
@@ -1407,7 +1518,7 @@ describe('Migration save — heroNamed (C01)', () => {
     expect(useGameStore.getState().hero.heroNamed).toBe(true)
   })
 
-  it("préserve heroNamed explicite dans la save", () => {
+  it('préserve heroNamed explicite dans la save', () => {
     const save = {
       hero: { ...useGameStore.getState().hero, name: 'The Wanderer', heroNamed: true },
       world: useGameStore.getState().world,
@@ -1427,7 +1538,7 @@ describe('gainSkillXp — S04 notif level-up', () => {
     useGameStore.getState().equipActiveSkill({ skillId: 'savage_bite', level: 1, xp: 0 })
   })
 
-  it("recentSkillLevelUps est vide au départ", () => {
+  it('recentSkillLevelUps est vide au départ', () => {
     expect(useGameStore.getState().recentSkillLevelUps).toEqual([])
   })
 
@@ -1438,14 +1549,14 @@ describe('gainSkillXp — S04 notif level-up', () => {
     expect(entries[0]).toMatchObject({ skillId: 'savage_bite', fromLevel: 1, toLevel: 2 })
   })
 
-  it("aucun push si pas de level-up", () => {
+  it('aucun push si pas de level-up', () => {
     useGameStore.getState().gainSkillXp('savage_bite', 5) // < 20
     expect(useGameStore.getState().recentSkillLevelUps).toHaveLength(0)
   })
 
   it("push 2 entrées si on saute Lv1 → Lv2 puis Lv2 → Lv3 (cumul d'xp énorme)", () => {
-    useGameStore.getState().gainSkillXp('savage_bite', 20)  // Lv2
-    useGameStore.getState().gainSkillXp('savage_bite', 50)  // Lv3
+    useGameStore.getState().gainSkillXp('savage_bite', 20) // Lv2
+    useGameStore.getState().gainSkillXp('savage_bite', 50) // Lv3
     expect(useGameStore.getState().recentSkillLevelUps).toHaveLength(2)
   })
 
@@ -1456,13 +1567,13 @@ describe('gainSkillXp — S04 notif level-up', () => {
     expect(useGameStore.getState().recentSkillLevelUps).toHaveLength(0)
   })
 
-  it("clearAllSkillLevelUps vide la liste", () => {
+  it('clearAllSkillLevelUps vide la liste', () => {
     for (let i = 0; i < 20; i++) useGameStore.getState().gainSkillXp('savage_bite', 1)
     useGameStore.getState().clearAllSkillLevelUps()
     expect(useGameStore.getState().recentSkillLevelUps).toHaveLength(0)
   })
 
-  it("resetGame vide les recentSkillLevelUps", () => {
+  it('resetGame vide les recentSkillLevelUps', () => {
     for (let i = 0; i < 20; i++) useGameStore.getState().gainSkillXp('savage_bite', 1)
     useGameStore.getState().resetGame()
     expect(useGameStore.getState().recentSkillLevelUps).toEqual([])
@@ -1479,14 +1590,14 @@ describe('acceptDeity — DV08 blessing applied', () => {
     expect(after).toBe(Math.round(before * 1.15))
   })
 
-  it("hero.deityBlessing est set après acceptation Ignareth", () => {
+  it('hero.deityBlessing est set après acceptation Ignareth', () => {
     useGameStore.getState().resetGame()
     useGameStore.getState().acceptDeity('ignareth', 'inferno_strike')
     expect(useGameStore.getState().hero.deityBlessing).toBeDefined()
     expect(useGameStore.getState().hero.deityBlessing.id).toBe('ignareth_blessing')
   })
 
-  it("Sylvara : pas de modification immédiate de stat (effet runtime)", () => {
+  it('Sylvara : pas de modification immédiate de stat (effet runtime)', () => {
     useGameStore.getState().resetGame()
     const beforeStr = useGameStore.getState().hero.stats.strength
     const beforeMaxHp = useGameStore.getState().hero.stats.maxHp
@@ -1513,87 +1624,97 @@ describe('applyTransmigration — T06 à T11 (boutique)', () => {
         reputationTokens: repTokens,
       },
     }))
-    useGameStore.getState().confirmInheritance(
-      'strength',
-      { skillId: 'savage_bite', level: 1, xp: 0 },
-      null
-    )
+    useGameStore
+      .getState()
+      .confirmInheritance('strength', { skillId: 'savage_bite', level: 1, xp: 0 }, null)
   }
 
-  it("T06 — rankRestored : récupère 80% des rep tokens du run précédent", () => {
+  it('T06 — rankRestored : récupère 80% des rep tokens du run précédent', () => {
     setupInheritance({ repTokens: 100 })
     useGameStore.getState().applyTransmigration({ rankRestored: true })
     expect(useGameStore.getState().hero.reputationTokens).toBe(80)
   })
 
-  it("T06 — sans rankRestored : tokens à 0", () => {
+  it('T06 — sans rankRestored : tokens à 0', () => {
     setupInheritance({ repTokens: 100 })
     useGameStore.getState().applyTransmigration({})
     expect(useGameStore.getState().hero.reputationTokens).toBe(0)
   })
 
-  it("T07 — extraSkills (active) : ajoute un skill bonus", () => {
+  it('T07 — extraSkills (active) : ajoute un skill bonus', () => {
     setupInheritance()
     useGameStore.getState().applyTransmigration({
       extraSkills: [{ type: 'active', skillId: 'power_strike', level: 1, xp: 0 }],
     })
     const active = useGameStore.getState().hero.activeSkills
-    expect(active.some(s => s.skillId === 'power_strike')).toBe(true)
-    expect(active.some(s => s.skillId === 'savage_bite')).toBe(true)  // hérité
+    expect(active.some((s) => s.skillId === 'power_strike')).toBe(true)
+    expect(active.some((s) => s.skillId === 'savage_bite')).toBe(true) // hérité
   })
 
-  it("T07 — extraSkills (passive) : ajoute un passif bonus", () => {
+  it('T07 — extraSkills (passive) : ajoute un passif bonus', () => {
     setupInheritance()
     useGameStore.getState().applyTransmigration({
       extraSkills: [{ type: 'passive', skillId: 'iron_resolve', level: 1, xp: 0 }],
     })
-    expect(useGameStore.getState().hero.passiveSkills.some(s => s.skillId === 'iron_resolve')).toBe(true)
+    expect(
+      useGameStore.getState().hero.passiveSkills.some((s) => s.skillId === 'iron_resolve'),
+    ).toBe(true)
   })
 
-  it("T08 — bonusStatSlot : +1 stat", () => {
+  it('T08 — bonusStatSlot : +1 stat', () => {
     setupInheritance()
     useGameStore.getState().applyTransmigration({ bonusStatSlot: true, bonusStat: 'agility' })
     // Stat de base agility = 10 → 11
     expect(useGameStore.getState().hero.stats.agility).toBe(11)
   })
 
-  it("T09 — skillLevelUps : +N niveau sur le skill hérité", () => {
+  it('T09 — skillLevelUps : +N niveau sur le skill hérité', () => {
     setupInheritance()
     useGameStore.getState().applyTransmigration({ skillLevelUps: 1 })
-    const active = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const active = useGameStore
+      .getState()
+      .hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(active.level).toBe(2)
   })
 
-  it("T09 — skillLevelUps capé à 3", () => {
+  it('T09 — skillLevelUps capé à 3', () => {
     setupInheritance()
     useGameStore.getState().applyTransmigration({ skillLevelUps: 5 })
-    const active = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const active = useGameStore
+      .getState()
+      .hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(active.level).toBe(3)
   })
 
-  it("T11 — Compensation solo : +1 lv si pas de divinité au run précédent", () => {
+  it('T11 — Compensation solo : +1 lv si pas de divinité au run précédent', () => {
     setupInheritance({ deity: null })
     useGameStore.getState().applyTransmigration({})
-    const active = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const active = useGameStore
+      .getState()
+      .hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(active.level).toBe(2) // base 1 + solo bonus 1
   })
 
-  it("T11 — Pas de compensation si une divinité a été acceptée", () => {
+  it('T11 — Pas de compensation si une divinité a été acceptée', () => {
     setupInheritance({ deity: 'ignareth' })
     useGameStore.getState().applyTransmigration({})
-    const active = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const active = useGameStore
+      .getState()
+      .hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     expect(active.level).toBe(1)
   })
 
-  it("T09 + T11 cumulent : skillLevelUps + solo compensent", () => {
+  it('T09 + T11 cumulent : skillLevelUps + solo compensent', () => {
     setupInheritance({ deity: null })
     useGameStore.getState().applyTransmigration({ skillLevelUps: 1 })
-    const active = useGameStore.getState().hero.activeSkills.find(s => s.skillId === 'savage_bite')
+    const active = useGameStore
+      .getState()
+      .hero.activeSkills.find((s) => s.skillId === 'savage_bite')
     // Base 1 + skillLevelUp 1 + solo 1 = 3 (capé)
     expect(active.level).toBe(3)
   })
 
-  it("préserve heroNamed et name à travers transmigration", () => {
+  it('préserve heroNamed et name à travers transmigration', () => {
     useGameStore.getState().renameHero('Lyra')
     setupInheritance()
     useGameStore.getState().applyTransmigration({})
@@ -1605,23 +1726,23 @@ describe('applyTransmigration — T06 à T11 (boutique)', () => {
 
 // ── DV10 — Skill divin héritable seulement si Lv 2+ ──────────────────────────
 describe('DV10 — héritage skill divin Lv 2+', () => {
-  it("isDivineSkillInheritable : skill normal Lv 1 → true", async () => {
+  it('isDivineSkillInheritable : skill normal Lv 1 → true', async () => {
     const { isDivineSkillInheritable } = await import('../data/skills')
     const skill = { container: 'standard', inheritable: true, level: 1 }
     expect(isDivineSkillInheritable(skill)).toBe(true)
   })
 
-  it("isDivineSkillInheritable : skill divin Lv 1 → false", async () => {
+  it('isDivineSkillInheritable : skill divin Lv 1 → false', async () => {
     const { isDivineSkillInheritable } = await import('../data/skills')
     expect(isDivineSkillInheritable({ container: 'divine', level: 1 })).toBe(false)
   })
 
-  it("isDivineSkillInheritable : skill divin Lv 2 → true", async () => {
+  it('isDivineSkillInheritable : skill divin Lv 2 → true', async () => {
     const { isDivineSkillInheritable } = await import('../data/skills')
     expect(isDivineSkillInheritable({ container: 'divine', level: 2 })).toBe(true)
   })
 
-  it("isDivineSkillInheritable : skill divin Lv 3 → true", async () => {
+  it('isDivineSkillInheritable : skill divin Lv 3 → true', async () => {
     const { isDivineSkillInheritable } = await import('../data/skills')
     expect(isDivineSkillInheritable({ container: 'divine', level: 3 })).toBe(true)
   })
@@ -1634,8 +1755,20 @@ describe('Migration save — anti-crash inventaire (régression)', () => {
   const oldSaveWithoutEquipment = () => ({
     hero: {
       name: 'OldRunner',
-      stats: { hp: 100, maxHp: 100, mana: 60, maxMana: 60, strength: 10, agility: 10, intelligence: 8, chance: 5, def: 5 },
-      level: 3, exp: 50, expToNext: 225,
+      stats: {
+        hp: 100,
+        maxHp: 100,
+        mana: 60,
+        maxMana: 60,
+        strength: 10,
+        agility: 10,
+        intelligence: 8,
+        chance: 5,
+        def: 5,
+      },
+      level: 3,
+      exp: 50,
+      expToNext: 225,
       activeSkills: [],
       passiveSkills: [],
       deity: 'sylvara',
@@ -1660,31 +1793,33 @@ describe('Migration save — anti-crash inventaire (régression)', () => {
     meta: useGameStore.getState().meta,
   })
 
-  it("ajoute hero.inventory.equipment = [] si absent (anti-crash Inventory)", () => {
+  it('ajoute hero.inventory.equipment = [] si absent (anti-crash Inventory)', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(oldSaveWithoutEquipment()))
     useGameStore.getState().loadGame()
     expect(Array.isArray(useGameStore.getState().hero.inventory.equipment)).toBe(true)
     expect(useGameStore.getState().hero.inventory.equipment).toHaveLength(0)
   })
 
-  it("ajoute hero.equipped avec 4 slots null si absent", () => {
+  it('ajoute hero.equipped avec 4 slots null si absent', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(oldSaveWithoutEquipment()))
     useGameStore.getState().loadGame()
     const eq = useGameStore.getState().hero.equipped
     expect(eq).toEqual({ weapon: null, helmet: null, armor: null, boots: null })
   })
 
-  it("préserve les manaStones existantes", () => {
+  it('préserve les manaStones existantes', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(oldSaveWithoutEquipment()))
     useGameStore.getState().loadGame()
     expect(useGameStore.getState().hero.inventory.manaStones).toHaveLength(1)
     expect(useGameStore.getState().hero.inventory.manaStones[0].skillId).toBe('counter_strike')
   })
 
-  it("migre divineSkill rétroactif dans activeSkills (DV02 retro)", () => {
+  it('migre divineSkill rétroactif dans activeSkills (DV02 retro)', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(oldSaveWithoutEquipment()))
     useGameStore.getState().loadGame()
-    expect(useGameStore.getState().hero.activeSkills.some(s => s.skillId === 'healing_bloom')).toBe(true)
+    expect(
+      useGameStore.getState().hero.activeSkills.some((s) => s.skillId === 'healing_bloom'),
+    ).toBe(true)
   })
 
   it("ne dédoublonne pas le divine skill s'il est déjà dans activeSkills", () => {
@@ -1692,11 +1827,13 @@ describe('Migration save — anti-crash inventaire (régression)', () => {
     save.hero.activeSkills = [{ skillId: 'healing_bloom', level: 1, xp: 0 }]
     localStorage.setItem('roguelite_save', JSON.stringify(save))
     useGameStore.getState().loadGame()
-    const count = useGameStore.getState().hero.activeSkills.filter(s => s.skillId === 'healing_bloom').length
+    const count = useGameStore
+      .getState()
+      .hero.activeSkills.filter((s) => s.skillId === 'healing_bloom').length
     expect(count).toBe(1)
   })
 
-  it("save sans inventory du tout ne crash pas", () => {
+  it('save sans inventory du tout ne crash pas', () => {
     const save = oldSaveWithoutEquipment()
     delete save.hero.inventory
     localStorage.setItem('roguelite_save', JSON.stringify(save))
@@ -1707,7 +1844,7 @@ describe('Migration save — anti-crash inventaire (régression)', () => {
     expect(Array.isArray(inv.manaStones)).toBe(true)
   })
 
-  it("save sans titles/battleLog/combatEntryLog ne crash pas", () => {
+  it('save sans titles/battleLog/combatEntryLog ne crash pas', () => {
     const save = oldSaveWithoutEquipment()
     delete save.hero.titles
     delete save.hero.battleLog
@@ -1724,44 +1861,49 @@ describe('Migration save — anti-crash inventaire (régression)', () => {
 describe('UX05 — unseenLoot flag', () => {
   beforeEach(() => useGameStore.getState().resetGame())
 
-  it("flag par défaut à false", () => {
+  it('flag par défaut à false', () => {
     expect(useGameStore.getState().unseenLoot).toBe(false)
   })
 
-  it("addResource lève le flag", () => {
+  it('addResource lève le flag', () => {
     useGameStore.getState().addResource('wolf_pelt', 1)
     expect(useGameStore.getState().unseenLoot).toBe(true)
   })
 
-  it("addEquipmentToInventory lève le flag", () => {
+  it('addEquipmentToInventory lève le flag', () => {
     useGameStore.getState().addEquipmentToInventory({
-      instanceId: 'x', name: 'X', slot: 'weapon', rarity: 'common', stats: {}, sellPrice: 1,
+      instanceId: 'x',
+      name: 'X',
+      slot: 'weapon',
+      rarity: 'common',
+      stats: {},
+      sellPrice: 1,
     })
     expect(useGameStore.getState().unseenLoot).toBe(true)
   })
 
-  it("addSkillToInventory lève le flag", () => {
+  it('addSkillToInventory lève le flag', () => {
     useGameStore.getState().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })
     expect(useGameStore.getState().unseenLoot).toBe(true)
   })
 
-  it("addGold NE lève PAS le flag (gold visible ailleurs)", () => {
+  it('addGold NE lève PAS le flag (gold visible ailleurs)', () => {
     useGameStore.getState().addGold(50)
     expect(useGameStore.getState().unseenLoot).toBe(false)
   })
 
-  it("addConsumable NE lève PAS le flag (achat ≠ loot)", () => {
+  it('addConsumable NE lève PAS le flag (achat ≠ loot)', () => {
     useGameStore.getState().addConsumable('hp_potion_small', 1)
     expect(useGameStore.getState().unseenLoot).toBe(false)
   })
 
-  it("markLootAsSeen reset à false", () => {
+  it('markLootAsSeen reset à false', () => {
     useGameStore.getState().addResource('wolf_pelt', 1)
     useGameStore.getState().markLootAsSeen()
     expect(useGameStore.getState().unseenLoot).toBe(false)
   })
 
-  it("resetGame reset le flag", () => {
+  it('resetGame reset le flag', () => {
     useGameStore.getState().addResource('wolf_pelt', 1)
     useGameStore.getState().resetGame()
     expect(useGameStore.getState().unseenLoot).toBe(false)
@@ -1770,7 +1912,7 @@ describe('UX05 — unseenLoot flag', () => {
 
 // ── TECH02 — Save schema versioning ──────────────────────────────────────────
 describe('TECH02 — saveGame écrit avec saveVersion', () => {
-  it("saveGame écrit un saveVersion dans le JSON localStorage", () => {
+  it('saveGame écrit un saveVersion dans le JSON localStorage', () => {
     useGameStore.getState().resetGame()
     useGameStore.getState().saveGame()
     const raw = localStorage.getItem('roguelite_save')
@@ -1778,7 +1920,7 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
     expect(parsed.saveVersion).toBe(2)
   })
 
-  it("saveVersion est exporté comme constante (cohérence)", async () => {
+  it('saveVersion est exporté comme constante (cohérence)', async () => {
     const mod = await import('./gameStore')
     expect(mod.SAVE_VERSION).toBe(2)
   })
@@ -1799,7 +1941,7 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
 
   it("loadGame d'une save avec saveVersion: 1 applique la migration", () => {
     const save = {
-      hero: { name: 'Old', stats: {}, level: 1 },  // hero minimal
+      hero: { name: 'Old', stats: {}, level: 1 }, // hero minimal
       world: { dayCount: 3 },
       meta: {},
       saveVersion: 1,
@@ -1810,11 +1952,16 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
     expect(useGameStore.getState().hero.activeSkills).toEqual([])
     expect(useGameStore.getState().hero.passiveSkills).toEqual([])
     expect(useGameStore.getState().hero.inventory).toBeDefined()
-    expect(useGameStore.getState().hero.equipped).toEqual({ weapon: null, helmet: null, armor: null, boots: null })
+    expect(useGameStore.getState().hero.equipped).toEqual({
+      weapon: null,
+      helmet: null,
+      armor: null,
+      boots: null,
+    })
     expect(useGameStore.getState().world.dayCount).toBe(3) // valeur préservée
   })
 
-  it("runMigrations exporté est testable directement", async () => {
+  it('runMigrations exporté est testable directement', async () => {
     const { runMigrations } = await import('./gameStore')
     const result = runMigrations({ hero: {}, world: {}, meta: {} })
     expect(result.saveVersion).toBe(2)
@@ -1861,81 +2008,102 @@ describe('X02 — Battery migration anti-régression', () => {
     expect(target).not.toBeNull()
   }
 
-  it("hero.inventory.equipment absent → tableau vide", () => {
-    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.inventory.equipment')))
+  it('hero.inventory.equipment absent → tableau vide', () => {
+    localStorage.setItem(
+      'roguelite_save',
+      JSON.stringify(buildSaveMissing('hero.inventory.equipment')),
+    )
     useGameStore.getState().loadGame()
     expectArray('hero.inventory.equipment')
   })
 
-  it("hero.inventory.manaStones absent → tableau vide", () => {
-    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.inventory.manaStones')))
+  it('hero.inventory.manaStones absent → tableau vide', () => {
+    localStorage.setItem(
+      'roguelite_save',
+      JSON.stringify(buildSaveMissing('hero.inventory.manaStones')),
+    )
     useGameStore.getState().loadGame()
     expectArray('hero.inventory.manaStones')
   })
 
-  it("hero.inventory.consumables absent → objet vide", () => {
-    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.inventory.consumables')))
+  it('hero.inventory.consumables absent → objet vide', () => {
+    localStorage.setItem(
+      'roguelite_save',
+      JSON.stringify(buildSaveMissing('hero.inventory.consumables')),
+    )
     useGameStore.getState().loadGame()
     expectObject('hero.inventory.consumables')
   })
 
-  it("hero.inventory.resources absent → objet vide", () => {
-    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.inventory.resources')))
+  it('hero.inventory.resources absent → objet vide', () => {
+    localStorage.setItem(
+      'roguelite_save',
+      JSON.stringify(buildSaveMissing('hero.inventory.resources')),
+    )
     useGameStore.getState().loadGame()
     expectObject('hero.inventory.resources')
   })
 
-  it("hero.equipped absent → 4 slots null", () => {
+  it('hero.equipped absent → 4 slots null', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.equipped')))
     useGameStore.getState().loadGame()
     expect(useGameStore.getState().hero.equipped).toEqual({
-      weapon: null, helmet: null, armor: null, boots: null,
+      weapon: null,
+      helmet: null,
+      armor: null,
+      boots: null,
     })
   })
 
-  it("hero.activeSkills absent → tableau vide", () => {
+  it('hero.activeSkills absent → tableau vide', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.activeSkills')))
     useGameStore.getState().loadGame()
     expectArray('hero.activeSkills')
   })
 
-  it("hero.passiveSkills absent → tableau vide", () => {
+  it('hero.passiveSkills absent → tableau vide', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.passiveSkills')))
     useGameStore.getState().loadGame()
     expectArray('hero.passiveSkills')
   })
 
-  it("hero.battleLog absent → tableau vide", () => {
+  it('hero.battleLog absent → tableau vide', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.battleLog')))
     useGameStore.getState().loadGame()
     expectArray('hero.battleLog')
   })
 
-  it("hero.combatEntryLog absent → tableau vide", () => {
+  it('hero.combatEntryLog absent → tableau vide', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.combatEntryLog')))
     useGameStore.getState().loadGame()
     expectArray('hero.combatEntryLog')
   })
 
-  it("hero.titles absent → tableau vide", () => {
+  it('hero.titles absent → tableau vide', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.titles')))
     useGameStore.getState().loadGame()
     expectArray('hero.titles')
   })
 
-  it("world.completedQuests = 0 (number, ancien format) → tableau vide", () => {
-    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('world.completedQuests', 0)))
+  it('world.completedQuests = 0 (number, ancien format) → tableau vide', () => {
+    localStorage.setItem(
+      'roguelite_save',
+      JSON.stringify(buildSaveMissing('world.completedQuests', 0)),
+    )
     useGameStore.getState().loadGame()
     expectArray('world.completedQuests')
   })
 
-  it("world.activeQuests = 0 (number, ancien format) → tableau vide", () => {
-    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('world.activeQuests', 0)))
+  it('world.activeQuests = 0 (number, ancien format) → tableau vide', () => {
+    localStorage.setItem(
+      'roguelite_save',
+      JSON.stringify(buildSaveMissing('world.activeQuests', 0)),
+    )
     useGameStore.getState().loadGame()
     expectArray('world.activeQuests')
   })
 
-  it("world.dungeons absent → restauré depuis INITIAL_WORLD", () => {
+  it('world.dungeons absent → restauré depuis INITIAL_WORLD', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('world.dungeons')))
     useGameStore.getState().loadGame()
     const dungeons = useGameStore.getState().world.dungeons
@@ -1944,25 +2112,31 @@ describe('X02 — Battery migration anti-régression', () => {
     expect(dungeons.grimspire).toBeDefined()
   })
 
-  it("world.monsterKillCounts absent → objet vide", () => {
-    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('world.monsterKillCounts')))
+  it('world.monsterKillCounts absent → objet vide', () => {
+    localStorage.setItem(
+      'roguelite_save',
+      JSON.stringify(buildSaveMissing('world.monsterKillCounts')),
+    )
     useGameStore.getState().loadGame()
     expectObject('world.monsterKillCounts')
   })
 
-  it("meta.divineBonds absent → objet vide", () => {
+  it('meta.divineBonds absent → objet vide', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('meta.divineBonds')))
     useGameStore.getState().loadGame()
     expectObject('meta.divineBonds')
   })
 
-  it("meta.lastRunSummary null préservé (state légitime)", () => {
-    localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('meta.lastRunSummary', null)))
+  it('meta.lastRunSummary null préservé (state légitime)', () => {
+    localStorage.setItem(
+      'roguelite_save',
+      JSON.stringify(buildSaveMissing('meta.lastRunSummary', null)),
+    )
     useGameStore.getState().loadGame()
     expect(useGameStore.getState().meta.lastRunSummary).toBeNull()
   })
 
-  it("hero entier absent → reste sur INITIAL_HERO", () => {
+  it('hero entier absent → reste sur INITIAL_HERO', () => {
     const save = { world: useGameStore.getState().world, meta: useGameStore.getState().meta }
     localStorage.setItem('roguelite_save', JSON.stringify(save))
     expect(() => useGameStore.getState().loadGame()).not.toThrow()
@@ -1970,7 +2144,7 @@ describe('X02 — Battery migration anti-régression', () => {
     expect(useGameStore.getState().hero.activeSkills).toEqual([])
   })
 
-  it("save vide ({}) ne crash pas", () => {
+  it('save vide ({}) ne crash pas', () => {
     localStorage.setItem('roguelite_save', JSON.stringify({}))
     expect(() => useGameStore.getState().loadGame()).not.toThrow()
   })
@@ -1982,15 +2156,17 @@ describe('TECH03 — localStorage quota warning', () => {
     useGameStore.getState().resetGame()
   })
 
-  it("saveQuotaExceeded est false par défaut", () => {
+  it('saveQuotaExceeded est false par défaut', () => {
     expect(useGameStore.getState().saveQuotaExceeded).toBe(false)
   })
 
-  it("saveGame qui throw QuotaExceededError → flag passe à true", () => {
+  it('saveGame qui throw QuotaExceededError → flag passe à true', () => {
     const original = localStorage.setItem
     const err = new Error('quota exceeded')
     err.name = 'QuotaExceededError'
-    localStorage.setItem = () => { throw err }
+    localStorage.setItem = () => {
+      throw err
+    }
     // Silence console.error pour ce test
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -2004,7 +2180,7 @@ describe('TECH03 — localStorage quota warning', () => {
     errSpy.mockRestore()
   })
 
-  it("saveGame réussi reset le flag à false si précédemment true", () => {
+  it('saveGame réussi reset le flag à false si précédemment true', () => {
     // Setup: flag à true
     useGameStore.setState({ saveQuotaExceeded: true })
     // Now succeed
@@ -2012,7 +2188,7 @@ describe('TECH03 — localStorage quota warning', () => {
     expect(useGameStore.getState().saveQuotaExceeded).toBe(false)
   })
 
-  it("resetGame remet saveQuotaExceeded à false", () => {
+  it('resetGame remet saveQuotaExceeded à false', () => {
     useGameStore.setState({ saveQuotaExceeded: true })
     useGameStore.getState().resetGame()
     expect(useGameStore.getState().saveQuotaExceeded).toBe(false)

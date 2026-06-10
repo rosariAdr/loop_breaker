@@ -4,6 +4,14 @@
 
 import { useState, useRef } from 'react'
 
+/**
+ * DEVBP02 — Tooltip au survol (UX01). Si `content` est vide, rend les enfants tels quels.
+ * @param {object} props
+ * @param {import('react').ReactNode} props.content - contenu de l'infobulle
+ * @param {import('react').ReactNode} props.children - élément déclencheur (survol/tap)
+ * @param {'top'|'bottom'|'left'|'right'} [props.position] - position de l'infobulle
+ * @param {number} [props.maxWidth] - largeur max (px)
+ */
 export default function Tooltip({ content, children, position = 'top', maxWidth = 240 }) {
   const [visible, setVisible] = useState(false)
   const wrapperRef = useRef(null)
@@ -14,10 +22,10 @@ export default function Tooltip({ content, children, position = 'top', maxWidth 
   const hide = () => setVisible(false)
 
   const positionStyles = {
-    top:    { bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' },
-    bottom: { top: 'calc(100% + 8px)',    left: '50%', transform: 'translateX(-50%)' },
-    right:  { left: 'calc(100% + 8px)',   top: '50%',  transform: 'translateY(-50%)' },
-    left:   { right: 'calc(100% + 8px)',  top: '50%',  transform: 'translateY(-50%)' },
+    top: { bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' },
+    bottom: { top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' },
+    right: { left: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)' },
+    left: { right: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)' },
   }[position]
 
   return (
@@ -28,7 +36,7 @@ export default function Tooltip({ content, children, position = 'top', maxWidth 
       onMouseLeave={hide}
       onFocus={show}
       onBlur={hide}
-      onClick={show}  // mobile-friendly : tap pour afficher
+      onClick={show} // mobile-friendly : tap pour afficher
     >
       {children}
       {visible && (

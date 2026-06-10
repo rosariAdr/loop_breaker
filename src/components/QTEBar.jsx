@@ -29,12 +29,25 @@ export function cursorPositionAt(elapsedMs, durationMs) {
 
 // ── Composant ───────────────────────────────────────────────────────────────
 
+/**
+ * DEVBP02 — Barre de QTE (Quick-Time Event) réutilisable (MAP02).
+ * @param {object} props
+ * @param {boolean} props.open - active/affiche le QTE
+ * @param {number} [props.durationMs] - durée d'un balayage 0→100
+ * @param {number} [props.zoneStart] - début de la zone verte (0–100)
+ * @param {number} [props.zoneEnd] - fin de la zone verte (0–100)
+ * @param {number} [props.timeoutMs] - échec automatique après ce délai
+ * @param {string} [props.title] - titre affiché
+ * @param {string} [props.hint] - consigne affichée
+ * @param {() => void} props.onSuccess - clic réussi (dans la zone verte)
+ * @param {() => void} props.onFailure - clic raté ou timeout
+ */
 export default function QTEBar({
   open,
-  durationMs = 1400,         // temps pour parcourir 0→100
-  zoneStart = 42,             // début zone verte
-  zoneEnd = 58,               // fin zone verte
-  timeoutMs = 4000,           // échec automatique après ce délai
+  durationMs = 1400, // temps pour parcourir 0→100
+  zoneStart = 42, // début zone verte
+  zoneEnd = 58, // fin zone verte
+  timeoutMs = 4000, // échec automatique après ce délai
   title = 'Time it right!',
   hint = 'Click when the cursor is in the green zone',
   onSuccess,
@@ -104,12 +117,18 @@ export default function QTEBar({
         className="w-full max-w-md mx-4 rounded-xl p-6 anim-pop"
         style={{ background: '#0a0808', border: '1px solid #3a2818' }}
       >
-        <p style={{ fontFamily: 'Cinzel, serif', fontSize: '1.05rem', color: '#d4af70', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+        <p
+          style={{
+            fontFamily: 'Cinzel, serif',
+            fontSize: '1.05rem',
+            color: '#d4af70',
+            letterSpacing: '0.05em',
+            marginBottom: '0.5rem',
+          }}
+        >
           {title}
         </p>
-        <p style={{ color: '#7a6a5a', fontSize: '0.78rem', marginBottom: '1.25rem' }}>
-          {hint}
-        </p>
+        <p style={{ color: '#7a6a5a', fontSize: '0.78rem', marginBottom: '1.25rem' }}>{hint}</p>
 
         <div
           data-testid="qte-track"

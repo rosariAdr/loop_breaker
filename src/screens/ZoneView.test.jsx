@@ -7,7 +7,7 @@ import { useGameStore } from '../store/gameStore'
 beforeEach(() => {
   useGameStore.getState().resetGame()
   // Positionner sur un spot de chasse Ashenvale (contient ashwood_wolf qui droppe savage_bite)
-  useGameStore.setState(state => ({
+  useGameStore.setState((state) => ({
     world: { ...state.world, currentZone: 'ashenvale', currentHuntingSpot: 'ashenvale_forest' },
   }))
   localStorage.clear()
@@ -16,21 +16,21 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('S02 — SkillDropPreview', () => {
-  it("affiche un aperçu de skill pour chaque monstre avec skillDrop", () => {
+  it('affiche un aperçu de skill pour chaque monstre avec skillDrop', () => {
     render(<ZoneView />)
     const previews = screen.getAllByTestId('skill-drop-preview')
     expect(previews.length).toBeGreaterThanOrEqual(1)
   })
 
-  it("skill caché (████) tant que killCount < 5", () => {
+  it('skill caché (████) tant que killCount < 5', () => {
     render(<ZoneView />)
     // 0 kill → tous les noms sont masqués
     const names = screen.getAllByTestId('skill-drop-name')
-    expect(names.every(n => n.textContent.includes('█'))).toBe(true)
+    expect(names.every((n) => n.textContent.includes('█'))).toBe(true)
   })
 
-  it("skill révélé après 5 kills", () => {
-    useGameStore.setState(state => ({
+  it('skill révélé après 5 kills', () => {
+    useGameStore.setState((state) => ({
       world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
     }))
     render(<ZoneView />)
@@ -39,7 +39,7 @@ describe('S02 — SkillDropPreview', () => {
   })
 
   it("le skill révélé n'est plus flouté (filter none)", () => {
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
     }))
     render(<ZoneView />)
@@ -47,7 +47,7 @@ describe('S02 — SkillDropPreview', () => {
     expect(revealed.style.filter).toBe('none')
   })
 
-  it("le skill non révélé est flouté (blur)", () => {
+  it('le skill non révélé est flouté (blur)', () => {
     render(<ZoneView />)
     const names = screen.getAllByTestId('skill-drop-name')
     expect(names[0].style.filter).toMatch(/blur/)

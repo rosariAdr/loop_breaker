@@ -34,20 +34,20 @@ export function pctToPx(pctX, pctY, width, height) {
 // ── Composant Canvas principal ──────────────────────────────────────────────
 
 export default function WorldMapCanvas({
-  nodes,                  // [{ id, label, sublabel, x, y, type, color, locked }]
-  paths,                  // [[fromId, toId], ...]
+  nodes, // [{ id, label, sublabel, x, y, type, color, locked }]
+  paths, // [[fromId, toId], ...]
   activeNodeId,
-  dungeonNode,            // { x, y, discovered } | null
-  onSelectNode,           // (node) => void
+  dungeonNode, // { x, y, discovered } | null
+  onSelectNode, // (node) => void
 }) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
   const rafRef = useRef(null)
   const heroPosRef = useRef({ x: 0, y: 0, initialized: false })
   const targetIdRef = useRef(activeNodeId)
-  const particlesRef = useRef([])  // [{x, y, vx, vy, life, maxLife}]
+  const particlesRef = useRef([]) // [{x, y, vx, vy, life, maxLife}]
   const dashOffsetRef = useRef(0)
-  const sizeRef = useRef({ width: 780, height: 488 })  // 16:10
+  const sizeRef = useRef({ width: 780, height: 488 }) // 16:10
 
   const [hoveredNodeId, setHoveredNodeId] = useState(null)
 
@@ -72,12 +72,16 @@ export default function WorldMapCanvas({
 
     // Background gradient
     const grad = ctx.createRadialGradient(
-      width * 0.4, height * 0.4, 0,
-      width * 0.5, height * 0.5, Math.max(width, height) * 0.7
+      width * 0.4,
+      height * 0.4,
+      0,
+      width * 0.5,
+      height * 0.5,
+      Math.max(width, height) * 0.7,
     )
-    grad.addColorStop(0,    '#111208')
-    grad.addColorStop(0.6,  '#0a0c08')
-    grad.addColorStop(1,    '#080a06')
+    grad.addColorStop(0, '#111208')
+    grad.addColorStop(0.6, '#0a0c08')
+    grad.addColorStop(1, '#080a06')
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, width, height)
 
@@ -92,8 +96,8 @@ export default function WorldMapCanvas({
     }
 
     // ── Routes (lignes pointillées animées) ──
-    const placedNodes = nodes.map(n => ({ ...n, ...pctToPx(n.x, n.y, width, height) }))
-    const placedById = Object.fromEntries(placedNodes.map(n => [n.id, n]))
+    const placedNodes = nodes.map((n) => ({ ...n, ...pctToPx(n.x, n.y, width, height) }))
+    const placedById = Object.fromEntries(placedNodes.map((n) => [n.id, n]))
 
     dashOffsetRef.current = (dashOffsetRef.current + 0.4) % 16
     ctx.strokeStyle = '#2a2518'
@@ -157,7 +161,7 @@ export default function WorldMapCanvas({
       ctx.arc(node.px, node.py, isHovered ? 20 : 18, 0, Math.PI * 2)
       ctx.fillStyle = isActive ? '#1a2010' : '#101008'
       ctx.fill()
-      ctx.strokeStyle = isLocked ? '#1a1410' : (isActive ? node.color : '#3a3020')
+      ctx.strokeStyle = isLocked ? '#1a1410' : isActive ? node.color : '#3a3020'
       ctx.lineWidth = 2
       ctx.stroke()
 
@@ -170,7 +174,7 @@ export default function WorldMapCanvas({
 
       // Label sous le node
       ctx.font = '10px Cinzel, serif'
-      ctx.fillStyle = isActive ? node.color : (isLocked ? '#3a3020' : '#6a5a3a')
+      ctx.fillStyle = isActive ? node.color : isLocked ? '#3a3020' : '#6a5a3a'
       ctx.textBaseline = 'top'
       ctx.fillText(node.label, node.px, node.py + 24)
       if (node.sublabel) {
@@ -219,7 +223,7 @@ export default function WorldMapCanvas({
       p.life -= 1
       p.x += p.vx
       p.y += p.vy
-      p.vy += 0.05  // gravité légère
+      p.vy += 0.05 // gravité légère
       if (p.life > 0) alive.push(p)
       const alpha = p.life / p.maxLife
       ctx.beginPath()
@@ -250,7 +254,7 @@ export default function WorldMapCanvas({
     }
 
     resize()
-    const ro = (typeof ResizeObserver !== 'undefined') ? new ResizeObserver(resize) : null
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null
     if (ro) ro.observe(container)
 
     // Boucle d'animation : draw() à chaque frame
@@ -275,7 +279,7 @@ export default function WorldMapCanvas({
 
   // D02 — Construit la liste augmentée avec le marker donjon (id virtuel '__dungeon__')
   const getClickableNodes = (width, height) => {
-    const placed = nodes.map(n => ({ ...n, ...pctToPx(n.x, n.y, width, height) }))
+    const placed = nodes.map((n) => ({ ...n, ...pctToPx(n.x, n.y, width, height) }))
     if (dungeonNode) {
       placed.push({
         id: '__dungeon__',
@@ -346,9 +350,13 @@ export default function WorldMapCanvas({
       <div
         className="absolute pointer-events-none"
         style={{
-          top: '8px', left: '12px',
-          fontSize: '0.65rem', color: '#3a3020',
-          fontFamily: 'Cinzel, serif', letterSpacing: '0.12em', textTransform: 'uppercase',
+          top: '8px',
+          left: '12px',
+          fontSize: '0.65rem',
+          color: '#3a3020',
+          fontFamily: 'Cinzel, serif',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
         }}
       >
         Ashenvale Region

@@ -5,18 +5,18 @@ import { combatFatigueBuffer, craftFatigueBuffer, applyVigorMalus } from './vigo
 describe('STA04 — tampons aux paliers', () => {
   it('combatFatigueBuffer (Aura) : 50% à 100, 70% à 200, 85% à 300', () => {
     expect(combatFatigueBuffer(0)).toBe(0)
-    expect(combatFatigueBuffer(100)).toBeCloseTo(0.50)
-    expect(combatFatigueBuffer(200)).toBeCloseTo(0.70)
+    expect(combatFatigueBuffer(100)).toBeCloseTo(0.5)
+    expect(combatFatigueBuffer(200)).toBeCloseTo(0.7)
     expect(combatFatigueBuffer(300)).toBeCloseTo(0.85)
     expect(combatFatigueBuffer(400)).toBeCloseTo(0.85) // plafonné
   })
   it('craftFatigueBuffer (Concentration) : 70% à 100, 85% à 200, 100% à 300', () => {
-    expect(craftFatigueBuffer(100)).toBeCloseTo(0.70)
+    expect(craftFatigueBuffer(100)).toBeCloseTo(0.7)
     expect(craftFatigueBuffer(200)).toBeCloseTo(0.85)
-    expect(craftFatigueBuffer(300)).toBeCloseTo(1.00)
+    expect(craftFatigueBuffer(300)).toBeCloseTo(1.0)
   })
   it('interpolation entre paliers (150 → entre 50% et 70%)', () => {
-    expect(combatFatigueBuffer(150)).toBeCloseTo(0.60)
+    expect(combatFatigueBuffer(150)).toBeCloseTo(0.6)
   })
 })
 

@@ -9,7 +9,10 @@ export default function DialoguePanel({ dialogue, speaker, onClose }) {
   if (!dialogue || !node) return null
 
   const choose = (opt) => {
-    if (opt.nextId == null) { onClose?.(); return }
+    if (opt.nextId == null) {
+      onClose?.()
+      return
+    }
     setNodeId(opt.nextId)
   }
 
@@ -19,7 +22,9 @@ export default function DialoguePanel({ dialogue, speaker, onClose }) {
       <div className="dlg-text">“{node.text}”</div>
       <div className="dlg-options">
         {node.options.map((o, i) => (
-          <button key={i} className="pbtn dlg-opt" onClick={() => choose(o)}>{o.label}</button>
+          <button key={i} className="pbtn dlg-opt" onClick={() => choose(o)}>
+            {o.label}
+          </button>
         ))}
       </div>
     </div>

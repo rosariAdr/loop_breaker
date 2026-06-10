@@ -9,7 +9,7 @@ describe('BLD01 — isBuildingOpen', () => {
   })
 
   it('church (5–21) ouverte en journée, fermée la nuit', () => {
-    expect(isBuildingOpen('church', 5)).toBe(true)   // ouverture
+    expect(isBuildingOpen('church', 5)).toBe(true) // ouverture
     expect(isBuildingOpen('church', 12)).toBe(true)
     expect(isBuildingOpen('church', 20)).toBe(true)
     expect(isBuildingOpen('church', 21)).toBe(false) // to exclus
@@ -35,7 +35,7 @@ describe('BLD01 — isBuildingOpen', () => {
 })
 
 describe('BLD01 — helpers', () => {
-  it('nextOpenHour renvoie l\'heure d\'ouverture (null pour 24/24)', () => {
+  it("nextOpenHour renvoie l'heure d'ouverture (null pour 24/24)", () => {
     expect(nextOpenHour('inn')).toBeNull()
     expect(nextOpenHour('church')).toBe(5)
     expect(nextOpenHour('blacksmith')).toBe(6)

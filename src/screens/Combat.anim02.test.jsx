@@ -23,16 +23,25 @@ function setupCombatWithSkill(skillId) {
     },
   }))
   const enemy = {
-    id: 'ashwood_wolf_0', monsterId: 'ashwood_wolf', name: 'Test Wolf',
-    stats: { hp: 300, atk: 5, def: 4, spd: 10 }, currentHp: 300, rank: 'common', expReward: 15,
+    id: 'ashwood_wolf_0',
+    monsterId: 'ashwood_wolf',
+    name: 'Test Wolf',
+    stats: { hp: 300, atk: 5, def: 4, spd: 10 },
+    currentHp: 300,
+    rank: 'common',
+    expReward: 15,
   }
   useGameStore.getState().startCombat([enemy])
 }
 
 function castSkill(skillName) {
   // onglet Skills puis bouton du skill
-  act(() => { screen.getByText('Skills').click() })
-  act(() => { screen.getByText(skillName).click() })
+  act(() => {
+    screen.getByText('Skills').click()
+  })
+  act(() => {
+    screen.getByText(skillName).click()
+  })
 }
 
 describe('ANIM02 — VFX skill en combat', () => {
@@ -54,12 +63,14 @@ describe('ANIM02 — VFX skill en combat', () => {
     expect(document.querySelector('[data-testid="skill-orb"]')).not.toBeNull()
   })
 
-  it('le VFX disparaît une fois l\'animation terminée (~520ms)', () => {
+  it("le VFX disparaît une fois l'animation terminée (~520ms)", () => {
     setupCombatWithSkill('power_strike')
     render(<Combat />)
     castSkill('Power Strike')
     expect(document.querySelector('[data-testid="skill-flash"]')).not.toBeNull()
-    act(() => { vi.advanceTimersByTime(560) })
+    act(() => {
+      vi.advanceTimersByTime(560)
+    })
     expect(document.querySelector('[data-testid="skill-flash"]')).toBeNull()
   })
 })

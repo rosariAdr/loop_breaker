@@ -6,8 +6,10 @@ import { ZONES } from './zones'
 import { EQUIPMENT_TEMPLATES } from './equipment'
 import { RESOURCES } from './resources'
 
-const ncQuests = Object.values(QUESTS).filter(q => q.id.startsWith('nc_'))
-const spotIds = new Set(Object.values(ZONES).flatMap(z => (z.huntingSpots ?? []).map(s => s.id)))
+const ncQuests = Object.values(QUESTS).filter((q) => q.id.startsWith('nc_'))
+const spotIds = new Set(
+  Object.values(ZONES).flatMap((z) => (z.huntingSpots ?? []).map((s) => s.id)),
+)
 
 describe('NPC02 — 10 nouvelles quêtes de contenu', () => {
   it('ajoute exactement 10 quêtes nc_*', () => {
@@ -36,16 +38,22 @@ describe('NPC02 — 10 nouvelles quêtes de contenu', () => {
     for (const q of ncQuests) {
       const r = q.reward
       if (r.equipment) expect(EQUIPMENT_TEMPLATES[r.equipment.templateId], `${q.id}`).toBeTruthy()
-      if (r.resources) for (const id of Object.keys(r.resources)) expect(RESOURCES[id], `${q.id}:${id}`).toBeTruthy()
-      if (r.consumables) for (const id of Object.keys(r.consumables)) expect(RESOURCES[id], `${q.id}:${id}`).toBeTruthy()
+      if (r.resources)
+        for (const id of Object.keys(r.resources))
+          expect(RESOURCES[id], `${q.id}:${id}`).toBeTruthy()
+      if (r.consumables)
+        for (const id of Object.keys(r.consumables))
+          expect(RESOURCES[id], `${q.id}:${id}`).toBeTruthy()
       expect(r.gold).toBeGreaterThan(0)
     }
   })
 
   it('couvre élites + exploration + artisanat', () => {
-    const killsElite = ncQuests.filter(q => q.objectives.some(o => o.type === 'kill' && MONSTERS[o.monsterId]?.rank === 'elite'))
-    const visits = ncQuests.filter(q => q.objectives.some(o => o.type === 'visit'))
-    const crafts = ncQuests.filter(q => q.objectives.some(o => o.type === 'craft'))
+    const killsElite = ncQuests.filter((q) =>
+      q.objectives.some((o) => o.type === 'kill' && MONSTERS[o.monsterId]?.rank === 'elite'),
+    )
+    const visits = ncQuests.filter((q) => q.objectives.some((o) => o.type === 'visit'))
+    const crafts = ncQuests.filter((q) => q.objectives.some((o) => o.type === 'craft'))
     expect(killsElite.length).toBeGreaterThanOrEqual(3)
     expect(visits.length).toBeGreaterThanOrEqual(2)
     expect(crafts.length).toBeGreaterThanOrEqual(2)

@@ -9,7 +9,16 @@ const seedPendingInheritance = () => {
   useGameStore.setState((s) => ({
     meta: {
       ...s.meta,
-      lastRunSummary: { stats: { strength: 12 }, reputationTokens: 3, skills: [], level: 5, day: 4, zone: 'ashenvale', totalKills: 10, cause: 'test' },
+      lastRunSummary: {
+        stats: { strength: 12 },
+        reputationTokens: 3,
+        skills: [],
+        level: 5,
+        day: 4,
+        zone: 'ashenvale',
+        totalKills: 10,
+        cause: 'test',
+      },
       pendingInheritance: { stat: 'strength', activeSkill: null, passiveSkill: null, bonuses: [] },
     },
     currentScreen: 'gods_shop',
@@ -17,7 +26,11 @@ const seedPendingInheritance = () => {
 }
 
 describe('T02 — écran de transition de renaissance', () => {
-  beforeEach(() => { useGameStore.getState().resetGame(); localStorage.clear(); seedPendingInheritance() })
+  beforeEach(() => {
+    useGameStore.getState().resetGame()
+    localStorage.clear()
+    seedPendingInheritance()
+  })
 
   it('cliquer « Transmigrate → » affiche la transition animée sans encore renaître', () => {
     render(<GodsShop />)

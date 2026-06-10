@@ -6,6 +6,7 @@ import { RESOURCES, RARITY_COLORS } from '../data/resources'
 import { SKILLS } from '../data/skills'
 import { generateEnemies } from '../engine/combat'
 import { ParchmentFrame } from '../components/parchment'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 // S02 — seuil de kills pour révéler le skill droppable d'un monstre
 const SKILL_REVEAL_THRESHOLD = 5
@@ -13,6 +14,10 @@ const SKILL_REVEAL_THRESHOLD = 5
 export default function ZoneView() {
   const { world, setScreen, recordVisit } = useGameStore()
   const zone = ZONES[world.currentZone]
+  // ZV-CARDS01 — bloc stats des cartes monstres masquable (off par défaut → cartes épurées)
+  const [showStats, setShowStats] = useState(false)
+  // UX-LEAVE-CONFIRM01 — confirmation avant de quitter une zone de donjon/danger en cours
+  const [confirmLeave, setConfirmLeave] = useState(false)
 
   // Q04 — enregistre la visite du spot de chasse courant (quêtes d'exploration)
   useEffect(() => {
@@ -25,12 +30,12 @@ export default function ZoneView() {
 
   // Si on est sur un spot de chasse Ashenvale, utiliser la liste spécifique
   const spot = world.currentHuntingSpot
-    ? zone.huntingSpots?.find(s => s.id === world.currentHuntingSpot)
+    ? zone.huntingSpots?.find((s) => s.id === world.currentHuntingSpot)
     : null
 
   const monsterList = spot
-    ? MONSTERS_BY_SPOT[world.currentHuntingSpot] ?? []
-    : MONSTERS_BY_ZONE[world.currentZone] ?? []
+    ? (MONSTERS_BY_SPOT[world.currentHuntingSpot] ?? [])
+    : (MONSTERS_BY_ZONE[world.currentZone] ?? [])
 
   const displayName = spot ? spot.name : zone.name
   const displayDesc = spot ? spot.description : zone.description
@@ -39,7 +44,27 @@ export default function ZoneView() {
     <div className={`parchment fill forest ${isBlightedRoad ? 'blighted' : ''}`}>
       <ParchmentFrame variant="vine" />
 
-      <button className="back-btn" onClick={() => setScreen('world_map')}>← Map</button>
+      <button
+        className="back-btn"
+        onClick={() => (isBlightedRoad ? setConfirmLeave(true) : setScreen('world_map'))}
+      >
+        ← Map
+      </button>
+
+      {/* UX-LEAVE-CONFIRM01 — quitter la Blighted Road (zone de danger) demande confirmation */}
+      <ConfirmDialog
+        open={confirmLeave}
+        variant="warn"
+        title="Leave the Blighted Road?"
+        message="This cursed crossing is no place to linger. Head back to the map?"
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+        onConfirm={() => {
+          setConfirmLeave(false)
+          setScreen('world_map')
+        }}
+        onCancel={() => setConfirmLeave(false)}
+      />
 
       <div className="zone-header vil-header">
         <div className="t-zone zh-title">
@@ -65,15 +90,27 @@ export default function ZoneView() {
 
           {/* Monstres → clairières */}
           <Section title="Clearings">
+            {/* ZV-CARDS01 — afficher/masquer le bloc de stats des cartes */}
+            <label className="zv-stats-toggle">
+              <input
+                type="checkbox"
+                checked={showStats}
+                onChange={(e) => setShowStats(e.target.checked)}
+                data-testid="zv-stats-toggle"
+              />{' '}
+              Show stats
+            </label>
             <div className="mcard-grid">
               {monsterList.map((monsterId) => (
-                <MonsterRow key={monsterId} monsterId={monsterId} />
+                <MonsterRow key={monsterId} monsterId={monsterId} showStats={showStats} />
               ))}
             </div>
           </Section>
 
           {/* Donjon (seulement sur la zone principale, pas sur les spots) */}
-          {!spot && zone.dungeon && <DungeonSection zone={zone} world={world} setScreen={setScreen} />}
+          {!spot && zone.dungeon && (
+            <DungeonSection zone={zone} world={world} setScreen={setScreen} />
+          )}
 
           {/* Demon Lord */}
           {zone.demonLord && <DemonLordSection world={world} setScreen={setScreen} />}
@@ -90,11 +127,20 @@ export default function ZoneView() {
 function MonsterSprite({ id, elite }) {
   const [err, setErr] = useState(false)
   if (err) return <span className="ms-emoji">{elite ? '👹' : '🐾'}</span>
-  return <img className="ms-img" src={`/monsters/${id}.png`} alt="" draggable={false} onError={() => setErr(true)} />
+  return (
+    <img
+      className="ms-img"
+      src={`/monsters/${id}.png`}
+      alt=""
+      loading="lazy"
+      draggable={false}
+      onError={() => setErr(true)}
+    />
+  )
 }
 
 // ── Clairière d'un monstre ────────────────────────────────────────────────────
-function MonsterRow({ monsterId }) {
+function MonsterRow({ monsterId, showStats = false }) {
   const { world, hero, toggleIdle, startCombat } = useGameStore()
   const monster = MONSTERS[monsterId]
   if (!monster) return null
@@ -113,25 +159,37 @@ function MonsterRow({ monsterId }) {
 
   return (
     <div className={`mcard ${isElite ? 'elite' : ''} ${isIdleActive ? 'idle-on' : ''}`}>
-      <div className="mcard-sprite"><MonsterSprite id={monsterId} elite={isElite} /></div>
+      <div className="mcard-sprite">
+        <MonsterSprite id={monsterId} elite={isElite} />
+      </div>
       <div className="mcard-head">
         <span className="mcard-name">{monster.name}</span>
         {isElite && <span className="mcard-elite">ELITE</span>}
         {isIdleActive && <span className="mcard-idle">◆ IDLE</span>}
       </div>
 
-      <div className="mcard-stats">
-        <span>HP {monster.baseStats.hp}</span>
-        <span>ATK {monster.baseStats.atk}</span>
-        <span>DEF {monster.baseStats.def}</span>
-        <span>SPD {monster.baseStats.spd}</span>
-      </div>
+      {showStats && (
+        <div className="mcard-stats">
+          <span>HP {monster.baseStats.hp}</span>
+          <span>ATK {monster.baseStats.atk}</span>
+          <span>DEF {monster.baseStats.def}</span>
+          <span>SPD {monster.baseStats.spd}</span>
+        </div>
+      )}
 
       <div className="kbar-row">
         <div className="kbar">
-          <i style={{ width: `${Math.min(100, (killCount / 5) * 100)}%`, background: idleUnlocked ? 'var(--safe-green)' : 'var(--gold)' }} />
+          <i
+            style={{
+              width: `${Math.min(100, (killCount / 5) * 100)}%`,
+              background: idleUnlocked ? 'var(--safe-green)' : 'var(--gold)',
+            }}
+          />
         </div>
-        <span className="kbar-label" style={{ color: idleUnlocked ? 'var(--forest-deep)' : 'var(--ink-soft)' }}>
+        <span
+          className="kbar-label"
+          style={{ color: idleUnlocked ? 'var(--forest-deep)' : 'var(--ink-soft)' }}
+        >
           {idleUnlocked ? '✓ Idle unlocked' : `${killCount}/5 kills`}
         </span>
       </div>
@@ -141,11 +199,16 @@ function MonsterRow({ monsterId }) {
 
       <div className="mcard-actions">
         {idleUnlocked && !isElite && (
-          <button className={`fbtn ${isIdleActive ? 'on' : ''}`} onClick={() => toggleIdle(monsterId)}>
+          <button
+            className={`fbtn ${isIdleActive ? 'on' : ''}`}
+            onClick={() => toggleIdle(monsterId)}
+          >
             {isIdleActive ? '⏸ Idle ON' : '▶ Idle'}
           </button>
         )}
-        <button className="fbtn fight" onClick={handleFight}>⚔ Fight</button>
+        <button className="fbtn fight" onClick={handleFight}>
+          ⚔ Fight
+        </button>
       </div>
     </div>
   )
@@ -162,7 +225,9 @@ function SkillDropPreview({ monster, killCount }) {
 
   return (
     <div className="skill-drop" data-testid="skill-drop-preview">
-      <span style={{ color: 'var(--ink-soft)', fontSize: '0.68rem', fontFamily: 'var(--font-head)' }}>
+      <span
+        style={{ color: 'var(--ink-soft)', fontSize: '0.68rem', fontFamily: 'var(--font-head)' }}
+      >
         ✦ Technique:
       </span>
       <span
@@ -203,7 +268,10 @@ function DungeonSection({ zone, world }) {
         >
           <div className="fsec-row">
             <div>
-              <p className="fsec-title" style={{ color: dungeon.discovered ? '#7a3fb0' : '#8a7a92' }}>
+              <p
+                className="fsec-title"
+                style={{ color: dungeon.discovered ? '#7a3fb0' : '#8a7a92' }}
+              >
                 {dungeon.discovered ? zone.dungeon.name : '??? Unknown Dungeon'}
               </p>
               <p className="fsec-sub">
@@ -255,8 +323,12 @@ function DemonLordSection({ world }) {
         <div className="fsec-card danger" onClick={handleChallenge}>
           <div className="fsec-row">
             <div>
-              <p className="fsec-title" style={{ color: 'var(--danger)' }}>⚡ Malachar the Undying</p>
-              <p className="fsec-sub" style={{ color: '#9a5048' }}>Demon Lord of Eldenmoor · Grimspire Depths</p>
+              <p className="fsec-title" style={{ color: 'var(--danger)' }}>
+                ⚡ Malachar the Undying
+              </p>
+              <p className="fsec-sub" style={{ color: '#9a5048' }}>
+                Demon Lord of Eldenmoor · Grimspire Depths
+              </p>
             </div>
             <span className="fsec-cta danger">Challenge ➜</span>
           </div>
@@ -276,7 +348,9 @@ function IdleSidebar() {
     <aside className="forest-log">
       <div className="scroll-panel style-scroll" style={{ height: '100%' }}>
         {/* I08 — réglage du seuil de PV d'auto-stop */}
-        <div className="t-label" style={{ marginBottom: 6 }}>Auto-stop at HP</div>
+        <div className="t-label" style={{ marginBottom: 6 }}>
+          Auto-stop at HP
+        </div>
         <div className="flex gap-1" style={{ marginBottom: 12 }} data-testid="idle-hp-threshold">
           {THRESHOLDS.map((t) => {
             const active = Math.abs(threshold - t) < 0.001
@@ -301,23 +375,48 @@ function IdleSidebar() {
           })}
         </div>
 
-        <div className="t-label" style={{ marginBottom: 8 }}>Idle Log</div>
+        <div className="t-label" style={{ marginBottom: 8 }}>
+          Idle Log
+        </div>
 
         {world.isIdleActive ? (
           <div className="idle-log">
             <div className="idle-entry" style={{ color: 'var(--forest-deep)' }}>
-              <span className="w-2 h-2 rounded-full animate-pulse" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--safe-green)' }} />
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{
+                  display: 'inline-block',
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: 'var(--safe-green)',
+                }}
+              />
               <span>Active</span>
             </div>
             {world.idleLog.length > 0 ? (
               world.idleLog.map((entry, i) => (
                 <div className="idle-entry" key={i}>
-                  <span className="dot" style={{ color: entry.type === 'drop' ? '#7a3fb0' : entry.type === 'kill' ? 'var(--forest-deep)' : 'var(--ink-soft)' }}>◆</span>
+                  <span
+                    className="dot"
+                    style={{
+                      color:
+                        entry.type === 'drop'
+                          ? '#7a3fb0'
+                          : entry.type === 'kill'
+                            ? 'var(--forest-deep)'
+                            : 'var(--ink-soft)',
+                    }}
+                  >
+                    ◆
+                  </span>
                   <span>{entry.text}</span>
                 </div>
               ))
             ) : (
-              <div className="sb-val muted" style={{ fontSize: 13 }}>Waiting...</div>
+              <div className="sb-val muted" style={{ fontSize: 13 }}>
+                Waiting...
+              </div>
             )}
           </div>
         ) : (
@@ -334,7 +433,9 @@ function IdleSidebar() {
 function Section({ title, children }) {
   return (
     <div className="fsec">
-      <div className="t-label" style={{ marginBottom: 10 }}>{title}</div>
+      <div className="t-label" style={{ marginBottom: 10 }}>
+        {title}
+      </div>
       {children}
     </div>
   )
