@@ -7,18 +7,32 @@
 // Couleur par type de dégât (flash élémentaire teinté).
 export const ELEMENT_COLORS = {
   physical: '#e8d8b0', // acier / neutre
-  poison: '#86c544',   // vert
-  fire: '#ff7a33',     // orange
-  lightning: '#ffd24a',// jaune
-  true: '#c79cff',     // violet (dégâts d'âme — Soul Rend)
+  poison: '#86c544', // vert
+  fire: '#ff7a33', // orange
+  lightning: '#ffd24a', // jaune
+  true: '#c79cff', // violet (dégâts d'âme — Soul Rend, en réalité typé `magical`)
   ice: '#7ec8ff',
   holy: '#ffe9a8',
   dark: '#a060c0',
   arcane: '#7aa2ff',
+  // ANIM03 — types réellement utilisés par les skills (`magical` : 2 skills dont Soul Rend ;
+  // `percentage` : skills proportionnels) — sans ces entrées le rendu retombait sur physique/mêlée.
+  magical: '#b388ff', // violet arcane
+  percentage: '#e06b8b', // rose/crimson (effets proportionnels)
 }
 
 // Les éléments « à distance » déclenchent un projectile ; les autres, une frappe au corps-à-corps.
-const RANGED_ELEMENTS = new Set(['fire', 'lightning', 'true', 'ice', 'arcane', 'holy', 'dark'])
+const RANGED_ELEMENTS = new Set([
+  'fire',
+  'lightning',
+  'true',
+  'ice',
+  'arcane',
+  'holy',
+  'dark',
+  'magical', // ANIM03
+  'percentage', // ANIM03
+])
 
 /**
  * Décrit le rendu visuel d'un skill.

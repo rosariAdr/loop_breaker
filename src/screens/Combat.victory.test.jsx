@@ -32,15 +32,24 @@ afterEach(() => {
 // Helpers ───────────────────────────────────────────────────────────────────
 function makeEnemy(over = {}) {
   return {
-    id: 'ashwood_wolf_0', monsterId: 'ashwood_wolf', name: 'Test Wolf',
-    stats: { hp: 80, atk: 5, def: 4, spd: 10 }, currentHp: 80,
-    rank: 'common', expReward: 15, ...over,
+    id: 'ashwood_wolf_0',
+    monsterId: 'ashwood_wolf',
+    name: 'Test Wolf',
+    stats: { hp: 80, atk: 5, def: 4, spd: 10 },
+    currentHp: 80,
+    rank: 'common',
+    expReward: 15,
+    ...over,
   }
 }
 
 function setHero(over = {}) {
   useGameStore.setState((s) => ({
-    hero: { ...s.hero, stats: { ...s.hero.stats, hp: 500, maxHp: 500, ...over.stats }, ...over.hero },
+    hero: {
+      ...s.hero,
+      stats: { ...s.hero.stats, hp: 500, maxHp: 500, ...over.stats },
+      ...over.hero,
+    },
   }))
 }
 
@@ -48,8 +57,12 @@ function setHero(over = {}) {
 async function attackRound() {
   const btn = screen.queryByText(/Basic Attack/i)
   if (!btn) return false
-  await act(async () => { btn.click() })
-  await act(async () => { vi.advanceTimersByTime(2500) })
+  await act(async () => {
+    btn.click()
+  })
+  await act(async () => {
+    vi.advanceTimersByTime(2500)
+  })
   return true
 }
 
@@ -66,7 +79,9 @@ async function fightToVictory(maxRounds = 8) {
 describe('CMB-WIN-FIX — la victoire mène TOUJOURS au ResultPanel', () => {
   it('victoire en 1 coup (one-shot) → bouton « Continue »', async () => {
     setHero({ stats: { strength: 999 } })
-    useGameStore.getState().startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
     render(<Combat />)
     await act(async () => {
       screen.getByText(/Basic Attack/i).click()
@@ -77,7 +92,9 @@ describe('CMB-WIN-FIX — la victoire mène TOUJOURS au ResultPanel', () => {
 
   it('victoire MULTI-TOURS (ennemi survit plusieurs coups) → ResultPanel', async () => {
     setHero({ stats: { strength: 30 } })
-    useGameStore.getState().startCombat([makeEnemy({ stats: { hp: 80, atk: 5, def: 4, spd: 10 }, currentHp: 80 })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 80, atk: 5, def: 4, spd: 10 }, currentHp: 80 })])
     render(<Combat />)
     expect(await fightToVictory()).toBe(true)
   })
@@ -86,7 +103,12 @@ describe('CMB-WIN-FIX — la victoire mène TOUJOURS au ResultPanel', () => {
     setHero({ stats: { strength: 999 } })
     useGameStore.getState().startCombat([
       makeEnemy({ id: 'w0', stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 }),
-      makeEnemy({ id: 'w1', name: 'Test Wolf 2', stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 }),
+      makeEnemy({
+        id: 'w1',
+        name: 'Test Wolf 2',
+        stats: { hp: 1, atk: 5, def: 0, spd: 10 },
+        currentHp: 1,
+      }),
     ])
     render(<Combat />)
     expect(await fightToVictory()).toBe(true)
@@ -94,7 +116,9 @@ describe('CMB-WIN-FIX — la victoire mène TOUJOURS au ResultPanel', () => {
 
   it('victoire AVEC divinité (sylvara) → ResultPanel', async () => {
     setHero({ stats: { strength: 999 }, hero: { deity: 'sylvara' } })
-    useGameStore.getState().startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
     render(<Combat />)
     await act(async () => {
       screen.getByText(/Basic Attack/i).click()
@@ -108,10 +132,14 @@ describe('CMB-WIN-FIX — la victoire mène TOUJOURS au ResultPanel', () => {
       stats: { strength: 999, mana: 100, maxMana: 100 },
       hero: { activeSkills: [{ skillId: 'power_strike', level: 1, xp: 0, currentCooldown: 0 }] },
     })
-    useGameStore.getState().startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
     render(<Combat />)
     // Onglet Skills → bouton Power Strike
-    await act(async () => { screen.getByText(/Skills/i).click() })
+    await act(async () => {
+      screen.getByText(/Skills/i).click()
+    })
     const skillBtn = screen.getByText(/Power Strike/i)
     await act(async () => {
       skillBtn.click()
@@ -125,10 +153,16 @@ describe('CMB-WIN-FIX — la victoire mène TOUJOURS au ResultPanel', () => {
     // Simule un état corrompu : recordKill lève une exception (comme une save du joueur
     // dont un champ déclenchait un throw au milieu de la distribution des récompenses).
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    useGameStore.setState({ recordKill: () => { throw new Error('reward boom (état corrompu simulé)') } })
+    useGameStore.setState({
+      recordKill: () => {
+        throw new Error('reward boom (état corrompu simulé)')
+      },
+    })
 
     setHero({ stats: { strength: 999 } })
-    useGameStore.getState().startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
     render(<Combat />)
     await act(async () => {
       screen.getByText(/Basic Attack/i).click()
@@ -144,10 +178,16 @@ describe('CMB-WIN-FIX — la victoire mène TOUJOURS au ResultPanel', () => {
 
   it('RÉGRESSION : un throw dans une récompense ne laisse jamais le tour « player » actif', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    useGameStore.setState({ recordKill: () => { throw new Error('boom') } })
+    useGameStore.setState({
+      recordKill: () => {
+        throw new Error('boom')
+      },
+    })
 
     setHero({ stats: { strength: 999 } })
-    useGameStore.getState().startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
     render(<Combat />)
     await act(async () => {
       screen.getByText(/Basic Attack/i).click()
@@ -166,13 +206,17 @@ describe('CMB-WIN — retour à zone_view après victoire', () => {
       world: { ...s.world, currentZone: 'ashenvale', currentHuntingSpot: 'ashenvale_forest' },
       hero: { ...s.hero, stats: { ...s.hero.stats, strength: 999, hp: 500, maxHp: 500 } },
     }))
-    useGameStore.getState().startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
     render(<Combat />)
     await act(async () => {
       screen.getByText(/Basic Attack/i).click()
       vi.advanceTimersByTime(600)
     })
-    await act(async () => { screen.getByText(/Continue/i).click() })
+    await act(async () => {
+      screen.getByText(/Continue/i).click()
+    })
     expect(useGameStore.getState().currentScreen).toBe('zone_view')
   })
 })

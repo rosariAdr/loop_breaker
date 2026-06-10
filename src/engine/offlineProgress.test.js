@@ -7,9 +7,7 @@ const MONSTER = {
   baseStats: { hp: 40, atk: 8, def: 4 },
   goldReward: { min: 4, max: 8 },
   expReward: 10,
-  resourceDrops: [
-    { resourceId: 'wolf_pelt', chance: 0.5, qty: { min: 1, max: 3 } },
-  ],
+  resourceDrops: [{ resourceId: 'wolf_pelt', chance: 0.5, qty: { min: 1, max: 3 } }],
 }
 
 describe('IDLE-OFF — elapsedIdleTicks', () => {
@@ -51,7 +49,17 @@ describe('IDLE-OFF — computeOfflineGains', () => {
     expect(high.resources.wolf_pelt).toBeGreaterThan(low.resources.wolf_pelt)
   })
   it('0 gains pour 0 tick ou monstre absent', () => {
-    expect(computeOfflineGains({ monster: MONSTER, ticks: 0 })).toEqual({ kills: 0, gold: 0, xp: 0, resources: {} })
-    expect(computeOfflineGains({ monster: null, ticks: 100 })).toEqual({ kills: 0, gold: 0, xp: 0, resources: {} })
+    expect(computeOfflineGains({ monster: MONSTER, ticks: 0 })).toEqual({
+      kills: 0,
+      gold: 0,
+      xp: 0,
+      resources: {},
+    })
+    expect(computeOfflineGains({ monster: null, ticks: 100 })).toEqual({
+      kills: 0,
+      gold: 0,
+      xp: 0,
+      resources: {},
+    })
   })
 })

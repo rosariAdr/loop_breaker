@@ -13,9 +13,11 @@ export function ArtSlot({ caption, src, w, h, round, glow, style, className = ''
       className={`art-slot ${round ? 'round' : ''} ${glow ? 'glow-gold' : ''} ${className}`}
       style={{ width: w, height: h, ...style }}
     >
-      {showImg
-        ? <img src={src} alt="" draggable={false} onError={() => setFailedSrc(src)} />
-        : <span className="as-cap">{caption}</span>}
+      {showImg ? (
+        <img src={src} alt="" draggable={false} onError={() => setFailedSrc(src)} />
+      ) : (
+        <span className="as-cap">{caption}</span>
+      )}
     </div>
   )
 }
@@ -25,7 +27,17 @@ export function ArtSlot({ caption, src, w, h, round, glow, style, className = ''
 // WM-AVATAR — walkFps 14 → 28 : pendant un voyage la POSITION glisse à la même vitesse
 // (transition CSS 1.8s, cf. TRV04) mais le cycle de marche défile 2× plus vite → le perso
 // fait visiblement ~2× plus de pas sur le même trajet (sans aller plus vite sur la carte).
-export function HeroAvatar({ x, y, name = 'Kael', src, idleFrames = 18, fps = 9, walking = false, walkFrames = 24, walkFps = 28 }) {
+export function HeroAvatar({
+  x,
+  y,
+  name = 'Kael',
+  src,
+  idleFrames = 18,
+  fps = 9,
+  walking = false,
+  walkFrames = 24,
+  walkFps = 28,
+}) {
   const animated = idleFrames > 1
   const [frame, setFrame] = useState(0)
 
@@ -40,18 +52,24 @@ export function HeroAvatar({ x, y, name = 'Kael', src, idleFrames = 18, fps = 9,
       const im = new Image()
       im.src = `/sprites/hero/${dir}/${String(i).padStart(2, '0')}.png`
     }
-    const id = setInterval(() => setFrame(f => (f + 1) % frames), Math.round(1000 / animFps))
+    const id = setInterval(() => setFrame((f) => (f + 1) % frames), Math.round(1000 / animFps))
     return () => clearInterval(id)
   }, [animated, dir, frames, animFps])
 
-  const frameSrc = animated ? `/sprites/hero/${dir}/${String(frame % frames).padStart(2, '0')}.png` : src
+  const frameSrc = animated
+    ? `/sprites/hero/${dir}/${String(frame % frames).padStart(2, '0')}.png`
+    : src
 
   return (
     <div className="hero-avatar" style={{ left: x, top: y }}>
       <div className="hero-sprite">
-        {frameSrc
-          ? <img src={frameSrc} alt="" draggable={false} />
-          : <span className="as-cap" style={{ fontSize: 9 }}>hero</span>}
+        {frameSrc ? (
+          <img src={frameSrc} alt="" draggable={false} />
+        ) : (
+          <span className="as-cap" style={{ fontSize: 9 }}>
+            hero
+          </span>
+        )}
       </div>
       <div className="hero-glow" />
       <div className="hero-name">{name}</div>
@@ -65,7 +83,10 @@ export function Trail({ from, to, danger, bend = 0 }) {
   const midy = (from[1] + to[1]) / 2 - Math.abs(bend) * 0.4
   const d = `M ${from[0]} ${from[1]} Q ${midx} ${midy} ${to[0]} ${to[1]}`
   return (
-    <svg className={`trail ${danger ? 'danger' : ''}`} style={{ inset: 0, width: '100%', height: '100%' }}>
+    <svg
+      className={`trail ${danger ? 'danger' : ''}`}
+      style={{ inset: 0, width: '100%', height: '100%' }}
+    >
       <path d={d} />
     </svg>
   )
@@ -78,18 +99,26 @@ export function MapNode({ node, onClick, onHover }) {
     <div
       className={`node size-${size} ${locked ? 'locked' : ''} ${dungeon ? 'dungeon' : ''}`}
       style={{ left: x, top: y }}
-      onClick={() => { if (!locked && onClick) onClick(node) }}
+      onClick={() => {
+        if (!locked && onClick) onClick(node)
+      }}
       onMouseEnter={() => onHover && onHover(node, true)}
       onMouseLeave={() => onHover && onHover(node, false)}
     >
       <div className={`node-medallion ${glow ? 'glow-' + glow : ''}`}>
-        {dungeon
-          ? <span className="q">?</span>
-          : <ArtSlot caption={art} src={artSrc} w="76%" h="76%" round={size !== 'major'} />}
+        {dungeon ? (
+          <span className="q">?</span>
+        ) : (
+          <ArtSlot caption={art} src={artSrc} w="76%" h="76%" round={size !== 'major'} />
+        )}
         {locked && <span className="lock-badge">🔒</span>}
       </div>
       <div className="node-name">{name}</div>
-      {tag && <div className="node-tag" style={{ color: tag.color }}>{tag.text}</div>}
+      {tag && (
+        <div className="node-tag" style={{ color: tag.color }}>
+          {tag.text}
+        </div>
+      )}
     </div>
   )
 }
@@ -99,13 +128,25 @@ export function ParchmentFrame({ variant = 'compass' }) {
   return (
     <>
       <div className={`frame-border frame-${variant}`} />
-      {variant === 'compass' && ['tl', 'tr', 'bl', 'br'].map(c => (
-        <svg key={c} className={`frame-corner ${c}`} viewBox="0 0 54 54" fill="none">
-          <path d="M4 50 Q4 14 14 8 Q26 2 40 4" stroke="currentColor" strokeWidth="2" fill="none" />
-          <path d="M10 50 Q10 20 20 14 Q30 10 42 12" stroke="currentColor" strokeWidth="1.4" fill="none" opacity=".6" />
-          <circle cx="44" cy="8" r="3.4" fill="currentColor" />
-        </svg>
-      ))}
+      {variant === 'compass' &&
+        ['tl', 'tr', 'bl', 'br'].map((c) => (
+          <svg key={c} className={`frame-corner ${c}`} viewBox="0 0 54 54" fill="none">
+            <path
+              d="M4 50 Q4 14 14 8 Q26 2 40 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+            />
+            <path
+              d="M10 50 Q10 20 20 14 Q30 10 42 12"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              fill="none"
+              opacity=".6"
+            />
+            <circle cx="44" cy="8" r="3.4" fill="currentColor" />
+          </svg>
+        ))}
     </>
   )
 }
@@ -120,28 +161,87 @@ function Field({ k, children, cls }) {
   )
 }
 
-export function Sidebar({ style = 'scroll', location, zone, actions = [], idleLog, deity, demonLord, tokens, nextAchievement }) {
+export function Sidebar({
+  style = 'scroll',
+  location,
+  zone,
+  actions = [],
+  idleLog,
+  deity,
+  demonLord,
+  tokens,
+  nextAchievement,
+}) {
   return (
     <div className="sidebar">
       <div className={`scroll-panel style-${style}`}>
-        <Field k="Location">{location} <span style={{ color: 'var(--ink-soft)' }}>· {zone}</span></Field>
-        <Field k="Deity" cls={deity ? '' : 'muted'}>{deity || 'No deity chosen'}</Field>
-        <Field k="Demon Lord" cls="danger">⚡ {demonLord}</Field>
+        <Field k="Location">
+          {location} <span style={{ color: 'var(--ink-soft)' }}>· {zone}</span>
+        </Field>
+        <Field k="Deity" cls={deity ? '' : 'muted'}>
+          {deity || 'No deity chosen'}
+        </Field>
+        <Field k="Demon Lord" cls="danger">
+          ⚡ {demonLord}
+        </Field>
         <Field k="Reputation">🪙 {tokens} tokens</Field>
 
         {/* UI-ACHIEVE-PREVIEW — accomplissement le plus proche */}
         {nextAchievement && (
-          <div data-testid="next-achievement" style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: 'rgba(201,169,110,.12)', border: '1px solid var(--parchment-shadow, #3a2818)' }}>
-            <div className="t-label" style={{ marginBottom: 3 }}>🏆 Next Achievement</div>
-            <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, color: 'var(--ink)', fontSize: 13 }}>{nextAchievement.name}</div>
-            <div style={{ color: 'var(--ink-soft)', fontSize: 11, marginBottom: 4 }}>{nextAchievement.desc}</div>
-            <div role="progressbar" aria-label={`Achievement: ${nextAchievement.name}`} aria-valuenow={nextAchievement.current} aria-valuemin={0} aria-valuemax={nextAchievement.target}
-              style={{ height: 5, borderRadius: 3, background: 'rgba(0,0,0,.25)', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, nextAchievement.pct * 100)}%`, height: '100%', background: 'var(--gold, #c0a060)' }} />
+          <div
+            data-testid="next-achievement"
+            style={{
+              marginTop: 8,
+              padding: '8px 10px',
+              borderRadius: 8,
+              background: 'rgba(201,169,110,.12)',
+              border: '1px solid var(--parchment-shadow, #3a2818)',
+            }}
+          >
+            <div className="t-label" style={{ marginBottom: 3 }}>
+              🏆 Next Achievement
             </div>
-            <div style={{ color: 'var(--ink-soft)', fontSize: 10, marginTop: 2, textAlign: 'right' }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-head)',
+                fontWeight: 700,
+                color: 'var(--ink)',
+                fontSize: 13,
+              }}
+            >
+              {nextAchievement.name}
+            </div>
+            <div style={{ color: 'var(--ink-soft)', fontSize: 11, marginBottom: 4 }}>
+              {nextAchievement.desc}
+            </div>
+            <div
+              role="progressbar"
+              aria-label={`Achievement: ${nextAchievement.name}`}
+              aria-valuenow={nextAchievement.current}
+              aria-valuemin={0}
+              aria-valuemax={nextAchievement.target}
+              style={{
+                height: 5,
+                borderRadius: 3,
+                background: 'rgba(0,0,0,.25)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: `${Math.min(100, nextAchievement.pct * 100)}%`,
+                  height: '100%',
+                  background: 'var(--gold, #c0a060)',
+                }}
+              />
+            </div>
+            <div
+              style={{ color: 'var(--ink-soft)', fontSize: 10, marginTop: 2, textAlign: 'right' }}
+            >
               {nextAchievement.current}/{nextAchievement.target}
-              {nextAchievement.reward?.stat ? ` · +${nextAchievement.reward.stat.amount} ${nextAchievement.reward.stat.name}` : ''}
+              {nextAchievement.reward?.stat
+                ? ` · +${nextAchievement.reward.stat.amount} ${nextAchievement.reward.stat.name}`
+                : ''}
             </div>
           </div>
         )}
@@ -149,13 +249,21 @@ export function Sidebar({ style = 'scroll', location, zone, actions = [], idleLo
         {idleLog && (
           <>
             <div className="sb-divider" />
-            <div className="t-label" style={{ marginBottom: 8 }}>Idle Log</div>
+            <div className="t-label" style={{ marginBottom: 8 }}>
+              Idle Log
+            </div>
             <div className="idle-log">
-              {idleLog.length === 0 && <div className="sb-val muted" style={{ fontSize: 14 }}>None active</div>}
+              {idleLog.length === 0 && (
+                <div className="sb-val muted" style={{ fontSize: 14 }}>
+                  None active
+                </div>
+              )}
               {idleLog.map((e, i) => (
                 <div className="idle-entry" key={i}>
                   <span className="dot">◆</span>
-                  <span>{e.text} {e.gain && <span className="gain">{e.gain}</span>}</span>
+                  <span>
+                    {e.text} {e.gain && <span className="gain">{e.gain}</span>}
+                  </span>
                 </div>
               ))}
             </div>
@@ -166,8 +274,15 @@ export function Sidebar({ style = 'scroll', location, zone, actions = [], idleLo
         <div className="sb-actions">
           <div className="t-label">Actions</div>
           {actions.map((a, i) => (
-            <button key={i} className={`pbtn wide ${a.primary ? 'primary' : ''}`} onClick={a.onClick} disabled={a.disabled} title={a.hint || ''}>
-              <span className="pbtn-ico">{a.ico}</span>{a.label}
+            <button
+              key={i}
+              className={`pbtn wide ${a.primary ? 'primary' : ''}`}
+              onClick={a.onClick}
+              disabled={a.disabled}
+              title={a.hint || ''}
+            >
+              <span className="pbtn-ico">{a.ico}</span>
+              {a.label}
             </button>
           ))}
         </div>

@@ -49,11 +49,11 @@ describe('Scénario 1 — Premier run complet', () => {
     store().completeQuest('first_blood')
     expect(store().hero.inventory.gold).toBe(goldBefore + 50)
     expect(store().hero.reputationTokens).toBe(tokensBefore + 1)
-    expect(store().hero.inventory.manaStones.some(s => s.skillId === 'counter_strike')).toBe(true)
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'counter_strike')).toBe(true)
 
     // 7. Équiper le skill récompense
     store().equipActiveSkill({ skillId: 'counter_strike', level: 1, xp: 0 })
-    expect(store().hero.activeSkills.some(s => s.skillId === 'counter_strike')).toBe(true)
+    expect(store().hero.activeSkills.some((s) => s.skillId === 'counter_strike')).toBe(true)
 
     // 8. Gain suffisant pour level 2
     store().gainExp(100)
@@ -83,7 +83,7 @@ describe('Scénario 1 — Premier run complet', () => {
     store().applyTransmigration({ extraSkills: [] })
     expect(store().hero.runNumber).toBe(2)
     expect(store().hero.deathCount).toBe(1)
-    expect(store().hero.activeSkills.some(s => s.skillId === 'counter_strike')).toBe(true)
+    expect(store().hero.activeSkills.some((s) => s.skillId === 'counter_strike')).toBe(true)
     // TRM01 — héritage = max(base, round(stat_du_run × 0.4)). Le run 1 (mort Lv1) n'a pas fait
     // monter la force → plancher = base (10). Plus de bonus +10% systématique.
     expect(store().hero.stats.strength).toBeGreaterThanOrEqual(10)
@@ -100,7 +100,7 @@ describe('Scénario 2 — Idle grinding', () => {
     const store = useGameStore.getState
 
     // Débloquer l'idle sur ashwood_wolf
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: {
         ...state.world,
         monsterKillCounts: { ashwood_wolf: 5 },
@@ -130,7 +130,7 @@ describe('Scénario 2 — Idle grinding', () => {
 
   it("désactive automatiquement l'idle quand HP < 20%", () => {
     const store = useGameStore.getState
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       world: {
         ...state.world,
         monsterKillCounts: { stone_golem: 5 },
@@ -207,10 +207,10 @@ describe('Scénario 4 — Divinité : acceptation et utilisabilité du divine sk
     const hero = store().hero
     expect(hero.deity).toBe('ignareth')
     expect(hero.divineSkill.skillId).toBe('inferno_strike')
-    expect(hero.activeSkills.some(s => s.skillId === 'inferno_strike')).toBe(true)
+    expect(hero.activeSkills.some((s) => s.skillId === 'inferno_strike')).toBe(true)
 
     // Le skill doit être utilisable (dans l'ActionPanel)
-    const activeSkill = hero.activeSkills.find(s => s.skillId === 'inferno_strike')
+    const activeSkill = hero.activeSkills.find((s) => s.skillId === 'inferno_strike')
     const skillWithCd = { ...activeSkill, currentCooldown: 0 }
     expect(canUseSkill(skillWithCd, hero.stats)).toBe(true)
   })
@@ -239,7 +239,7 @@ describe('Scénario 5 — Journée complète', () => {
     const store = useGameStore.getState
 
     // Hero un peu abîmé
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, hp: 30, mana: 10 } },
     }))
 
@@ -293,7 +293,7 @@ describe('Scénario 6 — Persistance entre sessions', () => {
     expect(h.heroNamed).toBe(true)
     expect(h.inventory.gold).toBe(320)
     expect(h.level).toBe(2)
-    expect(h.activeSkills.some(s => s.skillId === 'savage_bite')).toBe(true)
+    expect(h.activeSkills.some((s) => s.skillId === 'savage_bite')).toBe(true)
     expect(w.activeQuests).toContain('first_blood')
     expect(w.monsterKillCounts.ashwood_wolf).toBe(1)
   })
@@ -329,7 +329,7 @@ describe('Scénario 7 — Combat simulé', () => {
     // Victoire : drops + xp
     const drops = calcDrops(wolf.monsterId, store().hero.stats.chance)
     store().addGold(drops.gold)
-    drops.resources.forEach(r => store().addResource(r.id, r.qty))
+    drops.resources.forEach((r) => store().addResource(r.id, r.qty))
     store().recordKill(wolf.monsterId)
     store().gainExp(calcExpGain([wolf]))
     store().endCombat('victory')
@@ -397,8 +397,8 @@ describe('Scénario 9 — Mort en combat avec cause (T01)', () => {
     const store = useGameStore.getState
     const golem = buildEnemy('stone_golem', 'crumbled_ruins', 1)
 
-    useGameStore.setState(state => ({
-      hero: { ...state.hero, stats: { ...state.hero.stats, hp: 1 } }
+    useGameStore.setState((state) => ({
+      hero: { ...state.hero, stats: { ...state.hero.stats, hp: 1 } },
     }))
     store().startCombat([golem])
 
@@ -448,8 +448,24 @@ describe('Scénario 10 — Équipement', () => {
 
   it("Équiper un item dans un slot déjà occupé renvoie l'ancien dans l'inventaire", () => {
     const store = useGameStore.getState
-    const item1 = { instanceId: 'a', templateId: 't', name: 'Sword A', slot: 'weapon', rarity: 'common', stats: {}, sellPrice: 10 }
-    const item2 = { instanceId: 'b', templateId: 't', name: 'Sword B', slot: 'weapon', rarity: 'rare', stats: {}, sellPrice: 20 }
+    const item1 = {
+      instanceId: 'a',
+      templateId: 't',
+      name: 'Sword A',
+      slot: 'weapon',
+      rarity: 'common',
+      stats: {},
+      sellPrice: 10,
+    }
+    const item2 = {
+      instanceId: 'b',
+      templateId: 't',
+      name: 'Sword B',
+      slot: 'weapon',
+      rarity: 'rare',
+      stats: {},
+      sellPrice: 20,
+    }
 
     store().addEquipmentToInventory(item1)
     store().addEquipmentToInventory(item2)
@@ -457,7 +473,7 @@ describe('Scénario 10 — Équipement', () => {
     store().equipItem('b')
 
     expect(store().hero.equipped.weapon.instanceId).toBe('b')
-    expect(store().hero.inventory.equipment.some(e => e.instanceId === 'a')).toBe(true)
+    expect(store().hero.inventory.equipment.some((e) => e.instanceId === 'a')).toBe(true)
   })
 })
 
@@ -477,7 +493,7 @@ describe('Scénario 11 — 3 runs successifs avec héritage', () => {
     store().applyTransmigration({ extraSkills: [] })
 
     expect(store().hero.runNumber).toBe(2)
-    expect(store().hero.activeSkills.some(s => s.skillId === 'savage_bite')).toBe(true)
+    expect(store().hero.activeSkills.some((s) => s.skillId === 'savage_bite')).toBe(true)
 
     // Run 2 : ajoute un autre skill, meurt, hérite de celui-là
     store().addSkillToInventory({ skillId: 'putrid_slam', level: 1, xp: 0 })
@@ -488,7 +504,7 @@ describe('Scénario 11 — 3 runs successifs avec héritage', () => {
 
     expect(store().hero.runNumber).toBe(3)
     expect(store().hero.deathCount).toBe(2)
-    expect(store().hero.activeSkills.some(s => s.skillId === 'putrid_slam')).toBe(true)
+    expect(store().hero.activeSkills.some((s) => s.skillId === 'putrid_slam')).toBe(true)
   })
 })
 
@@ -504,8 +520,11 @@ describe('Scénario 12 — Boss run complet (Crypt Keeper)', () => {
     expect(store().world.activeQuests).toContain('silence_the_crypt')
 
     // Un héros un peu boosté pour le boss
-    useGameStore.setState(state => ({
-      hero: { ...state.hero, stats: { ...state.hero.stats, strength: 40, hp: 500, maxHp: 500, def: 20 } },
+    useGameStore.setState((state) => ({
+      hero: {
+        ...state.hero,
+        stats: { ...state.hero.stats, strength: 40, hp: 500, maxHp: 500, def: 20 },
+      },
     }))
 
     // Combat simulé contre le Crypt Keeper
@@ -538,7 +557,7 @@ describe('Scénario 12 — Boss run complet (Crypt Keeper)', () => {
     // Récompenses de quête empilées en plus du loot combat
     expect(store().hero.inventory.gold).toBe(goldBefore + 200)
     expect(store().hero.reputationTokens).toBeGreaterThanOrEqual(3)
-    expect(store().hero.inventory.manaStones.some(s => s.skillId === 'soul_crush')).toBe(true)
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(true)
     // Boss XP substantielle → level up garanti (boss=300 XP, expToNext lv1=100)
     expect(store().hero.level).toBeGreaterThan(1)
   })
@@ -552,9 +571,9 @@ describe('Scénario 13 — 3 NPCs en parallèle', () => {
     const store = useGameStore.getState
 
     // Accept 3 quêtes d'NPCs différents
-    store().startQuest('first_blood')          // sir_aldric
-    store().startQuest('bog_purge')            // greywatch_elder
-    store().startQuest('silence_the_crypt')    // ironhaven_captain
+    store().startQuest('first_blood') // sir_aldric
+    store().startQuest('bog_purge') // greywatch_elder
+    store().startQuest('silence_the_crypt') // ironhaven_captain
     expect(store().world.activeQuests).toHaveLength(3)
 
     // Progresser sur toutes en parallèle
@@ -585,7 +604,7 @@ describe('Scénario 13 — 3 NPCs en parallèle', () => {
 // Note : les states combat sont locaux à Combat.jsx ; on teste que les actions
 // store associées (gainExp, addGold, recordKill) sont bien appelées après coup.
 describe('Scénario 14 — Combat complet avec tracking implicite', () => {
-  it("après victoire, les effets attendus sont en place", () => {
+  it('après victoire, les effets attendus sont en place', () => {
     const store = useGameStore.getState
     const wolf = buildEnemy('ashwood_wolf', 'ashenvale', 1)
     store().startCombat([wolf])
@@ -619,9 +638,9 @@ describe('BAL01 — Économie tokens (simulations)', () => {
     bonus_stat: 50,
   }
 
-  const cheapest = Math.min(...Object.values(COSTS))    // 5
+  const cheapest = Math.min(...Object.values(COSTS)) // 5
 
-  it("un run RAPIDE (1 quête sir_aldric + 0 boss) → ≥ 1 token (au moins le starter_kit accessible)", () => {
+  it('un run RAPIDE (1 quête sir_aldric + 0 boss) → ≥ 1 token (au moins le starter_kit accessible)', () => {
     const store = useGameStore.getState
     store().startQuest('first_blood')
     for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
@@ -631,7 +650,7 @@ describe('BAL01 — Économie tokens (simulations)', () => {
     // 1 token < starter_kit (5) → on n'achète RIEN. Acceptable pour run flash.
   })
 
-  it("un run MOYEN (3 quêtes simples) → 4 tokens, peut acheter starter_kit", () => {
+  it('un run MOYEN (3 quêtes simples) → 4 tokens, peut acheter starter_kit', () => {
     const store = useGameStore.getState
     // Sir Aldric : 3 quêtes → 1+1+2 = 4 tokens
     store().startQuest('first_blood')
@@ -639,7 +658,7 @@ describe('BAL01 — Économie tokens (simulations)', () => {
     store().completeQuest('first_blood')
 
     store().startQuest('proof_of_worth')
-    useGameStore.setState(state => ({ hero: { ...state.hero, level: 3 } }))
+    useGameStore.setState((state) => ({ hero: { ...state.hero, level: 3 } }))
     store().completeQuest('proof_of_worth')
 
     store().startQuest('clear_the_marsh')
@@ -652,7 +671,7 @@ describe('BAL01 — Économie tokens (simulations)', () => {
     expect(tokens).toBeGreaterThanOrEqual(cheapest - 1)
   })
 
-  it("un run EXCELLENT (toutes quêtes communes + 1 boss) → ≥ 7 tokens (≥ 1 article moyen)", () => {
+  it('un run EXCELLENT (toutes quêtes communes + 1 boss) → ≥ 7 tokens (≥ 1 article moyen)', () => {
     const store = useGameStore.getState
     // 3 sir_aldric (4) + boss Crypt Keeper (3) + bog_purge (2) = 9 tokens
     store().startQuest('first_blood')
@@ -660,7 +679,7 @@ describe('BAL01 — Économie tokens (simulations)', () => {
     store().completeQuest('first_blood')
 
     store().startQuest('proof_of_worth')
-    useGameStore.setState(state => ({ hero: { ...state.hero, level: 3 } }))
+    useGameStore.setState((state) => ({ hero: { ...state.hero, level: 3 } }))
     store().completeQuest('proof_of_worth')
 
     store().startQuest('clear_the_marsh')
@@ -672,38 +691,42 @@ describe('BAL01 — Économie tokens (simulations)', () => {
     store().completeQuest('silence_the_crypt')
 
     const tokens = store().hero.reputationTokens
-    expect(tokens).toBe(7)  // 1+1+2+3 = 7
+    expect(tokens).toBe(7) // 1+1+2+3 = 7
     // À 7 tokens : peut acheter starter_kit (5) + un reliquat 2 (insuffisant pour rien d'autre)
     expect(tokens).toBeGreaterThanOrEqual(COSTS.starter_kit)
     // Peut PAS acheter rank_restore (25) ni skill_levelup (12)
     expect(tokens).toBeLessThan(COSTS.skill_levelup)
   })
 
-  it("un run LÉGENDAIRE (tout + Malachar) → ≥ 18 tokens (≥ 2-3 articles)", () => {
+  it('un run LÉGENDAIRE (tout + Malachar) → ≥ 18 tokens (≥ 2-3 articles)', () => {
     const store = useGameStore.getState
     // All 8 quêtes + boss Crypt + Malachar = 1+1+2+3+5+10+2+3 = 27 tokens
     const allQuests = [
       ['first_blood', 'ashwood_wolf', 5],
-      ['proof_of_worth', null, null],   // level quest
+      ['proof_of_worth', null, null], // level quest
       ['clear_the_marsh', 'marsh_serpent', 3],
       ['silence_the_crypt', 'hollow_crypt_boss', 1],
       ['storm_the_citadel', 'forsaken_citadel_boss', 1],
       ['end_the_demon', 'malachar', 1],
       ['bog_purge', 'mire_slime', 4],
-      ['ruins_cleanse', null, null],  // ce quest a 2 objectives, on les complete tous deux
+      ['ruins_cleanse', null, null], // ce quest a 2 objectives, on les complete tous deux
     ]
     for (const [questId, monster, count] of allQuests) {
       store().startQuest(questId)
       if (monster) for (let i = 0; i < count; i++) store().recordKill(monster)
     }
     // proof_of_worth = level 3
-    useGameStore.setState(state => ({ hero: { ...state.hero, level: 3 } }))
+    useGameStore.setState((state) => ({ hero: { ...state.hero, level: 3 } }))
     // ruins_cleanse a 2 objectives (specter + knight)
     for (let i = 0; i < 3; i++) store().recordKill('ruin_specter')
     for (let i = 0; i < 2; i++) store().recordKill('hollow_knight')
 
     for (const [questId] of allQuests) {
-      try { store().completeQuest(questId) } catch { /* skip si pas complet */ }
+      try {
+        store().completeQuest(questId)
+      } catch {
+        /* skip si pas complet */
+      }
     }
     const tokens = store().hero.reputationTokens
     expect(tokens).toBeGreaterThanOrEqual(18)
@@ -711,12 +734,14 @@ describe('BAL01 — Économie tokens (simulations)', () => {
     // Mais starter + oracle + 2x skill_levelup = 5+8+12+12 = 37 → 18 ne couvre PAS
     // Cible : 18+ tokens couvre 1-2 articles utiles (bonus_stat ou bonus_skill = 50, hors atteinte)
     // ⇒ ratio cohérent : LÉGENDAIRE achète 2-3 petits articles, pas 1 gros
-    expect(tokens).toBeGreaterThanOrEqual(COSTS.starter_kit + COSTS.divine_oracle + COSTS.skill_levelup)
+    expect(tokens).toBeGreaterThanOrEqual(
+      COSTS.starter_kit + COSTS.divine_oracle + COSTS.skill_levelup,
+    )
   })
 
-  it("BAL01 — vérification que CATALOG utilise bien les coûts révisés", async () => {
+  it('BAL01 — vérification que CATALOG utilise bien les coûts révisés', async () => {
     const { CATALOG } = await import('./screens/GodsShop')
-    const byId = Object.fromEntries(CATALOG.map(item => [item.id, item.cost]))
+    const byId = Object.fromEntries(CATALOG.map((item) => [item.id, item.cost]))
     expect(byId.starter_kit).toBe(5)
     expect(byId.divine_oracle).toBe(8)
     expect(byId.skill_levelup).toBe(12)
@@ -730,8 +755,8 @@ describe('BAL01 — Économie tokens (simulations)', () => {
 // Scénario 15 : robustesse aux inputs invalides
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Scénario 12 — Robustesse', () => {
-  it("processIdleTick ne crash pas avec un monstre idleTarget invalide", () => {
-    useGameStore.setState(state => ({
+  it('processIdleTick ne crash pas avec un monstre idleTarget invalide', () => {
+    useGameStore.setState((state) => ({
       world: { ...state.world, isIdleActive: true, idleTargetMonster: 'fake_monster_id' },
     }))
     expect(() => useGameStore.getState().processIdleTick()).not.toThrow()
@@ -743,9 +768,9 @@ describe('Scénario 12 — Robustesse', () => {
     expect(useGameStore.getState().hero.inventory.gold).toBe(before)
   })
 
-  it('equipActiveSkill d\'un skill absent de manaStones ne crash pas', () => {
+  it("equipActiveSkill d'un skill absent de manaStones ne crash pas", () => {
     expect(() =>
-      useGameStore.getState().equipActiveSkill({ skillId: 'ghost', level: 1, xp: 0 })
+      useGameStore.getState().equipActiveSkill({ skillId: 'ghost', level: 1, xp: 0 }),
     ).not.toThrow()
   })
 

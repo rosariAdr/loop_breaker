@@ -5,7 +5,10 @@ import { useGameStore } from './gameStore'
 const store = () => useGameStore.getState()
 
 describe('I08 — seuil de PV idle configurable', () => {
-  beforeEach(() => { store().resetGame(); localStorage.clear() })
+  beforeEach(() => {
+    store().resetGame()
+    localStorage.clear()
+  })
 
   it('valeur par défaut = 0.2', () => {
     expect(store().world.idleHpThreshold).toBe(0.2)

@@ -5,7 +5,7 @@
 // Boosts cumulés dans meta.permanentStatBoosts ; appliqués à chaque run.
 
 export const GLUTTONY_STATS = ['strength', 'agility', 'intelligence', 'def', 'chance']
-export const GLUTTONY_PROC_CHANCE = 0.10
+export const GLUTTONY_PROC_CHANCE = 0.1
 export const GLUTTONY_COOLDOWN_DAYS = 5
 
 /** Proc passif (10%). */
@@ -21,13 +21,13 @@ export function pickGluttonyStat(rng = Math.random) {
 /** Montant absorbé = 10% de la puissance (atk) du monstre, min 1. */
 export function gluttonyAbsorbAmount(monster) {
   const power = monster?.baseStats?.atk ?? 5
-  return Math.max(1, Math.round(power * 0.10))
+  return Math.max(1, Math.round(power * 0.1))
 }
 
 /** Gluttony prête si jamais utilisée ou cooldown écoulé. */
 export function isGluttonyReady(currentDay, lastUsedDay, cooldown = GLUTTONY_COOLDOWN_DAYS) {
   if (lastUsedDay == null) return true
-  return (currentDay - lastUsedDay) >= cooldown
+  return currentDay - lastUsedDay >= cooldown
 }
 
 /** Jours restants avant que Gluttony soit de nouveau prête (0 si prête). */
@@ -38,5 +38,5 @@ export function gluttonyDaysRemaining(currentDay, lastUsedDay, cooldown = GLUTTO
 
 /** Vrai si le héros a le passif Gluttony équipé. */
 export function hasGluttony(passiveSkills = []) {
-  return passiveSkills.some(s => s.skillId === 'gluttony')
+  return passiveSkills.some((s) => s.skillId === 'gluttony')
 }

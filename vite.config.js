@@ -8,5 +8,13 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
+    // DEVBP01 — seuil de couverture (vérifié via `npm run test:coverage`).
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      thresholds: {
+        lines: 80,
+      },
+    },
   },
 })

@@ -29,10 +29,14 @@ export function hitAccuracy(cursorPct, targetCenter, halfWidth) {
  */
 export function alchemyQuantity(tier) {
   switch (tier) {
-    case 'perfect': return 3
-    case 'good': return 2
-    case 'neutral': return 1
-    default: return 0
+    case 'perfect':
+      return 3
+    case 'good':
+      return 2
+    case 'neutral':
+      return 1
+    default:
+      return 0
   }
 }
 

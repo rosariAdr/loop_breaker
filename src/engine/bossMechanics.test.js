@@ -16,13 +16,13 @@ describe('BSS03 — getMalacharPhase', () => {
     expect(p.soulDrainPct).toBe(0)
   })
   it('phase 2 à ≤60% (Rage +50% ATK)', () => {
-    const p = getMalacharPhase(0.60)
+    const p = getMalacharPhase(0.6)
     expect(p.phase).toBe(2)
     expect(p.atkMult).toBe(1.5)
     expect(p.healImmune).toBe(true)
   })
   it('phase 3 à ≤30% (Soul Drain 15%)', () => {
-    const p = getMalacharPhase(0.30)
+    const p = getMalacharPhase(0.3)
     expect(p.phase).toBe(3)
     expect(p.soulDrainPct).toBeCloseTo(0.15)
     expect(p.atkMult).toBe(1.5)
@@ -56,7 +56,7 @@ describe('BSS02 — rollCursedStrike', () => {
     expect(rollCursedStrike(0.4, () => 0.9)).toBe(false)
   })
   it('CURSED_STRIKE_EFFECT réduit la STR de 20% sur 2 tours', () => {
-    expect(CURSED_STRIKE_EFFECT).toMatchObject({ type: 'atk_down', duration: 2, reduction: 0.20 })
+    expect(CURSED_STRIKE_EFFECT).toMatchObject({ type: 'atk_down', duration: 2, reduction: 0.2 })
   })
 })
 

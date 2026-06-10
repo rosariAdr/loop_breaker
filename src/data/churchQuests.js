@@ -29,7 +29,13 @@ export const CHURCH_QUESTS = {
     isChurchQuest: true,
     flavorText: '"A soul that cannot rest is a wound upon the world. Close it."',
     objectives: [
-      { id: 'kill_specters', type: 'kill', monsterId: 'ruin_specter', count: 3, label: 'Lay Ruin Specters to rest' },
+      {
+        id: 'kill_specters',
+        type: 'kill',
+        monsterId: 'ruin_specter',
+        count: 3,
+        label: 'Lay Ruin Specters to rest',
+      },
     ],
     reward: { reputationTokens: 2, consumables: { elixir_minor: 2 } },
   },
@@ -42,7 +48,13 @@ export const CHURCH_QUESTS = {
     isChurchQuest: true,
     flavorText: '"They came seeking blessing and found fangs. Make the road safe again."',
     objectives: [
-      { id: 'kill_serpents', type: 'kill', monsterId: 'marsh_serpent', count: 3, label: 'Slay Marsh Serpents' },
+      {
+        id: 'kill_serpents',
+        type: 'kill',
+        monsterId: 'marsh_serpent',
+        count: 3,
+        label: 'Slay Marsh Serpents',
+      },
     ],
     reward: { reputationTokens: 2, consumables: { hp_potion_medium: 2 } },
   },
@@ -55,7 +67,13 @@ export const CHURCH_QUESTS = {
     isChurchQuest: true,
     flavorText: '"Where faith fails, the wraith feeds. Restore the people\'s courage."',
     objectives: [
-      { id: 'kill_wraiths', type: 'kill', monsterId: 'briar_wraith', count: 3, label: 'Banish Briar Wraiths' },
+      {
+        id: 'kill_wraiths',
+        type: 'kill',
+        monsterId: 'briar_wraith',
+        count: 3,
+        label: 'Banish Briar Wraiths',
+      },
     ],
     reward: { reputationTokens: 2, consumables: { antidote_basic: 2, mana_potion_medium: 1 } },
   },
@@ -68,7 +86,13 @@ export const CHURCH_QUESTS = {
     isChurchQuest: true,
     flavorText: '"That shrine was ours once. Take it back, blow by blow."',
     objectives: [
-      { id: 'kill_knights', type: 'kill', monsterId: 'hollow_knight', count: 2, label: 'Destroy Hollow Knights' },
+      {
+        id: 'kill_knights',
+        type: 'kill',
+        monsterId: 'hollow_knight',
+        count: 2,
+        label: 'Destroy Hollow Knights',
+      },
     ],
     reward: { reputationTokens: 3, consumables: { mana_crystal: 1 } },
   },
@@ -81,7 +105,13 @@ export const CHURCH_QUESTS = {
     isChurchQuest: true,
     flavorText: '"Even a shepherd must sometimes raise the staff. Go."',
     objectives: [
-      { id: 'kill_wolves', type: 'kill', monsterId: 'ashwood_wolf', count: 5, label: 'Cull Ashwood Wolves' },
+      {
+        id: 'kill_wolves',
+        type: 'kill',
+        monsterId: 'ashwood_wolf',
+        count: 5,
+        label: 'Cull Ashwood Wolves',
+      },
     ],
     reward: { reputationTokens: 1, consumables: { stamina_ration: 3 } },
   },
@@ -94,7 +124,13 @@ export const CHURCH_QUESTS = {
     isChurchQuest: true,
     flavorText: '"The well must run clean, or the village sickens. Cleanse it."',
     objectives: [
-      { id: 'kill_slimes', type: 'kill', monsterId: 'mire_slime', count: 4, label: 'Purge Mire Slimes' },
+      {
+        id: 'kill_slimes',
+        type: 'kill',
+        monsterId: 'mire_slime',
+        count: 4,
+        label: 'Purge Mire Slimes',
+      },
     ],
     reward: { reputationTokens: 2, consumables: { elixir_minor: 1, hp_potion_medium: 1 } },
   },

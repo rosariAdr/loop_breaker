@@ -28,7 +28,7 @@ class ErrorBoundary extends Component {
 
   handleResetSave = () => {
     const ok = window.confirm(
-      'This will delete your saved game. Are you sure? This action cannot be undone.'
+      'This will delete your saved game. Are you sure? This action cannot be undone.',
     )
     if (!ok) return
     try {
@@ -66,7 +66,14 @@ class ErrorBoundary extends Component {
           >
             ☠ Something broke
           </p>
-          <p style={{ color: '#7a4040', fontSize: '0.85rem', fontStyle: 'italic', marginBottom: '1.5rem' }}>
+          <p
+            style={{
+              color: '#7a4040',
+              fontSize: '0.85rem',
+              fontStyle: 'italic',
+              marginBottom: '1.5rem',
+            }}
+          >
             An unexpected error occurred. Your save is still on disk — try reloading first.
           </p>
 

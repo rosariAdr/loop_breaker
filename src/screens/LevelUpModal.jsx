@@ -4,11 +4,11 @@ import { useGameStore } from '../store/gameStore'
 const STAT_KEYS = ['strength', 'agility', 'intelligence', 'chance', 'def']
 
 const STAT_META = {
-  strength:     { label: 'Strength',     color: '#c08040', icon: '⚔️' },
-  agility:      { label: 'Agility',      color: '#40c080', icon: '🌿' },
+  strength: { label: 'Strength', color: '#c08040', icon: '⚔️' },
+  agility: { label: 'Agility', color: '#40c080', icon: '🌿' },
   intelligence: { label: 'Intelligence', color: '#8060c0', icon: '✨' },
-  chance:       { label: 'Chance',       color: '#c0c040', icon: '🍀' },
-  def:          { label: 'Defense',      color: '#6080a0', icon: '🛡️' },
+  chance: { label: 'Chance', color: '#c0c040', icon: '🍀' },
+  def: { label: 'Defense', color: '#6080a0', icon: '🛡️' },
 }
 
 export default function LevelUpModal() {
@@ -32,7 +32,14 @@ export default function LevelUpModal() {
       >
         {/* Titre */}
         <div className="text-center">
-          <p style={{ fontFamily: 'Cinzel, serif', color: '#60d0ff', fontSize: '1.6rem', letterSpacing: '0.08em' }}>
+          <p
+            style={{
+              fontFamily: 'Cinzel, serif',
+              color: '#60d0ff',
+              fontSize: '1.6rem',
+              letterSpacing: '0.08em',
+            }}
+          >
             ✦ Level Up!
           </p>
           <p style={{ color: '#3a6a8a', fontSize: '0.82rem', marginTop: '0.3rem' }}>
@@ -42,15 +49,21 @@ export default function LevelUpModal() {
         </div>
 
         {/* Gains automatiques */}
-        <div
-          className="rounded p-3"
-          style={{ background: '#080c10', border: '1px solid #1a2030' }}
-        >
-          <p style={{ color: '#3a6070', fontSize: '0.68rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
+        <div className="rounded p-3" style={{ background: '#080c10', border: '1px solid #1a2030' }}>
+          <p
+            style={{
+              color: '#3a6070',
+              fontSize: '0.68rem',
+              fontFamily: 'Cinzel, serif',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              marginBottom: '0.5rem',
+            }}
+          >
             Auto bonuses × {pendingLevelUp}
           </p>
           <div className="flex flex-wrap gap-2">
-            {['maxHp', 'maxMana', 'strength', 'intelligence', 'def', 'agility'].map(s => (
+            {['maxHp', 'maxMana', 'strength', 'intelligence', 'def', 'agility'].map((s) => (
               <span key={s} style={{ color: '#40a060', fontSize: '0.72rem' }}>
                 +{s === 'maxHp' || s === 'maxMana' ? '~10%' : pendingLevelUp} {s}
               </span>
@@ -60,11 +73,20 @@ export default function LevelUpModal() {
 
         {/* Choix du bonus */}
         <div>
-          <p style={{ color: '#6a5a4a', fontSize: '0.75rem', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
+          <p
+            style={{
+              color: '#6a5a4a',
+              fontSize: '0.75rem',
+              fontFamily: 'Cinzel, serif',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              marginBottom: '0.5rem',
+            }}
+          >
             Choose a bonus stat (+1)
           </p>
           <div className="flex flex-col gap-2">
-            {STAT_KEYS.map(stat => {
+            {STAT_KEYS.map((stat) => {
               const meta = STAT_META[stat]
               const isChosen = chosen === stat
               return (
@@ -80,7 +102,13 @@ export default function LevelUpModal() {
                 >
                   <div className="flex items-center gap-2">
                     <span style={{ fontSize: '1rem' }}>{meta.icon}</span>
-                    <span style={{ fontFamily: 'Cinzel, serif', color: isChosen ? meta.color : '#6a5a4a', fontSize: '0.85rem' }}>
+                    <span
+                      style={{
+                        fontFamily: 'Cinzel, serif',
+                        color: isChosen ? meta.color : '#6a5a4a',
+                        fontSize: '0.85rem',
+                      }}
+                    >
                       {meta.label}
                     </span>
                   </div>

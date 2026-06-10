@@ -51,7 +51,7 @@ describe('Combat — rendu initial', () => {
     expect(screen.getByText(/Basic Attack/i)).toBeInTheDocument()
   })
 
-  it("retourne null si pas de combat actif", () => {
+  it('retourne null si pas de combat actif', () => {
     useGameStore.getState().endCombat('fled')
     const { container } = render(<Combat />)
     expect(container.firstChild).toBeNull()
@@ -59,7 +59,7 @@ describe('Combat — rendu initial', () => {
 })
 
 describe('Combat — B07 nombres flottants', () => {
-  it("affiche un nombre flottant après une attaque du héros", async () => {
+  it('affiche un nombre flottant après une attaque du héros', async () => {
     setupCombat()
     render(<Combat />)
     const attackBtn = screen.getByText(/Basic Attack/i)
@@ -79,7 +79,7 @@ describe('Combat — B07 nombres flottants', () => {
     expect(floating.textContent.startsWith('-')).toBe(true)
   })
 
-  it("le nombre flottant disparaît après ~800ms", async () => {
+  it('le nombre flottant disparaît après ~800ms', async () => {
     setupCombat()
     render(<Combat />)
     const attackBtn = screen.getByText(/Basic Attack/i)
@@ -105,7 +105,7 @@ describe('Combat — B02 flash ennemi sur attaque', () => {
     const attackBtn = screen.getByText(/Basic Attack/i)
     await act(async () => {
       attackBtn.click()
-      vi.advanceTimersByTime(300)  // délai de l'animation de l'attaque joueur
+      vi.advanceTimersByTime(300) // délai de l'animation de l'attaque joueur
     })
 
     // Attente du tour ennemi (600ms après afterPlayerAction)
@@ -127,7 +127,7 @@ describe('Combat — B02 flash ennemi sur attaque', () => {
 })
 
 describe('Combat — MonsterPortrait : image avec fallback emoji', () => {
-  it("rend une <img> avec src=/monsters/<id>.png par défaut", () => {
+  it('rend une <img> avec src=/monsters/<id>.png par défaut', () => {
     setupCombat('ashwood_wolf')
     render(<Combat />)
     const img = document.querySelector('img[src*="/monsters/"]')
@@ -150,7 +150,7 @@ describe('Combat — MonsterPortrait : image avec fallback emoji', () => {
     expect(screen.getByText('🐺')).toBeInTheDocument()
   })
 
-  it("draggable=false et pointerEvents:none (anti-drag)", () => {
+  it('draggable=false et pointerEvents:none (anti-drag)', () => {
     setupCombat('ashwood_wolf')
     render(<Combat />)
     const img = document.querySelector('img[src*="/monsters/"]')
@@ -160,7 +160,7 @@ describe('Combat — MonsterPortrait : image avec fallback emoji', () => {
 
 // ── B13 — Keyframe hero-attack ───────────────────────────────────────────────
 describe('Combat — B13 hero-attack animation', () => {
-  it("applique .anim-hero-attack sur HeroCard quand le joueur attaque", async () => {
+  it('applique .anim-hero-attack sur HeroCard quand le joueur attaque', async () => {
     setupCombat()
     render(<Combat />)
 
@@ -176,7 +176,7 @@ describe('Combat — B13 hero-attack animation', () => {
     expect(document.querySelector('.anim-hero-attack')).not.toBeNull()
   })
 
-  it("retire .anim-hero-attack après ~320ms", async () => {
+  it('retire .anim-hero-attack après ~320ms', async () => {
     setupCombat()
     render(<Combat />)
     const attackBtn = screen.getByText(/Basic Attack/i)
@@ -278,14 +278,14 @@ describe('Combat — B11 boss flee disabled', () => {
 })
 
 describe('Combat — B08 résumé étendu (ResultPanel)', () => {
-  it("après victoire, affiche dégâts infligés + kills", async () => {
+  it('après victoire, affiche dégâts infligés + kills', async () => {
     // Héros OP pour one-shot
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, strength: 999 } },
     }))
     const enemy = setupCombat()
     // Enemy à 1 HP pour être sûr du one-shot
-    useGameStore.setState(state => ({
+    useGameStore.setState((state) => ({
       activeCombat: {
         ...state.activeCombat,
         enemies: [{ ...enemy, stats: { ...enemy.stats, hp: 1 }, currentHp: 1 }],
@@ -296,7 +296,7 @@ describe('Combat — B08 résumé étendu (ResultPanel)', () => {
     const attackBtn = screen.getByText(/Basic Attack/i)
     await act(async () => {
       attackBtn.click()
-      vi.advanceTimersByTime(600)  // animation + victoire
+      vi.advanceTimersByTime(600) // animation + victoire
     })
 
     // Vérifie la présence des stats B08 — au moins un label

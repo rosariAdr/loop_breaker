@@ -7,25 +7,27 @@ import { QUESTS, isPrestigiousQuest, getBoardQuests, PRESTIGE_MIN_TOKENS } from 
 import { ZONES } from '../data/zones'
 
 const setLocation = (zoneId, locationId, extra = {}) =>
-  useGameStore.setState((s) => ({ world: { ...s.world, currentZone: zoneId, currentLocation: locationId, ...extra } }))
+  useGameStore.setState((s) => ({
+    world: { ...s.world, currentZone: zoneId, currentLocation: locationId, ...extra },
+  }))
 
 describe('GLD — classification prestige & pools', () => {
   it('une quête de boss / forts tokens est prestigieuse', () => {
     expect(isPrestigiousQuest(QUESTS.silence_the_crypt)).toBe(true) // boss
-    expect(isPrestigiousQuest(QUESTS.end_the_demon)).toBe(true)     // demon lord + 10 tokens
+    expect(isPrestigiousQuest(QUESTS.end_the_demon)).toBe(true) // demon lord + 10 tokens
     expect(isPrestigiousQuest(QUESTS.nc_oakheart_elite)).toBe(true) // élite
   })
 
-  it('une petite quête (first_blood) n\'est pas prestigieuse', () => {
+  it("une petite quête (first_blood) n'est pas prestigieuse", () => {
     expect(isPrestigiousQuest(QUESTS.first_blood)).toBe(false)
   })
 
   it('le pool village exclut les quêtes prestigieuses, la guilde les garde', () => {
     const village = getBoardQuests('village')
     const guild = getBoardQuests('guild')
-    expect(village.every(q => !isPrestigiousQuest(q))).toBe(true)
+    expect(village.every((q) => !isPrestigiousQuest(q))).toBe(true)
     expect(guild.length).toBeGreaterThan(village.length)
-    expect(guild.some(q => isPrestigiousQuest(q))).toBe(true)
+    expect(guild.some((q) => isPrestigiousQuest(q))).toBe(true)
   })
 
   it('la ville a un bâtiment guild', () => {
@@ -34,7 +36,10 @@ describe('GLD — classification prestige & pools', () => {
 })
 
 describe('GLD — venue rendu du QuestBoard', () => {
-  beforeEach(() => { useGameStore.getState().resetGame(); localStorage.clear() })
+  beforeEach(() => {
+    useGameStore.getState().resetGame()
+    localStorage.clear()
+  })
 
   it('en ville : titre Guilde + quêtes prestigieuses visibles', () => {
     setLocation('ashenvale', ZONES.ashenvale.city.id)

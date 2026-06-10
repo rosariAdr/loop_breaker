@@ -34,7 +34,7 @@ describe('MON01 — roster par spot', () => {
 
 describe('MON01 — retraits & renommages', () => {
   it('monstres retirés absents de MONSTERS', () => {
-    ['rotting_shambler', 'gloom_bat', 'bog_shambler', 'grave_knight'].forEach((id) => {
+    ;['rotting_shambler', 'gloom_bat', 'bog_shambler', 'grave_knight'].forEach((id) => {
       expect(MONSTERS[id]).toBeUndefined()
     })
   })
@@ -98,7 +98,9 @@ describe('MON01 — skillDropType (champ interne, cohérent avec SKILLS)', () =>
   })
 
   it('monstres none = thicket_hare + russet_fox', () => {
-    const none = Object.values(MONSTERS).filter((m) => m.skillDropType === 'none').map((m) => m.id)
+    const none = Object.values(MONSTERS)
+      .filter((m) => m.skillDropType === 'none')
+      .map((m) => m.id)
     expect(none.sort()).toEqual(['russet_fox', 'thicket_hare'])
   })
 
@@ -109,7 +111,17 @@ describe('MON01 — skillDropType (champ interne, cohérent avec SKILLS)', () =>
 })
 
 describe('MON01 — nouveaux skills créés', () => {
-  const newActive = ['bramble_slam', 'cursed_cleave', 'soul_chill', 'tomb_judgment', 'venom_strike', 'thorn_lash', 'plague_maw', 'cheap_shot', 'trample_charge']
+  const newActive = [
+    'bramble_slam',
+    'cursed_cleave',
+    'soul_chill',
+    'tomb_judgment',
+    'venom_strike',
+    'thorn_lash',
+    'plague_maw',
+    'cheap_shot',
+    'trample_charge',
+  ]
   const newPassive = ['thick_hide', 'stoneskin', 'caustic_coat', 'mossy_hide']
 
   it('les 9 actives existent et sont de type active', () => {

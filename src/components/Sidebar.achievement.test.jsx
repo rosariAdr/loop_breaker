@@ -5,14 +5,30 @@ import { Sidebar } from './parchment'
 
 afterEach(cleanup)
 
-const base = { location: 'Ironhaven', zone: 'Ashenvale', deity: null, demonLord: 'Malachar', tokens: 3 }
+const base = {
+  location: 'Ironhaven',
+  zone: 'Ashenvale',
+  deity: null,
+  demonLord: 'Malachar',
+  tokens: 3,
+}
 
 describe('UI-ACHIEVE-PREVIEW', () => {
-  it('affiche l\'accomplissement le plus proche (nom + progression + barre)', () => {
-    render(<Sidebar {...base} nextAchievement={{
-      id: 'monster_hunter', name: 'Monster Hunter', desc: 'Defeat 50 monsters.',
-      current: 40, target: 50, pct: 0.8, reward: { stat: { name: 'strength', amount: 2 } },
-    }} />)
+  it("affiche l'accomplissement le plus proche (nom + progression + barre)", () => {
+    render(
+      <Sidebar
+        {...base}
+        nextAchievement={{
+          id: 'monster_hunter',
+          name: 'Monster Hunter',
+          desc: 'Defeat 50 monsters.',
+          current: 40,
+          target: 50,
+          pct: 0.8,
+          reward: { stat: { name: 'strength', amount: 2 } },
+        }}
+      />,
+    )
     expect(screen.getByTestId('next-achievement')).toBeInTheDocument()
     expect(screen.getByText('Monster Hunter')).toBeInTheDocument()
     expect(screen.getByText(/40\/50/)).toBeInTheDocument()

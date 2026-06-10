@@ -34,8 +34,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -44,7 +44,8 @@ export const SKILLS = {
   reckless_blow: {
     id: 'reckless_blow',
     name: 'Reckless Blow',
-    description: 'A wild all-out swing for massive physical damage — but you sacrifice 3 Agility for the rest of the fight.',
+    description:
+      'A wild all-out swing for massive physical damage — but you sacrifice 3 Agility for the rest of the fight.',
     type: 'active',
     cost: { mana: 10, hp: 0, stat_sacrifice: { stat: 'agility', amount: 3, permanent: false } },
     cooldown: 3,
@@ -56,8 +57,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -77,8 +78,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10, tickDamageBonus: 3 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20, tickDamageBonus: 6 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1, tickDamageBonus: 3 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, tickDamageBonus: 6 },
     },
   },
 
@@ -110,7 +111,7 @@ export const SKILLS = {
     cost: { mana: 0, hp: 0, stat_sacrifice: null },
     cooldown: 0,
     effect: {
-      damageReduction: 0.10,
+      damageReduction: 0.1,
     },
     xpToNext: [20, 50],
     sourceMonster: 'stone_golem',
@@ -138,8 +139,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10, tickDamageBonus: 4 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20, tickDamageBonus: 8 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1, tickDamageBonus: 4 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, tickDamageBonus: 8 },
     },
   },
 
@@ -151,15 +152,15 @@ export const SKILLS = {
     cost: { mana: 0, hp: 0, stat_sacrifice: null },
     cooldown: 0,
     effect: {
-      defBonus: 0.20,
+      defBonus: 0.2,
     },
     xpToNext: [20, 50],
     sourceMonster: 'hollow_knight',
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { defBonusBonus: 0.10 },
-      3: { defBonusBonus: 0.20 },
+      2: { defBonusBonus: 0.1 },
+      3: { defBonusBonus: 0.2 },
     },
   },
 
@@ -168,7 +169,8 @@ export const SKILLS = {
   power_strike: {
     id: 'power_strike',
     name: 'Power Strike',
-    description: 'A focused blow that channels your full strength. Deals 160% STR as physical damage.',
+    description:
+      'A focused blow that channels your full strength. Deals 160% STR as physical damage.',
     type: 'active',
     cost: { mana: 20, hp: 0, stat_sacrifice: null },
     cooldown: 2,
@@ -180,8 +182,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -193,15 +195,15 @@ export const SKILLS = {
     cost: { mana: 15, hp: 0, stat_sacrifice: null },
     cooldown: 3,
     effect: {
-      selfBuff: { stat: 'def', multiplier: 0.50, duration: 2 },
+      selfBuff: { stat: 'def', multiplier: 0.5, duration: 2 },
     },
     xpToNext: [20, 50],
     sourceMonster: null,
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { buffBonus: 0.20, costReduction: 0.10 },
-      3: { buffBonus: 0.40, costReduction: 0.20 },
+      2: { buffBonus: 0.2, costReduction: 0.1 },
+      3: { buffBonus: 0.4, costReduction: 0.2 },
     },
   },
 
@@ -220,48 +222,54 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { strBonusBonus: 0.10 },
-      3: { strBonusBonus: 0.20 },
+      2: { strBonusBonus: 0.1 },
+      3: { strBonusBonus: 0.2 },
     },
   },
 
   counter_strike: {
     id: 'counter_strike',
     name: 'Counter Strike',
-    description: 'Enter a ready stance for 3 turns. Each time you are hit, 35% chance to counter for 80% ATK.',
+    description:
+      'Enter a ready stance for 3 turns. Each time you are hit, 35% chance to counter for 80% ATK.',
     type: 'active',
     cost: { mana: 18, hp: 0, stat_sacrifice: null },
     cooldown: 4,
     effect: {
-      selfBuff: { type: 'counter_stance', counterChance: 0.35, counterMultiplier: 0.80, duration: 3 },
+      selfBuff: {
+        type: 'counter_stance',
+        counterChance: 0.35,
+        counterMultiplier: 0.8,
+        duration: 3,
+      },
     },
     xpToNext: [20, 50],
     sourceMonster: null,
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { counterChanceBonus: 0.10, costReduction: 0.10 },
-      3: { counterChanceBonus: 0.20, costReduction: 0.20 },
+      2: { counterChanceBonus: 0.1, costReduction: 0.1 },
+      3: { counterChanceBonus: 0.2, costReduction: 0.2 },
     },
   },
 
   veterans_resolve: {
     id: 'veterans_resolve',
     name: "Veteran's Resolve",
-    description: "Passive hardened constitution that permanently increases max HP by 20%.",
+    description: 'Passive hardened constitution that permanently increases max HP by 20%.',
     type: 'passive',
     cost: { mana: 0, hp: 0, stat_sacrifice: null },
     cooldown: 0,
     effect: {
-      maxHpBonus: 0.20,
+      maxHpBonus: 0.2,
     },
     xpToNext: [20, 50],
     sourceMonster: null,
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { maxHpBonusBonus: 0.10 },
-      3: { maxHpBonusBonus: 0.20 },
+      2: { maxHpBonusBonus: 0.1 },
+      3: { maxHpBonusBonus: 0.2 },
     },
   },
 
@@ -281,8 +289,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.20, costReduction: 0.10 },
-      3: { multiplierBonus: 0.40, costReduction: 0.20 },
+      2: { multiplierBonus: 0.2, costReduction: 0.1 },
+      3: { multiplierBonus: 0.4, costReduction: 0.2 },
     },
   },
 
@@ -291,7 +299,8 @@ export const SKILLS = {
   cursed_blade: {
     id: 'cursed_blade',
     name: 'Cursed Blade',
-    description: 'A cursed slash that deals heavy physical damage and reduces enemy DEF for 2 turns.',
+    description:
+      'A cursed slash that deals heavy physical damage and reduces enemy DEF for 2 turns.',
     type: 'active',
     cost: { mana: 25, hp: 0, stat_sacrifice: null },
     cooldown: 3,
@@ -304,8 +313,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -324,8 +333,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -359,16 +368,16 @@ export const SKILLS = {
     cost: { mana: 0, hp: 0, stat_sacrifice: null },
     cooldown: 0,
     effect: {
-      counterChance: 0.20,
-      counterMultiplier: 0.50,
+      counterChance: 0.2,
+      counterMultiplier: 0.5,
     },
     xpToNext: [20, 50],
     sourceMonster: 'cursed_sentinel',
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { counterChanceBonus: 0.10 },
-      3: { counterChanceBonus: 0.20 },
+      2: { counterChanceBonus: 0.1 },
+      3: { counterChanceBonus: 0.2 },
     },
   },
 
@@ -381,15 +390,15 @@ export const SKILLS = {
     cooldown: 4,
     effect: {
       aoe: true,
-      statusEffect: { type: 'atk_down', duration: 3, reduction: 0.20 },
+      statusEffect: { type: 'atk_down', duration: 3, reduction: 0.2 },
     },
     xpToNext: [20, 50],
     sourceMonster: 'abyssal_hound',
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { reductionBonus: 0.10, costReduction: 0.10 },
-      3: { reductionBonus: 0.20, costReduction: 0.20 },
+      2: { reductionBonus: 0.1, costReduction: 0.1 },
+      3: { reductionBonus: 0.2, costReduction: 0.2 },
     },
   },
 
@@ -409,8 +418,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -449,8 +458,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { costReduction: 0.10, cooldownReduction: 1 },
-      3: { costReduction: 0.20, cooldownReduction: 1 },
+      2: { costReduction: 0.1, cooldownReduction: 1 },
+      3: { costReduction: 0.2, cooldownReduction: 1 },
     },
   },
 
@@ -459,21 +468,22 @@ export const SKILLS = {
   soul_crush: {
     id: 'soul_crush',
     name: 'Soul Crush',
-    description: 'A devastating soul-rending attack dealing heavy magical damage and reducing max HP by 10% for 3 turns.',
+    description:
+      'A devastating soul-rending attack dealing heavy magical damage and reducing max HP by 10% for 3 turns.',
     type: 'active',
     cost: { mana: 40, hp: 10, stat_sacrifice: null },
     cooldown: 4,
     effect: {
       damage: { type: 'magical', multiplier: 2.5 },
-      statusEffect: { type: 'max_hp_reduction', duration: 3, reduction: 0.10 },
+      statusEffect: { type: 'max_hp_reduction', duration: 3, reduction: 0.1 },
     },
     xpToNext: [20, 50],
     sourceMonster: 'hollow_crypt_boss',
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -486,15 +496,15 @@ export const SKILLS = {
     cooldown: 5,
     effect: {
       aoe: true,
-      statusEffect: { type: 'all_stats_down', duration: 2, reduction: 0.50 },
+      statusEffect: { type: 'all_stats_down', duration: 2, reduction: 0.5 },
     },
     xpToNext: [20, 50],
     sourceMonster: 'forsaken_citadel_boss',
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { costReduction: 0.10, durationBonus: 1 },
-      3: { costReduction: 0.20, durationBonus: 1 },
+      2: { costReduction: 0.1, durationBonus: 1 },
+      3: { costReduction: 0.2, durationBonus: 1 },
     },
   },
 
@@ -515,8 +525,8 @@ export const SKILLS = {
     container: 'divine',
     inheritable: false, // héritable uniquement si niveau 2+
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -528,15 +538,15 @@ export const SKILLS = {
     cost: { mana: 0, hp: 20, stat_sacrifice: null },
     cooldown: 5,
     effect: {
-      selfBuff: { stat: 'atk', multiplier: 0.50, duration: 3 },
+      selfBuff: { stat: 'atk', multiplier: 0.5, duration: 3 },
     },
     xpToNext: [20, 50],
     sourceMonster: null,
     container: 'divine',
     inheritable: false,
     levelBonuses: {
-      2: { buffBonus: 0.20, costReduction: 0.10 },
-      3: { buffBonus: 0.40, costReduction: 0.20 },
+      2: { buffBonus: 0.2, costReduction: 0.1 },
+      3: { buffBonus: 0.4, costReduction: 0.2 },
     },
   },
 
@@ -550,15 +560,15 @@ export const SKILLS = {
     cost: { mana: 25, hp: 0, stat_sacrifice: null },
     cooldown: 4,
     effect: {
-      selfBuff: { type: 'damage_reduction', value: 0.40, duration: 2 },
+      selfBuff: { type: 'damage_reduction', value: 0.4, duration: 2 },
     },
     xpToNext: [20, 50],
     sourceMonster: null,
     container: 'divine',
     inheritable: false,
     levelBonuses: {
-      2: { reductionBonus: 0.15, costReduction: 0.10 },
-      3: { reductionBonus: 0.30, costReduction: 0.20 },
+      2: { reductionBonus: 0.15, costReduction: 0.1 },
+      3: { reductionBonus: 0.3, costReduction: 0.2 },
     },
   },
 
@@ -570,15 +580,15 @@ export const SKILLS = {
     cost: { mana: 35, hp: 0, stat_sacrifice: null },
     cooldown: 5,
     effect: {
-      heal: { type: 'percentage', value: 0.30 },
+      heal: { type: 'percentage', value: 0.3 },
     },
     xpToNext: [20, 50],
     sourceMonster: null,
     container: 'divine',
     inheritable: false,
     levelBonuses: {
-      2: { healBonus: 0.15, costReduction: 0.10 },
-      3: { healBonus: 0.30, costReduction: 0.20 },
+      2: { healBonus: 0.15, costReduction: 0.1 },
+      3: { healBonus: 0.3, costReduction: 0.2 },
     },
   },
 
@@ -599,8 +609,8 @@ export const SKILLS = {
     container: 'divine',
     inheritable: false,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
   overclock: {
@@ -611,15 +621,15 @@ export const SKILLS = {
     cost: { mana: 25, hp: 0, stat_sacrifice: null },
     cooldown: 4,
     effect: {
-      selfBuff: { stat: 'agility', multiplier: 0.80, duration: 2 },
+      selfBuff: { stat: 'agility', multiplier: 0.8, duration: 2 },
     },
     xpToNext: [20, 50],
     sourceMonster: null,
     container: 'divine',
     inheritable: false,
     levelBonuses: {
-      2: { buffBonus: 0.20, costReduction: 0.10 },
-      3: { buffBonus: 0.40, costReduction: 0.20 },
+      2: { buffBonus: 0.2, costReduction: 0.1 },
+      3: { buffBonus: 0.4, costReduction: 0.2 },
     },
   },
 
@@ -628,7 +638,8 @@ export const SKILLS = {
   soul_rend: {
     id: 'soul_rend',
     name: 'Soul Rend',
-    description: "Malachar's supreme technique. Tears the enemy's soul, dealing 300% INT as true damage that ignores all defenses.",
+    description:
+      "Malachar's supreme technique. Tears the enemy's soul, dealing 300% INT as true damage that ignores all defenses.",
     type: 'active',
     cost: { mana: 60, hp: 30, stat_sacrifice: null },
     cooldown: 5,
@@ -642,8 +653,8 @@ export const SKILLS = {
     inheritable: true,
     alwaysInheritable: true, // T12 — transgresse DV10 : héritable quel que soit le niveau
     levelBonuses: {
-      2: { multiplierBonus: 0.50, costReduction: 0.10 },
-      3: { multiplierBonus: 1.00, costReduction: 0.20 },
+      2: { multiplierBonus: 0.5, costReduction: 0.1 },
+      3: { multiplierBonus: 1.0, costReduction: 0.2 },
     },
   },
 
@@ -651,7 +662,8 @@ export const SKILLS = {
   gluttony: {
     id: 'gluttony',
     name: 'Gluttony',
-    description: 'A forbidden hunger. On kill (10% chance, 5-day cooldown) permanently absorb a fraction of the slain foe\'s power. Assassinations guarantee it — and let you choose the stat.',
+    description:
+      "A forbidden hunger. On kill (10% chance, 5-day cooldown) permanently absorb a fraction of the slain foe's power. Assassinations guarantee it — and let you choose the stat.",
     type: 'passive',
     cost: { mana: 0, hp: 0, stat_sacrifice: null },
     cooldown: 0,
@@ -670,7 +682,8 @@ export const SKILLS = {
   bramble_slam: {
     id: 'bramble_slam',
     name: 'Bramble Slam',
-    description: 'A crushing blow wrapped in thorns. Deals heavy physical damage and slows the target.',
+    description:
+      'A crushing blow wrapped in thorns. Deals heavy physical damage and slows the target.',
     type: 'active',
     cost: { mana: 22, hp: 0, stat_sacrifice: null },
     cooldown: 3,
@@ -683,36 +696,36 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
   cursed_cleave: {
     id: 'cursed_cleave',
     name: 'Cursed Cleave',
-    description: 'A dark cleave that shatters the foe\'s guard, reducing their defense.',
+    description: "A dark cleave that shatters the foe's guard, reducing their defense.",
     type: 'active',
     cost: { mana: 18, hp: 0, stat_sacrifice: null },
     cooldown: 2,
     effect: {
       damage: { type: 'physical', multiplier: 1.4 },
-      statusEffect: { type: 'defense_break', duration: 2, reduction: 0.20 },
+      statusEffect: { type: 'defense_break', duration: 2, reduction: 0.2 },
     },
     xpToNext: [20, 50],
     sourceMonster: 'hollow_knight',
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10, reductionBonus: 0.05 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20, reductionBonus: 0.10 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1, reductionBonus: 0.05 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, reductionBonus: 0.1 },
     },
   },
 
   soul_chill: {
     id: 'soul_chill',
     name: 'Soul Chill',
-    description: 'A spectral touch that bites deep and saps the target\'s speed.',
+    description: "A spectral touch that bites deep and saps the target's speed.",
     type: 'active',
     cost: { mana: 16, hp: 0, stat_sacrifice: null },
     cooldown: 2,
@@ -725,15 +738,15 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
   tomb_judgment: {
     id: 'tomb_judgment',
     name: 'Tomb Judgment',
-    description: 'A sentinel\'s verdict — a devastating strike that stuns the target for a turn.',
+    description: "A sentinel's verdict — a devastating strike that stuns the target for a turn.",
     type: 'active',
     cost: { mana: 25, hp: 0, stat_sacrifice: null },
     cooldown: 3,
@@ -746,15 +759,15 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
   venom_strike: {
     id: 'venom_strike',
     name: 'Venom Strike',
-    description: 'A serpent\'s fang that injects venom, poisoning the target for 3 turns.',
+    description: "A serpent's fang that injects venom, poisoning the target for 3 turns.",
     type: 'active',
     cost: { mana: 18, hp: 0, stat_sacrifice: null },
     cooldown: 3,
@@ -767,15 +780,15 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10, tickDamageBonus: 4 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20, tickDamageBonus: 8 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1, tickDamageBonus: 4 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, tickDamageBonus: 8 },
     },
   },
 
   thorn_lash: {
     id: 'thorn_lash',
     name: 'Thorn Lash',
-    description: 'A whip of living briar that lacerates and weakens the foe\'s attack.',
+    description: "A whip of living briar that lacerates and weakens the foe's attack.",
     type: 'active',
     cost: { mana: 16, hp: 0, stat_sacrifice: null },
     cooldown: 2,
@@ -788,8 +801,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10, reductionBonus: 0.05 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20, reductionBonus: 0.10 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1, reductionBonus: 0.05 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, reductionBonus: 0.1 },
     },
   },
 
@@ -809,8 +822,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10, tickDamageBonus: 6 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20, tickDamageBonus: 12 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1, tickDamageBonus: 6 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, tickDamageBonus: 12 },
     },
   },
 
@@ -830,8 +843,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -850,8 +863,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { multiplierBonus: 0.30, costReduction: 0.10 },
-      3: { multiplierBonus: 0.60, costReduction: 0.20 },
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 
@@ -894,7 +907,8 @@ export const SKILLS = {
   caustic_coat: {
     id: 'caustic_coat',
     name: 'Caustic Coat',
-    description: 'Passive acidic film that erodes blows, permanently reducing incoming damage by 7%.',
+    description:
+      'Passive acidic film that erodes blows, permanently reducing incoming damage by 7%.',
     type: 'passive',
     cost: { mana: 0, hp: 0, stat_sacrifice: null },
     cooldown: 0,
@@ -905,7 +919,7 @@ export const SKILLS = {
     inheritable: true,
     levelBonuses: {
       2: { reductionBonus: 0.05 },
-      3: { reductionBonus: 0.10 },
+      3: { reductionBonus: 0.1 },
     },
   },
 
@@ -922,8 +936,8 @@ export const SKILLS = {
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
-      2: { maxHpBonusBonus: 0.10 },
-      3: { maxHpBonusBonus: 0.20 },
+      2: { maxHpBonusBonus: 0.1 },
+      3: { maxHpBonusBonus: 0.2 },
     },
   },
 }

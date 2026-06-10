@@ -8,9 +8,18 @@
 import { create } from 'zustand'
 
 // Types de toasts → couleurs/icônes gérés par le ToastContainer
-export const TOAST_TYPES = ['loot', 'levelup', 'quest', 'divine', 'gluttony', 'warning', 'error', 'info']
+export const TOAST_TYPES = [
+  'loot',
+  'levelup',
+  'quest',
+  'divine',
+  'gluttony',
+  'warning',
+  'error',
+  'info',
+]
 
-const DEFAULT_DURATION = 2500  // ms avant auto-dismiss
+const DEFAULT_DURATION = 2500 // ms avant auto-dismiss
 
 // Compteur interne pour id uniques (Date.now/random interdits ? non, dispo ici).
 let _id = 0
@@ -45,8 +54,7 @@ export const useToastStore = create((set, get) => ({
     return id
   },
 
-  removeToast: (id) =>
-    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+  removeToast: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 
   clearToasts: () => set({ toasts: [] }),
 }))

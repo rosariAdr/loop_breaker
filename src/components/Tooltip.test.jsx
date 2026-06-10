@@ -44,7 +44,7 @@ describe('Tooltip — UX01', () => {
     expect(screen.getByTestId('tooltip')).toBeInTheDocument()
   })
 
-  it("ne rend pas le wrapper si content est falsy (retourne children direct)", () => {
+  it('ne rend pas le wrapper si content est falsy (retourne children direct)', () => {
     const { container } = render(<Tooltip content={null}>direct-child</Tooltip>)
     // Pas de span.relative.inline-block — children rendus tels quels
     expect(container.querySelector('.relative.inline-block')).toBeNull()
@@ -58,7 +58,11 @@ describe('Tooltip — UX01', () => {
   })
 
   it("position='bottom' positionne sous l'élément", () => {
-    render(<Tooltip content="Hello" position="bottom">child</Tooltip>)
+    render(
+      <Tooltip content="Hello" position="bottom">
+        child
+      </Tooltip>,
+    )
     fireEvent.mouseEnter(screen.getByText('child'))
     const tooltip = screen.getByRole('tooltip')
     expect(tooltip.style.top).toMatch(/100%/)

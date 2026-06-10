@@ -5,7 +5,9 @@ import { QUESTS } from '../data/quests'
 
 const runQuest = (reward) => {
   QUESTS.__q09_test = { id: '__q09_test', name: 'Q09 Test', objectives: [], reward }
-  useGameStore.setState((s) => ({ world: { ...s.world, activeQuests: ['__q09_test'], completedQuests: [] } }))
+  useGameStore.setState((s) => ({
+    world: { ...s.world, activeQuests: ['__q09_test'], completedQuests: [] },
+  }))
   useGameStore.getState().completeQuest('__q09_test')
   delete QUESTS.__q09_test
 }
@@ -16,7 +18,7 @@ describe('Q09 — récompenses de quête variées', () => {
     localStorage.clear()
   })
 
-  it('équipement → ajouté à l\'inventaire + badge loot', () => {
+  it("équipement → ajouté à l'inventaire + badge loot", () => {
     runQuest({ equipment: { templateId: 'iron_sword', rarity: 'common' } })
     expect(useGameStore.getState().hero.inventory.equipment.length).toBe(1)
     expect(useGameStore.getState().unseenLoot).toBe(true)

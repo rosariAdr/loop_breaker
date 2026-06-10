@@ -9,10 +9,10 @@
  *  P3 (≤30%)  : Soul Drain (15% maxHP du héros/tour) en plus de la Rage
  */
 export function getMalacharPhase(hpPercent) {
-  if (hpPercent <= 0.30) {
+  if (hpPercent <= 0.3) {
     return { phase: 3, atkMult: 1.5, soulDrainPct: 0.15, healImmune: true, label: 'Soul Drain' }
   }
-  if (hpPercent <= 0.60) {
+  if (hpPercent <= 0.6) {
     return { phase: 2, atkMult: 1.5, soulDrainPct: 0, healImmune: true, label: 'Rage' }
   }
   return { phase: 1, atkMult: 1.0, soulDrainPct: 0, healImmune: false, label: 'Normal' }
@@ -31,7 +31,7 @@ export function getCryptKeeperEnrage(hpPercent, alreadyEnraged) {
 }
 
 /** BSS02 — Lord of the Forsaken (léger) : effet appliqué par Cursed Strike. */
-export const CURSED_STRIKE_EFFECT = { type: 'atk_down', duration: 2, reduction: 0.20 }
+export const CURSED_STRIKE_EFFECT = { type: 'atk_down', duration: 2, reduction: 0.2 }
 
 /** BSS02 — tirage de Cursed Strike (STR−20%) à l'attaque du boss. */
 export function rollCursedStrike(chance, rng = Math.random) {

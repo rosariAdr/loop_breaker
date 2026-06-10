@@ -26,7 +26,7 @@ describe('DebugPanel — PROC06', () => {
     expect(screen.getByTestId('debug-panel')).toBeInTheDocument()
   })
 
-  it("se ferme au 2e Ctrl+Shift+D (toggle)", () => {
+  it('se ferme au 2e Ctrl+Shift+D (toggle)', () => {
     render(<DebugPanel />)
     fireEvent.keyDown(window, { key: 'D', ctrlKey: true, shiftKey: true })
     expect(screen.getByTestId('debug-panel')).toBeInTheDocument()
@@ -69,7 +69,7 @@ describe('DebugPanel — PROC06', () => {
     expect(useGameStore.getState().world.demonLordDefeated).toBe(true)
   })
 
-  it("bouton ✕ ferme le panel", () => {
+  it('bouton ✕ ferme le panel', () => {
     render(<DebugPanel />)
     fireEvent.keyDown(window, { key: 'D', ctrlKey: true, shiftKey: true })
     fireEvent.click(screen.getByText('✕'))

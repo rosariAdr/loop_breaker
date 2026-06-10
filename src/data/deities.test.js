@@ -34,7 +34,7 @@ describe('checkIgnarethAwakening — DV01', () => {
     expect(checkIgnarethAwakening({ battleLog: wins, dayCount: 10 })).toBe(false)
   })
 
-  it("ignore les défaites", () => {
+  it('ignore les défaites', () => {
     const log = [
       ...Array.from({ length: 19 }, () => ({ type: 'victory', day: 5 })),
       ...Array.from({ length: 20 }, () => ({ type: 'defeat', day: 5 })),
@@ -52,7 +52,7 @@ describe('checkIgnarethAwakening — DV01', () => {
     window.__DEITY_DEBUG = false
   })
 
-  it("ne logue pas hors mode debug", () => {
+  it('ne logue pas hors mode debug', () => {
     if (typeof window === 'undefined') return
     const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
     window.__DEITY_DEBUG = false
@@ -75,23 +75,20 @@ describe('checkSylvaraAwakening — DV09', () => {
   })
 
   it('false si une entrée est en-dessous du seuil', () => {
-    const entries = [
-      ...Array.from({ length: 7 }, () => ({ hpPercent: 0.95 })),
-      { hpPercent: 0.50 },
-    ]
+    const entries = [...Array.from({ length: 7 }, () => ({ hpPercent: 0.95 })), { hpPercent: 0.5 }]
     expect(checkSylvaraAwakening({ combatEntryLog: entries })).toBe(false)
   })
 
   it('regarde uniquement les 8 DERNIÈRES entrées', () => {
     // Premières entrées HP basses, mais 8 dernières OK → true
     const entries = [
-      ...Array.from({ length: 5 }, () => ({ hpPercent: 0.20 })),
-      ...Array.from({ length: 8 }, () => ({ hpPercent: 0.90 })),
+      ...Array.from({ length: 5 }, () => ({ hpPercent: 0.2 })),
+      ...Array.from({ length: 8 }, () => ({ hpPercent: 0.9 })),
     ]
     expect(checkSylvaraAwakening({ combatEntryLog: entries })).toBe(true)
   })
 
-  it("retourne false si combatEntryLog manquant", () => {
+  it('retourne false si combatEntryLog manquant', () => {
     expect(checkSylvaraAwakening({})).toBe(false)
     expect(checkSylvaraAwakening({ combatEntryLog: undefined })).toBe(false)
   })
@@ -99,26 +96,36 @@ describe('checkSylvaraAwakening — DV09', () => {
 
 // ── DV08 — applyDeityBlessing ────────────────────────────────────────────────
 describe('applyDeityBlessing — DV08', () => {
-  const baseStats = { strength: 10, agility: 10, intelligence: 8, chance: 5, def: 5, hp: 100, maxHp: 100, mana: 60, maxMana: 60 }
+  const baseStats = {
+    strength: 10,
+    agility: 10,
+    intelligence: 8,
+    chance: 5,
+    def: 5,
+    hp: 100,
+    maxHp: 100,
+    mana: 60,
+    maxMana: 60,
+  }
 
-  it("Ignareth : +15% strength (10 → 12 arrondi)", () => {
+  it('Ignareth : +15% strength (10 → 12 arrondi)', () => {
     const result = applyDeityBlessing(baseStats, 'ignareth')
     expect(result.strength).toBe(Math.round(10 * 1.15))
     expect(result.agility).toBe(10) // pas touché
   })
 
-  it("Sylvara : pas de modification de stat (effet runtime regen)", () => {
+  it('Sylvara : pas de modification de stat (effet runtime regen)', () => {
     const result = applyDeityBlessing(baseStats, 'sylvara')
     // Sylvara a un effet hp_regen_per_tick — n'affecte pas les stats
     expect(result.strength).toBe(10)
     expect(result.maxHp).toBe(100)
   })
 
-  it("retourne les stats inchangées pour deity inconnu", () => {
+  it('retourne les stats inchangées pour deity inconnu', () => {
     expect(applyDeityBlessing(baseStats, 'unknown')).toEqual(baseStats)
   })
 
-  it("retourne les stats inchangées si pas de blessing", () => {
+  it('retourne les stats inchangées si pas de blessing', () => {
     expect(applyDeityBlessing(baseStats, null)).toEqual(baseStats)
   })
 
@@ -130,7 +137,7 @@ describe('applyDeityBlessing — DV08', () => {
 })
 
 // ── DV06 — Conditions masquées (anti-régression UX) ─────────────────────────
-describe('DV06 — conditions d\'éveil masquées (anti-régression)', () => {
+describe("DV06 — conditions d'éveil masquées (anti-régression)", () => {
   it("les conditions sont stockées en data mais aucune n'est exposée via une fonction publique 'getCondition'", () => {
     // Les conditions sont dans DEITIES[id].awakeningCondition mais c'est de la data
     // (on les exporte pour le moteur, pas pour l'UI). Les UI ne doivent jamais lire ce champ.
@@ -153,65 +160,65 @@ describe('DV06 — conditions d\'éveil masquées (anti-régression)', () => {
 // ── Sanity : DEITIES + RELATIONS ─────────────────────────────────────────────
 // ── DV04 — Voltaris ───────────────────────────────────────────────────────────
 describe('checkVoltarisAwakening — DV04', () => {
-  it("false avec moins de 5 victoires sous 30% HP", () => {
-    const log = Array.from({ length: 4 }, () => ({ type: 'victory', hpPercent: 0.20 }))
+  it('false avec moins de 5 victoires sous 30% HP', () => {
+    const log = Array.from({ length: 4 }, () => ({ type: 'victory', hpPercent: 0.2 }))
     expect(checkVoltarisAwakening({ battleLog: log })).toBe(false)
   })
 
-  it("true avec 5 victoires sous 30% HP", () => {
+  it('true avec 5 victoires sous 30% HP', () => {
     const log = Array.from({ length: 5 }, () => ({ type: 'victory', hpPercent: 0.25 }))
     expect(checkVoltarisAwakening({ battleLog: log })).toBe(true)
   })
 
-  it("ignore les victoires AU-DESSUS de 30% HP", () => {
+  it('ignore les victoires AU-DESSUS de 30% HP', () => {
     const log = [
-      ...Array.from({ length: 10 }, () => ({ type: 'victory', hpPercent: 0.50 })),
-      ...Array.from({ length: 4 }, () => ({ type: 'victory', hpPercent: 0.20 })),
+      ...Array.from({ length: 10 }, () => ({ type: 'victory', hpPercent: 0.5 })),
+      ...Array.from({ length: 4 }, () => ({ type: 'victory', hpPercent: 0.2 })),
     ]
     expect(checkVoltarisAwakening({ battleLog: log })).toBe(false)
   })
 
-  it("ignore les défaites même sous 30% HP", () => {
-    const log = Array.from({ length: 5 }, () => ({ type: 'defeat', hpPercent: 0.10 }))
+  it('ignore les défaites même sous 30% HP', () => {
+    const log = Array.from({ length: 5 }, () => ({ type: 'defeat', hpPercent: 0.1 }))
     expect(checkVoltarisAwakening({ battleLog: log })).toBe(false)
   })
 
-  it("battleLog manquant → false", () => {
+  it('battleLog manquant → false', () => {
     expect(checkVoltarisAwakening({})).toBe(false)
     expect(checkVoltarisAwakening({ battleLog: null })).toBe(false)
   })
 
-  it("victoire sans hpPercent (legacy) → traitée comme 100% (ignorée)", () => {
+  it('victoire sans hpPercent (legacy) → traitée comme 100% (ignorée)', () => {
     const log = Array.from({ length: 5 }, () => ({ type: 'victory' }))
     expect(checkVoltarisAwakening({ battleLog: log })).toBe(false)
   })
 })
 
 describe('Voltaris — données + relations (DV04)', () => {
-  it("Voltaris existe avec blessing +20% AGI", () => {
+  it('Voltaris existe avec blessing +20% AGI', () => {
     expect(DEITIES.voltaris).toBeDefined()
     expect(DEITIES.voltaris.blessing.effect.stat).toBe('agility')
-    expect(DEITIES.voltaris.blessing.effect.multiplier).toBe(0.20)
+    expect(DEITIES.voltaris.blessing.effect.multiplier).toBe(0.2)
   })
 
-  it("Voltaris propose chain_lightning + overclock", () => {
+  it('Voltaris propose chain_lightning + overclock', () => {
     expect(DEITIES.voltaris.divineSkillOptions).toContain('chain_lightning')
     expect(DEITIES.voltaris.divineSkillOptions).toContain('overclock')
   })
 
-  it("applyDeityBlessing Voltaris → +20% agility", () => {
+  it('applyDeityBlessing Voltaris → +20% agility', () => {
     const stats = { agility: 10, strength: 10 }
     const result = applyDeityBlessing(stats, 'voltaris')
-    expect(result.agility).toBe(Math.round(10 * 1.20))
-    expect(result.strength).toBe(10)  // inchangé
+    expect(result.agility).toBe(Math.round(10 * 1.2))
+    expect(result.strength).toBe(10) // inchangé
   })
 
-  it("relations : Ignareth+Voltaris = allié fort (+6)", () => {
+  it('relations : Ignareth+Voltaris = allié fort (+6)', () => {
     expect(getDivineRelation('ignareth', 'voltaris')).toBe(6)
     expect(getRelationTier(6).label).toBe('Strong Ally')
   })
 
-  it("relations : Sylvara+Voltaris = rival (-4)", () => {
+  it('relations : Sylvara+Voltaris = rival (-4)', () => {
     expect(getDivineRelation('sylvara', 'voltaris')).toBe(-4)
   })
 })
@@ -224,7 +231,7 @@ describe('Données divinités', () => {
   })
 
   it('chaque divinité a un blessing avec id, name, description', () => {
-    Object.values(DEITIES).forEach(d => {
+    Object.values(DEITIES).forEach((d) => {
       expect(d.blessing).toBeDefined()
       expect(d.blessing.id).toBeTruthy()
       expect(d.blessing.name).toBeTruthy()
@@ -232,12 +239,12 @@ describe('Données divinités', () => {
     })
   })
 
-  it("getDivineRelation est symétrique", () => {
+  it('getDivineRelation est symétrique', () => {
     expect(getDivineRelation('ignareth', 'sylvara')).toBe(-3)
     expect(getDivineRelation('sylvara', 'ignareth')).toBe(-3)
   })
 
-  it("getRelationTier classe correctement", () => {
+  it('getRelationTier classe correctement', () => {
     expect(getRelationTier(-7).label).toBe('Enemy')
     expect(getRelationTier(-3).label).toBe('Rival')
     expect(getRelationTier(0).label).toBe('Neutral')

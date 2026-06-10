@@ -39,9 +39,9 @@ describe('GLT03 — cooldown', () => {
     expect(gluttonyDaysRemaining(10, null)).toBe(0)
   })
   it('en cooldown pendant 5 jours', () => {
-    expect(isGluttonyReady(12, 10)).toBe(false)  // 2 jours écoulés
+    expect(isGluttonyReady(12, 10)).toBe(false) // 2 jours écoulés
     expect(gluttonyDaysRemaining(12, 10)).toBe(3)
-    expect(isGluttonyReady(15, 10)).toBe(true)   // 5 jours écoulés
+    expect(isGluttonyReady(15, 10)).toBe(true) // 5 jours écoulés
     expect(gluttonyDaysRemaining(15, 10)).toBe(0)
   })
 })

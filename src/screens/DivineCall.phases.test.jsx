@@ -38,7 +38,7 @@ describe('DivineCall — phases', () => {
     expect(useGameStore.getState().hero.deity).toBe('ignareth')
   })
 
-  it('Refuse → confirmation ; Walk alone clôt l\'appel', () => {
+  it("Refuse → confirmation ; Walk alone clôt l'appel", () => {
     render(<DivineCall />)
     fireEvent.click(screen.getByText('Refuse'))
     expect(screen.getByText('Walk alone')).toBeInTheDocument()

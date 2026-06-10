@@ -1,6 +1,11 @@
 // STA03 — Tests de la Concentration (qualité de craft).
 import { describe, it, expect, beforeEach } from 'vitest'
-import { concentrationGain, concentrationBumpChance, rollConcentrationBump, resolveCraftOutcome } from './crafting'
+import {
+  concentrationGain,
+  concentrationBumpChance,
+  rollConcentrationBump,
+  resolveCraftOutcome,
+} from './crafting'
 import { useGameStore } from '../store/gameStore'
 
 const store = () => useGameStore.getState()
@@ -19,9 +24,9 @@ describe('STA03 — gain & chance', () => {
     expect(concentrationBumpChance(300)).toBe(1)
   })
   it('rollConcentrationBump : déterministe via rng injecté', () => {
-    expect(rollConcentrationBump(150, () => 0.99)).toBe(1)  // 150 → garanti
-    expect(rollConcentrationBump(75, () => 0.4)).toBe(1)    // 0.4 < 0.5
-    expect(rollConcentrationBump(75, () => 0.6)).toBe(0)    // 0.6 ≥ 0.5
+    expect(rollConcentrationBump(150, () => 0.99)).toBe(1) // 150 → garanti
+    expect(rollConcentrationBump(75, () => 0.4)).toBe(1) // 0.4 < 0.5
+    expect(rollConcentrationBump(75, () => 0.6)).toBe(0) // 0.6 ≥ 0.5
     expect(rollConcentrationBump(0, () => 0)).toBe(0)
   })
 })
@@ -36,7 +41,10 @@ describe('STA03 — resolveCraftOutcome extraBump', () => {
 })
 
 describe('STA03 — store gainConcentration', () => {
-  beforeEach(() => { store().resetGame(); localStorage.clear() })
+  beforeEach(() => {
+    store().resetGame()
+    localStorage.clear()
+  })
   it('ajoute et plafonne à 150', () => {
     store().gainConcentration(5)
     expect(store().hero.concentration).toBe(5)
