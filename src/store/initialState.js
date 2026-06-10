@@ -142,6 +142,9 @@ export const INITIAL_WORLD = {
   // Quêtes
   activeQuests: [], // ['questId', ...]
   completedQuests: [], // ['questId', ...]
+  // FIX-QUESTSNAP01 — snapshot des compteurs cumulés à l'ACCEPTATION de chaque quête.
+  // { [questId]: { baseKills: { [monsterId]: n }, baseCraft: n } } → progression = delta.
+  questProgress: {},
 }
 
 // ── État méta (persiste entre les runs) ─────────────────────────────────────

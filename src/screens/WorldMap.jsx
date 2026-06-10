@@ -4,12 +4,12 @@ import { MONSTERS } from '../data/monsters'
 import QTEBar from '../components/QTEBar'
 import { HeroAvatar } from '../components/parchment'
 import { POS, NODES, EDGES, areAdjacent } from '../data/worldGraph'
-import { isZoneUnlocked } from '../data/zones'
+import { isZoneUnlocked, getSpotLevelRange } from '../data/zones'
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
 
 // Marqueur discret (anneau + plaque de nom) — n'occulte pas l'illustration
-function WmNode({ id, name, glow, locked, dungeon, tag, onClick, onHover }) {
+function WmNode({ id, name, glow, locked, dungeon, tag, sub, onClick, onHover }) {
   const pos = POS[id]
   return (
     <div
@@ -26,6 +26,7 @@ function WmNode({ id, name, glow, locked, dungeon, tag, onClick, onHover }) {
         {locked && <span className="wm-lock">🔒</span>}
       </div>
       {name && <div className="wm-name">{name}</div>}
+      {sub && <div className="wm-sub">{sub}</div>}
       {tag && (
         <div className="wm-tag" style={{ color: tag.color }}>
           {tag.text}
@@ -171,9 +172,18 @@ export default function WorldMap() {
       </svg>
 
       {/* Nodes */}
-      {NODES.map((n) => (
-        <WmNode key={n.id} {...n} onClick={() => onNode(n)} />
-      ))}
+      {NODES.map((n) => {
+        // WM-LEVEL01 — sous-label « Lv X–Y » sous le nom des spots de chasse
+        const lr = n.kind === 'spot' ? getSpotLevelRange(n.id) : null
+        return (
+          <WmNode
+            key={n.id}
+            {...n}
+            sub={lr ? `Lv ${lr[0]}–${lr[1]}` : undefined}
+            onClick={() => onNode(n)}
+          />
+        )
+      })}
 
       {/* Donjon */}
       {dungeon?.active && (
@@ -256,6 +266,26 @@ export default function WorldMap() {
         src={HERO_SPRITE}
         walking={walking}
       />
+
+      {/* UX-MAPCLARITY01 — légende des symboles de la carte (cohérente PROG/fog) */}
+      <div className="wm-legend" data-testid="wm-legend">
+        <div className="wl-title">Legend</div>
+        <div className="wl-row">
+          <span className="wl-ico">◉</span> Open — click to enter / travel
+        </div>
+        <div className="wl-row">
+          <span className="wl-ico">🔒</span> Locked — quest, NPC info or level
+        </div>
+        <div className="wl-row">
+          <span className="wl-ico">?</span> Undiscovered dungeon
+        </div>
+        <div className="wl-row">
+          <span className="wl-ico">☁</span> Fog — zone not yet unlocked
+        </div>
+        <div className="wl-row">
+          <span className="wl-ico">Lv</span> Spot level range
+        </div>
+      </div>
 
       {/* Tooltip */}
       {tip && (

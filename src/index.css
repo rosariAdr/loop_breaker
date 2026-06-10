@@ -1304,6 +1304,18 @@ html.lb-no-anim *::after {
     inset 0 0 0 2px rgba(255, 255, 255, 0.25);
   padding: 8px;
 }
+/* VIL-FACADE01 — façade en grand, sans cadre parchemin (asset présent). */
+.bld .bld-facade {
+  border: none;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  filter: drop-shadow(0 6px 12px rgba(61, 43, 31, 0.45));
+}
+.bld .bld-facade img {
+  border-radius: 6px;
+  image-rendering: pixelated;
+}
 .bld .bld-sign {
   font-family: var(--font-head);
   font-weight: 700;
@@ -1649,10 +1661,47 @@ html.lb-no-anim *::after {
   height: 1px;
   background: linear-gradient(90deg, var(--parchment-shadow), transparent);
 }
+/* ZV-CARDS01 — cartes plus grandes, ~2 par ligne (min 340px) */
 .mcard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+.zv-stats-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+/* CMB-ESCAPE01 — bouton filet anti-blocage (coin haut-droit de l'arène) */
+.cmb-escape-btn {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 60;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-family: var(--font-head, Cinzel, serif);
+  color: #e0a050;
+  background: rgba(26, 20, 8, 0.85);
+  border: 1px solid #5a4818;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+.cmb-escape-btn:hover {
+  opacity: 1;
+}
+/* QB-LAYOUT01 — grille responsive du Quest Board (pleine largeur, 2-3 colonnes) */
+.qb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  align-items: start;
 }
 .mcard {
   position: relative;
@@ -1673,7 +1722,7 @@ html.lb-no-anim *::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 96px;
+  height: 130px;
   margin: -13px -15px 10px;
   border-radius: 8px 8px 0 0;
   background: radial-gradient(
@@ -2332,6 +2381,60 @@ html.lb-no-anim *::after {
   flex-direction: column;
   gap: 9px;
 }
+/* HS-SKILLS01 — skills en grille 2 par ligne (cartes compactes) */
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+.skill-grid .skill {
+  min-width: 0;
+}
+/* HS-VITALS01 / HS-AURA01 — barres de vitales (HP/Mana/Vigor/Exp + Aura/Concentration) */
+.hs-vitals {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.hvb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hvb-label {
+  width: 100px;
+  flex-shrink: 0;
+  font-family: var(--font-head);
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: help;
+}
+.hvb-bar {
+  flex: 1;
+  height: 11px;
+  background: rgba(61, 43, 31, 0.14);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.hvb-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+.hvb-val {
+  width: 104px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+/* HS-AURA01 — verrouillé : jauge floutée + 🔒 (pattern S02) */
+.hvb-locked .hvb-bar i {
+  filter: blur(3px);
+  opacity: 0.45;
+}
 .skill {
   display: flex;
   align-items: center;
@@ -2965,6 +3068,55 @@ html.lb-no-anim *::after {
   font-family: var(--font-body);
   font-style: italic;
   font-size: 10px;
+}
+/* WM-LEVEL01 — sous-label de niveau discret sous le nom du spot */
+.wm-sub {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-top: 1px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: rgba(246, 232, 196, 0.7);
+  white-space: nowrap;
+}
+/* UX-MAPCLARITY01 — légende de la WorldMap (symboles : ouvert/verrouillé/donjon/niveau) */
+.wm-legend {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 11px;
+  border-radius: 7px;
+  background: rgba(246, 232, 196, 0.92);
+  border: 1px solid var(--parchment-shadow);
+  box-shadow: 0 3px 10px rgba(61, 43, 31, 0.35);
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--ink);
+  max-width: 200px;
+}
+.wm-legend .wl-title {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.wm-legend .wl-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.wm-legend .wl-ico {
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
 }
 .wm-lock {
   position: absolute;

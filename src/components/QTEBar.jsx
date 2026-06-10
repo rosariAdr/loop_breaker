@@ -29,6 +29,19 @@ export function cursorPositionAt(elapsedMs, durationMs) {
 
 // ── Composant ───────────────────────────────────────────────────────────────
 
+/**
+ * DEVBP02 — Barre de QTE (Quick-Time Event) réutilisable (MAP02).
+ * @param {object} props
+ * @param {boolean} props.open - active/affiche le QTE
+ * @param {number} [props.durationMs] - durée d'un balayage 0→100
+ * @param {number} [props.zoneStart] - début de la zone verte (0–100)
+ * @param {number} [props.zoneEnd] - fin de la zone verte (0–100)
+ * @param {number} [props.timeoutMs] - échec automatique après ce délai
+ * @param {string} [props.title] - titre affiché
+ * @param {string} [props.hint] - consigne affichée
+ * @param {() => void} props.onSuccess - clic réussi (dans la zone verte)
+ * @param {() => void} props.onFailure - clic raté ou timeout
+ */
 export default function QTEBar({
   open,
   durationMs = 1400, // temps pour parcourir 0→100

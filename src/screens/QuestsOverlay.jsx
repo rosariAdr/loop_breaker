@@ -2,58 +2,20 @@
 // Lecture seule : liste les quêtes en cours avec progression par objectif + récompenses.
 // Pour accepter/rendre une quête, c'est le Quest Board (en village) qui s'en charge.
 import { useGameStore } from '../store/gameStore'
-import { getQuestById, QUEST_NPC_REGISTRY, heroSkillLevels } from '../data/quests'
+import { getQuestById, QUEST_NPC_REGISTRY, questObjectiveStatus } from '../data/quests'
 import { RESOURCES } from '../data/resources'
 
-// Progression d'un objectif (mirroir de QuestBoard) : kill → monsterKillCounts, level → hero.level
-function objectiveProgress(
-  obj,
-  { killCounts, heroLevel, visitedSpots = [], craftCount = 0, skillLevels = {} },
-) {
-  if (obj.type === 'visit') {
-    const done = visitedSpots.includes(obj.spotId)
-    return { current: done ? 1 : 0, target: 1, done, pct: done ? 1 : 0 }
-  }
-  if (obj.type === 'craft') {
-    const current = Math.min(obj.count, craftCount)
-    return {
-      current,
-      target: obj.count,
-      done: current >= obj.count,
-      pct: obj.count > 0 ? current / obj.count : 0,
-    }
-  }
-  if (obj.type === 'skill_levelup') {
-    const current = Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0)
-    return {
-      current,
-      target: obj.targetLevel,
-      done: current >= obj.targetLevel,
-      pct: obj.targetLevel > 0 ? current / obj.targetLevel : 0,
-    }
-  }
-  const current =
-    obj.type === 'kill'
-      ? Math.min(obj.count, killCounts[obj.monsterId] ?? 0)
-      : obj.type === 'level'
-        ? Math.min(obj.targetLevel, heroLevel ?? 1)
-        : 0
-  const target = obj.type === 'kill' ? obj.count : obj.targetLevel
-  return { current, target, done: current >= target, pct: target > 0 ? current / target : 0 }
-}
-
 export default function QuestsOverlay({ onClose }) {
-  const activeQuests = useGameStore((s) => s.world.activeQuests) ?? []
-  const killCounts = useGameStore((s) => s.world.monsterKillCounts) ?? {}
-  const visitedSpots = useGameStore((s) => s.world.visitedSpots) ?? []
-  const craftCount = useGameStore((s) => s.meta.craftCount) ?? 0
+  // FIX-QUESTSNAP01 — progression via la source unique `questObjectiveStatus` (delta vs snapshot).
   const hero = useGameStore((s) => s.hero)
-  const skillLevels = heroSkillLevels(hero)
-  const heroLevel = hero.level
+  const world = useGameStore((s) => s.world)
+  const meta = useGameStore((s) => s.meta)
   const isQuestComplete = useGameStore((s) => s.isQuestComplete)
   const setScreen = useGameStore((s) => s.setScreen)
   const back = onClose ?? (() => setScreen('world_map'))
 
+  const gameState = { hero, world, meta }
+  const activeQuests = world.activeQuests ?? []
   const quests = activeQuests.map((id) => getQuestById(id)).filter(Boolean)
 
   return (
@@ -137,14 +99,8 @@ export default function QuestsOverlay({ onClose }) {
                 </p>
 
                 <div className="flex flex-col gap-2" style={{ marginBottom: 8 }}>
-                  {q.objectives.map((obj) => {
-                    const { current, target, done, pct } = objectiveProgress(obj, {
-                      killCounts,
-                      heroLevel,
-                      visitedSpots,
-                      craftCount,
-                      skillLevels,
-                    })
+                  {questObjectiveStatus(q, gameState).map(({ obj, current, target, done }) => {
+                    const pct = target > 0 ? current / target : 0
                     return (
                       <div key={obj.id} className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">

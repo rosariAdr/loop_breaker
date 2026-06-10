@@ -48,12 +48,15 @@ describe('GLD — venue rendu du QuestBoard', () => {
     expect(screen.getByText('Silence the Crypt')).toBeInTheDocument()
   })
 
-  it('au village : titre Notice Board + pas de quête prestigieuse', () => {
+  it('au village (QSV2) : Notice Board ; les quêtes émises ailleurs ne sont PAS disponibles ici', () => {
+    // QSV2-LOCALITY01 — Millhaven n'émet aucune quête → le board y est vide (les quêtes
+    // d'Ironhaven, leur lieu émetteur, n'apparaissent QU'à Ironhaven).
     setLocation('ashenvale', 'millhaven')
     render(<QuestBoard />)
     expect(screen.getByText('Village Notice Board')).toBeInTheDocument()
     expect(screen.queryByText('Silence the Crypt')).not.toBeInTheDocument()
-    expect(screen.getByText('First Blood')).toBeInTheDocument()
+    expect(screen.queryByText('First Blood')).not.toBeInTheDocument()
+    expect(screen.getByText('No quests available at this location.')).toBeInTheDocument()
   })
 
   it('prestige gardé par le rang : verrou si tokens < seuil, Accept si ≥ seuil', () => {

@@ -1,20 +1,18 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, lazy, Suspense } from 'react'
 import { useGameStore } from './store/gameStore'
 import { useToastStore } from './store/toastStore'
 import { ZONES } from './data/zones'
 import { getClosestAchievement } from './data/achievements'
 import { isZoneTransition } from './utils/transitions'
+import { logRuntimeError } from './utils/errorLog'
 
 import WorldMap from './screens/WorldMap'
 import ZoneView from './screens/ZoneView'
-import Combat from './screens/Combat'
 import HeroSheet from './screens/HeroSheet'
 import Inventory from './screens/Inventory'
-import CodexOverlay from './screens/CodexOverlay'
 import QuestsOverlay from './screens/QuestsOverlay'
 import SafeZone from './screens/SafeZone'
 import PostMortem from './screens/PostMortem'
-import GodsShop from './screens/GodsShop'
 import DivineCall from './screens/DivineCall'
 import QuestBoard from './screens/QuestBoard'
 import LevelUpModal from './screens/LevelUpModal'
@@ -26,10 +24,35 @@ import OfflineRecapModal from './components/OfflineRecapModal'
 import SettingsModal from './components/SettingsModal'
 import { Sidebar } from './components/parchment'
 
+// PERF-SPLIT01 — code-splitting des écrans lourds (chunks séparés chargés à la demande).
+const Combat = lazy(() => import('./screens/Combat'))
+const CodexOverlay = lazy(() => import('./screens/CodexOverlay'))
+const GodsShop = lazy(() => import('./screens/GodsShop'))
+
 // Écrans en takeover plein-canvas (sans topbar/breadcrumb)
 const FULLSCREEN = ['combat', 'post_mortem', 'gods_shop', 'divine_call']
 // IMM04 — écrans rendus en overlay AU-DESSUS du monde (immersion : on ne quitte pas la scène)
 const OVERLAY_SCREENS = ['hero_sheet', 'inventory', 'codex', 'quests']
+
+// PERF-SPLIT01 — fallback affiché le temps de charger le chunk d'un écran lazy.
+function ScreenFallback() {
+  return (
+    <div
+      className="fill"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#d4af70',
+        fontFamily: 'Cinzel, serif',
+        fontSize: '0.9rem',
+        letterSpacing: '0.08em',
+      }}
+    >
+      Loading…
+    </div>
+  )
+}
 
 function App() {
   const {
@@ -53,6 +76,8 @@ function App() {
     loadGame()
     // IDLE-OFF — créditer les gains accumulés hors-ligne après le chargement
     useGameStore.getState().applyOfflineProgress()
+    // DX-LINT01 — effet « au montage » volontaire (run-once) : deps vides assumées
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // SET01 — applique le réglage Animations (classe globale qui neutralise anims/transitions)
@@ -78,11 +103,14 @@ function App() {
         try {
           processIdleTick()
         } catch (e) {
-          console.error('[idle tick]', e)
+          // DX-ERRTRACK01 — capture l'erreur non-fatale (Sentry-lite) au lieu d'un simple console
+          logRuntimeError(e, { source: 'idle-tick' })
         }
       }
     }, 3000)
     return () => clearInterval(interval)
+    // DX-LINT01 — intervalle monté une seule fois (lit l'état via getState) : deps vides assumées
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -92,11 +120,15 @@ function App() {
       if (!activeCombat && !pausedScreens.includes(cs)) advanceTick()
     }, 30000)
     return () => clearInterval(interval)
+    // DX-LINT01 — intervalle monté une seule fois (lit l'état via getState) : deps vides assumées
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     const interval = setInterval(() => saveGame(), 30000)
     return () => clearInterval(interval)
+    // DX-LINT01 — sauvegarde périodique montée une seule fois : deps vides assumées
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // IMM04 — mémorise le dernier écran-monde (pattern React : setState gardé pendant le render)
@@ -206,28 +238,34 @@ function App() {
         {!fullscreen && <Topbar onOpenSettings={() => setSettingsOpen(true)} />}
         {!fullscreen && <Breadcrumb />}
 
-        {fullscreen ? (
-          <ErrorBoundary>
-            <div key={currentScreen} className="anim-screen-fade fill">
-              {renderScreen()}
-            </div>
-          </ErrorBoundary>
-        ) : (
-          <div className="map-area parch-sheet">
+        <Suspense fallback={<ScreenFallback />}>
+          {fullscreen ? (
             <ErrorBoundary>
-              {/* Écran-monde sous-jacent (reste visible/estompé derrière l'overlay) */}
-              <div key={baseScreen} className="anim-screen-fade fill" style={{ overflow: 'auto' }}>
-                {renderScreen(baseScreen)}
+              <div key={currentScreen} className="anim-screen-fade fill">
+                {renderScreen()}
               </div>
-              {/* IMM04 — Hero Sheet / Inventory en overlay par-dessus le monde */}
-              {isOverlay && (
-                <div key={currentScreen} className="fill">
-                  {renderScreen(currentScreen)}
-                </div>
-              )}
             </ErrorBoundary>
-          </div>
-        )}
+          ) : (
+            <div className="map-area parch-sheet">
+              <ErrorBoundary>
+                {/* Écran-monde sous-jacent (reste visible/estompé derrière l'overlay) */}
+                <div
+                  key={baseScreen}
+                  className="anim-screen-fade fill"
+                  style={{ overflow: 'auto' }}
+                >
+                  {renderScreen(baseScreen)}
+                </div>
+                {/* IMM04 — Hero Sheet / Inventory en overlay par-dessus le monde */}
+                {isOverlay && (
+                  <div key={currentScreen} className="fill">
+                    {renderScreen(currentScreen)}
+                  </div>
+                )}
+              </ErrorBoundary>
+            </div>
+          )}
+        </Suspense>
 
         {showSidebar && <Sidebar {...sbProps} />}
 
@@ -246,7 +284,7 @@ function App() {
 }
 
 // ── Topbar (planche de bois — réf design) ─────────────────────────────────────
-function Meter({ kind, value, max, label }) {
+function Meter({ kind, value, max, label, color }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100))
   return (
     <div className={`meter m-${kind}`}>
@@ -257,7 +295,10 @@ function Meter({ kind, value, max, label }) {
         </span>
       </div>
       <div className="m-track">
-        <div className="m-fill" style={{ width: pct + '%' }} />
+        <div
+          className="m-fill"
+          style={{ width: pct + '%', ...(color ? { background: color } : null) }}
+        />
       </div>
     </div>
   )
@@ -340,6 +381,20 @@ function Topbar({ onOpenSettings }) {
       <div className="tb-group">
         <Meter kind="hp" value={hero.stats.hp} max={hero.stats.maxHp} label="HP" />
         <Meter kind="mp" value={hero.stats.mana} max={hero.stats.maxMana} label="MP" />
+        {/* VIG01 — vigueur (lecture seule) à côté de HP/MP ; vert→ambre→rouge */}
+        <Meter
+          kind="vigor"
+          value={hero.vigor ?? 100}
+          max={100}
+          label="Vig"
+          color={
+            (hero.vigor ?? 100) >= 70
+              ? '#4a8020'
+              : (hero.vigor ?? 100) >= 30
+                ? '#b07a30'
+                : 'var(--danger)'
+          }
+        />
       </div>
       <div style={{ flex: 1 }} />
       <div className="tb-group">

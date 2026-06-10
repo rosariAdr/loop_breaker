@@ -98,24 +98,82 @@ function migrateV1ToV2(save) {
 // valide (sinon ZoneView/WorldMap casseraient sur un id disparu).
 const SPOT_ID_REMAP = { barrow_hills: 'wildmere_hills' }
 
+// SAVE-AUDIT01 — coercitions défensives : un champ persisté présent mais du MAUVAIS type
+// (save corrompue, édition manuelle, bug d'une version antérieure) est réparé au lieu de
+// crasher au premier accès non défensif (`.length`, `.includes`, `Object.entries`…).
+const asArray = (v, def = []) => (Array.isArray(v) ? v : def)
+const asObject = (v, def = {}) => (v && typeof v === 'object' && !Array.isArray(v) ? v : def)
+
+/**
+ * Backfill IDEMPOTENT + validation de schéma défensive, appliqué à CHAQUE chargement quelle
+ * que soit la version de la save. Garantit la forme attendue de hero/world/meta (champs
+ * manquants → défaut ; champs malformés → réparés) pour qu'aucune lecture ne crashe.
+ */
 export function normalizeSave(save) {
   if (!save || typeof save !== 'object') return save
-  const world = { ...INITIAL_WORLD, ...(save.world ?? {}) }
-  // Remap des ids de spot/node renommés
+  const sHero = asObject(save.hero)
+  const sWorld = asObject(save.world)
+  const sMeta = asObject(save.meta)
+
+  // ── Hero ──
+  const inv = asObject(sHero.inventory)
+  const hero = {
+    ...INITIAL_HERO,
+    ...sHero,
+    stats: { ...INITIAL_HERO.stats, ...asObject(sHero.stats) },
+    equipped: { ...INITIAL_HERO.equipped, ...asObject(sHero.equipped) },
+    inventory: {
+      resources: asObject(inv.resources),
+      consumables: asObject(inv.consumables),
+      manaStones: asArray(inv.manaStones),
+      equipment: asArray(inv.equipment),
+      gold: typeof inv.gold === 'number' ? inv.gold : 0,
+    },
+    activeSkills: asArray(sHero.activeSkills),
+    passiveSkills: asArray(sHero.passiveSkills),
+    activeDebuffs: asArray(sHero.activeDebuffs),
+    battleLog: asArray(sHero.battleLog),
+    combatEntryLog: asArray(sHero.combatEntryLog),
+    titles: asArray(sHero.titles),
+    skillUseLog: asArray(sHero.skillUseLog),
+  }
+
+  // ── World ──
+  const world = {
+    ...INITIAL_WORLD,
+    ...sWorld,
+    activeQuests: asArray(sWorld.activeQuests),
+    completedQuests: asArray(sWorld.completedQuests),
+    unlockedZones: asArray(sWorld.unlockedZones, [...INITIAL_WORLD.unlockedZones]),
+    visitedSpots: asArray(sWorld.visitedSpots),
+    idleLog: asArray(sWorld.idleLog),
+    monsterKillCounts: asObject(sWorld.monsterKillCounts),
+    idleToggles: asObject(sWorld.idleToggles),
+    dungeons: asObject(sWorld.dungeons, { ...INITIAL_WORLD.dungeons }),
+    generatedVillages: asObject(sWorld.generatedVillages),
+    questProgress: asObject(sWorld.questProgress), // FIX-QUESTSNAP01
+  }
+  // MON01 — remap des ids de spot/node renommés
   if (SPOT_ID_REMAP[world.currentHuntingSpot])
     world.currentHuntingSpot = SPOT_ID_REMAP[world.currentHuntingSpot]
   if (SPOT_ID_REMAP[world.currentNode]) world.currentNode = SPOT_ID_REMAP[world.currentNode]
-  return {
-    ...save,
-    hero: { ...INITIAL_HERO, ...(save.hero ?? {}) },
-    world,
-    meta: {
-      ...INITIAL_META,
-      ...(save.meta ?? {}),
-      // settings est imbriqué → fusion explicite pour ne pas perdre les sous-clés par défaut
-      settings: { ...INITIAL_META.settings, ...(save.meta?.settings ?? {}) },
-    },
+
+  // ── Meta ──
+  const meta = {
+    ...INITIAL_META,
+    ...sMeta,
+    achievements: asArray(sMeta.achievements),
+    titlesEarned: asArray(sMeta.titlesEarned),
+    seenHints: asArray(sMeta.seenHints),
+    knownInfo: asArray(sMeta.knownInfo),
+    divineBonds: asObject(sMeta.divineBonds),
+    permanentStatBoosts: asObject(sMeta.permanentStatBoosts),
+    demonLordKills: asObject(sMeta.demonLordKills),
+    // settings imbriqué → fusion explicite pour conserver les sous-clés par défaut
+    settings: { ...INITIAL_META.settings, ...asObject(sMeta.settings) },
   }
+
+  return { ...save, hero, world, meta }
 }
 
 /**

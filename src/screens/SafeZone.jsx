@@ -131,6 +131,7 @@ function buildingActions(building, npc, isCity = false) {
     // GLD01 — en ville, le tableau de quêtes est déplacé à la Guilde ; l'auberge
     // ne propose plus que repos + informateurs. Au village, l'auberge garde son board.
     const acts = [{ ico: '🛏', label: 'Rest at the Inn', kind: 'rest', primary: true }]
+    acts.push({ ico: '⏳', label: 'Wait', kind: 'wait' }) // WAIT01 — patienter jusqu'à une heure cible
     if (!isCity) acts.push({ ico: '📜', label: 'Quest Board', kind: 'nav', screen: 'quest_board' })
     acts.push({ ico: '🕵', label: 'Ask around', kind: 'panel' }) // TAV01 — informateurs
     acts.push(talk)
@@ -149,9 +150,10 @@ function buildingActions(building, npc, isCity = false) {
 
 function NpcOverlay({ building, onClose, onEnter, showPanel, panel, isCity = false }) {
   const npc = NPCS[building]
-  const { sleep, setScreen } = useGameStore()
+  const { sleep, setScreen, waitUntilHour } = useGameStore()
   const [flash, setFlash] = useState(null)
   const [talkDlg, setTalkDlg] = useState(null) // NPC04 — dialogue en cours
+  const [waitHour, setWaitHour] = useState(null) // WAIT01 — heure cible sélectionnée (null = fermé)
   if (!npc) return null
   const src = npc.role ? portraitSrc(npc.role, 'talk') : null
   const actions = buildingActions(building, npc, isCity)
@@ -170,6 +172,9 @@ function NpcOverlay({ building, onClose, onEnter, showPanel, panel, isCity = fal
       onEnter()
     } else if (a.kind === 'talk') {
       setTalkDlg(getDialogue(TALK_ID[building]) ?? FALLBACK_DIALOGUE)
+    } else if (a.kind === 'wait') {
+      // WAIT01 — ouvre le sélecteur, pré-réglé sur l'heure suivante
+      setWaitHour((useGameStore.getState().world.tickCount + 1) % 24)
     }
   }
 
@@ -242,6 +247,41 @@ function NpcOverlay({ building, onClose, onEnter, showPanel, panel, isCity = fal
                   <span className="pbtn-ico">✕</span>Leave
                 </button>
               </div>
+              {/* WAIT01 — sélecteur d'heure cible (auberge). N'apparaît qu'après clic « Wait ». */}
+              {waitHour !== null && (
+                <div className="npc-wait" data-testid="wait-selector">
+                  <label>
+                    Wait until{' '}
+                    <select
+                      value={waitHour}
+                      onChange={(e) => setWaitHour(Number(e.target.value))}
+                      data-testid="wait-hour"
+                    >
+                      {Array.from({ length: 24 }, (_, h) => (
+                        <option key={h} value={h}>
+                          {String(h).padStart(2, '0')}:00
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    className="pbtn primary"
+                    onClick={() => {
+                      waitUntilHour(waitHour)
+                      const { dayCount, tickCount } = useGameStore.getState().world
+                      setFlash(
+                        `You wait. It is now Day ${dayCount}, ${String(tickCount).padStart(2, '0')}:00 — no rest taken.`,
+                      )
+                      setWaitHour(null)
+                    }}
+                  >
+                    Confirm
+                  </button>
+                  <button className="pbtn" onClick={() => setWaitHour(null)}>
+                    Cancel
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -260,7 +300,12 @@ const BLD_POS = {
   alchemy: { x: 70, y: 82 },
   master_smith: { x: 50, y: 88 },
   guild: { x: 50, y: 16 }, // GLD01 — au centre de la place, en ville
+  academy: { x: 50, y: 66 }, // ACA05 — créneau central-bas libre (sinon VilBuilding rendait null → Académie invisible/inaccessible)
 }
+
+// VIL-FACADE01 — bâtiments qui ont une vraie façade dans /public/buildings/<id>.png :
+// affichés en GRAND et SANS cadre parchemin. Les autres (+ le puits) gardent le placeholder encadré.
+const BLD_FACADES = new Set(['inn', 'church', 'merchant', 'alchemy', 'blacksmith'])
 
 function VilBuilding({ id, info, onClick, closed = false }) {
   const p = BLD_POS[id]
@@ -277,10 +322,21 @@ function VilBuilding({ id, info, onClick, closed = false }) {
       onClick={onClick}
       title={closed ? 'Closed' : undefined}
     >
-      {/* CONT01 — façade du bâtiment : /buildings/<id>.png (fallback placeholder légendé si absent) */}
-      <div className="bld-frame">
-        <ArtSlot caption={info.name} src={`/buildings/${id}.png`} w={120} h={80} />
-      </div>
+      {/* CONT01/VIL-FACADE01 — façade /buildings/<id>.png : en grand & sans cadre si l'asset
+          existe, sinon placeholder légendé encadré. */}
+      {BLD_FACADES.has(id) ? (
+        <ArtSlot
+          className="bld-facade"
+          caption={info.name}
+          src={`/buildings/${id}.png`}
+          w={170}
+          h={150}
+        />
+      ) : (
+        <div className="bld-frame">
+          <ArtSlot caption={info.name} src={`/buildings/${id}.png`} w={120} h={80} />
+        </div>
+      )}
       <div className="bld-sign">
         <span>{info.icon}</span>
         {info.name}
@@ -357,6 +413,8 @@ export default function SafeZone() {
         },
       },
     }))
+    // DX-LINT01 — génération unique du village (gated par needsGeneration) : deps assumées
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsGeneration, location?.id])
 
   if (!zone) return null

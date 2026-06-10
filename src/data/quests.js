@@ -445,6 +445,66 @@ export function getBoardQuests(venue) {
   return all
 }
 
+// ── QSV2-LOCALITY01/TURNIN01 — lieu émetteur d'une quête ──────────────────────
+// `issuedBy` explicite, sinon le `location` du PNJ donneur. Sert à la disponibilité
+// (au lieu émetteur uniquement) et au rendu (lieu émetteur OU ville).
+export function getQuestIssuer(quest) {
+  if (!quest) return null
+  return quest.issuedBy ?? QUEST_NPC_REGISTRY[quest.giverNpc]?.location ?? null
+}
+
+// ── FIX-QUESTSNAP01 — snapshot des compteurs cumulés à l'ACCEPTATION ──────────
+// Capture les kills actuels des monstres ciblés + le craftCount courant, pour que la
+// progression soit comptée en DELTA (une quête déjà « remplie » en cumulé n'est PLUS
+// instantanément complétable à l'acceptation).
+export function snapshotForQuest(quest, state) {
+  const baseKills = {}
+  for (const obj of quest?.objectives ?? []) {
+    if (obj.type === 'kill') {
+      baseKills[obj.monsterId] = state.world?.monsterKillCounts?.[obj.monsterId] ?? 0
+    }
+  }
+  return { baseKills, baseCraft: state.meta?.craftCount ?? 0 }
+}
+
+// Statut par objectif, compté DEPUIS l'acceptation (kill/craft = delta vs snapshot ;
+// level/visit/skill_levelup = seuils d'état). Source unique pour le store ET l'UI.
+export function questObjectiveStatus(quest, state) {
+  const base = state.world?.questProgress?.[quest?.id] ?? {}
+  const baseKills = base.baseKills ?? {}
+  const baseCraft = base.baseCraft ?? 0
+  const skillLevels = heroSkillLevels(state.hero)
+  return (quest?.objectives ?? []).map((obj) => {
+    let raw = 0
+    let target = 1
+    if (obj.type === 'kill') {
+      target = obj.count
+      raw = Math.max(
+        0,
+        (state.world?.monsterKillCounts?.[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0),
+      )
+    } else if (obj.type === 'level') {
+      target = obj.targetLevel
+      raw = state.hero?.level ?? 1
+    } else if (obj.type === 'visit') {
+      target = 1
+      raw = (state.world?.visitedSpots ?? []).includes(obj.spotId) ? 1 : 0
+    } else if (obj.type === 'craft') {
+      target = obj.count
+      raw = Math.max(0, (state.meta?.craftCount ?? 0) - baseCraft)
+    } else if (obj.type === 'skill_levelup') {
+      target = obj.targetLevel
+      raw = skillLevels[obj.skillId] ?? 0
+    }
+    return { obj, current: Math.min(raw, target), target, done: raw >= target }
+  })
+}
+
+export function isQuestCompleteState(quest, state) {
+  if (!quest) return false
+  return questObjectiveStatus(quest, state).every((o) => o.done)
+}
+
 /**
  * ACA04 — Niveau le plus élevé possédé pour chaque skillId (équipé, divin ou en
  * réserve dans les mana stones). Sert aux objectifs `skill_levelup`.

@@ -20,6 +20,7 @@ const STAT_TOOLTIPS = {
   Aura: 'Aura — multiplicateur de dégâts permanent : +0,5% de dégâts par point. Se débloque en utilisant 15 skills en moins de 4 jours, puis +1 tous les 10 skills.',
   Concentration:
     "Concentration — qualité de craft (0-150). Chance d'un cran de rareté supérieur = X/150 ; 150 = +1 cran garanti. Gagnée en craftant.",
+  Experience: 'Expérience accumulée. À expToNext atteint → level up (+stats, PV/Mana max).',
   Strength: "Augmente les dégâts d'attaque basique et des skills physiques. +1/level-up.",
   Agility: "Vitesse au tour de combat (ordre d'action). Augmente le %fuite.",
   Intelligence: 'Augmente les dégâts des skills magiques.',
@@ -76,6 +77,26 @@ export default function HeroSheet({ onClose }) {
         <div className="sheet-body" style={{ overflowY: 'auto' }}>
           {/* Colonne gauche */}
           <div className="hs-left">
+            {/* HS-DEITY01 — bloc Divinité remonté en haut de la colonne gauche, avant l'avatar */}
+            <div className="panel-block">
+              <div className="pb-title">Allegiance</div>
+              {hero.deity ? (
+                <DeityDisplay deityId={hero.deity} hero={hero} />
+              ) : (
+                <div className="faith-row">
+                  <div className="fr">
+                    <div className="fr-k">Deity</div>
+                    <div className="fr-v muted">No deity chosen</div>
+                  </div>
+                  <div className="fr">
+                    <div className="fr-k">Demon Lord</div>
+                    <div className="fr-v danger" style={{ color: 'var(--danger)' }}>
+                      ⚡ Malachar the Undying
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="lb-slot hs-portrait art-slot">
               <img
                 src={HERO_SPRITE}
@@ -130,9 +151,9 @@ export default function HeroSheet({ onClose }) {
               </div>
             </div>
 
-            {/* Provisions (Gold / Tokens / Run) + accès Inventory */}
+            {/* HS-CURR01 — « Currencies » (Gold / Tokens) ; carte « Run » retirée (info déjà en en-tête) */}
             <div className="panel-block">
-              <div className="pb-title">Provisions</div>
+              <div className="pb-title">Currencies</div>
               <div className="derived" style={{ marginBottom: 12 }}>
                 <div className="dv">
                   <div className="dv-num" style={{ color: 'var(--gold)' }}>
@@ -145,10 +166,6 @@ export default function HeroSheet({ onClose }) {
                     {hero.reputationTokens}
                   </div>
                   <div className="dv-lbl">Tokens</div>
-                </div>
-                <div className="dv">
-                  <div className="dv-num">#{hero.runNumber}</div>
-                  <div className="dv-lbl">Run</div>
                 </div>
               </div>
               <button className="pbtn wide" onClick={() => setScreen('inventory')}>
@@ -169,21 +186,24 @@ export default function HeroSheet({ onClose }) {
             {/* Vitals & Attributs */}
             <div className="panel-block">
               <div className="pb-title">Stats</div>
-              <div className="derived" style={{ marginBottom: 20 }}>
-                <Vital
+              {/* HS-VITALS01 — vraies barres HP/Mana/Vigor/Exp (+ valeur). HS-AURA01 — Aura &
+                  Concentration TOUJOURS visibles, floutées + 🔒 tant qu'elles sont verrouillées. */}
+              <div className="hs-vitals" style={{ marginBottom: 20 }}>
+                <VitalBar
                   label="HP"
                   tip={STAT_TOOLTIPS.HP}
                   color="var(--danger)"
-                  value={`${hero.stats.hp}/${hero.stats.maxHp}`}
+                  cur={hero.stats.hp}
+                  max={hero.stats.maxHp}
                 />
-                <Vital
+                <VitalBar
                   label="Mana"
                   tip={STAT_TOOLTIPS.Mana}
                   color="#2f7fb8"
-                  value={`${hero.stats.mana}/${hero.stats.maxMana}`}
+                  cur={hero.stats.mana}
+                  max={hero.stats.maxMana}
                 />
-                {/* STA01 — Vigueur (Fatigue) */}
-                <Vital
+                <VitalBar
                   label="Vigor"
                   tip={STAT_TOOLTIPS.Vigor}
                   color={
@@ -193,27 +213,35 @@ export default function HeroSheet({ onClose }) {
                         ? '#b07a30'
                         : 'var(--danger)'
                   }
-                  value={`${hero.vigor ?? 100}/100`}
+                  cur={hero.vigor ?? 100}
+                  max={100}
                 />
-                {/* STA02 — Aura (mult. de dégâts) ; affichée une fois débloquée */}
-                {(hero.aura ?? 0) > 0 && (
-                  <Vital
-                    label="Aura"
-                    tip={STAT_TOOLTIPS.Aura}
-                    color="#c084fc"
-                    value={`${hero.aura} (+${(hero.aura * 0.5).toFixed(1)}% dmg)`}
-                  />
-                )}
+                <VitalBar
+                  label="Experience"
+                  tip={STAT_TOOLTIPS.Experience}
+                  color="var(--gold)"
+                  cur={hero.exp}
+                  max={hero.expToNext}
+                />
+                {/* STA02 — Aura (mult. de dégâts) */}
+                <VitalBar
+                  label="Aura"
+                  tip={STAT_TOOLTIPS.Aura}
+                  color="#c084fc"
+                  cur={hero.aura ?? 0}
+                  max={20}
+                  locked={(hero.aura ?? 0) <= 0}
+                  display={`${hero.aura ?? 0} (+${((hero.aura ?? 0) * 0.5).toFixed(1)}% dmg)`}
+                />
                 {/* STA03 — Concentration (qualité de craft) */}
-                {(hero.concentration ?? 0) > 0 && (
-                  <Vital
-                    label="Concentration"
-                    tip={STAT_TOOLTIPS.Concentration}
-                    color="#60a0d0"
-                    value={`${hero.concentration}/150`}
-                  />
-                )}
-                <Vital label="Experience" value={`${hero.exp}/${hero.expToNext}`} />
+                <VitalBar
+                  label="Concentration"
+                  tip={STAT_TOOLTIPS.Concentration}
+                  color="#60a0d0"
+                  cur={hero.concentration ?? 0}
+                  max={150}
+                  locked={(hero.concentration ?? 0) <= 0}
+                />
               </div>
               <div className="attr-grid">
                 {ATTR_DEFS.map(({ key, label }) => {
@@ -302,9 +330,9 @@ export default function HeroSheet({ onClose }) {
               {hero.activeSkills.length === 0 ? (
                 <p className="hs-muted">No active skills equipped. Equip from Inventory.</p>
               ) : (
-                <div className="skill-list">
+                <div className="skill-grid">
                   {hero.activeSkills.map((s) => (
-                    <SkillRow key={s.skillId} skill={s} onUnequip={blockSkillUnequip} />
+                    <SkillRow key={s.skillId} skill={s} onUnequip={blockSkillUnequip} compact />
                   ))}
                 </div>
               )}
@@ -316,9 +344,9 @@ export default function HeroSheet({ onClose }) {
               {hero.passiveSkills.length === 0 ? (
                 <p className="hs-muted">No passive skills equipped.</p>
               ) : (
-                <div className="skill-list">
+                <div className="skill-grid">
                   {hero.passiveSkills.map((s) => (
-                    <SkillRow key={s.skillId} skill={s} onUnequip={blockSkillUnequip} />
+                    <SkillRow key={s.skillId} skill={s} onUnequip={blockSkillUnequip} compact />
                   ))}
                 </div>
               )}
@@ -344,27 +372,6 @@ export default function HeroSheet({ onClose }) {
                 </div>
               </div>
             )}
-
-            {/* Allégeance */}
-            <div className="panel-block">
-              <div className="pb-title">Allegiance</div>
-              {hero.deity ? (
-                <DeityDisplay deityId={hero.deity} hero={hero} />
-              ) : (
-                <div className="faith-row">
-                  <div className="fr">
-                    <div className="fr-k">Deity</div>
-                    <div className="fr-v muted">No deity chosen</div>
-                  </div>
-                  <div className="fr">
-                    <div className="fr-k">Demon Lord</div>
-                    <div className="fr-v danger" style={{ color: 'var(--danger)' }}>
-                      ⚡ Malachar the Undying
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* M01 — Titres permanents */}
             {(earnedTitles.length > 0 || hero.titles.length > 0) && (
@@ -393,16 +400,22 @@ export default function HeroSheet({ onClose }) {
   )
 }
 
-function Vital({ label, value, color, tip }) {
-  const num = (
-    <div className="dv-num" style={color ? { color } : undefined}>
-      {value}
-    </div>
-  )
+// HS-VITALS01 / HS-AURA01 — barre de vitale : libellé + jauge colorée + valeur.
+// `locked` (Aura/Concentration non débloquées) → jauge floutée + 🔒 (pattern S02) ; le
+// libellé reste net avec son tooltip explicatif.
+function VitalBar({ label, cur, max, color, tip, locked = false, display }) {
+  const pct = max > 0 ? Math.min(100, Math.max(0, (cur / max) * 100)) : 0
+  const labelEl = <span className="hvb-label">{label}</span>
   return (
-    <div className="dv">
-      {tip ? <Tooltip content={tip}>{num}</Tooltip> : num}
-      <div className="dv-lbl">{label}</div>
+    <div
+      className={`hvb ${locked ? 'hvb-locked' : ''}`}
+      data-testid={`vital-${label.toLowerCase()}`}
+    >
+      {tip ? <Tooltip content={tip}>{labelEl}</Tooltip> : labelEl}
+      <span className="hvb-bar">
+        <i style={{ width: `${locked ? 100 : pct}%`, background: color }} />
+      </span>
+      <span className="hvb-val">{locked ? '🔒' : (display ?? `${cur}/${max}`)}</span>
     </div>
   )
 }
@@ -441,7 +454,7 @@ function DeityDisplay({ deityId, hero }) {
   )
 }
 
-function SkillRow({ skill, isDivine = false, onUnequip }) {
+function SkillRow({ skill, isDivine = false, onUnequip, compact = false }) {
   const template = SKILLS[skill.skillId]
   if (!template) return null
   const xpNeeded = skill.level === 1 ? 20 : 50
@@ -479,7 +492,7 @@ function SkillRow({ skill, isDivine = false, onUnequip }) {
             Lv {skill.level}/3
           </span>
         </div>
-        <div className="sk-desc">{template.description}</div>
+        {!compact && <div className="sk-desc">{template.description}</div>}
         <div className="sk-meta">
           {template.cost.mana > 0 && (
             <span style={{ color: '#2f7fb8' }}>{template.cost.mana} MP</span>
