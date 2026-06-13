@@ -1,43 +1,25 @@
 // REFAC01 — Slice « combat » du store (extrait de gameStore.js, comportement inchangé).
-import { MONSTERS } from '../../data/monsters'
+import { IDLE_MASTERY_KILLS } from './idleSlice'
 import { VIGOR_COST, VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
-import { useToastStore } from '../toastStore'
 
-export const createCombatSlice = (set) => ({
+export const createCombatSlice = (set, get) => ({
   // ── Kill count & idle ─────────────────────────────────────────────────────
-  recordKill: (monsterId) =>
-    set((state) => {
-      const current = (state.world.monsterKillCounts ?? {})[monsterId] || 0
-      const newCount = current + 1
-
-      // TUT02 — Hint idle unlock : 1ère fois qu'un mob atteint 5 kills (seuil idle)
-      // Accès défensif : `seenHints` peut être absent d'une vieille save → ?? []
-      // (sinon `.includes` throwait et bloquait l'incrément du compteur de kills).
-      const currentHints = state.meta.seenHints ?? []
-      let newSeenHints = currentHints
-      if (newCount >= 5 && !currentHints.includes('idle_unlock')) {
-        const monsterName = MONSTERS[monsterId]?.name ?? monsterId
-        useToastStore
-          .getState()
-          .addToast(
-            `Idle combat unlocked for ${monsterName}! Toggle it from the zone view.`,
-            'info',
-            4000,
-          )
-        newSeenHints = [...currentHints, 'idle_unlock']
-      }
-
-      return {
-        world: {
-          ...state.world,
-          monsterKillCounts: {
-            ...state.world.monsterKillCounts,
-            [monsterId]: newCount,
-          },
+  recordKill: (monsterId) => {
+    // Accès défensif : monsterKillCounts peut être absent d'une vieille save.
+    const before = (get().world.monsterKillCounts ?? {})[monsterId] || 0
+    set((state) => ({
+      world: {
+        ...state.world,
+        monsterKillCounts: {
+          ...state.world.monsterKillCounts,
+          [monsterId]: before + 1,
         },
-        meta: { ...state.meta, seenHints: newSeenHints },
-      }
-    }),
+      },
+    }))
+    // ONB01/TUT02 — au passage du seuil de maîtrise, tip « idle unlocked » (one-shot ;
+    // déduplication + respect du réglage tutoriel gérés par triggerHint).
+    if (before + 1 >= IDLE_MASTERY_KILLS) get().triggerHint('idle_unlock')
+  },
 
   // ── Combat ────────────────────────────────────────────────────────────────
   startCombat: (enemies) =>

@@ -1,6 +1,12 @@
 // NPC01 — Tests du système de dialogue (data + intégrité de l'arbre)
 import { describe, it, expect } from 'vitest'
-import { DIALOGUES, getDialogue, getNode } from './dialogues'
+import {
+  DIALOGUES,
+  getDialogue,
+  getNode,
+  BUILDING_DIALOGUE_ID,
+  FALLBACK_DIALOGUE,
+} from './dialogues'
 
 describe('NPC01 — dialogues', () => {
   it('getDialogue retourne un dialogue existant, null sinon', () => {
@@ -29,6 +35,32 @@ describe('NPC01 — dialogues', () => {
           if (opt.nextId != null) expect(d.nodes[opt.nextId]).toBeDefined()
         }
       }
+    }
+  })
+})
+
+describe('DLG01 — aucun PNJ nommé ne retombe sur le FALLBACK', () => {
+  const fallbackText = FALLBACK_DIALOGUE.nodes[FALLBACK_DIALOGUE.startId].text
+
+  it('chaque bâtiment mappé résout vers un arbre dédié (pas null, pas FALLBACK)', () => {
+    for (const [building, id] of Object.entries(BUILDING_DIALOGUE_ID)) {
+      const d = getDialogue(id)
+      expect(d, `${building} → ${id} doit avoir un arbre dédié`).not.toBeNull()
+      const greet = getNode(d, d.startId)
+      expect(greet.text).toBeTruthy()
+      expect(greet.text, `${building} ne doit pas parler comme le FALLBACK`).not.toBe(fallbackText)
+    }
+  })
+
+  it('les 5 PNJ jadis génériques ont désormais un arbre (régression DLG01)', () => {
+    for (const id of [
+      'guild_master',
+      'master_hollis',
+      'knight_aldric',
+      'alchemist_vesna',
+      'academy_oren',
+    ]) {
+      expect(getDialogue(id), `${id} manquant`).not.toBeNull()
     }
   })
 })

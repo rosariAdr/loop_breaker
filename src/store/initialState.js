@@ -135,6 +135,11 @@ export const INITIAL_WORLD = {
   // Villages générés aléatoirement (buildings présents dans chaque village)
   generatedVillages: {}, // { villageId: { buildings: [...] } }
 
+  // BLDUNL01 — bâtiments actuellement VERROUILLÉS (override des défauts data-driven).
+  // Vide par défaut = tout déverrouillé (POC jouable). Le câblage des triggers de
+  // déblocage progressif (BLDUNL02-04) reste à faire avec MQ-CHAIN01 / START03.
+  buildingLocks: [], // [buildingId, ...]
+
   // Demon Lord
   demonLordDefeated: false,
   demonLordResurrectionCounter: 0,
@@ -188,7 +193,8 @@ export const INITIAL_META = {
   offlineSummary: null, // { monsterName, kills, gold, xp, resources } — affiché au retour puis effacé
 
   // SET01 — réglages joueur (persistés avec meta)
-  settings: { animations: true },
+  // ONB01 — `tutorials` : tips contextuels one-shot (défaut activé).
+  settings: { animations: true, tutorials: true },
 
   // TAV01 — infos achetées aux informateurs (persistant entre runs)
   knownInfo: [], // [infoId, ...]

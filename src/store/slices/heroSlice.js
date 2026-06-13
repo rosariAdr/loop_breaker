@@ -474,7 +474,8 @@ export const createHeroSlice = (set, get) => ({
   },
 
   // ── XP & niveau ──────────────────────────────────────────────────────────
-  gainExp: (amount) =>
+  gainExp: (amount) => {
+    let leveled = false
     set((state) => {
       const { exp, level, expToNext, stats, levelsGained } = applyLevelUps(
         state.hero.exp + amount,
@@ -482,11 +483,14 @@ export const createHeroSlice = (set, get) => ({
         state.hero.expToNext,
         { ...state.hero.stats },
       )
+      leveled = levelsGained > 0
       return {
         hero: { ...state.hero, exp, level, expToNext, stats },
         pendingLevelUp: state.pendingLevelUp + levelsGained,
       }
-    }),
+    })
+    if (leveled) get().triggerHint('first_levelup') // ONB01 — tip au 1er level-up
+  },
 
   clearPendingLevelUp: () => set({ pendingLevelUp: 0 }),
 

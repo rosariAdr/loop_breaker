@@ -37,7 +37,7 @@ export const CHURCH_QUESTS = {
         label: 'Lay Ruin Specters to rest',
       },
     ],
-    reward: { reputationTokens: 2, consumables: { elixir_minor: 2 } },
+    reward: { reputationTokens: 0, consumables: { elixir_minor: 2 } },
   },
 
   church_calm_marsh: {
@@ -56,7 +56,7 @@ export const CHURCH_QUESTS = {
         label: 'Slay Marsh Serpents',
       },
     ],
-    reward: { reputationTokens: 2, consumables: { hp_potion_medium: 2 } },
+    reward: { reputationTokens: 0, consumables: { hp_potion_medium: 2 } },
   },
 
   church_banish_wraiths: {
@@ -75,7 +75,7 @@ export const CHURCH_QUESTS = {
         label: 'Banish Briar Wraiths',
       },
     ],
-    reward: { reputationTokens: 2, consumables: { antidote_basic: 2, mana_potion_medium: 1 } },
+    reward: { reputationTokens: 0, consumables: { antidote_basic: 2, mana_potion_medium: 1 } },
   },
 
   church_break_knights: {
@@ -94,7 +94,7 @@ export const CHURCH_QUESTS = {
         label: 'Destroy Hollow Knights',
       },
     ],
-    reward: { reputationTokens: 3, consumables: { mana_crystal: 1 } },
+    reward: { reputationTokens: 0, consumables: { mana_crystal: 1 } },
   },
 
   church_thin_the_pack: {
@@ -113,7 +113,7 @@ export const CHURCH_QUESTS = {
         label: 'Cull Ashwood Wolves',
       },
     ],
-    reward: { reputationTokens: 1, consumables: { stamina_ration: 3 } },
+    reward: { reputationTokens: 0, consumables: { stamina_ration: 3 } },
   },
 
   church_purge_slimes: {
@@ -132,7 +132,7 @@ export const CHURCH_QUESTS = {
         label: 'Purge Mire Slimes',
       },
     ],
-    reward: { reputationTokens: 2, consumables: { elixir_minor: 1, hp_potion_medium: 1 } },
+    reward: { reputationTokens: 0, consumables: { elixir_minor: 1, hp_potion_medium: 1 } },
   },
 }
 

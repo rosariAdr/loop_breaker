@@ -2,7 +2,7 @@
 
 > **Fichier maître** : étude des assets à produire + **prompts prêts à coller** + reco par asset
 > (🟢 **Gemini** / 🟣 **autre IA** / 🟠 **à sourcer** / ⚪ **ni l'un ni l'autre**).
-> Les **monstres** (§4) ont chacun un **prompt complet prêt à copier-coller**. (`public/monsters/README.md` reste un guide secondaire.)
+> **Chaque asset (§4 à §11) a son propre prompt COMPLET prêt à copier-coller** (style + cadrage + sujet + technique déjà assemblés) — un bloc = un asset. (`public/monsters/README.md` reste un guide secondaire.)
 > Rappel : `public/` est **gitignoré** → les assets restent local-only ; ce plan, lui, est committé.
 
 ---
@@ -215,33 +215,79 @@ Premium collectible 3D figurine / painted statue of Malachar the Undying, a colo
 
 > **Reco : 🟢 Gemini.** Style **village médiéval-fantaisie chaleureux (Ghibli × Dragon Quest)**, cohérent avec la carte parchemin. Vue de face 3/4, fond neutre détourable. Emplacement : `public/buildings/<id>.png`.
 
-**Bloc style (commun) :**
+Chaque bloc est un **prompt complet prêt à copier-coller**.
+
+**`inn.png`** — The Hearth Inn
 ```
-A single charming medieval-fantasy village building, front 3/4 view, storybook
-Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a
-flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+A single charming medieval-fantasy village inn — a cozy two-storey timber-framed inn with a hanging wooden tavern sign shaped like a foaming ale mug, warm glowing amber windows, a worn thatched roof, a stone chimney with a thin wisp of smoke, and a welcoming arched wooden door. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
 ```
-**Sujets :**
-- `inn` — *a cozy timber-framed inn, hanging tavern sign with a foaming mug, warm glowing windows, thatched roof, welcoming door.*
-- `merchant` — *a quaint merchant's shop with a striped awning, crates and barrels of goods by the door, a hanging sign with a coin and scale.*
-- `blacksmith` — *a stone-and-timber blacksmith forge with a glowing furnace, an anvil out front, a hammer-and-anvil sign, smoke from the chimney.*
-- `alchemy` — *a crooked alchemist's hut, bubbling colorful potion bottles in the window, drying herbs, a mortar-and-pestle sign, a wisp of green smoke.*
-- `church` — *a small stone chapel with a modest bell tower, a stained-glass window, a wooden holy symbol over the door, warm candlelight inside.*
-- *(v1.2)* `guild` — *an imposing adventurers' guild hall, banners, a crossed-swords crest sign, a bounty notice board by the door.*
-- *(v1.2)* `academy` — *a scholarly mage's academy tower, glowing arcane runes, tall arched windows, a star-and-eye sigil sign.*
+**`merchant.png`** — Merchant's Shop
+```
+A single charming medieval-fantasy merchant's shop — a quaint timber-and-plaster shopfront with a striped red-and-cream awning, an open stall window, crates and barrels of colorful goods stacked by the door, and a hanging sign showing a gold coin and a weighing scale. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+```
+**`blacksmith.png`** — Blacksmith's Forge
+```
+A single charming medieval-fantasy blacksmith's forge — a sturdy stone-and-timber smithy with a glowing orange furnace visible inside, an anvil with a hammer out front, a tall stone chimney puffing smoke, and a hanging sign shaped like a hammer crossed over an anvil. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+```
+**`alchemy.png`** — Alchemy Workshop
+```
+A single charming medieval-fantasy alchemist's hut — a slightly crooked timber hut with bubbling colorful potion bottles glowing in the window, bunches of drying herbs hanging under the eaves, a hanging sign shaped like a mortar and pestle, and a thin wisp of green smoke from a crooked chimney. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+```
+**`church.png`** — Church of the Old Gods
+```
+A single charming medieval-fantasy stone chapel — a modest grey-stone church with a small bell tower and a hanging bell, a round stained-glass window glowing with warm candlelight, a simple wooden holy symbol mounted over an arched door, and a slate roof. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting reverent colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+```
+**`master_smith.png`** — Master Smith *(forge améliorée, rare)*
+```
+A single charming medieval-fantasy master smith's workshop — a grand upgraded forge of fine stone and dark timber with a large bright glowing furnace, an ornate anvil and masterwork weapons displayed on a rack out front, a tall chimney throwing bright sparks, and a hanging sign shaped like a crowned hammer-and-anvil. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm rich colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+```
+**`knight_trainer.png`** — Knight Trainer
+```
+A single charming medieval-fantasy knight trainer's hall — a sturdy timber-and-stone training hall with a small fenced sparring yard, a weapon rack and a straw practice dummy out front, a heraldic shield mounted above the door, fluttering banners, and a hanging sign shaped like a crossed sword and shield. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+```
+**`guild.png`** — Adventurers' Guild
+```
+A single charming medieval-fantasy adventurers' guild hall — an imposing two-storey timber-and-stone hall hung with colorful pennant banners, a large hanging sign bearing a crossed-swords crest, a bounty notice board beside a heavy double door, and a peaked roof. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+```
+**`academy.png`** — Academy of Magic
+```
+A single charming medieval-fantasy mage's academy — a slender scholarly stone tower with tall arched windows glowing with soft arcane light, faint blue runes etched along the stone, a conical tiled roof topped with a small observatory dome, and a hanging sign bearing a star-and-eye sigil. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors with a touch of arcane blue, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+```
 
 ---
 
 ## 7) 🟢 DÉCO VILLAGE (Gemini)
 
-> **Reco : 🟢 Gemini.** Petits props isolés, même style village, fond neutre. `public/deco/<id>.png`. Bloc style = idem §6 (remplacer « building » par « small prop »).
-- `well` — *a charming round stone village well with a little wooden roof, bucket and rope.*
-- `barrels` — *a small stack of wooden barrels and crates.*
-- `hens` — *two or three plump cute hens pecking the ground.*
-- `signpost` — *a wooden village signpost with blank directional planks.*
-- `market_stall` — *a colorful little market stall with an awning and produce baskets.*
-- `lantern_post` — *a wrought-iron lantern post with a warm glowing flame.*
-- `hay_cart` — *a small wooden hay cart with bales.*
+> **Reco : 🟢 Gemini.** Petits props isolés, même style village, fond neutre. `public/deco/<id>.png`. Chaque bloc est un **prompt complet prêt à copier-coller**.
+
+**`well.png`** — Puits
+```
+A single small medieval-fantasy village prop — a charming round stone wishing-well with a little peaked wooden roof, a hanging bucket on a rope, and a few mossy stones. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+```
+**`barrels.png`** — Tonneaux
+```
+A single small medieval-fantasy village prop — a small tidy stack of wooden barrels and a crate, iron-banded, with a little burlap sack leaning against them. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+```
+**`hens.png`** — Poules
+```
+A single small medieval-fantasy village prop — two or three plump cute brown-and-white hens pecking and clucking together. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, charming and rounded, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+```
+**`signpost.png`** — Panneau
+```
+A single small medieval-fantasy village prop — a weathered wooden signpost with two or three blank directional planks pointing different ways, slightly leaning. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+```
+**`market_stall.png`** — Étal de marché
+```
+A single small medieval-fantasy village prop — a colorful little market stall with a striped awning and woven baskets of bright produce (fruit, vegetables, bread) on the counter. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+```
+**`lantern_post.png`** — Lampadaire
+```
+A single small medieval-fantasy village prop — a wrought-iron lantern post with a glass lantern holding a warm glowing flame, a little curl of decorative ironwork at the top. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+```
+**`hay_cart.png`** — Charrette de foin
+```
+A single small medieval-fantasy village prop — a small wooden hay cart with two large wheels, loaded with golden hay bales and a pitchfork resting against the side. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+```
 
 ---
 
@@ -249,49 +295,106 @@ flat neutral light background (easy to cut out). No text, no UI, no border, no g
 
 > **Reco : 🟢 Gemini** (illustration épique, plus dramatique que les figurines). Affichées au **DivineCall**. `public/deities/<id>.png`. Fond neutre OU aura mystique détourable.
 
-**Bloc style :**
+Chaque bloc est un **prompt complet prêt à copier-coller**.
+
+**`ignareth.png`** — Ignareth *(chaotique, feu/ruine)*
 ```
-Epic divine deity key-art, dramatic painterly illustration, awe-inspiring, glowing aura,
-centered bust/figure, isolated on a simple dark atmospheric background. No text, no UI.
+Epic divine deity key-art of Ignareth, a towering god of fire and ruin — wreathed in living flame with molten cracked skin glowing from within, a crown of burning embers, fierce and awe-inspiring, radiating an intense orange-red glow. Dramatic painterly illustration, cinematic and majestic, centered bust-to-waist figure, isolated on a simple dark atmospheric background with a subtle fiery aura. No text, no watermark, no UI, no border.
 ```
-- `ignareth` *(chaotique, feu/ruine)* — *Ignareth, a towering god of fire and ruin, wreathed in living flame, molten cracked skin, a burning crown, fierce and awe-inspiring, orange-red glow.*
-- `sylvara` *(loyale, nature/vie)* — *Sylvara, a serene goddess of nature and life, antlered, robed in living vines and leaves, soft radiant green glow, gentle and graceful.*
-- `voltaris` *(chaotique, foudre/action)* — *Voltaris, a dynamic god of storm and action, crackling with lightning, a stormcloud mantle, fierce energetic stance, electric-blue glow.*
+**`sylvara.png`** — Sylvara *(loyale, nature/vie)*
+```
+Epic divine deity key-art of Sylvara, a serene goddess of nature and life — antlered, robed in living vines and leaves with small blossoms, a soft radiant green glow, gentle and graceful, eyes full of quiet wisdom. Dramatic painterly illustration, cinematic and luminous, centered bust-to-waist figure, isolated on a simple dark atmospheric background with a subtle verdant aura. No text, no watermark, no UI, no border.
+```
+**`voltaris.png`** — Voltaris *(chaotique, foudre/action)*
+```
+Epic divine deity key-art of Voltaris, a dynamic god of storm and action — crackling with arcs of lightning, a swirling stormcloud mantle around his shoulders, a fierce energetic stance, radiating an electric-blue glow. Dramatic painterly illustration, cinematic and powerful, centered bust-to-waist figure, isolated on a simple dark atmospheric background with a subtle stormy aura. No text, no watermark, no UI, no border.
+```
 
 ---
 
 ## 9) 🟠/🟣 PORTRAITS PNJ MANQUANTS (prêtre, chef de village)
 
 > Les 5 portraits existants sont des **pixel-portraits 128² à 6 émotions** (CraftPix). Pour **matcher exactement**, **🟠 sourcer le même pack** est le plus sûr (la règle anti-clash d'`ASSETS.md` interdit de mélanger les styles).
-> Alternative **🟣 IA pixel-art** (plus dur à matcher) : générer les 6 émotions (talk/calm/smile/sadness/aggression/special) dans un style pixel-portrait identique.
-- `priest` (church) — *an elderly kind priest in white-and-gold robes, serene wise face.*
-- `elder` (chef de village) — *a weathered village elder, grey beard, simple tunic, kindly wise expression.*
+> Alternative **🟣 IA pixel-art** (plus dur à matcher) : générer les **6 émotions** par PNJ. Chaque bloc est un **prompt complet** ; génère-le 6 fois en remplaçant `[EMOTION]` par : **talk · calm · smile · sadness · aggression · special**. Fichiers : `public/portraits/<role>/<emotion>.png`.
+
+**`portraits/priest/<emotion>.png`** — Prêtre (church)
+```
+A 128x128 pixel-art RPG dialogue portrait of an elderly kind priest — white-and-gold clerical robes, a serene wise weathered face, soft white hair and a short beard — showing a clear [EMOTION] expression. Retro 16-bit JRPG portrait style, clean limited palette, crisp readable pixels, centered head-and-shoulders bust facing slightly forward, plain flat solid-color background. No text, no watermark, no UI, no border.
+```
+**`portraits/elder/<emotion>.png`** — Chef de village
+```
+A 128x128 pixel-art RPG dialogue portrait of a weathered village elder — a long grey beard, kindly wise eyes, a simple brown tunic and a small medallion of office — showing a clear [EMOTION] expression. Retro 16-bit JRPG portrait style, clean limited palette, crisp readable pixels, centered head-and-shoulders bust facing slightly forward, plain flat solid-color background. No text, no watermark, no UI, no border.
+```
 
 ---
 
 ## 10) 🟢 CHARACTER-SELECT — 8 classes (C03, Gemini)
 
-> **Reco : 🟢 Gemini.** Portraits-bustes héroïques, même chaleur Ghibli×DQ. `public/charselect/<id>.png`, fond neutre détourable. Bloc style = portrait héroïque charmant, buste, fond neutre.
-- `warrior` — brave warrior with sword and shield, determined grin.
-- `rogue` — sly hooded rogue with daggers, smirking.
-- `mage` — young mage with a glowing staff, curious eyes.
-- `ranger` — keen ranger with a bow and green hooded cloak.
-- `monk` — calm martial monk in simple robes, focused.
-- `knight` — noble knight in polished plate, visor up.
-- `witch` — whimsical witch with a pointed hat and spellbook.
-- `bard` — charismatic bard with a lute, winking.
+> **Reco : 🟢 Gemini.** Portraits-bustes héroïques, même chaleur Ghibli×DQ. `public/charselect/<id>.png`, fond neutre détourable. Chaque bloc est un **prompt complet prêt à copier-coller**.
+
+**`warrior.png`** — Guerrier
+```
+A charming heroic character portrait bust of a brave warrior — holding a sword and a sturdy shield, light armor, a determined confident grin. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm vivid colors, hand-painted look, expressive and adventurous, centered head-and-shoulders bust, slight 3/4 angle. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border.
+```
+**`rogue.png`** — Voleur
+```
+A charming heroic character portrait bust of a sly hooded rogue — twin daggers, a dark leather hood and cloak, a clever smirk and quick eyes. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm vivid colors, hand-painted look, expressive and adventurous, centered head-and-shoulders bust, slight 3/4 angle. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border.
+```
+**`mage.png`** — Mage
+```
+A charming heroic character portrait bust of a young mage — holding a staff topped with a glowing crystal, a blue-and-gold robe, curious bright eyes. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm vivid colors, hand-painted look, expressive and adventurous, centered head-and-shoulders bust, slight 3/4 angle. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border.
+```
+**`ranger.png`** — Rôdeur
+```
+A charming heroic character portrait bust of a keen ranger — a longbow over the shoulder, a green hooded cloak, sharp focused eyes scanning ahead. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm vivid colors, hand-painted look, expressive and adventurous, centered head-and-shoulders bust, slight 3/4 angle. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border.
+```
+**`monk.png`** — Moine
+```
+A charming heroic character portrait bust of a calm martial monk — simple earth-toned robes, hands wrapped, a serene focused expression, a shaven or topknot hairstyle. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm vivid colors, hand-painted look, expressive and adventurous, centered head-and-shoulders bust, slight 3/4 angle. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border.
+```
+**`knight.png`** — Chevalier
+```
+A charming heroic character portrait bust of a noble knight — polished plate armor with a tabard, the visor raised to reveal a steadfast brave face. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm vivid colors, hand-painted look, expressive and adventurous, centered head-and-shoulders bust, slight 3/4 angle. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border.
+```
+**`witch.png`** — Sorcière
+```
+A charming heroic character portrait bust of a whimsical witch — a wide pointed hat, a spellbook tucked under one arm, a mischievous knowing smile and bright eyes. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm vivid colors, hand-painted look, expressive and adventurous, centered head-and-shoulders bust, slight 3/4 angle. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border.
+```
+**`bard.png`** — Barde
+```
+A charming heroic character portrait bust of a charismatic bard — a lute held ready, a feathered cap and colorful traveling clothes, a playful wink and a confident grin. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm vivid colors, hand-painted look, expressive and adventurous, centered head-and-shoulders bust, slight 3/4 angle. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border.
+```
 
 ---
 
 ## 11) 🟢 FONDS D'ARÈNE (optionnel, Gemini)
 
-> Actuellement dégradés CSS (suffisants). Polish optionnel : 1 illustration de fond par spot. `public/arenas/<spot>.png`, format paysage. Bloc style = `atmospheric background illustration, painterly, slight depth-of-field, no characters`.
-- `ashenvale_forest` — sunlit ancient forest clearing, warm green.
-- `thornmarsh` — misty fetid swamp, murky green-brown, hanging vines.
-- `crumbled_ruins` — broken overgrown ancient stone ruins, melancholic.
-- `wildmere_hills` — rolling verdant hills under a wide sky.
-- `blighted_road` — cursed blighted wasteland road, red-tinged, ominous.
-- `grimspire` — dark volcanic citadel approach, purple-black, foreboding.
+> Actuellement dégradés CSS (suffisants). Polish optionnel : 1 illustration de fond par spot. `public/arenas/<spot>.png`, **format paysage 16:9**. Chaque bloc est un **prompt complet prêt à copier-coller** *(fond pleine image — pas de détourage)*.
+
+**`ashenvale_forest.png`**
+```
+An atmospheric medieval-fantasy combat background illustration of a sunlit ancient forest clearing — tall mossy trees, dappled warm-green light, drifting leaves and soft shafts of sun, painterly storybook style with gentle depth-of-field, no characters, no creatures, empty scene, landscape 16:9 composition. No text, no watermark, no UI, no border.
+```
+**`thornmarsh.png`**
+```
+An atmospheric medieval-fantasy combat background illustration of a misty fetid swamp — murky green-brown water, twisted trees with hanging vines, low fog and dead reeds, eerie muted palette, painterly storybook style with gentle depth-of-field, no characters, no creatures, empty scene, landscape 16:9 composition. No text, no watermark, no UI, no border.
+```
+**`crumbled_ruins.png`**
+```
+An atmospheric medieval-fantasy combat background illustration of broken overgrown ancient stone ruins — toppled pillars and cracked flagstones reclaimed by moss and ivy, a melancholic grey-green palette and soft hazy light, painterly storybook style with gentle depth-of-field, no characters, no creatures, empty scene, landscape 16:9 composition. No text, no watermark, no UI, no border.
+```
+**`wildmere_hills.png`**
+```
+An atmospheric medieval-fantasy combat background illustration of rolling verdant hills under a wide bright sky — wildflowers, scattered boulders and a distant tree line, warm sunny greens, painterly storybook style with gentle depth-of-field, no characters, no creatures, empty scene, landscape 16:9 composition. No text, no watermark, no UI, no border.
+```
+**`blighted_road.png`**
+```
+An atmospheric medieval-fantasy combat background illustration of a cursed blighted wasteland road — cracked dead earth, withered black trees, a sickly red-tinged sky and drifting ash, ominous and desolate, painterly storybook style with gentle depth-of-field, no characters, no creatures, empty scene, landscape 16:9 composition. No text, no watermark, no UI, no border.
+```
+**`grimspire.png`**
+```
+An atmospheric medieval-fantasy combat background illustration of a dark volcanic citadel approach — jagged black basalt cliffs, rivers of distant glowing lava, a brooding purple-black sky with embers, foreboding and grim, painterly storybook style with gentle depth-of-field, no characters, no creatures, empty scene, landscape 16:9 composition. No text, no watermark, no UI, no border.
+```
 
 ---
 
@@ -305,7 +408,7 @@ centered bust/figure, isolated on a simple dark atmospheric background. No text,
 
 ## 13) Workflow Gemini (rappel)
 
-1. Coller `[bloc technique] + [bloc style/tier] + [descriptif du sujet]`.
+1. Copier-coller **le prompt complet de l'asset** (chaque bloc §4-§11 est déjà prêt, rien à assembler).
 2. Générer en **1024²**, fond plat neutre.
 3. **Détourer** (rembg) → PNG transparent.
 4. Recadrer/redimensionner à la cible, **nommer exactement**, déposer dans le bon dossier `public/…`.

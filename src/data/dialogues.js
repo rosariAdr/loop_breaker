@@ -106,6 +106,116 @@ Object.assign(DIALOGUES, {
   },
 })
 
+// ── DLG01 — Maîtres de bâtiment & Guilde sans arbre dédié (retombaient sur le
+//    FALLBACK générique « stranger… » alors qu'ils sont nommés). ────────────────
+Object.assign(DIALOGUES, {
+  // Guilde des Aventuriers (GLD01) — cas signalé en revue : TALK_ID.guild pointait
+  // sur 'guild_master' mais aucun arbre n'existait → Doran parlait générique.
+  guild_master: {
+    startId: 'g',
+    nodes: {
+      g: {
+        text: 'Proven blades only past this hall, friend. State your business — a commission, a drink, or gossip?',
+        options: [
+          { label: 'How do I prove myself?', nextId: 'prove' },
+          { label: 'What does the road whisper?', nextId: 'rumor' },
+          { label: 'Farewell.', nextId: null },
+        ],
+      },
+      prove: {
+        text: 'Clear commissions off the board. Coin and reputation both — the Guild remembers who finishes what they start, and who runs.',
+        options: [{ label: '(Back)', nextId: 'g' }],
+      },
+      rumor: {
+        text: 'Caravans have gone quiet on the eastern road. And the church buys more candles than any honest grief explains. Make of that what you will.',
+        options: [
+          { label: 'Good to know.', nextId: null },
+          { label: '(Back)', nextId: 'g' },
+        ],
+      },
+    },
+  },
+  master_hollis: {
+    startId: 'g',
+    nodes: {
+      g: {
+        text: "Only the finest work leaves my anvil. Bring me rare stock and I'll bring you something worth carrying into the dark.",
+        options: [
+          { label: "How is your work different from Bram's?", nextId: 'd' },
+          { label: 'Farewell.', nextId: null },
+        ],
+      },
+      d: {
+        text: "Bram makes soldiers' steel — honest, blunt, plentiful. I make heirlooms. The difference is whether your grandchildren inherit the blade or the grave.",
+        options: [{ label: '(Leave)', nextId: null }],
+      },
+    },
+  },
+  knight_aldric: {
+    startId: 'g',
+    nodes: {
+      g: {
+        text: "So you'd learn the blade. Good. Steel is patient — and so am I, though my patience has its edges.",
+        options: [
+          { label: "What's the first lesson?", nextId: 'l' },
+          { label: 'Farewell.', nextId: null },
+        ],
+      },
+      l: {
+        text: 'Footwork. A sword arm is worthless if your feet betray you. Master the ground before you ever master the edge.',
+        options: [{ label: '(Back)', nextId: 'g' }],
+      },
+    },
+  },
+  alchemist_vesna: {
+    startId: 'g',
+    nodes: {
+      g: {
+        text: "Mind where you put your hands — half of what's on these shelves would kill you, and the other half only sometimes.",
+        options: [
+          { label: 'How did you learn all this?', nextId: 'h' },
+          { label: 'Farewell.', nextId: null },
+        ],
+      },
+      h: {
+        text: 'Trial. Error. A great deal of error. The trick is surviving long enough to call it experience.',
+        options: [{ label: '(Leave)', nextId: null }],
+      },
+    },
+  },
+  academy_oren: {
+    startId: 'g',
+    nodes: {
+      g: {
+        text: 'Knowledge has a price, and a value — rarely the same number. What would you learn today, or unlearn?',
+        options: [
+          { label: 'Why teach at all?', nextId: 't' },
+          { label: 'Farewell.', nextId: null },
+        ],
+      },
+      t: {
+        text: 'A technique hoarded dies with its keeper. A technique shared outlives empires. I am, at heart, merely vain about being remembered.',
+        options: [{ label: '(Back)', nextId: 'g' }],
+      },
+    },
+  },
+})
+
+// DLG01 — Mapping bâtiment → id de dialogue (source unique, consommée par SafeZone).
+// Tout bâtiment proposant l'action « Talk » doit résoudre ici vers un arbre dédié ;
+// l'absence d'entrée fait retomber le PNJ sur le FALLBACK générique.
+export const BUILDING_DIALOGUE_ID = {
+  inn: 'inn_marta',
+  church: 'church_caelum',
+  merchant: 'merchant_pell',
+  blacksmith: 'blacksmith_bram',
+  guild: 'guild_master',
+  master_smith: 'master_hollis',
+  knight_trainer: 'knight_aldric',
+  alchemy: 'alchemist_vesna',
+  academy: 'academy_oren',
+}
+
 // Dialogue de repli quand un PNJ n'a pas d'arbre dédié.
 export const FALLBACK_DIALOGUE = {
   startId: 'g',

@@ -6,11 +6,16 @@ import { canGrind, computeOfflineGains, elapsedIdleTicks } from '../../engine/of
 import { applyLevelUps } from '../helpers'
 import { useToastStore } from '../toastStore'
 
+// IDLE-MASTERY01 — seuil de « maîtrise » unifié : il faut vaincre un monstre
+// ce nombre de fois pour débloquer l'idle (et révéler son skill droppable, S02).
+// Source unique : importée par ZoneView pour l'affichage et la barre de kills.
+export const IDLE_MASTERY_KILLS = 5
+
 export const createIdleSlice = (set, get) => ({
   toggleIdle: (monsterId) =>
     set((state) => {
       const kills = state.world.monsterKillCounts[monsterId] || 0
-      if (kills < 5) return state // pas encore débloqué
+      if (kills < IDLE_MASTERY_KILLS) return state // pas encore débloqué
 
       // D07 — Idle interdit dans certaines zones (Blighted Road) et écrans (dungeon)
       const zone = ZONES[state.world.currentZone]
