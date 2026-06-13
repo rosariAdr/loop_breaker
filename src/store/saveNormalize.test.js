@@ -22,7 +22,7 @@ describe('normalizeSave — backfill des champs par défaut (toutes versions)', 
 
   it('backfille aussi settings/gluttonyLastUsed/permanentStatBoosts/firstDeathSeen', () => {
     const out = normalizeSave({ saveVersion: 2, meta: {} })
-    expect(out.meta.settings).toEqual({ animations: true })
+    expect(out.meta.settings).toEqual({ animations: true, tutorials: true }) // ONB01
     expect(out.meta.gluttonyLastUsed).toBeNull()
     expect(out.meta.permanentStatBoosts).toEqual({})
     expect(out.meta.firstDeathSeen).toBe(false)

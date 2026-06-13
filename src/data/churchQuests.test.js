@@ -56,8 +56,8 @@ describe('CHQ01 — récompense via completeQuest (tokens + consommables, sans o
     localStorage.clear()
   })
 
-  it("compléter une quête d'église octroie tokens + consommables et PAS d'or", () => {
-    const quest = CHURCH_QUESTS.church_thin_the_pack // 5 ashwood_wolf → 1 token + 3 stamina_ration
+  it("compléter une quête d'église octroie des consommables et PAS d'or (REP01 : 0 token)", () => {
+    const quest = CHURCH_QUESTS.church_thin_the_pack // 5 ashwood_wolf → 3 stamina_ration (0 token depuis REP01)
     const goldBefore = store().hero.inventory.gold
     const tokensBefore = store().hero.reputationTokens
     const rationBefore = store().hero.inventory.consumables.stamina_ration ?? 0
@@ -72,7 +72,7 @@ describe('CHQ01 — récompense via completeQuest (tokens + consommables, sans o
     store().completeQuest(quest.id)
 
     expect(store().hero.inventory.gold).toBe(goldBefore) // jamais d'or
-    expect(store().hero.reputationTokens).toBe(tokensBefore + 1)
+    expect(store().hero.reputationTokens).toBe(tokensBefore) // REP01 : église = 0 token (consommables only)
     expect(store().hero.inventory.consumables.stamina_ration).toBe(rationBefore + 3)
     expect(store().world.completedQuests).toContain(quest.id)
   })

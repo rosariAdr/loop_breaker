@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useGameStore } from './gameStore'
+import { IDLE_MASTERY_KILLS } from './slices/idleSlice'
 
 // Reset du store avant chaque test
 beforeEach(() => {
@@ -626,11 +627,11 @@ describe('Système de quêtes', () => {
     expect(useGameStore.getState().hero.inventory.gold).toBe(before + 50)
   })
 
-  it('completeQuest ajoute les tokens de réputation', () => {
-    useGameStore.getState().startQuest('first_blood')
+  it("completeQuest ajoute les tokens de réputation (quête d'élite, REP01)", () => {
+    useGameStore.getState().startQuest('nc_oakheart_elite')
     const before = useGameStore.getState().hero.reputationTokens
-    useGameStore.getState().completeQuest('first_blood')
-    expect(useGameStore.getState().hero.reputationTokens).toBeGreaterThan(before)
+    useGameStore.getState().completeQuest('nc_oakheart_elite')
+    expect(useGameStore.getState().hero.reputationTokens).toBe(before + 5)
   })
 
   it('completeQuest ajoute le skill de récompense dans manaStones', () => {
@@ -643,14 +644,11 @@ describe('Système de quêtes', () => {
     expect(stones.some((s) => s.skillId === 'counter_strike')).toBe(true)
   })
 
-  it('clear_the_marsh donne 2 tokens (pas 1 par défaut)', () => {
+  it('REP01 — une quête non-élite ne donne aucun token (clear_the_marsh)', () => {
     useGameStore.getState().startQuest('clear_the_marsh')
-    useGameStore.setState((state) => ({
-      world: { ...state.world, monsterKillCounts: { marsh_serpent: 3 } },
-    }))
     const before = useGameStore.getState().hero.reputationTokens
     useGameStore.getState().completeQuest('clear_the_marsh')
-    expect(useGameStore.getState().hero.reputationTokens).toBe(before + 2)
+    expect(useGameStore.getState().hero.reputationTokens).toBe(before)
   })
 
   it('completeQuest ignore un questId inexistant', () => {
@@ -676,10 +674,10 @@ describe('Système de quêtes', () => {
   it('Q07 — le toast inclut les récompenses (gold + tokens + skill)', async () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
-    useGameStore.getState().startQuest('first_blood') // 50g + 1 token + counter_strike
-    useGameStore.getState().completeQuest('first_blood')
+    useGameStore.getState().startQuest('nc_graven_elite') // 180g + 5 tokens (élite) + power_strike
+    useGameStore.getState().completeQuest('nc_graven_elite')
     const questToast = useToastStore.getState().toasts.find((t) => t.type === 'quest')
-    expect(questToast.message).toMatch(/50g/)
+    expect(questToast.message).toMatch(/180g/)
     expect(questToast.message).toMatch(/🪙/)
   })
 
@@ -722,17 +720,17 @@ describe('Quêtes Q03 — boss donjon', () => {
     const tokensBefore = store().hero.reputationTokens
     store().completeQuest('silence_the_crypt')
     expect(store().hero.inventory.gold).toBe(goldBefore + 200)
-    expect(store().hero.reputationTokens).toBe(tokensBefore + 3)
+    expect(store().hero.reputationTokens).toBe(tokensBefore + 0) // REP01 : quête boss = 0 token
     expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(true)
   })
 
-  it('end_the_demon : 10 tokens + 1000 gold pour Malachar', () => {
+  it('end_the_demon : 0 token de quête (REP01) + 1000 gold pour Malachar', () => {
     const store = useGameStore.getState
     store().startQuest('end_the_demon')
     store().recordKill('malachar')
     const tokensBefore = store().hero.reputationTokens
     store().completeQuest('end_the_demon')
-    expect(store().hero.reputationTokens).toBe(tokensBefore + 10)
+    expect(store().hero.reputationTokens).toBe(tokensBefore + 0)
     expect(store().hero.inventory.gold).toBeGreaterThanOrEqual(1000)
   })
 
@@ -1403,6 +1401,27 @@ describe('toggleIdle', () => {
     useGameStore.getState().toggleIdle('ashwood_wolf')
     expect(useGameStore.getState().world.isIdleActive).toBe(true)
   })
+
+  // IDLE-MASTERY01 — le seuil de maîtrise est unifié à 5× (combat) ; on épingle
+  // la constante et la frontière exacte pour qu'aucune dérive ne passe inaperçue.
+  it('IDLE-MASTERY01 — seuil de maîtrise = 5', () => {
+    expect(IDLE_MASTERY_KILLS).toBe(5)
+  })
+
+  it('IDLE-MASTERY01 — verrouillé à seuil-1, débloqué pile au seuil', () => {
+    const m = 'ashwood_wolf'
+    useGameStore.setState((s) => ({
+      world: { ...s.world, monsterKillCounts: { [m]: IDLE_MASTERY_KILLS - 1 } },
+    }))
+    useGameStore.getState().toggleIdle(m)
+    expect(useGameStore.getState().world.isIdleActive).toBe(false)
+
+    useGameStore.setState((s) => ({
+      world: { ...s.world, monsterKillCounts: { [m]: IDLE_MASTERY_KILLS } },
+    }))
+    useGameStore.getState().toggleIdle(m)
+    expect(useGameStore.getState().world.isIdleActive).toBe(true)
+  })
 })
 
 describe('resetGame', () => {
@@ -1468,7 +1487,7 @@ describe('recordKill', () => {
     useGameStore.getState().resetGame()
     for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('ashwood_wolf')
     expect(useGameStore.getState().meta.seenHints).toContain('idle_unlock')
-    const hint = useToastStore.getState().toasts.find((t) => /Idle combat unlocked/.test(t.message))
+    const hint = useToastStore.getState().toasts.find((t) => /Idle unlocked/.test(t.message))
     expect(hint).toBeDefined()
   })
 
@@ -1479,7 +1498,7 @@ describe('recordKill', () => {
     useToastStore.getState().clearToasts()
     // 2e mob atteint 5 → pas de nouveau hint
     for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('marsh_serpent')
-    const hint = useToastStore.getState().toasts.find((t) => /Idle combat unlocked/.test(t.message))
+    const hint = useToastStore.getState().toasts.find((t) => /Idle unlocked/.test(t.message))
     expect(hint).toBeUndefined()
   })
 

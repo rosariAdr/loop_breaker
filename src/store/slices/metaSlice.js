@@ -1,14 +1,28 @@
 // REFAC01 — Slice « meta » du store (extrait de gameStore.js, comportement inchangé).
 import { ACHIEVEMENTS, newlyUnlocked } from '../../data/achievements'
 import { DEITIES, applyDeityBlessing } from '../../data/deities'
+import { getHint } from '../../data/hints'
 import { MONSTERS } from '../../data/monsters'
 import { TITLES } from '../../data/titles'
 import { gluttonyAbsorbAmount, pickGluttonyStat } from '../../engine/gluttony'
 import { INITIAL_HERO, INITIAL_WORLD } from '../initialState'
 import { useToastStore } from '../toastStore'
 
-export const createMetaSlice = (set) => ({
+export const createMetaSlice = (set, get) => ({
   setScreen: (screen) => set({ currentScreen: screen }),
+
+  // ONB01 — Déclenche un tip contextuel one-shot. No-op si le tutoriel est désactivé
+  // (meta.settings.tutorials), si l'id est inconnu, ou si le hint a déjà été vu.
+  // Réutilisable depuis n'importe quel slice via get().triggerHint(id).
+  triggerHint: (id) =>
+    set((state) => {
+      const hint = getHint(id)
+      const tutorialsOn = state.meta.settings?.tutorials ?? true
+      const seen = state.meta.seenHints ?? []
+      if (!hint || !tutorialsOn || seen.includes(id)) return state
+      useToastStore.getState().addToast(`💡 ${hint.title} — ${hint.text}`, 'info', 6000)
+      return { meta: { ...state.meta, seenHints: [...seen, id] } }
+    }),
 
   // GLT01/GLT02/GLT04 — Gluttony absorbe une stat (proc passif aléatoire ou assassinat choisi)
   absorbGluttony: ({ monsterId, stat = null }) =>
@@ -81,8 +95,10 @@ export const createMetaSlice = (set) => ({
     }),
 
   // Q05 — incrémente le compteur de crafts réussis (pour les quêtes de craft)
-  incrementCraftCount: () =>
-    set((state) => ({ meta: { ...state.meta, craftCount: (state.meta.craftCount ?? 0) + 1 } })),
+  incrementCraftCount: () => {
+    set((state) => ({ meta: { ...state.meta, craftCount: (state.meta.craftCount ?? 0) + 1 } }))
+    get().triggerHint('first_craft') // ONB01 — tip au 1er craft
+  },
 
   // ── Système divin ─────────────────────────────────────────────────────────
   triggerDivineCall: (deityId) =>
@@ -127,7 +143,7 @@ export const createMetaSlice = (set) => ({
     })),
 
   // ── Mort & transmigration ─────────────────────────────────────────────────
-  heroDeath: (cause = 'Unknown enemy') =>
+  heroDeath: (cause = 'Unknown enemy') => {
     set((state) => {
       const { hero, world } = state
       const summary = {
@@ -151,7 +167,9 @@ export const createMetaSlice = (set) => ({
         activeCombat: null,
         currentScreen: 'post_mortem',
       }
-    }),
+    })
+    get().triggerHint('transmigration') // ONB01 — tip au 1er passage en post-mortem
+  },
 
   // TUT03 — Marque le hint de transmigration comme vu (1ère mort)
   markFirstDeathSeen: () => set((state) => ({ meta: { ...state.meta, firstDeathSeen: true } })),

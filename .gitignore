@@ -25,6 +25,11 @@ lerna-debug.log*
 # Test coverage
 coverage/
 
+# Python (venv + outils dans scripts/)
+.venv/
+__pycache__/
+*.pyc
+
 # Editor / OS
 .vscode/*
 !.vscode/extensions.json

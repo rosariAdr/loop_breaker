@@ -1,6 +1,6 @@
 # CONTEXT — Roguelite Idle RPG ("Loop Breaker")
 
-> **Comment utiliser ce fichier** : copier-coller (ou attacher) dans une conversation Claude Chat ou Claude Code pour reprendre le projet. Self-contained — un Claude sans contexte peut le lire en 5 min et comprendre l'état complet. **Mettre à jour à chaque fin de session.** Backlog détaillé : `TASKS.md`. Historique : `CHANGELOG.md`. Specs de design : `DESIGN.md`.
+> **Comment utiliser ce fichier** : copier-coller (ou attacher) dans une conversation Claude Chat ou Claude Code pour reprendre le projet. Self-contained — un Claude sans contexte peut le lire en 5 min et comprendre l'état complet. **Mettre à jour à chaque fin de session.** Backlog détaillé : `TASKS.md`. Historique : `docs/CHANGELOG.md`. Specs de design : `docs/DESIGN.md`. *(Toute la doc est dans `docs/` — REORG01.)*
 
 **Dernière mise à jour : 2026-06-01** — après les Batches M, P, N, O (branche `feat/batch_MtoR`).
 
@@ -33,12 +33,13 @@ npm run build         # dist/ — vérifier avant tout merge
 npm run lint          # ESLint check
 ```
 
-**Hébergement v1 (DEPLOY01)** : **Vercel + Vercel Authentication** (alpha **privée**). SPA 100 % client-side (pas de backend ; saves `localStorage`). Routing SPA via `vercel.json` (rewrites → `/index.html`). Réglages : preset Vite · build `npm run build` · output `dist`. ⚠️ `public/` étant gitignoré, **décider de la livraison des assets** avant la 1re mise en ligne (cf. README §Déploiement + `CONT05`). Le **durcissement réel** (backend, autorité serveur, comptes/rôles, anti-triche) est repoussé à une version ultérieure (cf. `SEC02`) — l'alpha privée s'appuie uniquement sur l'auth Vercel.
+**Hébergement v1 (DEPLOY01)** : **Vercel + Vercel Authentication** (alpha **privée**). SPA 100 % client-side (pas de backend ; saves `localStorage`). Routing SPA via `vercel.json` (rewrites → `/index.html`). Réglages : preset Vite · build `npm run build` · output `dist`. ✅ **`public/` est committé** (DEPLOY01) → assets servis par Vercel (`raw/` HD exclus). Le **durcissement réel** (backend, autorité serveur, comptes/rôles, anti-triche) est repoussé à une version ultérieure (cf. `SEC02`) — l'alpha privée s'appuie uniquement sur l'auth Vercel.
 
-**État technique (2026-06-01)** :
-- **729 tests** dans **29 fichiers**, durée ~7s — tous verts
-- Build prod : **~415 KB JS / ~117 KB gzipped**
-- ESLint : **0 erreur**, 4 warnings intentionnels (`react-hooks/exhaustive-deps` sur les `useEffect` run-once de `App.jsx`)
+**État technique (2026-06-13)** :
+- **1101 tests** dans **96 fichiers** — tous verts (`npx vitest run`)
+- Build prod : **~480 KB JS / ~138 KB gzipped** (code-split : chunks Combat/GodsShop/Codex lazy)
+- ESLint : **0 erreur**, quelques warnings intentionnels (`react-hooks/exhaustive-deps` sur des `useEffect` run-once)
+- **Milestones livrés** : v1 (POC), v1.1 (UI parchemin + sprites + QoL), **v1.2 (profondeur : NPC→STA→PROG, quêtes église/maître/contenu, guilde, équip. par lieu, VFX skills, transmigration)**. **DEPLOY01** : repo prêt pour Vercel (alpha privée), `public/` committé. Reste backlog v1.3/v1.4 (donjon) + design.
 
 ---
 
@@ -87,17 +88,20 @@ src/
 │   ├── manaStones.js (S03) · debuffs.js (CRF01) · crafting.js (CRF04 : scoreToTier/resolveCraftOutcome/alchemyQuantity)
 └── test/setup.js               # Mock localStorage + RTL globals
 
-public/monsters/                # PNG portraits (5/23 + fallback emoji) + README pipeline
+public/monsters/                # PNG figurines (16/16 surface liés + boss en emoji) + README pipeline
+public/buildings/               # façades (5/9 liées : inn/church/merchant/alchemy/blacksmith)
 
 racine/
-├── TASKS.md          # Backlog source de vérité (milestones v1/v1.1/v1.5/v2 + Done)
-├── CONTRIBUTING.md   # DoD par type, workflow Git, conventions, règle save, checklist fin de session
-├── CHANGELOG.md      # Historique (Keep a Changelog + SemVer) — [Unreleased] = Batches A→O
-├── DESIGN.md         # Specs de design validées (§B05-SPEC effets de statut)
-├── PLAYTESTS.md      # Journal de playtest structuré (PROC05)
-├── balance/combat_stats.csv + drops_summary.csv (PROC04) · scripts/generate-balance-csv.mjs
-├── README.md         # ⚠️ encore le template Vite par défaut — à remplir (pitch + setup)
-└── package.json · vite.config.js · eslint.config.js
+├── README.md          # Pitch, setup, déploiement
+├── CONTEXT.md         # ⭐ ce fichier (état complet du projet)
+├── TASKS.md           # Backlog source de vérité (milestones v1/v1.1/v1.2/v1.3/v1.4 + Done)
+├── docs/              # 📁 toute la doc déplacée ici (REORG01) :
+│   ├── CONTRIBUTING.md   # DoD par type, workflow Git, conventions, règle save, checklist
+│   ├── CHANGELOG.md      # Historique (Keep a Changelog + SemVer)
+│   ├── DESIGN.md         # Specs de design validées (§B05-SPEC effets de statut)
+│   ├── PLAYTESTS.md      # Journal de playtest · ASSETS.md · ASSET_PROMPTS.md · UI_HANDOFF.md · ROADMAP.csv
+├── balance/combat_stats.csv + drops_summary.csv (PROC04) + dashboard.html · scripts/*.mjs|.py
+└── package.json · vite.config.js · eslint.config.js · vercel.json
 ```
 
 ### Conventions de nommage
@@ -234,12 +238,12 @@ racine/        scenarios.test.js (parties simulées + BAL01)
 > `TASKS.md` a été réorganisé (2026-06-03) en **milestones versionnés** : `v1` (POC figé) → `v1.1` (présentable) → `v1.5` (profondeur) → `v2` (ambition). Ce §8 en est le résumé ; le détail (AC, estimations, dépendances, décisions chiffrées) est dans `TASKS.md`.
 
 ### 🅰️ v1 — Stabilisation avant de figer le POC
-Le POC est **complet et gagnable**. Reste : **BAL02** (difficulté boss + playtest), **BAL03** (rythme idle), **TECH04** (60fps Canvas), **TECH05** (JSDoc engine). Voir `PLAYTESTS.md`.
+Le POC est **complet et gagnable**. Reste : **BAL02** (difficulté boss + playtest), **BAL03** (rythme idle), **TECH04** (60fps Canvas), **TECH05** (JSDoc engine). Voir `docs/PLAYTESTS.md`.
 
 ### 🅱️ v1.1 — UI parchemin, sprites & QoL (rendre présentable)
-Gros chantier visuel — **spec complète dans `UI_HANDOFF.md`** (design system "parchemin" diégétique type Dragon Quest, stage 1920×1080, tokens CSS canoniques, 6 écrans, 2 couches d'assets, animations). À faire d'un bloc pour la cohérence :
+Gros chantier visuel — **spec complète dans `docs/UI_HANDOFF.md`** (design system "parchemin" diégétique type Dragon Quest, stage 1920×1080, tokens CSS canoniques, 6 écrans, 2 couches d'assets, animations). À faire d'un bloc pour la cohérence :
 - **UI01-09** : design system + shell, puis WorldMap / SafeZone / ZoneView / NPC overlay / HeroSheet / Inventory restylés, sprites en dernier (absorbe les anciens U06/U08-U12).
-- **Assets** : CONT01 (portraits monstres), CONT05 (ASSETS.md + licences), C03 (portraits perso).
+- **Assets** : CONT01 (portraits monstres), CONT05 (`docs/ASSETS.md` + licences), C03 (portraits perso).
 - **QoL** : IDLE-OFF (progression hors-ligne), SET01 (menu options), TECH07 (export/import save), PROC07 (debug give-stats).
 
 ### 🅲️ v1.5 — Profondeur & contenu (ordre acté : NPC → STA → PROG)
@@ -285,7 +289,7 @@ Convention : `type(scope): description` (feat/fix/test/refactor/chore/docs/style
 ### Checklist fin de session (obligatoire)
 ```
 □ npm run test:run → vert    □ npm run build → OK    □ npm run lint → OK
-□ TASKS.md (Done + date)     □ CONTEXT.md (si système)    □ CHANGELOG.md
+□ TASKS.md (Done + date)     □ CONTEXT.md (si système)    □ docs/CHANGELOG.md
 □ Pas de console.log oublié
 ```
 
@@ -315,7 +319,7 @@ Quand le dev demande d'**analyser**, ne pas corriger directement. Regrouper bugs
 - **ADR-005** : Path map pour donjons (5 nœuds, choix tactiques). *(À implémenter — D01.)*
 - **ADR-006** : Conditions d'éveil divin cachées (pas de jauge). Tests garantissent un boolean.
 - **ADR-007** : Compagnons à personnalité dynamique (traits contextuels, followProbability formule). *(v1, à venir.)*
-- **ADR-008** : Effets de statut data-driven (`statusEffect` sur les skills), moteur pur dans `combat.js`, max 2 actifs. Spec : `DESIGN.md §B05-SPEC`.
+- **ADR-008** : Effets de statut data-driven (`statusEffect` sur les skills), moteur pur dans `combat.js`, max 2 actifs. Spec : `docs/DESIGN.md §B05-SPEC`.
 - **ADR-009** : Mini-jeux de crafting = composant `CraftingMinigame` (2 modes), scoring pur (`utils/crafting.js`) — testable sans timing.
 
 ---

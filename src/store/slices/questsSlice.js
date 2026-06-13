@@ -8,7 +8,8 @@ import { useToastStore } from '../toastStore'
 
 export const createQuestsSlice = (set, get) => ({
   // ── Système de quêtes ────────────────────────────────────────────────────
-  startQuest: (questId) =>
+  startQuest: (questId) => {
+    const wasActive = (get().world.activeQuests ?? []).includes(questId)
     set((state) => {
       const { activeQuests, completedQuests } = state.world
       if (completedQuests.includes(questId)) return state
@@ -23,7 +24,12 @@ export const createQuestsSlice = (set, get) => ({
           questProgress: { ...(state.world.questProgress ?? {}), [questId]: snapshot },
         },
       }
-    }),
+    })
+    // ONB01 — tip à la 1ère acceptation de quête (uniquement si réellement ajoutée).
+    if (!wasActive && (get().world.activeQuests ?? []).includes(questId)) {
+      get().triggerHint('first_quest')
+    }
+  },
 
   // UX03 — Abandonner une quête active (perte de progression, mais retirable des actives)
   abandonQuest: (questId) =>
@@ -61,7 +67,7 @@ export const createQuestsSlice = (set, get) => ({
       let newAura = state.hero.aura ?? 0
       let newConcentration = state.hero.concentration ?? 0
       let unseenLoot = state.unseenLoot
-      const repTokens = r.reputationTokens ?? 1
+      const repTokens = r.reputationTokens ?? 0
 
       if (r.skill) newManaStones.push({ skillId: r.skill.skillId, level: 1, xp: 0 })
       if (r.gold) newGold += r.gold

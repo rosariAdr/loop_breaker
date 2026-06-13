@@ -1,4 +1,5 @@
 // REFAC01 — Slice « world » du store (extrait de gameStore.js, comportement inchangé).
+import { isBuildingUnlocked as isUnlockedPure } from '../../data/buildingUnlocks'
 import { getInformant } from '../../data/informants'
 import { ZONES } from '../../data/zones'
 import { VIGOR_COST, VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
@@ -6,6 +7,28 @@ import { tickDebuffsOneDay } from '../../utils/debuffs'
 import { useToastStore } from '../toastStore'
 
 export const createWorldSlice = (set, get) => ({
+  // ── BLDUNL01 — Déblocage des bâtiments ────────────────────────────────────
+  // Sélecteur : un bâtiment est accessible sauf s'il est dans world.buildingLocks.
+  isBuildingUnlocked: (id) => isUnlockedPure(id, get().world.buildingLocks ?? []),
+
+  // Verrouille un bâtiment (no-op si déjà verrouillé). Utilisé par le futur câblage
+  // des triggers (MQ-CHAIN01/START03) pour démarrer certains bâtiments verrouillés.
+  lockBuilding: (id) =>
+    set((state) => {
+      const locks = state.world.buildingLocks ?? []
+      if (locks.includes(id)) return state
+      return { world: { ...state.world, buildingLocks: [...locks, id] } }
+    }),
+
+  // Débloque un bâtiment (retire du verrou). C'est l'action appelée par un trigger
+  // (quête du maître / dialogue du doyen / arrivée en ville) une fois rempli.
+  unlockBuilding: (id) =>
+    set((state) => {
+      const locks = state.world.buildingLocks ?? []
+      if (!locks.includes(id)) return state
+      return { world: { ...state.world, buildingLocks: locks.filter((b) => b !== id) } }
+    }),
+
   // ── Calendrier & monde ────────────────────────────────────────────────────
 
   sleep: () =>

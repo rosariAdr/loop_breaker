@@ -28,18 +28,14 @@ import { ALCHEMY_RECIPES, MASTER_RECIPES } from '../data/recipes'
 import CraftingMinigame from '../components/CraftingMinigame'
 import { ArtSlot, HeroAvatar, ParchmentFrame } from '../components/parchment'
 import { portraitSrc } from '../data/portraits'
-import { getDialogue, FALLBACK_DIALOGUE } from '../data/dialogues'
+import { getDialogue, FALLBACK_DIALOGUE, BUILDING_DIALOGUE_ID } from '../data/dialogues'
+import { buildingLockReason } from '../data/buildingUnlocks'
 import DialoguePanel from '../components/DialoguePanel'
 import InformantsPanel from '../components/InformantsPanel'
 
 // NPC04 — arbre de dialogue par bâtiment (repli générique sinon)
-const TALK_ID = {
-  inn: 'inn_marta',
-  church: 'church_caelum',
-  merchant: 'merchant_pell',
-  blacksmith: 'blacksmith_bram',
-  guild: 'guild_master',
-}
+// DLG01 — source unique du mapping bâtiment → dialogue (cf. data/dialogues.js).
+const TALK_ID = BUILDING_DIALOGUE_ID
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
 
@@ -307,20 +303,22 @@ const BLD_POS = {
 // affichés en GRAND et SANS cadre parchemin. Les autres (+ le puits) gardent le placeholder encadré.
 const BLD_FACADES = new Set(['inn', 'church', 'merchant', 'alchemy', 'blacksmith'])
 
-function VilBuilding({ id, info, onClick, closed = false }) {
+function VilBuilding({ id, info, onClick, closed = false, locked = false, lockReason = '' }) {
   const p = BLD_POS[id]
   if (!p || !info) return null
+  // BLDUNL05 — un bâtiment verrouillé prime sur « fermé » (raison + 🔒 + grisé).
+  const dimmed = locked || closed
   return (
     <div
-      className="bld"
+      className={`bld${locked ? ' bld-locked' : ''}`}
       style={{
         left: `${p.x}%`,
         top: `${p.y}%`,
-        opacity: closed ? 0.55 : 1,
-        filter: closed ? 'grayscale(0.5)' : 'none',
+        opacity: dimmed ? 0.55 : 1,
+        filter: dimmed ? 'grayscale(0.5)' : 'none',
       }}
       onClick={onClick}
-      title={closed ? 'Closed' : undefined}
+      title={locked ? lockReason : closed ? 'Closed' : undefined}
     >
       {/* CONT01/VIL-FACADE01 — façade /buildings/<id>.png : en grand & sans cadre si l'asset
           existe, sinon placeholder légendé encadré. */}
@@ -338,9 +336,11 @@ function VilBuilding({ id, info, onClick, closed = false }) {
         </div>
       )}
       <div className="bld-sign">
-        <span>{info.icon}</span>
+        <span>{locked ? '🔒' : info.icon}</span>
         {info.name}
-        {closed && <span style={{ marginLeft: 4, fontSize: '0.7em', opacity: 0.8 }}>🔒</span>}
+        {!locked && closed && (
+          <span style={{ marginLeft: 4, fontSize: '0.7em', opacity: 0.8 }}>🔒</span>
+        )}
       </div>
     </div>
   )
@@ -361,11 +361,18 @@ function generateVillageBuildings(villageId, optionalBuildings) {
 }
 
 export default function SafeZone() {
-  const { world, setScreen, hero } = useGameStore()
+  const { world, setScreen, hero, isBuildingUnlocked } = useGameStore()
   const [activeBuilding, setActiveBuilding] = useState(null)
   const [showPanel, setShowPanel] = useState(false)
 
   const openBuilding = (id) => {
+    // BLDUNL05 — un bâtiment verrouillé refuse l'entrée + indique la raison.
+    if (!isBuildingUnlocked(id)) {
+      useToastStore
+        .getState()
+        .addToast(`${BUILDING_INFO[id]?.name ?? id} — ${buildingLockReason(id)}.`, 'warning')
+      return
+    }
     // BLD01 — un bâtiment fermé refuse l'entrée + indique son heure d'ouverture (inn = 24/24).
     if (!isBuildingOpen(id, world.tickCount)) {
       useToastStore
@@ -503,6 +510,8 @@ export default function SafeZone() {
             id={id}
             info={BUILDING_INFO[id]}
             closed={!isBuildingOpen(id, world.tickCount)}
+            locked={!isBuildingUnlocked(id)}
+            lockReason={buildingLockReason(id)}
             onClick={() => openBuilding(id)}
           />
         ))}

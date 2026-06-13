@@ -4,7 +4,7 @@
 
 Un **Roguelite Idle RPG dark-medieval** avec transmigration entre univers. Le héros meurt souvent ; à chaque mort il choisit ce qu'il emporte (1 stat + 1 skill actif + 1 skill passif) et renaît dans un nouveau monde via la **Boutique des Dieux**.
 
-> **État : POC complet et gagnable de bout en bout** (la win condition — tuer le Demon Lord Malachar — est implémentée). Pré-alpha, solo dev.
+> **État : POC complet et gagnable de bout en bout** (win condition — tuer le Demon Lord Malachar — implémentée). **v1.1** (UI parchemin + sprites + QoL) et **v1.2** (profondeur : NPC, stats, progression de zones, quêtes, guilde) livrés ; repo prêt pour déploiement Vercel (DEPLOY01). Pré-alpha, solo dev.
 
 ## Stack
 
@@ -15,7 +15,7 @@ React 19 · Vite 8 · Zustand 5 · TailwindCSS 4 · Vitest 4 — **JavaScript pu
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm run test:run   # 729 tests (~7s)
+npm run test:run   # 1101 tests (~7s)
 npm run build      # dist/
 npm run lint
 ```
@@ -30,10 +30,12 @@ Explorer une zone → combattre (tour par tour, skills, effets de statut) → lo
 |---|---|
 | **[CONTEXT.md](CONTEXT.md)** | ⭐ État complet du projet, architecture, systèmes, prochaines étapes. Le point d'entrée. |
 | **[TASKS.md](TASKS.md)** | Backlog source de vérité (À trier / Someday v0.1/v1/v2 / Done). |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Workflow Git, Definition of Done, conventions, règle de migration des saves. |
-| **[CHANGELOG.md](CHANGELOG.md)** | Historique des versions (Keep a Changelog + SemVer). |
-| **[DESIGN.md](DESIGN.md)** | Specs de game design validées (effets de statut, etc.). |
-| **[PLAYTESTS.md](PLAYTESTS.md)** | Journal de playtest structuré. |
+| **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** | Workflow Git, Definition of Done, conventions, règle de migration des saves. |
+| **[docs/CHANGELOG.md](docs/CHANGELOG.md)** | Historique des versions (Keep a Changelog + SemVer). |
+| **[docs/DESIGN.md](docs/DESIGN.md)** | Specs de game design validées (effets de statut, etc.). |
+| **[docs/PLAYTESTS.md](docs/PLAYTESTS.md)** | Journal de playtest structuré. |
+
+> 📁 Toute la doc (DESIGN, PLAYTESTS, ASSETS, ASSET_PROMPTS, UI_HANDOFF, CONTRIBUTING, CHANGELOG, ROADMAP) est dans **`docs/`** ; seuls README + CONTEXT + TASKS restent à la racine.
 
 ## Déploiement (Vercel — alpha privée)
 
@@ -60,6 +62,6 @@ Loop Breaker est une **SPA 100 % client-side** (React + Vite, pas de backend, sa
 - `src/engine/` — logique pure testable sans React (combat, mécaniques de boss, gluttony).
 - `src/store/` — Zustand (`gameStore` principal + `toastStore`), avec save/migration localStorage.
 - `src/screens/` + `src/components/` — UI React.
-- `src/**/*.test.*` — 729 tests (TDD).
+- `src/**/*.test.*` — 1101 tests (TDD).
 
 Voir **CONTEXT.md §3** pour la carte des fichiers détaillée.

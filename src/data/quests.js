@@ -59,7 +59,7 @@ export const QUESTS = {
     reward: {
       skill: { skillId: 'counter_strike', level: 1 },
       gold: 50,
-      reputationTokens: 1,
+      reputationTokens: 0,
     },
   },
 
@@ -73,7 +73,7 @@ export const QUESTS = {
     reward: {
       skill: { skillId: 'veterans_resolve', level: 1 },
       gold: 30,
-      reputationTokens: 1,
+      reputationTokens: 0,
     },
   },
 
@@ -95,7 +95,7 @@ export const QUESTS = {
     reward: {
       skill: { skillId: 'cleave', level: 1 },
       gold: 80,
-      reputationTokens: 2,
+      reputationTokens: 0,
     },
   },
 
@@ -118,7 +118,7 @@ export const QUESTS = {
     reward: {
       skill: { skillId: 'soul_crush', level: 1 },
       gold: 200,
-      reputationTokens: 3,
+      reputationTokens: 0,
     },
   },
 
@@ -140,7 +140,7 @@ export const QUESTS = {
     reward: {
       skill: { skillId: 'forsaken_curse', level: 1 },
       gold: 450,
-      reputationTokens: 5,
+      reputationTokens: 0,
     },
   },
 
@@ -161,7 +161,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 1000,
-      reputationTokens: 10,
+      reputationTokens: 0,
     },
   },
 
@@ -184,7 +184,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 120,
-      reputationTokens: 2,
+      reputationTokens: 0,
     },
   },
 
@@ -212,7 +212,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 180,
-      reputationTokens: 3,
+      reputationTokens: 0,
     },
   },
 
@@ -235,7 +235,7 @@ export const QUESTS = {
         label: 'Kill Tuskmaw Boars',
       },
     ],
-    reward: { gold: 60, reputationTokens: 1, consumables: { hp_potion_small: 2 } },
+    reward: { gold: 60, reputationTokens: 0, consumables: { hp_potion_small: 2 } },
   },
 
   nc_oakheart_elite: {
@@ -255,7 +255,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 120,
-      reputationTokens: 2,
+      reputationTokens: 5,
       equipment: { templateId: 'leather_armor', rarity: 'rare' },
     },
   },
@@ -269,7 +269,7 @@ export const QUESTS = {
     objectives: [
       { id: 'visit_marsh', type: 'visit', spotId: 'thornmarsh', label: 'Explore the Thornmarsh' },
     ],
-    reward: { gold: 50, reputationTokens: 1, resources: { marsh_venom: 2 } },
+    reward: { gold: 50, reputationTokens: 0, resources: { marsh_venom: 2 } },
   },
 
   nc_deliver_ruins: {
@@ -286,7 +286,7 @@ export const QUESTS = {
         label: 'Deliver to the Crumbled Ruins',
       },
     ],
-    reward: { gold: 80, reputationTokens: 1, consumables: { stamina_ration: 2 } },
+    reward: { gold: 80, reputationTokens: 0, consumables: { stamina_ration: 2 } },
   },
 
   nc_forge_offering: {
@@ -296,7 +296,7 @@ export const QUESTS = {
     giverNpc: 'merchant_pell',
     flavorText: '"Make me something I can sell, and I\'ll make it worth your while."',
     objectives: [{ id: 'craft_three', type: 'craft', count: 3, label: 'Craft 3 items' }],
-    reward: { gold: 70, reputationTokens: 1, resources: { rusted_iron: 3 } },
+    reward: { gold: 70, reputationTokens: 0, resources: { rusted_iron: 3 } },
   },
 
   // Argent
@@ -317,7 +317,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 160,
-      reputationTokens: 2,
+      reputationTokens: 5,
       equipment: { templateId: 'serpent_dagger', rarity: 'rare' },
     },
   },
@@ -337,7 +337,7 @@ export const QUESTS = {
         label: 'Destroy the Graven Sentinel (elite)',
       },
     ],
-    reward: { gold: 180, reputationTokens: 3, skill: { skillId: 'power_strike', level: 1 } },
+    reward: { gold: 180, reputationTokens: 5, skill: { skillId: 'power_strike', level: 1 } },
   },
 
   nc_thunderhoof_elite: {
@@ -357,7 +357,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 200,
-      reputationTokens: 3,
+      reputationTokens: 5,
       equipment: { templateId: 'iron_helm', rarity: 'rare' },
     },
   },
@@ -381,7 +381,7 @@ export const QUESTS = {
     // PROG03 — voie « quête » : terminer cette exploration révèle Grimspire.
     reward: {
       gold: 90,
-      reputationTokens: 2,
+      reputationTokens: 0,
       stat: { name: 'strength', amount: 1 },
       unlockZone: 'grimspire',
     },
@@ -396,7 +396,7 @@ export const QUESTS = {
     objectives: [{ id: 'craft_five', type: 'craft', count: 5, label: 'Craft 5 items' }],
     reward: {
       gold: 150,
-      reputationTokens: 2,
+      reputationTokens: 0,
       equipment: { templateId: 'bone_plate', rarity: 'epic' },
     },
   },

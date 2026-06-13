@@ -33,6 +33,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Assets** — sprites chibi des monstres sur les cartes-clairières de la forêt (Combat les utilisait déjà)
 - *Combat : déjà une UI sombre/dramatique aboutie et sur-thème (Cinzel, accents gold/violet) — pas de refonte nécessaire ; polish ciblé si besoin*
 
+### Added (v1.2 — Profondeur & contenu : NPC → STA → PROG)
+- **Stats STA** — Vigueur (STA01, jauge 0-100 + malus par palier), **Aura** (STA02, mult. de dégâts) et **Concentration** (STA03, qualité de craft) ; atténuation Fatigue par Aura/Concentration (STA04) ; livres de stats consommables (ITM01) ; entraînement chez un maître (TRA01).
+- **Académie de magie** (ACA01) — acheter/revendre des skills (plus-value au niveau ACA03), déséquipement réservé à l'Académie (ACA02), skills jusqu'au **niveau 5** (SKL01) ; passifs gagnant de l'XP (SKL-PASS).
+- **Quêtes** — types `visit`/`craft`/`skill_levelup` ; récompenses variées (Q09 : équip/ressources/stat/consommables/aura/concentration) ; **quêtes d'église** en rotation 3 jours (CHQ01, tokens + consommables) ; **quêtes de maître** skill-levelup (ACA04) ; **10 quêtes de contenu** (NPC02). Registre de quêtes dynamique (`getQuestById`).
+- **Guilde des Aventuriers** (GLD01/02) — remplace le board d'auberge en ville ; village = notice board réduit + carte d'aventurier ; QuestBoard « venue-aware » + prestige gardé par le rang.
+- **Progression de zones** (PROG01/02/03) — déblocage data-driven (`zone.unlock`/`isZoneUnlocked`/`getVisibleZones`), `unlockedZones` (migration : anciennes saves = tout débloqué), `unlockZone` via quête ou rumeur d'informateur ; **fog of war** sur Grimspire.
+- **Équipement par lieu** (Z07) — village = communs + 1 rare ; ville = rares + 1 epic.
+- **Bestiaire/Codex** (CODEX01), **succès** à bonus permanents (ACH01), **idle config** (I08, seuil PV auto-stop), **horaires des bâtiments** (BLD01).
+- **VFX de combat par skill** (ANIM02/03) — flash élémentaire teinté, projectile (magie/distance) vs frappe (mêlée), onde AoE ; types `magical`/`percentage` couverts.
+- **Transmigration** — transition animée de renaissance (T02), Soul Rend héritable (T12), héritage 40% de la stat (TRM01), combat du Demon Lord accessible (DEMON-FIGHT).
+- **MON01** — refonte du bestiaire de surface (4 spots d'Ashenvale, 16 monstres dont 4 élites + figurines liées) ; **CRF06** antidote ; correctifs combat/save (`normalizeSave`, compteurs de kills).
+
+### Added (DEPLOY01 — Préparation déploiement Vercel, alpha privée)
+- `vercel.json` (routing SPA → `/index.html`), `.gitignore` durci (`.env`, `.vercel`), `index.html` meta description ; README §Déploiement + CONTEXT (hébergement Vercel + auth, durcissement → SEC02).
+- **`public/` committé** (assets servis par Vercel ; sources HD `raw/` exclues).
+- **PERF-IMG01** (partiel) `loading="lazy"` sur sprites/façades · **PERF-SPLIT01** code-splitting (Combat/GodsShop/Codex lazy) · **SAVE-AUDIT01** validation de schéma défensive dans `normalizeSave` · **DX-CI01** CI GitHub Actions (lint + test + build).
+- Façades de bâtiments liées (5/9), correctif `ArtSlot` (fallback `onError`) ; transition parchemin entrée/sortie de zone (UI09) ; régulations review (GLD03 board venue, ANIM03 VFX magical).
+
 ### Added (Batch O — Gluttony & Malachar, POC bouclé)
 - **GLT01** — Skill passif Gluttony : absorption permanente de stats (proc 10%, cooldown 5j), réappliquée à chaque run
 - **GLT02** — Assassinat (kill en 1 coup depuis HP max) → absorption garantie + choix de la stat (modal)
