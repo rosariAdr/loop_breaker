@@ -56,7 +56,11 @@ describe('Smoke tests — montage de chaque écran', () => {
   })
 
   it('QuestBoard monte', () => {
-    // GLD01 — lieu par défaut = ville (Ironhaven) → titre "Adventurers' Guild"
+    // GLD01 — en VILLE (Ironhaven) → titre "Adventurers' Guild". START01 démarre à
+    // Greywatch (village), donc on place explicitement le héros en ville ici.
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentLocation: 'ironhaven', currentNode: 'ironhaven' },
+    }))
     render(<QuestBoard />)
     expect(screen.getByText("Adventurers' Guild")).toBeInTheDocument()
   })
@@ -556,6 +560,14 @@ describe('Inventory — régression vieille save (bug user)', () => {
 // QuestBoard : rendu des quêtes
 // ─────────────────────────────────────────────────────────────────────────────
 describe('QuestBoard — affichage quêtes', () => {
+  // START01 démarre le héros à Greywatch (village) ; ces tests visent le board
+  // complet de la Guilde (Ironhaven, ville) où vivent les quêtes de sir_aldric.
+  beforeEach(() => {
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentLocation: 'ironhaven', currentNode: 'ironhaven' },
+    }))
+  })
+
   it('affiche au moins une quête disponible (sir_aldric a 3 quêtes)', () => {
     render(<QuestBoard />)
     // GLD01 — en ville la section s'intitule "Available · Guild Commissions"

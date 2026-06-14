@@ -3,6 +3,7 @@
 // Rewards: { skill: { skillId, level }, gold, reputationTokens, consumables, ... }
 
 import { CHURCH_QUESTS, CHURCH_QUEST_NPC } from './churchQuests'
+import { MAIN_QUESTS, MAIN_QUEST_NPC } from './mainQuests'
 import { MASTER_QUESTS, MASTER_QUEST_NPC } from './masterQuests'
 import { MONSTERS } from './monsters'
 
@@ -304,6 +305,8 @@ export const QUESTS = {
     id: 'nc_fenrot_elite',
     name: 'The Devourer of Thornmarsh',
     description: 'Fenrot the Devourer, an elite serpent-beast, hunts the marsh. End it.',
+    // B5a — Fenrot est réservé à Map 2 (élite du donjon final) : sorti du pool Map 1.
+    mapTier: 2,
     giverNpc: 'greywatch_elder',
     flavorText: '"It swallowed my brother\'s hound whole. Bring me its fangs."',
     objectives: [
@@ -408,12 +411,17 @@ export const QUESTS = {
 // Résolution DYNAMIQUE (et pas un objet figé) pour rester correct si QUESTS est muté
 // au runtime (cas des tests qui injectent des quêtes temporaires).
 
-// Tous les NPC donneurs (board + église + maîtres), pour l'affichage des cartes de quête.
-export const QUEST_NPC_REGISTRY = { ...QUEST_NPCS, ...CHURCH_QUEST_NPC, ...MASTER_QUEST_NPC }
+// Tous les NPC donneurs (board + église + maîtres + spine), pour l'affichage des cartes.
+export const QUEST_NPC_REGISTRY = {
+  ...QUEST_NPCS,
+  ...CHURCH_QUEST_NPC,
+  ...MASTER_QUEST_NPC,
+  ...MAIN_QUEST_NPC,
+}
 
-/** Résout une quête par id (board, église ou maître). */
+/** Résout une quête par id (board, église, maître ou chaîne principale MQ-CHAIN01). */
 export function getQuestById(id) {
-  return QUESTS[id] ?? CHURCH_QUESTS[id] ?? MASTER_QUESTS[id] ?? null
+  return QUESTS[id] ?? CHURCH_QUESTS[id] ?? MASTER_QUESTS[id] ?? MAIN_QUESTS[id] ?? null
 }
 
 // ── GLD01/GLD02 — Répartition des quêtes du board par lieu (Guilde ville / auberge village) ──
@@ -440,7 +448,9 @@ export function isPrestigiousQuest(quest) {
  * - 'village'       : uniquement les quêtes standard (pool réduit).
  */
 export function getBoardQuests(venue) {
-  const all = Object.values(QUESTS)
+  // B5a — n'afficher que les quêtes de Map 1 (mapTier 1 par défaut) ; Map 2 (ex. Fenrot)
+  // reste hors pool tant que le contenu Map 2 n'est pas ouvert.
+  const all = Object.values(QUESTS).filter((q) => (q.mapTier ?? 1) <= 1)
   if (venue === 'village') return all.filter((q) => !isPrestigiousQuest(q))
   return all
 }
@@ -495,6 +505,16 @@ export function questObjectiveStatus(quest, state) {
     } else if (obj.type === 'skill_levelup') {
       target = obj.targetLevel
       raw = skillLevels[obj.skillId] ?? 0
+    } else if (obj.type === 'elite_turnin') {
+      // MQ-ELITETURN01 — rempli si le héros DÉTIENT count× l'item rare de l'élite,
+      // OU possède déjà son arme signature. Check d'état sur l'inventaire (la
+      // consommation des items + le +1 rareté à la 2ᵉ remise sont gérés en B5b).
+      target = 1
+      const res = state.hero?.inventory?.resources ?? {}
+      const equip = state.hero?.inventory?.equipment ?? []
+      const hasItems = (res[obj.resourceId] ?? 0) >= (obj.count ?? 1)
+      const hasWeapon = equip.some((e) => e.templateId === obj.weaponTemplateId)
+      raw = hasItems || hasWeapon ? 1 : 0
     }
     return { obj, current: Math.min(raw, target), target, done: raw >= target }
   })

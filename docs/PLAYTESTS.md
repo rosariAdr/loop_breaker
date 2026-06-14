@@ -57,8 +57,11 @@ _(aucun playtest enregistré pour l'instant — première session à venir)_
 
 | Aspect | Verdict actuel | Action |
 |---|---|---|
-| Onboarding | À tester | TUT01-03 en cours |
+| Onboarding | Livré (ONB01-03 : tips + codex Rules) | Tester clarté en jeu |
+| Chaîne principale (MQ) | Livré (B5+B6) | **Tester en priorité** — voir WATCHLIST |
+| Démarrage Greywatch + nodes verrouillés | Livré (B6) | Tester si le gating coince |
+| Remise d'élite (drops -> arme) | Livré (B5) | Vérifier rythme des drops (grind ?) |
 | Difficulté Zone 1 | À tester | BAL02 |
 | Difficulté boss | À tester | BAL02 |
-| Économie tokens | Calibré théorique (BAL01) | Valider en jeu |
-| Idle progression | À tester | BAL03 |
+| Économie tokens | Régulé 0/5-élites (REP01) ; rang à recaler | REP-REBAL01 |
+| Idle progression | Seuil 5× (combat) | BAL03 |

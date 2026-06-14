@@ -245,6 +245,24 @@ export function isZoneUnlocked(zoneId, state = {}) {
   })
 }
 
+// START02/04 — Déblocage au niveau du NODE (localité / hunting spot) à l'intérieur
+// d'ashenvale. Au démarrage (START01), seuls Greywatch + la forêt sont accessibles ;
+// les autres nodes s'ouvrent via la chaîne de quêtes principale (MQ-CHAIN01 écrit
+// dans world.unlockedNodes — c'est la CONDITION de déblocage, cf. START04).
+export const START_OPEN_NODES = ['greywatch', 'ashenvale_forest']
+
+/**
+ * Un node (localité ou hunting spot d'ashenvale) est-il accessible ?
+ * Ouvert d'office s'il fait partie du point de départ, sinon s'il a été ouvert par
+ * un palier de quête principale (world.unlockedNodes).
+ * @param {string} nodeId
+ * @param {object} world - world state (lit world.unlockedNodes)
+ */
+export function isNodeUnlocked(nodeId, world = {}) {
+  if (START_OPEN_NODES.includes(nodeId)) return true
+  return (world?.unlockedNodes ?? []).includes(nodeId)
+}
+
 /**
  * PROG01 — Zones visibles sur la carte : toutes les non-cachées + celles débloquées.
  * Une zone `unlock.hidden` reste invisible (fog total) tant qu'elle n'est pas débloquée.

@@ -1,7 +1,7 @@
 // REFAC01 — Slice « world » du store (extrait de gameStore.js, comportement inchangé).
 import { isBuildingUnlocked as isUnlockedPure } from '../../data/buildingUnlocks'
 import { getInformant } from '../../data/informants'
-import { ZONES } from '../../data/zones'
+import { ZONES, isNodeUnlocked as isNodeUnlockedPure } from '../../data/zones'
 import { VIGOR_COST, VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
 import { tickDebuffsOneDay } from '../../utils/debuffs'
 import { useToastStore } from '../toastStore'
@@ -10,6 +10,11 @@ export const createWorldSlice = (set, get) => ({
   // ── BLDUNL01 — Déblocage des bâtiments ────────────────────────────────────
   // Sélecteur : un bâtiment est accessible sauf s'il est dans world.buildingLocks.
   isBuildingUnlocked: (id) => isUnlockedPure(id, get().world.buildingLocks ?? []),
+
+  // ── START02/04 — Déblocage des nodes (carte ashenvale) ────────────────────
+  // Sélecteur : un node est accessible s'il fait partie du départ ou a été ouvert
+  // par la chaîne de quêtes principale (world.unlockedNodes).
+  isNodeUnlocked: (nodeId) => isNodeUnlockedPure(nodeId, get().world),
 
   // Verrouille un bâtiment (no-op si déjà verrouillé). Utilisé par le futur câblage
   // des triggers (MQ-CHAIN01/START03) pour démarrer certains bâtiments verrouillés.

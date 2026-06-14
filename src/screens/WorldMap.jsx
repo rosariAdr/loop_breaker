@@ -4,7 +4,7 @@ import { MONSTERS } from '../data/monsters'
 import QTEBar from '../components/QTEBar'
 import { HeroAvatar } from '../components/parchment'
 import { POS, NODES, EDGES, areAdjacent } from '../data/worldGraph'
-import { isZoneUnlocked, getSpotLevelRange } from '../data/zones'
+import { isZoneUnlocked, getSpotLevelRange, isNodeUnlocked } from '../data/zones'
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
 
@@ -175,15 +175,47 @@ export default function WorldMap() {
       {NODES.map((n) => {
         // WM-LEVEL01 — sous-label « Lv X–Y » sous le nom des spots de chasse
         const lr = n.kind === 'spot' ? getSpotLevelRange(n.id) : null
+        // START02 — node verrouillé tant que la chaîne principale ne l'a pas ouvert.
+        const nodeLocked = !isNodeUnlocked(n.id, world)
         return (
           <WmNode
             key={n.id}
             {...n}
+            locked={nodeLocked}
             sub={lr ? `Lv ${lr[0]}–${lr[1]}` : undefined}
             onClick={() => onNode(n)}
+            onHover={
+              nodeLocked
+                ? (on) =>
+                    setTip(
+                      on && POS[n.id]
+                        ? {
+                            x: POS[n.id].x,
+                            y: POS[n.id].y - 8,
+                            text: '🔒 Advance the main quest to open this path.',
+                          }
+                        : null,
+                    )
+                : undefined
+            }
           />
         )
       })}
+
+      {/* START03 — Fog of war : nuage sur chaque node ashenvale non débloqué. */}
+      {NODES.filter((n) => !isNodeUnlocked(n.id, world) && POS[n.id]).map((n) => (
+        <div
+          key={`fog-${n.id}`}
+          className="wm-fog"
+          data-testid={`fog-node-${n.id}`}
+          style={{ left: `${POS[n.id].x}%`, top: `${POS[n.id].y}%` }}
+          aria-hidden="true"
+        >
+          <span>☁</span>
+          <span>☁</span>
+          <span>☁</span>
+        </div>
+      ))}
 
       {/* Donjon */}
       {dungeon?.active && (

@@ -8,8 +8,8 @@ describe('TRV — travelTo', () => {
     localStorage.clear()
   })
 
-  it('currentNode vaut ironhaven par défaut', () => {
-    expect(useGameStore.getState().world.currentNode).toBe('ironhaven')
+  it('currentNode vaut greywatch par défaut (START01 — départ Greywatch)', () => {
+    expect(useGameStore.getState().world.currentNode).toBe('greywatch')
   })
 
   it('déplace currentNode et avance le temps de 3 tics', () => {

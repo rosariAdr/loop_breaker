@@ -95,6 +95,45 @@ export const EQUIPMENT_TEMPLATES = {
     merchantBuyPrice: {},
   },
 
+  // ── ARMES SIGNATURE D'ÉLITE (MQ-ELITETURN01) ───────────────────────────────
+  // Récompenses exclusives des remises de quête principale (MQ02/04/06). Non
+  // craftables, non vendues (availableAt: []). `craftRecipes: {}` requis par
+  // createEquipmentInstance (sellPrice retombe sur le défaut). +1 rareté à la
+  // 2ᵉ remise géré côté flux (B5b).
+  oakheart_branch: {
+    id: 'oakheart_branch',
+    name: 'Oakheart Branch',
+    slot: 'weapon',
+    type: 'physical',
+    description: 'A living bough torn from Old Oakheart. Heavy, knotted, and still faintly warm.',
+    statFocus: 'strength',
+    baseStats: { strength: 6, def: 1 },
+    availableAt: [],
+    craftRecipes: {},
+  },
+  thunderhoof_maul: {
+    id: 'thunderhoof_maul',
+    name: 'Thunderhoof Maul',
+    slot: 'weapon',
+    type: 'physical',
+    description: "Forged around Thunderhoof's horn. It lands like a charging beast.",
+    statFocus: 'strength',
+    baseStats: { strength: 7 },
+    availableAt: [],
+    craftRecipes: {},
+  },
+  graven_edge: {
+    id: 'graven_edge',
+    name: 'Graven Edge',
+    slot: 'weapon',
+    type: 'magical',
+    description: 'A rune-etched shard of the Graven Sentinel. It hums with bound intelligence.',
+    statFocus: 'intelligence',
+    baseStats: { intelligence: 7 },
+    availableAt: [],
+    craftRecipes: {},
+  },
+
   // ── CASQUES ──────────────────────────────────────────────────────────────
   iron_helm: {
     id: 'iron_helm',

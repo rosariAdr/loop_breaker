@@ -1,5 +1,6 @@
 // REFAC01 — Slice « quests » du store (extrait de gameStore.js, comportement inchangé).
-import { createEquipmentInstance } from '../../data/equipment'
+import { createEquipmentInstance, RARITY_TIERS } from '../../data/equipment'
+import { getMqTutorialHint } from '../../data/hints'
 import { getQuestById, snapshotForQuest, isQuestCompleteState } from '../../data/quests'
 import { RESOURCES } from '../../data/resources'
 import { SKILLS } from '../../data/skills'
@@ -28,7 +29,23 @@ export const createQuestsSlice = (set, get) => ({
     // ONB01 — tip à la 1ère acceptation de quête (uniquement si réellement ajoutée).
     if (!wasActive && (get().world.activeQuests ?? []).includes(questId)) {
       get().triggerHint('first_quest')
+      // ONB02/MQ-CHAIN01 — chaque palier principal enseigne une mécanique.
+      const q = getQuestById(questId)
+      if (q?.isMainQuest && q.mqStep) {
+        const hint = getMqTutorialHint(q.mqStep)
+        if (hint) get().triggerHint(hint)
+      }
     }
+  },
+
+  // B5b/MQ-CHAIN01 — un palier principal est disponible si son prérequis est complété
+  // et qu'il n'est ni actif ni déjà terminé.
+  isMainQuestAvailable: (id) => {
+    const q = getQuestById(id)
+    if (!q?.isMainQuest) return false
+    const { activeQuests = [], completedQuests = [] } = get().world
+    if (activeQuests.includes(id) || completedQuests.includes(id)) return false
+    return !q.requires || completedQuests.includes(q.requires)
   },
 
   // UX03 — Abandonner une quête active (perte de progression, mais retirable des actives)
@@ -72,10 +89,26 @@ export const createQuestsSlice = (set, get) => ({
       if (r.skill) newManaStones.push({ skillId: r.skill.skillId, level: 1, xp: 0 })
       if (r.gold) newGold += r.gold
 
+      // MQ-ELITETURN01 — remise d'élite : consomme les items rendus (ou l'arme rendue)
+      // et escalade la rareté de l'arme signature (+1 par remise : rare → epic → …).
+      const turnin = quest.objectives?.find((o) => o.type === 'elite_turnin')
+      let eliteTurnins = state.meta.eliteTurnins ?? {}
+      let eqRarity = r.equipment?.rarity
+      if (turnin && r.equipment) {
+        const prior = eliteTurnins[turnin.weaponTemplateId] ?? 0
+        eqRarity = RARITY_TIERS[Math.min(1 + prior, RARITY_TIERS.length - 1)] // rare = index 1
+        eliteTurnins = { ...eliteTurnins, [turnin.weaponTemplateId]: prior + 1 }
+        const held = newResources[turnin.resourceId] ?? 0
+        if (held >= turnin.count) {
+          newResources[turnin.resourceId] = held - turnin.count // voie « 3× item rare »
+        } else {
+          const wi = newEquipment.findIndex((e) => e.templateId === turnin.weaponTemplateId)
+          if (wi >= 0) newEquipment.splice(wi, 1) // voie « rendre l'arme »
+        }
+      }
+
       // Q09 — récompenses variées : équipement / ressources / stat
-      const eqItem = r.equipment
-        ? createEquipmentInstance(r.equipment.templateId, r.equipment.rarity)
-        : null
+      const eqItem = r.equipment ? createEquipmentInstance(r.equipment.templateId, eqRarity) : null
       if (eqItem) {
         newEquipment.push(eqItem)
         unseenLoot = true
@@ -104,6 +137,15 @@ export const createQuestsSlice = (set, get) => ({
         newUnlockedZones.push(r.unlockZone)
       }
 
+      // MQ-CHAIN01 — un palier principal ouvre des nodes (localités / hunting spots).
+      // Stocké dans world.unlockedNodes ; consommé par le gating/fog (B6).
+      const newUnlockedNodes = [...(state.world.unlockedNodes ?? [])]
+      if (quest.isMainQuest && quest.unlocks) {
+        for (const nodeId of [...(quest.unlocks.locations ?? []), ...(quest.unlocks.spots ?? [])]) {
+          if (!newUnlockedNodes.includes(nodeId)) newUnlockedNodes.push(nodeId)
+        }
+      }
+
       // Q07/Q09 — Toast récompense de quête
       const rewardParts = []
       if (r.gold) rewardParts.push(`+${r.gold}g`)
@@ -127,11 +169,13 @@ export const createQuestsSlice = (set, get) => ({
 
       return {
         unseenLoot,
+        meta: { ...state.meta, eliteTurnins },
         world: {
           ...state.world,
           activeQuests: active.filter((q) => q !== questId),
           completedQuests: [...completed, questId],
           unlockedZones: newUnlockedZones,
+          unlockedNodes: newUnlockedNodes,
         },
         hero: {
           ...state.hero,
