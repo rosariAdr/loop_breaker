@@ -6,9 +6,10 @@ export const ZONES = {
   ashenvale: {
     id: 'ashenvale',
     name: 'Ashenvale',
+    mapId: 'map1', // WMAP01/02 — région de Map 1 (« Eldenmoor »)
     description:
       'Ancient forests shrouded in ash and mist. Ruins of a forgotten civilization hide among the twisted trees.',
-    levelRange: [1, 26],
+    levelRange: [1, 30], // WMAP02 — barème Map 1 (Ashenvale 1-8 → Thornmarsh 20-30)
     zoneMult: 1.0,
     monsters: [
       'ashwood_wolf',
@@ -40,7 +41,7 @@ export const ZONES = {
         name: 'Thornmarsh',
         icon: '🌿',
         description: 'A fetid swamp where serpents and wraiths lure travelers to their doom.',
-        levelRange: [6, 14],
+        levelRange: [20, 30], // WMAP02 — Thornmarsh = zone tardive de Map 1
         monsters: ['marsh_serpent', 'briar_wraith', 'mire_slime', 'fenrot_devourer'],
         mapPos: { x: 10, y: 52 },
       },
@@ -49,7 +50,7 @@ export const ZONES = {
         name: 'Crumbled Ruins',
         icon: '🏚',
         description: 'Shattered remnants of a lost civilization, haunted by golems and specters.',
-        levelRange: [12, 20],
+        levelRange: [12, 22], // WMAP02 — Crumbled Ruins (mid Map 1)
         monsters: ['stone_golem', 'hollow_knight', 'ruin_specter', 'graven_sentinel'],
         mapPos: { x: 65, y: 22 },
       },
@@ -58,7 +59,7 @@ export const ZONES = {
         name: 'Wildmere Hills',
         icon: '⛰',
         description: 'Verdant hills teeming with wild beasts and roaming creatures.',
-        levelRange: [18, 26],
+        levelRange: [6, 14], // WMAP02 — « Barrow Hills » (zone précoce de Map 1, re-niveau)
         monsters: ['hill_slime', 'russet_fox', 'knoll_goblin', 'thunderhoof'],
         mapPos: { x: 40, y: 72 },
       },
@@ -111,6 +112,7 @@ export const ZONES = {
   blighted_road: {
     id: 'blighted_road',
     name: 'The Blighted Road',
+    mapId: 'bridge', // WMAP01 — zone de transition (pont Map 1 → Map 2)
     description: 'A cursed path between Ashenvale and Grimspire. Few dare to travel it alone.',
     levelRange: [15, 30],
     zoneMult: 1.8,
@@ -132,9 +134,10 @@ export const ZONES = {
   grimspire: {
     id: 'grimspire',
     name: 'Grimspire',
+    mapId: 'map2', // WMAP01/02 — région de Map 2 (« Draconic Frontier », gelée)
     description:
       'Ancient cursed mountains and fortresses. The air itself feels heavy with dark magic.',
-    levelRange: [21, 40],
+    levelRange: [28, 50], // WMAP02 — barème Map 2 (Veteran's 28-38 → Draconic 36-50)
     zoneMult: 2.5,
     monsters: [
       'grimstone_troll',

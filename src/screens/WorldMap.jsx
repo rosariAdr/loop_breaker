@@ -50,10 +50,10 @@ export default function WorldMap() {
   const blightedUnlocked = isZoneUnlocked('blighted_road', { world, hero })
   const grimspireUnlocked = isZoneUnlocked('grimspire', { world, hero })
 
-  // TRV01 — position du héros sur la carte (fallback pour les saves sans currentNode)
+  // TRV01 — position du héros sur la carte (fallback = village de départ Greywatch)
   const heroNode =
-    world.currentNode ?? world.currentHuntingSpot ?? world.currentLocation ?? 'ironhaven'
-  const heroPos = POS[heroNode] ?? POS.ironhaven
+    world.currentNode ?? world.currentHuntingSpot ?? world.currentLocation ?? 'greywatch'
+  const heroPos = POS[heroNode] ?? POS.greywatch
 
   const goSafe = (id) => {
     useGameStore.setState((s) => ({

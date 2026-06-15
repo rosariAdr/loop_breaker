@@ -650,8 +650,8 @@ describe('B12 — isEnemyTooStrong + getMonsterLevel', () => {
   it('getMonsterLevel dérive le niveau depuis le spot de chasse', () => {
     // ashwood_wolf est dans ashenvale_forest (levelRange [1, 8]) → niveau min 1
     expect(getMonsterLevel('ashwood_wolf')).toBe(1)
-    // thunderhoof est dans wildmere_hills (levelRange [18, 26]) → niveau min 18
-    expect(getMonsterLevel('thunderhoof')).toBe(18)
+    // WMAP02 — thunderhoof est dans wildmere_hills (« Barrow Hills », levelRange [6, 14]) → niveau min 6
+    expect(getMonsterLevel('thunderhoof')).toBe(6)
   })
 
   it('getMonsterLevel retourne 1 pour un monstre inconnu', () => {

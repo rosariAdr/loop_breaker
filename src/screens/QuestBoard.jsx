@@ -412,12 +412,20 @@ export function QuestCard({
       {!isCompleted && (
         <div className="flex flex-col gap-2 mb-2">
           {quest.objectives.map((obj) => {
+            // FIX-QUESTPROG01 — kill/craft sont des objectifs en DELTA (snapshot à
+            // l'acceptation). Avant d'accepter (carte « available »), la progression
+            // doit être 0 — sinon le board affiche le cumul de kills/crafts du joueur.
             const current =
               obj.type === 'kill'
-                ? Math.min(
-                    obj.count,
-                    Math.max(0, (killCounts[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0)),
-                  )
+                ? isActive
+                  ? Math.min(
+                      obj.count,
+                      Math.max(
+                        0,
+                        (killCounts[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0),
+                      ),
+                    )
+                  : 0
                 : obj.type === 'level'
                   ? Math.min(obj.targetLevel, heroLevel ?? 1)
                   : obj.type === 'visit'
@@ -425,7 +433,9 @@ export function QuestCard({
                       ? 1
                       : 0
                     : obj.type === 'craft'
-                      ? Math.min(obj.count, Math.max(0, craftCount - baseCraft))
+                      ? isActive
+                        ? Math.min(obj.count, Math.max(0, craftCount - baseCraft))
+                        : 0
                       : obj.type === 'skill_levelup'
                         ? Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0)
                         : 0
