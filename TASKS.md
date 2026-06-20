@@ -124,7 +124,7 @@ _(aucune dépendance externe bloquante)_
 ### QoL essentiel (shippabilité)
 
 - [x] **IDLE-OFF — Progression hors-ligne** (M) - au retour, calculer les gains accumulés depuis `meta.lastSeen` (timestamp) → simuler N ticks → écran récap "Pendant ton absence : X kills, Y or, Z loot". **DÉCIDÉ : gains illimités (pas de plafond), la Fatigue ne s'accumule PAS hors-ligne, auto-stop HP à revoir plus tard.** AC : fermer/rouvrir l'onglet pendant idle actif crédite les bons gains + écran récap
-- [x] **SET01 — Menu Options / Réglages** (S) - écran joueur : toggle animations, vitesse de texte, (volume quand U05), reset save (via ConfirmDialog UX03). Sort le toggle "animate" du DebugPanel (DEV-only) vers le joueur
+- [x] **SET01 — Menu Options / Réglages** (S) - écran joueur : toggle animations, vitesse de texte, (volume quand AUDIO01), reset save (via ConfirmDialog UX03). Sort le toggle "animate" du DebugPanel (DEV-only) vers le joueur
 - [x] **TECH07 — Export / Import de save (fichier)** (S) - bouton "Exporter" (JSON téléchargé) + "Importer" (lecture fichier → `loadGame` + migrations). Filet de sécurité + portabilité multi-machine. Complète TECH02/TECH03
 - [x] **PROC07 — Debug panel : boutons "give stats"** (XS) - ajouter au `DebugPanel.jsx` (DEV) : +5 STR/AGI/INT/Chance/DEF, +50 maxHP/maxMana, ou "God mode stats"
 - [x] **KBD01 — Touche Échap = retour à la World Map** (XS) — *retour playtest 2026-06-06.* Quand on est dans une zone (`safe_zone` / `zone_view`) ou un overlay (Hero Sheet / Inventory / panneau PNJ), **Échap** revient à la WorldMap (ou ferme l'overlay courant en priorité). Sous-ensemble ciblé de **UX04** (navigation clavier complète, v2). AC : Échap sur safe_zone/zone_view → `world_map` ; Échap ferme un overlay ouvert avant de quitter la zone.
@@ -309,15 +309,16 @@ _(aucune dépendance externe bloquante)_
 | v1.34 | Tech / DX / Balance (9) | — |
 | v1.41 | Donjon (7) | spec 9 salles : voir Archive §v1.4 |
 | v1.42 | Équipement & Craft (37) | ordre interne : RES/TIER → craft/métiers → équip/sets/slots |
+| v1.43 | Maîtres & mentors (12) | ⟶ v1.31 (relocalisation Aldric + rework reward-skill) · v1.32 (skills) |
 | v1.51 | Monde & carte (11) | MONLV01 ⟶ BAL-CSV01 (v1.34) |
 | v1.52 | Divin (5) | DVQ01 ⟶ ALT01 (même épique) |
 | v1.61 | Compagnons (12) | CMP06 ⟶ EVT02 (v1.62) |
 | v1.62 | Événements, explo & NPC (8) | — |
-| v1.71 | UI / UX & a11y (10) | SETTINGS-FULL01 (volume) ⟶ AUDIO01 (v1.91) |
+| v1.71 | UI / UX & a11y (9) | SETTINGS-FULL01 (volume) ⟶ AUDIO01 (v1.91) |
 | v1.72 | Idle & planification (10) | IDLE-CRAFT/PLAN ⟶ Craft (v1.42) |
-| v1.81 | Méta / prestige (8) | REP-REBAL01 ⟶ ENCH (v1.42) |
-| v1.82 | Assets, art & lore (10) | CODEX ⟶ CONT02/03 (même épique) ; HS-EQUIP01 ⟶ icônes |
-| v1.91 | Audio, game-feel & cycle nuit (15) | NSKL ⟶ cycle nuit DN (même épique) |
+| v1.81 | Méta / prestige (7) | REP-REBAL01 ⟶ ENCH (v1.42) |
+| v1.82 | Assets, art & lore (9) | CODEX ⟶ CONT02/03 (même épique) ; HS-EQUIP01 ⟶ icônes |
+| v1.91 | Audio, game-feel & cycle nuit (14) | NSKL ⟶ cycle nuit DN (même épique) |
 | v1.92 | Multivers & Foyer (5) | — |
 | v1.93 | Intégration finale (gate) (5) | dépend de TOUTES (migration/QA/balance globale) ; SEC02 post-alpha |
 | gelé | Embuscade & Map 2 (12) | ⛔ BLOQUÉ : Map 2 gelée — à dégeler avant dev |
@@ -347,7 +348,7 @@ _(aucune dépendance externe bloquante)_
   - **Violations — Greywatch (émetteur greywatch_elder)** : `bog_purge` (mire_slime → thornmarsh), `ruins_cleanse` (ruin_specter+hollow_knight → crumbled_ruins), `nc_scout_marsh` (visit thornmarsh), `nc_explore_hills` (visit wildmere + **unlock Grimspire** depuis le village de départ !), `nc_fenrot_elite` (fenrot → thornmarsh **+ `mapTier:2`**). *Seuls `mq01`/`mq02` sont conformes.*
   - **Violations — Ironhaven (émetteurs sir_aldric / ironhaven_captain / merchant_pell)** : `first_blood` (wolves → forest, **doublon mq01**), `nc_thin_the_boars` (boar → forest), `nc_oakheart_elite` (oakheart → forest, **doublon mq02**), `nc_graven_elite` (graven → crumbled_ruins = zone Millhaven), `mq06` (graven → crumbled_ruins), `nc_deliver_ruins` (visit crumbled_ruins), **`storm_the_citadel` + `end_the_demon` = boss Map 2 surfacés à Ironhaven**. *Conformes : `clear_the_marsh`, `nc_thunderhoof_elite`, `silence_the_crypt`.*
   - **Violations — Millhaven** : `mq04` (thunderhoof → wildmere, zone Ironhaven) — toléré (spine). **Aucune quête secondaire** (village creux → cible n°1 de VQ04).
-  - **Problème donneur** : `sir_aldric` est titré « Knight of Millhaven » mais `location: ironhaven`, et porte des quêtes d'intro ciblant la forêt → **relocaliser à Greywatch** (ou créer des givers dédiés VQ07). Besoin d'un émetteur Millhaven pour le pool secondaire (réutiliser `millhaven_elder`/Warden Halric).
+  - **Problème donneur** : `sir_aldric` est titré « Knight of Millhaven » mais `location: ironhaven`, et porte des quêtes d'intro ciblant la forêt → **relocaliser à Greywatch** (ou créer des givers dédiés VQ07). Besoin d'un émetteur Millhaven pour le pool secondaire (réutiliser `millhaven_elder`/Warden Halric). *(Aldric ne devient pas qu'un donneur relocalisé : il prend le rôle de **maître martial** — épique v1.43 Maîtres, `MST05`.)*
   - **Re-domiciliation cible (proposition à valider)** : `first_blood`/`proof_of_worth`/`nc_thin_the_boars`/`nc_oakheart_elite` → **Greywatch** ; `ruins_cleanse`/`nc_graven_elite`/`nc_deliver_ruins` → **Millhaven** ; `bog_purge`/`nc_scout_marsh` → **Millhaven ou Ironhaven** (thornmarsh adj. aux deux) ; `nc_explore_hills` (visit wildmere) → **Ironhaven** ; `clear_the_marsh`/`nc_thunderhoof_elite`/`silence_the_crypt` → **rester Ironhaven** ; `storm_the_citadel`/`end_the_demon`/`nc_fenrot_elite` → **Map 2 (Stonehaven)** / **gelés** tant que Map 2 fermée. **Doublons** `first_blood`↔`mq01` et `nc_oakheart_elite`↔`mq02` : trancher (retirer la legacy, ou la garder comme variante « répétable » sans l'arme signature).
   - **Sous-correctif A — `CHQ-LOC01` (église globale, S)** : `church_caelum.location='any'` + `getActiveChurchQuests(dayCount)` **non filtré par lieu** → les **mêmes 2 quêtes** s'affichent partout. Le pool (forêt+ruins+marais) est calibré pour **Millhaven** : à Greywatch 5/6 sont hors adjacence (peut demander de purger le marais L20-30). **Fix** : filtrer le pool d'église par les spots adjacents à `currentLocation` avant la rotation (sous-ensemble du pool global).
   - **Sous-correctif B — `MQ-TURNIN-SIG01` (turn-in non signature, S)** : `questObjectiveStatus(elite_turnin)` ne vérifie **que la possession** de `resourceId`, pas sa **provenance** ; or `earth_crystal` (Oakheart) tombe aussi de stone_golem/hill_slime, `ancient_bone` (Thunderhoof) de fenrot/graven/Crypt Keeper, `cursed_gem` (Graven, 15%) de Crypt Keeper (50%). → on « valide l'élite » en farmant ailleurs. **Fix** : soit une **ressource signature unique par élite** (RES02), soit conserver l'item rare mais lier la complétion à un **compteur de kill de l'élite** ; la branche *arme signature* reste l'alternative voulue.
@@ -426,7 +427,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **DUN-MODEL01 — Modèle de données « donjon à salles »** · M · P3 · 🟢 — `dungeon = { mapId, rooms: [{ index, type:'combat'|'rest'|'treasure'|'boss', cleared }], currentRoom }` + migration save ; remplace le donjon « one-shot » actuel. Dépend D01-SPEC.
 - [ ] **D01 — Flux donjon complet** · L · P3 · 🟢 — implémente la chaîne **9 salles** (Combat 1/2/4/6/7 · Repos 3/8 · Trésor 5 · Boss 9), salle N+1 ouverte à la résolution de N, idle interdit. ✅ **Ready** : structure décidée (Archive §v1.4) ; **séquencé après D01-SPEC + DUN-MODEL01**.
 - [ ] **D03 — Carte de donjon** · M · P3 · 🟢 — carte des 9 salles (nodes par type, chemin, salle courante) — après D01. ✅ **Ready** (rendu de base ; le rendu graphique riche = DUN-ART01).
-- [ ] **DUN-ART01 — Carte graphique du donjon (9 salles)** · M · P3 · 🟡 — rendu **graphique** de la chaîne de salles (≠ simples formes géométriques) : salle courante en évidence, salles franchies / à venir, icône par type. Affine **D03**. 🎨 **Bloqueur = asset** (fond de donjon + icônes de salle à générer) ; câblage spec'd, prêt dès l'asset dispo. *(Asset gitignoré comme le reste de `public/` jusqu'à push.)*
+- [ ] **DUN-ART01 — Carte graphique du donjon (9 salles)** · M · P3 · 🟡 — rendu **graphique** de la chaîne de salles (≠ simples formes géométriques) : salle courante en évidence, salles franchies / à venir, icône par type. Affine **D03**. 🎨 **Bloqueur = asset** (fond de donjon + icônes de salle à générer — **prompts prêts : `docs/ASSET_PROMPTS.md §12`** : `crypt_map` + 4 médaillons `room_*`) ; câblage spec'd, prêt dès l'asset dispo. *(Asset gitignoré comme le reste de `public/` jusqu'à push.)*
 - [ ] **D06 — Donjon spawn la nuit suivante** · M · P3 · 🟢 — cycle sommeil → respawn + position aléatoire + marker "?" (CAL01 ✓, MAP01 ✓). ✅ **Ready** : après le flux donjon.
 - [ ] **DUNREV01 — Revue complète du système de donjon (umbrella)** · L · P3 · 🟢 — **= chapeau de l'épique v1.41** (D01-SPEC → DUN-MODEL01 → D01 → D03 → DUN-ART01 → D06). Pas de travail séparé : se clôt quand les tickets de l'épique sont faits. ✅ **Ready** (suivi).
 
@@ -470,6 +471,22 @@ _(aucune dépendance externe bloquante)_
 - [ ] **ENCH02 — Risque d'échec** · M · P4 · 🟢 — ✅ **DÉCIDÉ** : échec = **pas d'amélioration** (sans perte) aux paliers bas ; **rétrogradation** possible aux paliers hauts, **atténuée par pierres de protection**. ⟶ ENCH01.
 - [ ] **SOCKET01 — Sertir des mana stones** · M · P4 · 🟢 — emplacements sur l'équipement, bonus stat/élémentaire ; réutilise l'inventaire de pierres.
 - [ ] **UX-COMPARE-EXT01 — Comparaison équipement étendue** · S · P3 · 🟢 — étendre UX02 (6 slots) aux nouveaux slots (bagues/amulette).
+
+### v1.43 — Maîtres & mentors
+> Système de **maître** (mentor) : on s'engage auprès d'un maître via une **quête d'initiation** ; l'engagement est **permanent** ; **seul le maître engagé** donne des quêtes à **récompense skill**. Plusieurs maîtres à focus distinct (martial / arcane / feu / glace / berserker), dont des **itinérants**. Étend `masterQuests.js`/ACA04 + NPC05. ⟶ v1.31 (relocalisation Aldric + rework des rewards), v1.32 (skills).
+
+- [ ] **MST01 — Modèle de données « maître » + engagement** · M · P3 · 🟡 — `MASTERS` (id, name, title, `location` ou `itinerant:true`, `focus` martial/arcane/feu/glace/berserker…, `initiationQuestId`, `skillQuestPool[]`) + état d'engagement du héros (`masterId`, **immuable** une fois posé) + **migration save**. Portée run/méta = **MST-G1**. ⟶ MST02, masterQuests.js.
+- [ ] **MST02 — Quête d'initiation + verrou d'engagement** · M · P3 · 🟡 — chaque maître porte une **quête d'initiation** ; la valider **engage définitivement** le héros (`setMaster`, non modifiable). Tant qu'aucune initiation validée : les quêtes de maître restent **verrouillées**. Forme du verrou (engagement forcé au maître de départ vs choix libre, 1ʳᵉ initiation = lock) = **MST-G1**. ⟶ MST01, ONBOARD01.
+- [ ] **MST03 — Skills en récompense = exclusifs au maître** · M · P3 · 🟡 — **retirer les `reward.skill` des quêtes non-maître** (`first_blood`→counter_strike, `clear_the_marsh`→cleave, `silence_the_crypt`→soul_crush, `nc_graven_elite`→power_strike, etc.) et les **rerouter** via les quêtes du maître ; **rebalance** des récompenses libérées (gold/ressources/tokens). ⟶ QSV2-ADJ-AUDIT01, REP-REBAL01, BAL-CSV01, quests.js.
+- [ ] **MST04 — UI maître (panneau + gating)** · S · P3 · 🟡 — état « pas de maître / maître = X » ; quêtes de maître grisées + tooltip tant que non initié ; un seul maître engagé visible. Réutilise le pattern feedback verrouillé (BLDUNL05). ⟶ MST02.
+- [ ] **MST05 — Sir Aldric → Greywatch, maître martial** · S · P3 · 🟢 — relocaliser `sir_aldric` à **Greywatch** (vient de QSV2-ADJ-AUDIT01) ; **nouveau titre** (MST-G2) ; rôle = **maître martial** (épée/garde), porteur de la **quête d'initiation de départ**. ⟶ QSV2-ADJ-AUDIT01, MST01, MST02, MST-G2.
+- [ ] **MST06 — Maître mage à Millhaven** · S · P3 · 🟡 — « Ancien mage de la cour royale » ; focus **arcane** ; PNJ + quête d'initiation + pool de skills. ⟶ MST01, MST09.
+- [ ] **MST07 — 2 maîtres à Ironhaven** · S/M · P3 · 🟡 — 2 maîtres en ville (focus à définir) + initiations + pools. **Décision** : l'un = l'**Académie** (`academy_master`/Archmagister Vael, ACA04) recyclé, ou 2 maîtres distincts de l'Académie ? (cf. MST-G3). ⟶ ACA04, MST01, MST09.
+- [ ] **MST08 — Maîtres itinérants (feu / glace / berserker)** · M · P3 · 🟡 — maîtres **de passage** à focus marqué (**magie de feu**, **magie de glace**, **berserker** ; extensible) ; apparition aléatoire (Guilde / route / événement) ; initiation possible si non encore engagé. **Fusionne/étend NPC05.** ⟶ NPC05, EVT01, MST01.
+- [ ] **MST09 — Pools de skills par discipline** · M · P3 · 🟡 — table de skills-récompense par focus (martial / arcane / feu / glace / berserker…) puisée dans les 44 skills, cohérence physical/magic (SKD). ⟶ SKD-E1, skills.js.
+- [ ] **MST-G1 — Modèle d'engagement (fork central)** · XS · P3 · 🟡 — trancher : **(a)** engagement **forcé** au maître de départ (Aldric) via la 1ʳᵉ quête, ou **(b)** **choix libre** parmi tous les maîtres, la 1ʳᵉ initiation faisant verrou ? + **portée** : lié au **run** (re-choix à chaque transmigration) ou **méta** (à vie) ? Détermine MST01/02/05/08.
+- [ ] **MST-G2 — Titre de Sir Aldric** · XS · P3 · 🟡 — choisir : « Chevalier déchu » / « Chevalier retraité » / « Membre d'honneur du Royal Knighthood ». ⟶ MST05.
+- [ ] **MST-G3 — Articulation Maîtres ↔ Académie** · XS · P3 · 🟡 — l'**Académie** (ACA01-06) **vend/monte** des skills contre or ; les **maîtres** donnent des skills **via quêtes** (exclusif). Confirmer la coexistence sans doublon + sort de `academy_master`/Vael (maître d'Ironhaven ou PNJ Académie distinct ?). ⟶ ACA01-06, MST07.
 
 ### v1.51 — Monde & carte
 > ⟶ MONLV01 ⟶ BAL-CSV01 (v1.34)
@@ -537,9 +554,9 @@ _(aucune dépendance externe bloquante)_
   - Supprimer l'affichage **HP/MP** du panneau (top bar suffit). Quest cards en couleurs chaudes (bg `#e8d4a0`, border-left 3px `#c89432`, texte `#2c1a0a`) — retirer le fond noir.
   - **⚠️ Actions à NE PAS régresser** : **Talk** (overlay dialogue, bouton dédié col. gauche) · **Enter Church** (logique métier absorbée dans le panneau direct — vérifier triggers) · **Leave/Fermer** (ferme + repositionne le héros sur la carte) · **Pray disabled** (« Already at full strength » si HP/MP pleins) · **Pray active** (restauration HP/MP si blessé) · **Accept quest** (ajout au journal) · **Cooldown quêtes** (« New deeds in X days » affiché et bloquant).
   - **Scope** : identifier le composant Church (`src/screens/` — *cf. `SafeZone.jsx` ChurchPanel* / `src/components/`) ; fusionner les deux états (intro + détail) en un seul render split-B dès le 1er clic ; reparenter « Talk » sous le portrait ; remplacer classes CSS quest cards (noir → amber/parchemin) ; retirer le render conditionnel HP/MP ; lancer la suite NPC avant merge.
-  - **AC** : (a) 1 clic bâtiment → panneau split B immédiat ; (b) Talk fonctionnel (overlay dialogue) ; (c) HP/MP absent ; (d) quest cards thème parchemin ; (e) Pray disabled/active selon l'état réel ; (f) Accept quest OK (journal MAJ) ; (g) cooldown respecté/affiché ; (h) **0 test rouge** sur la suite existante (~1101+). **Lié à** : TST-UI, et les autres chantiers église **DVQ01** (quêtes divines) / **ALT01** (autels) ci-dessous.
+  - **AC** : (a) 1 clic bâtiment → panneau split B immédiat ; (b) Talk fonctionnel (overlay dialogue) ; (c) HP/MP absent ; (d) quest cards thème parchemin ; (e) Pray disabled/active selon l'état réel ; (f) Accept quest OK (journal MAJ) ; (g) cooldown respecté/affiché ; (h) **0 test rouge** sur la suite existante (~1161+). **Lié à** : TST-UI, et les autres chantiers église **DVQ01** (quêtes divines) / **ALT01** (autels) ci-dessous.
 - [ ] **UI10 — Refonte du format d'affichage : passage en 16:9** · S/M · P4 · 🟡 — **Contexte** : le layout est perçu comme une **boîte fixe (~750×580 px)** centrée sur fond noir, quasi 1:1 et non-responsive ; l'espace écran large (laptop/desktop) est mal exploité. **Objectif** : adopter un ratio standard — **Option A `16:9`** (widescreen, **à préférer**) ou Option B `3:4` (portrait, si centrage village/donjon). **Scope** : conteneur principal (`src/screens/` ou layout racine) px fixe → ratio CSS (`aspect-ratio: 16/9`) ; Map + zones (village/donjon) + HUD s'adaptent (flex/grid ou viewBox SVG) ; vérifier **1366×768** et **1920×1080** (mobile hors scope) ; **ne pas casser les sprites/bâtiments positionnés en absolu** sur la carte. **AC** : (a) zone de jeu ≥ **80 %** de la largeur du viewport sur 1366px ; (b) ratio maintenu **sans déformation** des sprites ; (c) **0 régression visuelle** sur les écrans déjà fonctionnels. **Lié à** : TST-UI. **⚠️ Note de grooming (réconciliation requise)** : v1.1 a acté un **stage fixe 1920×1080 + scaler** `transform: scale(min(vw/1920,vh/1080))` (déjà 16:9, cf. UI01 parchemin) et **responsive renvoyé à `U02`/v2** → clarifier l'écart entre « boîte ~750×580 » observée et le stage théorique avant de coder (régression du scaler ? écran hors-coquille ?).
-- [ ] **TST-UI — Tests de non-régression UI (couverture cible ≥ 70 %)** · S · P2 · 🟢 — **Contexte** : couverture actuelle ~**76 %** ; UI10 (layout) et UI11 (panneau NPC) touchent du layout et des composants Église → risque de régression. **Objectif** : maintenir la couverture **> 70 %** sur toute la v1.3 via des tests ciblés.
+- [ ] **TST-UI — Tests de non-régression UI (couverture cible ≥ 70 %)** · S · P2 · 🟢 — **Contexte** : couverture actuelle ~**76 %** ; UI10 (layout) et UI11 (panneau NPC) touchent du layout et des composants Église → risque de régression. **Objectif** : maintenir la couverture **> 70 %** sur toute l'épique UI (v1.71) via des tests ciblés.
   - **UI10 — Layout** : conteneur principal respecte le ratio `16:9` (ou `3:4` si option B) ; zone de jeu ≥ 80 % largeur sur viewport 1366px ; pas de débordement/déformation des sprites.
   - **UI11 — Church Panel** : 1 clic bâtiment → render split B ; col. gauche présente portrait + Talk + section Pray ; Talk → overlay dialogue visible ; Pray disabled si HP/MP pleins, actif si blessé ; HP/MP non rendus ; Accept quest → journal MAJ ; cooldown « New deeds in X days » affiché/bloquant ; quest cards = classes parchemin présentes, fond noir absent.
   - **Commande** : `npm run test:run -- --coverage`. **AC** : (a) couverture globale ≥ 70 % après merge UI10+UI11 ; (b) ≥ 1 test par ticket UI## corrigé ; (c) 0 test existant cassé.
@@ -548,8 +565,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **A11Y01 — Accessibilité de base** · M · P3 · 🟡 — `prefers-reduced-motion` + focus + ARIA + contrastes (périmètre à border). Recoupe UX04.
 - [ ] **UX04 — Navigation clavier complète** · M · P3 · 🟡 — Tab + Entrée + Echap sur tous les écrans ; combat jouable sans souris
 - [ ] **U02 — Responsive mobile** · L · P3 · 🟡 — layout <768px, touch events, Canvas 2D scaled
-- [ ] **TUT01 — Premier run guidé : tooltips contextuels** · L · P3 · 🟡 — hints progressifs restants (TUT02/TUT03 déjà faits) : J2 donjons, 1er dieu, 1er craft… ⏸ **Différé : lister les 5-6 hints restants (mini-spec) avant dev**. **→ absorbé/élargi par ONB01-03**.
-- [ ] **ONBOARD01 — Onboarding premier run** · M · P3 · 🟡 — hints **validés** ; reste déclencheurs + copy définitive.
+- [ ] **ONBOARD01 — Onboarding premier run (tooltips contextuels)** · M · P3 · 🟡 — *fusionne l'ex-TUT01.* Réutilise le framework `triggerHint` (ONB01 ✓). Hints **validés** ; reste : **lister les 5-6 hints restants** (J2 donjons, 1er dieu, 1er craft…) + déclencheurs + copy définitive. (TUT02/TUT03 déjà livrés.)
 
 ### v1.72 — Idle & planification
 > ⟶ IDLE-CRAFT/PLAN ⟶ Craft (v1.42)
@@ -573,7 +589,6 @@ _(aucune dépendance externe bloquante)_
 - [ ] **META03 — Modificateurs NG+** · M · P4 · 🟡 — modificateurs optionnels (plus durs / plus de loot) selon les runs.
 - [ ] **HIS01 — Historique des runs** · M · P3 · 🟡 — N derniers runs : cause de mort, zone max, boss tués, durée, tokens ; `meta.runHistory[]`
 - [ ] **HIS02 — Statistiques globales meta** · S · P3 · 🟡 — total kills/type, temps joué, Demon Lords tués, compagnons perdus, skills uniques
-- [ ] **META-HISTORY01 — Historique & stats de runs** · M · P5 · 🟡 — .
 - [ ] **REP-REBAL01 — Rééquilibrage des tokens** · M · P4 · 🟡 — débloquer **REP01** avec les nouveaux puits (Gods' Shop méta, enchantement) et sources (quêtes principales). **Trois points à trancher (relevés en B2 le 2026-06-13)** : **(a) rang = solde dépensable** — `getRankInfo(hero.reputationTokens)` calcule le rang sur la monnaie *dépensable* → acheter au Gods' Shop fait *baisser* le rang. Décider : compteur **cumulatif séparé** (`lifetimeReputationTokens`) pour le rang vs solde pour les achats ? **(b) seuils inatteignables** — v1 ne donne que **20 tokens** (4 élites × 5) hors Malachar ; `RANK_TIERS` Gold 30 / Plat 70 / Diam 150 et la prestige à `PRESTIGE_MIN_TOKENS=10` sont à recaler sur la vraie courbe d'offre (ou ajouter des sources : quêtes principales MQ-CHAIN, donjon v1.4). **(c) sources à 0** — confirmer si église / maîtres de bâtiment / boss de zone restent à 0 token (défaut actuel) ou en octroient.
 - [ ] **PERMSTAT01 — Items de stats définitives** · M · P4 · 🟡 — craftables, coût en ingrédients **très rares OU en grande quantité** ; étend ITM01. *Non prioritaire.*
 
@@ -589,14 +604,12 @@ _(aucune dépendance externe bloquante)_
 - [ ] **CONT02 — Descriptions lore par zone** · XS · P3 · 🟡 — flavor text dans le header ZoneView (3-4 lignes/zone)
 - [ ] **CONT03 — Flavor text sur les skills** · XS · P3 · 🟡 — champ `lore` dans les skill templates, affiché en italique InventoryCard
 - [ ] **CODEX02 — Codex de lore** · S · P3 · 🟡 — écran consultable regroupant le flavor text — dépend CONT02/CONT03
-- [ ] **CODEX-LORE01 — Codex de lore** · S · P5 · 🟡 — dépend d'écrire le lore.
 
 ### v1.91 — Audio, game-feel & cycle nuit
 > ⟶ NSKL ⟶ cycle nuit DN (même épique)
 
 - [ ] **AUDIO-ASSETS01 — Sourcing des assets sonores (info)** · S · P3 · 🟡 — **mix IA + libres de droit** décidé ; reste style sonore + volume. Prépare AUDIO01.
-- [ ] **AUDIO01 — Système audio (SFX + musique)** · L · P3 · 🟡 — dépend AUDIO-ASSETS01.
-- [ ] **U05 — SFX combat + ambiance** · L · P3 · 🟡 — Web Audio API : attaque, skill, mort, level-up, divine call, déroulement parchmin
+- [ ] **AUDIO01 — Système audio (SFX + musique)** · L · P3 · 🟡 — *fusionne l'ex-U05.* Web Audio API ; SFX : attaque, skill, mort, level-up, divine call, déroulé parchemin ; musique par zone (cf. FEEL02). Dépend AUDIO-ASSETS01.
 - [ ] **FEEL01 — SFX par action** · M · P4 · 🟢 — coup, craft, loot, level-up.
 - [ ] **FEEL02 — Musique par zone & jour/nuit** · M · P4 · 🟢 — ambiance médiévale fantasy.
 - [ ] **FEEL03 — Juice visuel** · M · P4 · 🟢 — screen-shake, particules de loot, transitions ; lien DN02.

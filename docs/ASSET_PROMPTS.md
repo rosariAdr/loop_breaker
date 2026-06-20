@@ -2,7 +2,7 @@
 
 > **Fichier maître** : étude des assets à produire + **prompts prêts à coller** + reco par asset
 > (🟢 **Gemini** / 🟣 **autre IA** / 🟠 **à sourcer** / ⚪ **ni l'un ni l'autre**).
-> **Chaque asset (§4 à §11) a son propre prompt COMPLET prêt à copier-coller** (style + cadrage + sujet + technique déjà assemblés) — un bloc = un asset. (`public/monsters/README.md` reste un guide secondaire.)
+> **Chaque asset (§4 à §12) a son propre prompt COMPLET prêt à copier-coller** (style + cadrage + sujet + technique déjà assemblés) — un bloc = un asset. (`public/monsters/README.md` reste un guide secondaire.)
 > Rappel : `public/` est **gitignoré** → les assets restent local-only ; ce plan, lui, est committé.
 
 ---
@@ -398,7 +398,43 @@ An atmospheric medieval-fantasy combat background illustration of a dark volcani
 
 ---
 
-## 12) ⚪ ICÔNES UI & OBJETS (PAS d'IA)
+## 12) 🟢 CARTE DE DONJON — fond + médaillons de salle (DUN-ART01, Gemini)
+
+> Le **DungeonView** (D03 / DUN-ART01) rend la **chaîne de 9 salles** (Combat 1/2/4/6/7 · Repos 3/8 · Trésor 5 · Boss 9). Comme la WorldMap, le moteur **place les nœuds en coordonnées %** et **trace le chemin en SVG** → on a besoin de **(A) un fond de donjon SANS salles dessinées** + **(B) un jeu de médaillons par type de salle**. Les états *courante / franchie / à venir* sont gérés **en CSS** (glow doré / ✓ / désaturation + 🔒) → **pas d'asset d'état**. Style : **cartographie parchemin-et-encre** cohérente avec `eldenmoor.png`, mais en **intérieur de crypte/caverne** (palette plus sombre, chaude aux bougies). Emplacement : `public/dungeon/`.
+
+**(A) — Fond de carte** *(image pleine, paysage 16:9, pas de détourage)*
+
+**`crypt_map.png`** — Fond de donjon (crypte)
+```
+An aged parchment cartography map illustration of the interior of a medieval-fantasy crypt-dungeon, drawn in ink and warm sepia wash as if sketched by an adventurer — a cross-section of carved stone chambers, vaulted corridors, cracked flagstones, cobwebs, scattered bones, dripping stalactites and the faint glow of distant torchlight, with plenty of empty open floor space where chambers would sit. Hand-drawn treasure-map style: ink linework, subtle aged-paper texture, soft candle-warm highlights, a darker shadowy vignette around the edges. IMPORTANT: do NOT draw any room markers, icons, numbers, dots, labels or a marked path — leave the chambers as empty readable spaces so markers can be overlaid later in-engine. Atmospheric, immersive, painterly storybook tone. Landscape 16:9 composition, full-bleed background. No text, no watermark, no UI, no border, no grid.
+```
+
+**(B) — Médaillons de salle** *(jeu cohérent, fond neutre détourable, ~256² final, `room_<type>.png`)*
+
+> Un seul **état neutre** par type. Génère-les **en lot** (1ᵉʳ médaillon validé → fourni en référence pour les 3 autres) pour un rendu homogène. Le **chemin** reliant les salles est tracé en SVG par le moteur (comme les trails de la WorldMap) → pas d'asset de chemin.
+
+**`room_combat.png`** — Salle de combat
+```
+A single circular game-map node medallion — a carved stone-and-bronze seal with a thin engraved gold rim, bearing a clear emblem of two crossed swords at its center. Aged parchment-and-ink cartography style matching an old fantasy treasure map, warm sepia and gold tones with subtle stone texture, hand-painted look, easily readable at small size. Centered, perfectly circular token, isolated on a perfectly flat evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no extra props.
+```
+**`room_rest.png`** — Salle de repos
+```
+A single circular game-map node medallion — a carved stone-and-bronze seal with a thin engraved gold rim, bearing a clear emblem of a small warm campfire with a bedroll at its center. Aged parchment-and-ink cartography style matching an old fantasy treasure map, warm sepia and gold tones with subtle stone texture, hand-painted look, easily readable at small size. Centered, perfectly circular token, isolated on a perfectly flat evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no extra props.
+```
+**`room_treasure.png`** — Salle au trésor
+```
+A single circular game-map node medallion — a carved stone-and-bronze seal with a thin engraved gold rim, bearing a clear emblem of a closed treasure chest with a glint of gold at its center. Aged parchment-and-ink cartography style matching an old fantasy treasure map, warm sepia and gold tones with subtle stone texture, hand-painted look, easily readable at small size. Centered, perfectly circular token, isolated on a perfectly flat evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no extra props.
+```
+**`room_boss.png`** — Salle de boss
+```
+A single circular game-map node medallion — a carved stone-and-bronze seal with a thin engraved gold rim, bearing a clear menacing emblem of a horned skull wearing a small crown at its center. Aged parchment-and-ink cartography style matching an old fantasy treasure map but slightly darker and more ominous, deep sepia with red-gold accents and subtle stone texture, hand-painted look, easily readable at small size. Centered, perfectly circular token, isolated on a perfectly flat evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no extra props.
+```
+
+> 💡 Variante : si tu préfères des marqueurs **plats** plutôt que peints, les 4 emblèmes (épées croisées / feu de camp / coffre / crâne couronné) existent sur **game-icons.net** (CC BY) — recolore-les à la palette parchemin (`--ink`/`--gold`) et pose-les sur un anneau commun (§13).
+
+---
+
+## 13) ⚪ ICÔNES UI & OBJETS (PAS d'IA)
 
 > **Reco : ⚪ `game-icons.net` (CC BY 3.0)** — set cohérent, recolorable à la palette parchemin (`--ink`, `--gold`, `--amber-deep`). **Pas de génération IA** (vectoriel, cohérence d'un set).
 - **UI** : remplacer les emoji `⚔ 🛡 🪙 🌙 🛏 🍺 ⛪ 🎪 🔒 ☀ ⚡ ✦ 📖 🎒 📜`.
@@ -406,9 +442,9 @@ An atmospheric medieval-fantasy combat background illustration of a dark volcani
 
 ---
 
-## 13) Workflow Gemini (rappel)
+## 14) Workflow Gemini (rappel)
 
-1. Copier-coller **le prompt complet de l'asset** (chaque bloc §4-§11 est déjà prêt, rien à assembler).
+1. Copier-coller **le prompt complet de l'asset** (chaque bloc §4-§12 est déjà prêt, rien à assembler).
 2. Générer en **1024²**, fond plat neutre.
 3. **Détourer** (rembg) → PNG transparent.
 4. Recadrer/redimensionner à la cible, **nommer exactement**, déposer dans le bon dossier `public/…`.
