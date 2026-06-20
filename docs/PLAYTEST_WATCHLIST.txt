@@ -1,8 +1,49 @@
 ==============================================================================
  LOOP BREAKER — ASPECTS À SURVEILLER EN PLAYTEST
- (créé 2026-06-08 ; à mettre à jour au fil des décisions de balance)
+ (créé 2026-06-08 ; maj 2026-06-14 — batches B2→B6)
  Voir aussi : PLAYTESTS.md (journal structuré), PROC04 (spreadsheet de balance).
 ==============================================================================
+
+------------------------------------------------------------------------------
+ ★ NOUVEAUTÉS À TESTER EN PRIORITÉ (session 2026-06-14 — batches B2→B6)
+------------------------------------------------------------------------------
+ >> CHAÎNE PRINCIPALE & DÉMARRAGE GREYWATCH (B5+B6) — LE GROS MORCEAU <<
+[ ] Le run démarre bien à GREYWATCH (village), pas Ironhaven.
+[ ] Carte : seuls Greywatch + Ashenvale Forest sont ouverts ; Millhaven /
+    Ironhaven / Crumbled Ruins / Wildmere Hills / Thornmarsh sont VERROUILLÉS
+    (cadenas 🔒 + nuage de fog), clic bloqué + infobulle "advance the main quest".
+[ ] Quêtes principales (MQ) postées sur le board du DOYEN (Elder Moira, Greywatch).
+    - mq01 "The Waking" (tuer 5 loups) visible d'emblée ?
+    - une fois mq01 rendue, mq02 "The Road to Millhaven" apparaît (chaînage) ?
+[ ] Remise d'élite (mq02 = Old Oakheart) : objectif "3× Earth Crystal OU son arme".
+    - tuer Old Oakheart (forêt) droppe-t-il des Earth Crystal à un rythme JOUABLE ?
+      (drop ~30% : ATTENTION risque de grind frustrant — NOTER le nb de kills pour 3)
+    - rendre la quête donne bien l'arme "Oakheart Branch" (rare) ?
+    - APRÈS la remise : Millhaven se DÉVERROUILLE sur la carte (le fog se lève) ?
+[ ] Suite de la chaîne : mq03 (niveau 4 -> ouvre collines+ruines) -> mq04
+    (Thunderhoof -> Ironhaven) -> mq05 (niveau 6) -> mq06 (Graven -> Thornmarsh).
+    -> La progression "quête -> déblocage de node" est-elle lisible et motivante ?
+[ ] *** POINT CHAUD *** Le gating peut-il COINCER le joueur ? (élite trop dur au
+    niveau d'arrivée, drops trop rares, on ne comprend pas où accepter la MQ...)
+[ ] Armes signature d'élite (Oakheart Branch / Thunderhoof Maul / Graven Edge) :
+    stats correctes, cohérentes vs l'équipement de base ?
+
+ >> TOKENS & DIALOGUES (B2) <<
+[ ] Tokens de réputation : SEULES les quêtes "kill élite" en donnent (5) ; toute
+    autre quête (commune / boss de zone / église) = 0. Conforme au ressenti voulu ?
+[ ] ⚠️ Le RANG se calcule sur le solde DÉPENSABLE : acheter au God's Shop fait
+    BAISSER le rang (bug de design connu -> REP-REBAL01). Confirmer le ressenti.
+[ ] Dialogues : chaque PNJ nommé a un texte PROPRE (Guildmaster Doran, Master
+    Hollis, Sir Aldric, Vesna, Archmagus Oren) — plus de "Safe travels, stranger".
+
+ >> ONBOARDING & QoL (B3+B7) <<
+[ ] Tips contextuels one-shot (1ʳᵉ quête / 1er level-up / 1er craft / idle débloqué
+    / 1ʳᵉ mort) : utiles, pas intrusifs, désactivables (Options > Tutorial hints) ?
+[ ] Codex (📖) : onglet "Rules" présent (Stats / Vigor / Idle / Reputation /
+    Divinities / Transmigration) — clair pour un nouveau joueur ?
+[ ] Maîtrise idle débloquée à 5 kills (combat) — cohérent partout (barre "N/5") ?
+
+------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
  A. ÉQUILIBRAGE — VALEURS DÉCIDÉES (BAL-AUDIT01 / BAL-CSV01)
@@ -62,6 +103,9 @@
 [ ] Déblocage des zones (niveau/kills/quête/info) : rythme satisfaisant ?
 [ ] Fog of war : clair quelles zones sont verrouillées et pourquoi ?
 [ ] Démarrage à Greywatch : le début (forêt seule) n'est pas frustrant ?
+[ ] (B6 — LIVE) Verrouillage par NODE : la chaîne principale (MQ) ouvre les nodes
+    un à un. Cf. la section "★ NOUVEAUTÉS" en tête de fichier (spine MQ-CHAIN01).
+    -> le couplage "quête principale = condition de déblocage" est-il fluide ?
 
 ------------------------------------------------------------------------------
  F. SAVE / ROBUSTESSE (SAVE-AUDIT01)

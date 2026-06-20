@@ -95,19 +95,62 @@ describe("MON01 — remap d'id de spot renommé (barrow_hills → wildmere_hills
   it('normalizeSave remappe currentHuntingSpot et currentNode', () => {
     const out = normalizeSave({
       saveVersion: 2,
-      world: { currentHuntingSpot: 'barrow_hills', currentNode: 'barrow_hills' },
+      // node débloqué → on isole le test du remap de l'anti-piège FIX-START01
+      world: {
+        currentHuntingSpot: 'barrow_hills',
+        currentNode: 'barrow_hills',
+        unlockedNodes: ['wildmere_hills'],
+      },
     })
     expect(out.world.currentHuntingSpot).toBe('wildmere_hills')
     expect(out.world.currentNode).toBe('wildmere_hills')
   })
 
-  it('ne touche pas un spot non renommé', () => {
+  it('ne touche pas un spot non renommé (node débloqué = préservé)', () => {
     const out = normalizeSave({
       saveVersion: 2,
-      world: { currentHuntingSpot: 'thornmarsh', currentNode: 'ironhaven' },
+      // ironhaven débloqué → pas de relocalisation, le node non-remappé est préservé
+      world: {
+        currentHuntingSpot: 'thornmarsh',
+        currentNode: 'ironhaven',
+        unlockedNodes: ['ironhaven'],
+      },
     })
     expect(out.world.currentHuntingSpot).toBe('thornmarsh')
     expect(out.world.currentNode).toBe('ironhaven')
+  })
+})
+
+describe('FIX-START01 — anti-piège : héros sur un node verrouillé → ramené à Greywatch', () => {
+  it("save d'avant le node-locking (currentNode=ironhaven, pas d'unlockedNodes) → relocalisée à greywatch", () => {
+    const out = normalizeSave({
+      saveVersion: 2,
+      world: { currentLocation: 'ironhaven', currentNode: 'ironhaven', currentHuntingSpot: null },
+    })
+    expect(out.world.currentNode).toBe('greywatch')
+    expect(out.world.currentLocation).toBe('greywatch')
+  })
+
+  it("un node de départ (greywatch / ashenvale_forest) n'est jamais relocalisé", () => {
+    const gw = normalizeSave({
+      saveVersion: 2,
+      world: { currentNode: 'greywatch', currentLocation: 'greywatch' },
+    })
+    expect(gw.world.currentNode).toBe('greywatch')
+    const forest = normalizeSave({ saveVersion: 2, world: { currentNode: 'ashenvale_forest' } })
+    expect(forest.world.currentNode).toBe('ashenvale_forest')
+  })
+
+  it('un node légitimement débloqué (unlockedNodes) est conservé', () => {
+    const out = normalizeSave({
+      saveVersion: 2,
+      world: {
+        currentNode: 'millhaven',
+        currentLocation: 'millhaven',
+        unlockedNodes: ['millhaven'],
+      },
+    })
+    expect(out.world.currentNode).toBe('millhaven')
   })
 })
 

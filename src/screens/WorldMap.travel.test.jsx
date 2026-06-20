@@ -13,7 +13,14 @@ beforeEach(() => {
   useGameStore.getState().resetGame()
   useGameStore.setState((s) => ({
     currentScreen: 'world_map',
-    world: { ...s.world, currentNode: 'ironhaven', tickCount: 0 },
+    // START02 — ces tests exercent la MÉCANIQUE de voyage : on ouvre tous les nodes
+    // ashenvale (le gating par node est testé séparément, cf. start02.test).
+    world: {
+      ...s.world,
+      currentNode: 'ironhaven',
+      tickCount: 0,
+      unlockedNodes: ['millhaven', 'ironhaven', 'crumbled_ruins', 'thornmarsh', 'wildmere_hills'],
+    },
   }))
   localStorage.clear()
 })

@@ -88,9 +88,10 @@ export const INITIAL_HERO = {
 // ── État initial du monde ─────────────────────────────────────────────────────
 export const INITIAL_WORLD = {
   currentZone: 'ashenvale',
-  currentLocation: 'ironhaven', // ville/village où se trouve le héros
+  // START01 — le run démarre au village de départ Greywatch (et non Ironhaven).
+  currentLocation: 'greywatch', // ville/village où se trouve le héros
   currentHuntingSpot: null, // spot de chasse actif (ashenvale_forest | thornmarsh | crumbled_ruins | wildmere_hills)
-  currentNode: 'ironhaven', // TRV01 — position du héros sur la World Map (node)
+  currentNode: 'greywatch', // TRV01 — position du héros sur la World Map (node)
 
   // PROG02 — zones débloquées (déblocage explicite via quête/info ; auto-déblocage
   // par niveau/kills reste géré par isZoneUnlocked). Nouveau run = zone de départ seule.
@@ -140,6 +141,10 @@ export const INITIAL_WORLD = {
   // déblocage progressif (BLDUNL02-04) reste à faire avec MQ-CHAIN01 / START03.
   buildingLocks: [], // [buildingId, ...]
 
+  // B5b/MQ-CHAIN01 — nodes (localités + hunting spots) ouverts par la chaîne
+  // principale. Écrit à la complétion d'un palier MQ ; consommé par le gating/fog (B6).
+  unlockedNodes: [], // [locationId | spotId, ...]
+
   // Demon Lord
   demonLordDefeated: false,
   demonLordResurrectionCounter: 0,
@@ -174,6 +179,9 @@ export const INITIAL_META = {
 
   // Q05 — nombre de crafts réussis (pour les quêtes de craft)
   craftCount: 0,
+
+  // MQ-ELITETURN01 — nombre de remises par arme d'élite (pilote le +1 rareté).
+  eliteTurnins: {}, // { weaponTemplateId: count }
 
   // Héritage en attente (rempli à la mort, consommé à la renaissance)
   pendingInheritance: null, // { stat, activeSkill, passiveSkill, bonuses }

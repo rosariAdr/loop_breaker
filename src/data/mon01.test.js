@@ -56,8 +56,9 @@ describe('MON01 — retraits & renommages', () => {
     expect(NODES.find((n) => n.id === 'wildmere_hills')?.name).toBe('Wildmere Hills')
   })
 
-  it('niveau de wildmere_hills dérivé du spot (18)', () => {
-    expect(getMonsterLevel('thunderhoof')).toBe(18)
+  it('niveau de wildmere_hills dérivé du spot (WMAP02 : 6)', () => {
+    // WMAP02 — Wildmere Hills (« Barrow Hills ») re-niveau zone précoce : levelRange [6, 14].
+    expect(getMonsterLevel('thunderhoof')).toBe(6)
   })
 })
 

@@ -7,6 +7,7 @@ import {
   isPrestigiousQuest,
   PRESTIGE_MIN_TOKENS,
 } from '../data/quests'
+import { MAIN_QUESTS } from '../data/mainQuests'
 import { getLocationType } from '../data/zones'
 import { SKILLS } from '../data/skills'
 import { RESOURCES } from '../data/resources'
@@ -47,8 +48,17 @@ export function getRankInfo(tokens) {
 }
 
 export default function QuestBoard() {
-  const { hero, world, meta, setScreen, startQuest, isQuestComplete, completeQuest, abandonQuest } =
-    useGameStore()
+  const {
+    hero,
+    world,
+    meta,
+    setScreen,
+    startQuest,
+    isQuestComplete,
+    completeQuest,
+    abandonQuest,
+    isMainQuestAvailable,
+  } = useGameStore()
   const [pendingAbandon, setPendingAbandon] = useState(null) // questObject
 
   const activeIds = world.activeQuests ?? []
@@ -66,12 +76,17 @@ export default function QuestBoard() {
   // QSV2-TURNIN01 — une quête active/terminée est rendable (Claim) au lieu émetteur OU en ville
   // (la ville = point de rendu universel). Les villages d'une même zone PvE ont donc des
   // quêtes distinctes (pas de partage par adjacence).
-  const allBoardQuests = Object.values(QUESTS)
+  // MQ-CHAIN01/B6 — la chaîne principale est postée sur le board de son lieu émetteur
+  // (Doyen), gated par le chaînage (isMainQuestAvailable). Surfacer ces quêtes rend
+  // la progression (et donc le déblocage des nodes START02) jouable.
+  const allBoardQuests = [...Object.values(QUESTS), ...Object.values(MAIN_QUESTS)]
   const canTurnInHere = (q) => getQuestIssuer(q) === here || isCity
 
-  const available = allBoardQuests.filter(
-    (q) => getQuestIssuer(q) === here && !activeIds.includes(q.id) && !completedIds.includes(q.id),
-  )
+  const available = allBoardQuests.filter((q) => {
+    if (getQuestIssuer(q) !== here) return false
+    if (activeIds.includes(q.id) || completedIds.includes(q.id)) return false
+    return q.isMainQuest ? isMainQuestAvailable(q.id) : true
+  })
   const active = allBoardQuests.filter((q) => activeIds.includes(q.id) && canTurnInHere(q))
   const completed = allBoardQuests.filter((q) => completedIds.includes(q.id) && canTurnInHere(q))
 
@@ -397,12 +412,20 @@ export function QuestCard({
       {!isCompleted && (
         <div className="flex flex-col gap-2 mb-2">
           {quest.objectives.map((obj) => {
+            // FIX-QUESTPROG01 — kill/craft sont des objectifs en DELTA (snapshot à
+            // l'acceptation). Avant d'accepter (carte « available »), la progression
+            // doit être 0 — sinon le board affiche le cumul de kills/crafts du joueur.
             const current =
               obj.type === 'kill'
-                ? Math.min(
-                    obj.count,
-                    Math.max(0, (killCounts[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0)),
-                  )
+                ? isActive
+                  ? Math.min(
+                      obj.count,
+                      Math.max(
+                        0,
+                        (killCounts[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0),
+                      ),
+                    )
+                  : 0
                 : obj.type === 'level'
                   ? Math.min(obj.targetLevel, heroLevel ?? 1)
                   : obj.type === 'visit'
@@ -410,7 +433,9 @@ export function QuestCard({
                       ? 1
                       : 0
                     : obj.type === 'craft'
-                      ? Math.min(obj.count, Math.max(0, craftCount - baseCraft))
+                      ? isActive
+                        ? Math.min(obj.count, Math.max(0, craftCount - baseCraft))
+                        : 0
                       : obj.type === 'skill_levelup'
                         ? Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0)
                         : 0

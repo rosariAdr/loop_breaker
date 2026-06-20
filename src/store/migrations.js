@@ -1,6 +1,6 @@
 // REFAC01 — Migrations save (extrait de gameStore.js).
 import { INITIAL_HERO, INITIAL_WORLD, INITIAL_META } from './initialState'
-import { ZONE_ORDER } from '../data/zones'
+import { ZONE_ORDER, isNodeUnlocked, START_OPEN_NODES } from '../data/zones'
 
 // ── TECH02 — Migrations save (séquentielles) ─────────────────────────────────
 
@@ -26,7 +26,7 @@ function migrateV1ToV2(save) {
     idleLog: Array.isArray(world.idleLog) ? world.idleLog : [],
     generatedVillages: world.generatedVillages ?? {},
     dungeons: world.dungeons ?? { ...INITIAL_WORLD.dungeons },
-    currentNode: world.currentNode ?? world.currentLocation ?? 'ironhaven', // TRV01
+    currentNode: world.currentNode ?? world.currentLocation ?? START_OPEN_NODES[0], // TRV01 (greywatch = départ)
   }
 
   // ── Hero ──
@@ -157,6 +157,16 @@ export function normalizeSave(save) {
   if (SPOT_ID_REMAP[world.currentHuntingSpot])
     world.currentHuntingSpot = SPOT_ID_REMAP[world.currentHuntingSpot]
   if (SPOT_ID_REMAP[world.currentNode]) world.currentNode = SPOT_ID_REMAP[world.currentNode]
+
+  // FIX-START01 — anti-piège : si la save place le héros sur un node VERROUILLÉ
+  // (save d'avant le node-locking, ou ancien défaut « ironhaven » devenu inaccessible),
+  // le ramener au village de départ pour qu'il ne soit jamais bloqué hors des zones jouables.
+  if (!isNodeUnlocked(world.currentNode, world)) {
+    const startNode = START_OPEN_NODES[0] // greywatch
+    world.currentNode = startNode
+    world.currentLocation = startNode
+    world.currentHuntingSpot = null
+  }
 
   // ── Meta ──
   const meta = {

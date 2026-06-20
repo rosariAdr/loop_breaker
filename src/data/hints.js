@@ -23,6 +23,15 @@ export const HINTS = {
     title: 'Transmigration',
     text: "When you fall, you are reborn. Choose what to inherit, then spend reputation tokens at the Gods' Shop.",
   },
+  // ONB02 — tips enseignés par la chaîne de quêtes principale (MQ-CHAIN01).
+  mq_elite_turnin: {
+    title: 'Elite hunt',
+    text: "Main quests against elites are turn-ins: bring back the elite's rare drops (or its weapon) to the quest-giver to claim its signature weapon.",
+  },
+  mq_new_region: {
+    title: 'The road opens',
+    text: 'Finishing a main quest opens the next town or wild — follow the chain to push deeper into the map.',
+  },
 }
 
 /** Récupère un hint par id (ou null si inconnu). */
@@ -36,9 +45,13 @@ export function getHint(id) {
 // structure de câblage (étape MQ → id de hint) pour que le déclenchement n'ait
 // qu'à appeler triggerHint(getMqTutorialHint(stepId)) une fois MQ-CHAIN livré.
 // Tant que la map est vide, getMqTutorialHint renvoie null (aucun déclenchement).
+// B5b — câblage étape MQ (mqStep) → id de hint. Déclenché à l'acceptation d'un
+// palier principal (cf. questsSlice.startQuest).
 export const MQ_TUTORIAL_HINTS = {
-  // 'mq01_first_blood':  'first_combat',   // exemple — à remplir avec MQ-CHAIN01
-  // 'mq02_to_millhaven': 'travel',
+  mq02: 'mq_elite_turnin', // 1ʳᵉ remise d'élite
+  mq03: 'mq_new_region', // ouverture des wilds (collines/ruines)
+  mq04: 'mq_elite_turnin',
+  mq06: 'mq_elite_turnin',
 }
 
 /** ONB02 (stub) — hint enseigné par une étape de la quête principale, ou null. */

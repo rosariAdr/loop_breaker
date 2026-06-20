@@ -1,16 +1,38 @@
 # Tasks — Loop Breaker (Roguelite Idle RPG)
 
 > Backlog source de vérité. Grooming : vérifier INVEST + AC avant de démarrer un ticket M/L. DoD par type dans `docs/CONTRIBUTING.md` (PROC00).
-> **Versioning** : `v1` = POC figé · `v1.1` = UI parchemin + sprites + QoL · `v1.2` = profondeur (NPC → STA → PROG) · `v1.3` = backlog à groomer · `v1.4` = donjon · `v2`/`v3` = ambition/lointain.
-> **Légende ticket** : `- [ ]`/`[x]`/`[~]` (à faire / fait / partiel) · **taille** XS·S·M·L·XL · **renvois** ⟶.
-> **Échelle de priorité/statut unifiée (TASK-HIST01)** : **P0** = bloque l'alpha · **P1** = nécessaire/alpha (≈ `READY` prêt à coder) · **P2** = amélioration · **P3** = polish/lointain. Statuts design : **READY** (spec claire ≈ P1) · **GROOM** (décision ouverte — question inscrite) · **SPLIT** (à découper) · **BLOCKED**. *(Une même priorité peut être écrite `P1` ou `READY` selon la section — même sens.)*
-> Dernière réorganisation : 2026-06-13 (B1 housekeeping : docs→`docs/`, compteurs à jour, CHANGELOG rattrapé, échelles de prio unifiées).
+> ## 🧭 Système de suivi (PRIO-SYS01, 2026-06-19)
+> **4 axes orthogonaux par ticket** — un vocabulaire chacun, jamais mélangés. Le **statut** (Now / À groomer / Bloqué / Done) = la **position dans le document**, pas un tag.
+>
+> | Axe | Valeurs | Répond à |
+> |---|---|---|
+> | **Taille** | `XS` · `S` · `M` · `L` · `XL` | effort |
+> | **Priorité** | `P1` (critique) · `P2` (nécessaire à la prochaine release) · `P3` (important) · `P4` (confort) · `P5` (lointain) — *échelle 1-5, **découplée** de la maturité* | ça compte combien |
+> | **Maturité** | 🟢 Ready (spec claire, codable) · 🟡 Groom (décision ouverte, question inscrite) · ✂️ Split (à découper) · ⛔ Blocked (dépendance) | codable maintenant ? |
+> | **Milestone** | `v1.3` · `v1.4` · `v2` · `v3` (peu, ordonnés, voir §🗺) | ça sort quand |
+>
+> **Épic = préfixe de l'ID** (`VQ02`→épic VQ, `RES01`→RES…) ; ajouter `· épic:X` seulement si l'ID ne porte pas le thème.
+> **Ligne canonique** : `- [ ] **ID — Titre** · M · P2 · 🟢 · v1.3 — description courte. ⟶ renvois`
+> **Cocher** : `- [ ]` à faire · `[x]` fait · `[~]` partiel. **Périmètre d'une release** = `grep "· v1.3 ·"`.
+>
+> **🗺 Milestones (définition + critère de sortie)** :
+> - **`v1.3` — Prochaine release** *(présentable+ : QoL, contenu proche, correctifs)*. Sortie : audit quêtes corrigé, onboarding jouable, 0 incohérence d'adjacence, suite verte.
+> - **`v1.4` — Donjon** *(chaîne de salles)*. Sortie : `D01-SPEC` + flux nœuds + carte + respawn.
+> - **`v2` — Ambition (L/XL)** : compagnons, événements, Foyer, ATB, multi-univers, divinités avancées, méta/prestige, game-feel (audio/SFX/juice).
+> - **`v3` — Lointain** : économie dynamique, etc.
+> - *Ex-buckets repliés* : `v1`/`v1.1`/`v1.2` = **livrés** (restent en §Done, labels historiques) · `v1.x` (systèmes) → `v1.3` ou `v2` selon le ticket · `v1.9` (polish) → `v2` · `v2.1_idle` **supprimé** (idle repoussé → `v2`/Bloqué) · `v1.3 = à groomer` **abandonné** (« à groomer » est une **maturité** 🟡, pas une version).
+>
+> **Migration phasée** : ✅ **Phase 0** (cette légende + milestones) — **Phase 1** (à venir) : normaliser les tickets *Now + Ready*. **Phase 2** : le reste au fil de l'eau. ⚠️ Tant que la migration n'est pas finie, d'anciens tags (`P0-P3`, `READY/GROOM`, sections « par version ») **subsistent** — référence = cette légende. Mapping ancien→nouveau : `P0→P1` · `P1→P2` · `P2→P3/P4` · `P3→P5` · `READY→🟢` · `GROOM→🟡` · `SPLIT→✂️` · `BLOCKED→⛔`.
+> Réorg. : 2026-06-13 (B1 housekeeping) · **2026-06-19 (PRIO-SYS01 : axes prio/maturité/milestone séparés, prio 1-5, milestones resserrés).**
 
 ---
 
 ## Active
 
 _(rien en cours)_
+
+- [x] **FIX-QUESTPROG01 — Board : quête non acceptée affiche le cumul de kills (5/5) au lieu de 0/5** (S · bug) — *retour playthrough 2026-06-14.* Sur le Village Notice Board, une quête **disponible** (non acceptée) montrait la progression **cumulée** du joueur (ex. « Cull the Ashwood Wolves 5/5 » avant acceptation) car la carte calculait `killCounts − base` avec `base={}` (pas de snapshot avant acceptation). Confirmé OK une fois acceptée (snapshot `questProgress` → 0 puis incrément). **Corrigé** : dans `QuestCard` (QuestBoard.jsx), les objectifs **delta** (`kill`, `craft`) affichent **0 tant que la quête n'est pas active** ; les objectifs absolus (`level`/`visit`/`skill_levelup`) inchangés. Tests : +4 (`QuestBoard.questprog.test.jsx` : available 0/5, craft 0/3, active delta 2/5, fraîchement acceptée 0/5). Suite **1161✓**, eslint 0, build ✓.
+- [x] **FIX-START01 — Héros piégé sur un node verrouillé (ne démarre pas à Greywatch)** (S · bug) — *retour playthrough 2026-06-14.* START01/B6 a posé `INITIAL_WORLD` = greywatch, mais une save (d'avant le node-locking, ou avec l'ancien défaut « ironhaven ») gardait le héros sur la **ville Ironhaven désormais verrouillée** → bloqué, rien de jouable. **Corrigé** : (1) `normalizeSave` ajoute un **anti-piège** — si `currentNode` n'est pas débloqué (`isNodeUnlocked`), relocalisation au village de départ (`START_OPEN_NODES[0]` = greywatch, `currentHuntingSpot=null`) ; (2) fallbacks `'ironhaven'` → greywatch dans `migrations.js` (migrateV1ToV2) et `WorldMap.jsx` (heroNode/heroPos). Préserve les nodes légitimement débloqués (`unlockedNodes`) et les nodes de départ. Tests : +3 (anti-piège) ; remap MON01 & « node préservé » ajustés (node marqué débloqué). Suite **1157✓**, eslint 0, build ✓.
 
 ## Waiting On
 
@@ -34,8 +56,8 @@ _(aucune dépendance externe bloquante)_
 - **B2 ✅ Régulations & correctifs** (M · code+data+tests) — REP01 (tokens **0 / 5 élites** + fix `?? 0` ; ⚠️ rangs/prestige relevés → REP-REBAL01) · DLG01 (5 arbres de dialogue, `guild_master`/Hollis/Aldric/Vesna/Oren ; mapping centralisé `BUILDING_DIALOGUE_ID`). **Fait 2026-06-13** — suite 1102✓, eslint 0, build✓.
 - **B3 ✅ Tests & QoL rapides** (M · code+tests) — TEST-COV01 (église/académie/VilBuilding) · IDLE-MASTERY01 (constante `IDLE_MASTERY_KILLS`, combat déjà 5×) · **VIG01 déjà fait (2026-06-10)** · **HIDE01 superséd. par HS-AURA01 (déjà fait)**. **Fait 2026-06-13** — suite 1108✓, eslint 0, build✓.
 - **B4 ✅ Déblocage des bâtiments** (M-L · code) — **BLDUNL01 + BLDUNL05 livrés** (modèle data-driven `building.unlock` + plumbing store + feedback verrouillé) ; **BLDUNL02/03/04 = stub+FLAG** (triggers réels bloqués sur MQ-CHAIN01/B5 + START01/B6 ; rien verrouillé au démarrage → POC inchangé). **Fait 2026-06-13** — suite 1127✓, eslint 0, build✓.
-- **B5 🟢 Chaîne de quêtes Map 1** (L · code+data) — MQ-CHAIN01 · MQ-ELITETURN01. → spine Greywatch→Millhaven→Ironhaven + remise de l'arme d'élite. ✅ **Décision bloquante tranchée (2026-06-14)** : **MQ02/04/06 (Doyen) = remise → arme signature d'élite** (+1 rareté en répétition) ; les **`nc_*_elite` coexistent** mais **ne donnent PAS** l'arme d'élite → **autre récompense, à définir plus tard** (laisser leur reward actuel en placeholder). Scindable **B5a (data)** / **B5b (flux)**.
-- **B6 🟡 Démarrage Greywatch + fog** (M-L · code) — START01-04. → start Greywatch, lock + fog **par node**, conditions de déblocage. *Dépend B5 (START04 = résolu par MQ-CHAIN).*
+- **B5 🟢 Chaîne de quêtes Map 1** (L · code+data) — MQ-CHAIN01 · MQ-ELITETURN01. → spine Greywatch→Millhaven→Ironhaven + remise de l'arme d'élite. ✅ **Décision bloquante tranchée (2026-06-14)** : **MQ02/04/06 (Doyen) = remise → arme signature d'élite** (+1 rareté en répétition) ; les **`nc_*_elite` coexistent** mais **ne donnent PAS** l'arme d'élite → **autre récompense, à définir plus tard** (laisser leur reward actuel en placeholder). Scindable **B5a (data)** / **B5b (flux)**. — **✅ B5a+B5b faits 2026-06-14** : data (armes signature, `mainQuests.js`, `elite_turnin`, registre, Fenrot→Map 2) + flux (`isMainQuestAvailable`, unlocks→`world.unlockedNodes`, résolveur remise + escalade rareté, ONB02 câblé). vitest **1147✓** · eslint 0 · build✓. **Reste B6** : UI Doyen + consommation de `unlockedNodes` (gating/fog).
+- **B6 ✅ Démarrage Greywatch + fog** (M-L · code) — START01 (départ Greywatch) · START02 (lock par node + `isNodeUnlocked`) · START03 (fog ☁ par node) · START04 (conditions = MQ-CHAIN → `world.unlockedNodes`) + **MQ surfacées sur le board du Doyen** (jouable). **Fait 2026-06-14** — suite 1154✓, eslint 0, build✓.
 - **B7 ✅ Onboarding / tutoriel** (M · code) — ONB01 (framework `triggerHint` + 5 déclencheurs + toggle) · ONB03 (onglet Rules du codex) · **ONB02 = stub+FLAG** (bloqué sur MQ-CHAIN01/B5). **Fait 2026-06-13** — suite 1120✓, eslint 0, build✓.
 - **B-ART 🎨 Finition visuelle** (art + câblage) — CONT01 · UI08 · C03 · PERF-IMG01 (compression). → je rédige les **prompts** (façon ASSET_PROMPTS.md) + câble ; tu génères l'art.
 - **B-DON 🟡 Donjon (v1.4)** (L) — D01-SPEC → DUN-MODEL01 → D01 (flux) → D03/DUN-ART01 (carte) → D06 (respawn). *Spec + art d'abord.*
@@ -44,20 +66,22 @@ _(aucune dépendance externe bloquante)_
 
 ---
 
-## v1 — POC (FIGÉE) ✅
+## v1 — POC (FIGÉE) ✅ — CLÔTURÉE (2026-06-14)
 
-> Le POC est **complet et gagnable de bout en bout** (Malachar tuable). **Ne rien ajouter ici.** Seule la stabilisation reste avant de figer la v1 et d'attaquer l'habillage v1.1.
+> Le POC est **complet et gagnable de bout en bout** (Malachar tuable). **Version clôturée le 2026-06-14** : les tâches de stabilisation encore ouvertes (BAL02, BAL03, TECH04) ont été **déplacées en v1.2**. Ne rien ajouter ici.
 
-- [ ] **BAL02 — Calibration boss difficulty + playtest** (S) - 3 runs jusqu'au boss par zone ; noter HP restant moyen + nombre de morts ; ajuster `zone_mult` boss si besoin ; documenter dans PLAYTESTS.md
-- [ ] **BAL03 — Calibration idle kill rate vs progression** (S) - vérifier que l'idle seul permet d'atteindre Zone 2 en ~10 jours in-game ; ajuster `dmgTaken` idle
-- [ ] **TECH04 — Performance Canvas 2D — budget 60fps** (S) - Chrome DevTools Performance ; target <8ms/frame ; mémoiser gradients statiques hors du loop
+- [ ] **BAL02 — Calibration boss difficulty + playtest** · S · P3 · 🟡 · v1.3 — 3 runs jusqu'au boss par zone ; noter HP restant moyen + nombre de morts ; ajuster `zone_mult` boss si besoin ; documenter dans PLAYTESTS.md
+- [ ] **BAL03 — Calibration idle kill rate vs progression** · S · P3 · 🟡 · v1.3 — vérifier que l'idle seul permet d'atteindre Zone 2 en ~10 jours in-game ; ajuster `dmgTaken` idle
+- [ ] **TECH04 — Performance Canvas 2D — budget 60fps** · S · P3 · 🟡 · v1.3 — Chrome DevTools Performance ; target <8ms/frame ; mémoiser gradients statiques hors du loop
 - [x] **TECH05 — JSDoc sur engine/combat.js** (M) - `@param`, `@returns`, `@example` sur toutes les fonctions exportées
 
 ---
 
-## v1.1 — UI parchemin, sprites & QoL (release présentable)
+## v1.1 — UI parchemin, sprites & QoL (release présentable) — CLÔTURÉE (2026-06-14)
 
-> Objectif : transformer le POC fonctionnel en jeu **présentable**. **Spec complète : `UI_HANDOFF.md`** (design system parchemin diégétique « table en bois », stage 1920×1080, tokens CSS canoniques, 6 écrans, 2 couches d'assets, animations). Esthétique : joyeuse/héroïque type overworld Dragon Quest, **PAS** sombre/gothique. Stratégie : **coquille d'abord → écran par écran → sprites en dernier**. À faire d'un bloc pour la cohérence visuelle.
+> **Version clôturée le 2026-06-14.** Les 4 tickets encore ouverts (tous liés aux **assets/art**) ont été **déplacés en v1.2** : `UI08`, `CONT01`, `CONT05`, `C03`.
+>
+> Objectif (historique) : transformer le POC fonctionnel en jeu **présentable**. **Spec complète : `UI_HANDOFF.md`** (design system parchemin diégétique « table en bois », stage 1920×1080, tokens CSS canoniques, 6 écrans, 2 couches d'assets, animations). Esthétique : joyeuse/héroïque type overworld Dragon Quest, **PAS** sombre/gothique. Stratégie : **coquille d'abord → écran par écran → sprites en dernier**. À faire d'un bloc pour la cohérence visuelle.
 >
 > **Décisions actées (2026-06-03)** :
 > - **Stats** : mapper l'UI sur les stats actuelles du jeu (pas de refonte data).
@@ -80,7 +104,8 @@ _(aucune dépendance externe bloquante)_
 - [x] **UI05 — Overlay dialogue PNJ** (M) — *§Écran 04*. Panneau ancré bas sur scrim, **colonne portrait** (cadre woodgrain + portrait pixel, **6 émotions** Talk/Calm/Smile/Sadness/Aggression/Special selon le ton) + **colonne corps** (eyebrow + dialogue Crimson italic 26px + boutons d'action). **DÉCIDÉ : coquille vide / dialogues placeholder en v1.1** (le contenu et l'arbre de dialogue NPC01/NPC04 viennent en v1.2 ; on en rediscute).
 - [x] **UI06 — Hero Sheet overlay parchemin** (S/M) — *§Écran 05*. Modale centrée, portrait woodgrain, grille équipement 6 slots, **Vitals & Attributes** (cartes + barres), Derived, Skills, Allegiance. Conserve Active Debuffs (CRF05) + Titles (M01) + Gluttony (GLT03). **DÉCIDÉ : mapper l'UI sur les stats actuelles** (strength/agility/intelligence/chance/def + hp/mana) — pas de refonte data ni de migration. On reprend la mise en page du handoff mais avec les stats du jeu (les labels Vitality/Dexterity/Faith/Luck du handoff sont indicatifs).
 - [x] **UI07 — Inventory overlay parchemin** (S) — *§Écran 06*. Modale, **Carried Items** grille 6 colonnes + pastille d'or, **Equipped** grille 6 slots. Conserve les onglets + stack mana stones (S03).
-- [ ] **UI08 — Intégration sprites (couches A + B)** (L) — **[→ remonté v1]** *§ASSETS*. **Couche A** chibi cartoon (carte/combat : héros, façades de bâtiments, monstres, Malachar) + **Couche B** portraits pixel 128×128 à 6 émotions (overlays dialogue). **Règle stricte : jamais mélanger chibi et portrait pixel à la même échelle dans un même cadre.** Héros placeholder = chibi "Necromancer of the Shadow" (Idle/Walking/Dying). Dépend CONT01/CONT06.
+> ↪ **UI08 · CONT01 · CONT05 · C03** déplacés en **v1.2** (clôture v1.1, 2026-06-14).
+- [ ] **UI08 — Intégration sprites (couches A + B)** · L · P3 · 🟡 · v1.3 — **[→ remonté v1]** *§ASSETS*. **Couche A** chibi cartoon (carte/combat : héros, façades de bâtiments, monstres, Malachar) + **Couche B** portraits pixel 128×128 à 6 émotions (overlays dialogue). **Règle stricte : jamais mélanger chibi et portrait pixel à la même échelle dans un même cadre.** Héros placeholder = chibi "Necromancer of the Shadow" (Idle/Walking/Dying). Dépend CONT01/CONT06.
 - [x] **UI09 — Transition parchemin + toasts + écrans hors handoff** (M) — ✅ **toasts** parchemin (bulle sombre/liseré doré/italique, ToastContainer) ✅ ; **déroulé de parchemin** à l'entrée/sortie de zone (`.parch-wipe`, ≤340ms, non bloquant, neutralisé par le réglage Animations) ✅ ; **décision** : les écrans takeover (Combat/GodsShop/DivineCall/PostMortem) restent **volontairement sombres/dramatiques** (contraste avec le monde parchemin) — ils partagent déjà la typo Cinzel + accents or, pas de re-skin parchemin. — **Échange de parchemin** à l'entrée/sortie de zone (enroule monde / déroule zone, **≤350ms, skippable après le 1er run** — la navigation arrive des dizaines de fois/session) ; **toasts** parchemin (bulle sombre bas-centre, bordure dorée, italique, ~2.6s) ; restyle des écrans **hors handoff** (Combat, GodsShop, DivineCall, PostMortem) au même langage.
 
 > **État d'implémentation (2026-06-06, branche `feat/ui-parchemin`, non mergée)** : UI01→UI07 faits ; UI09 partiel (PostMortem + GodsShop portés ; DivineCall gardé sombre/mystique ; Combat déjà abouti + héros animé). **DEV01** (harnais de test) + assets (sprites monstres en forêt, héros idle animé carte/village/combat) faits. Suite = batches ci-dessous.
@@ -120,11 +145,11 @@ _(aucune dépendance externe bloquante)_
 
 ### Sprites, assets & contenu visuel
 
-- [ ] **CONT01 — Sprites de carte/combat chibi (couche A)** (M) — **[→ remonté v1]** *§ASSETS*. **✅ Héros placeholder en place** (`public/sprites/hero/{idle,walking,dying}` — Necromancer chibi CraftPix, à remplacer par un chibi héroïque). **✅ 16/16 monstres de surface liés** (2026-06-08 : `public/monsters/<id>.png` normalisés, chargés par `MonsterPortrait`/ZoneView avec fallback emoji). **✅ 5/9 façades de bâtiments liées** (2026-06-08 : `public/buildings/<id>.png` — inn, church, merchant, alchemy, blacksmith — chargées via `ArtSlot src` dans `VilBuilding`, fallback placeholder légendé). **Reste (art à produire)** : 3 boss (Crypt Keeper, Lord of the Forsaken, **Malachar**), 6 monstres Grimspire, 2 élites Blighted Road, 2 réserve (barrow_wight, soul_harvester) ; **4 façades** (master_smith, knight_trainer, academy, guild) + déco (well/hens/barrels). Pipeline `public/monsters/README.md`.
+- [ ] **CONT01 — Sprites de carte/combat chibi (couche A)** · M · P3 · 🟡 · v1.3 — **[→ remonté v1]** *§ASSETS*. **✅ Héros placeholder en place** (`public/sprites/hero/{idle,walking,dying}` — Necromancer chibi CraftPix, à remplacer par un chibi héroïque). **✅ 16/16 monstres de surface liés** (2026-06-08 : `public/monsters/<id>.png` normalisés, chargés par `MonsterPortrait`/ZoneView avec fallback emoji). **✅ 5/9 façades de bâtiments liées** (2026-06-08 : `public/buildings/<id>.png` — inn, church, merchant, alchemy, blacksmith — chargées via `ArtSlot src` dans `VilBuilding`, fallback placeholder légendé). **Reste (art à produire)** : 3 boss (Crypt Keeper, Lord of the Forsaken, **Malachar**), 6 monstres Grimspire, 2 élites Blighted Road, 2 réserve (barrow_wight, soul_harvester) ; **4 façades** (master_smith, knight_trainer, academy, guild) + déco (well/hens/barrels). Pipeline `public/monsters/README.md`.
 - [x] ~~**CONT06 — Portraits PNJ pixel (couche B)**~~ — **✅ 5 portraits en place** (`public/portraits/{aldric,smith,marta,merchant,mage}`, 6 émotions, CraftPix) + manifeste `src/data/portraits.js`. **Reste à sourcer** : prêtre (church), chef de village, divinités → fallback emoji en attendant.
 - [x] **CONT04 — Noms propres donjons Zone 2** (XS) — ✅ vérifié : noms définitifs déjà en place (donjon « The Forsaken Citadel », boss « Lord of the Forsaken », demon lord « Malachar the Undying ») ; aucun placeholder restant. - remplacer placeholders par noms définitifs
-- [ ] **CONT05 — ASSETS.md + sourcing licences** (S) — **[→ remonté v1]** **✅ `ASSETS.md` créé** (crédits + inventaire + règle anti-clash) ; `public/ASSET_LICENSES/` committé. **✅ Livraison des assets RÉSOLUE** (DEPLOY01, 2026-06-08 : `public/` committé → servi par Vercel ; `raw/` HD exclus). ⚠️ **Reste (optionnel)** : optimiser les 3 gros PNG (map 9.7 Mo, rotting_shambler 5.9, gloom_bat 5.6) via squoosh ; un set d'icônes SVG (remplace emoji).
-- [ ] **C03 — Portraits personnage** (S) — **[→ remonté v1]** 8 icônes au choix en CharCreation (warrior/rogue/mage/ranger/monk/knight/witch/bard)
+- [ ] **CONT05 — ASSETS.md + sourcing licences** · S · P3 · 🟡 · v1.3 — **[→ remonté v1]** **✅ `ASSETS.md` créé** (crédits + inventaire + règle anti-clash) ; `public/ASSET_LICENSES/` committé. **✅ Livraison des assets RÉSOLUE** (DEPLOY01, 2026-06-08 : `public/` committé → servi par Vercel ; `raw/` HD exclus). ⚠️ **Reste (optionnel)** : optimiser les 3 gros PNG (map 9.7 Mo, rotting_shambler 5.9, gloom_bat 5.6) via squoosh ; un set d'icônes SVG (remplace emoji).
+- [ ] **C03 — Portraits personnage** · S · P3 · 🟡 · v1.3 — **[→ remonté v1]** 8 icônes au choix en CharCreation (warrior/rogue/mage/ranger/monk/knight/witch/bard)
 
 ### QoL essentiel (shippabilité)
 
@@ -247,6 +272,18 @@ _(aucune dépendance externe bloquante)_
 
 > Ordre acté : **NPC → STA → PROG**. Les informateurs (NPC) débloquent des zones (PROG), donc NPC est prérequis naturel de PROG.
 
+### Bloc 0 — Déplacés de v1 / v1.1 (clôture 2026-06-14)
+
+> Restes de stabilisation (v1) + assets (v1.1) rattachés à v1.2. Priorité/statut posés à la réorg ; **à ajuster si besoin**.
+
+- [ ] **BAL02 — Calibration boss difficulty + playtest** (S · **P1** · READY) — 3 runs jusqu'au boss par zone ; noter HP restant moyen + nombre de morts ; ajuster `zone_mult` boss si besoin ; documenter dans PLAYTESTS.md.
+- [ ] **BAL03 — Calibration idle kill rate vs progression** (S · **P1** · READY) — vérifier que l'idle seul permet d'atteindre Zone 2 en ~10 jours in-game ; ajuster `dmgTaken` idle.
+- [ ] **TECH04 — Performance Canvas 2D — budget 60fps** (S · **P2** · READY) — Chrome DevTools Performance ; target <8ms/frame ; mémoiser gradients statiques hors du loop.
+- [ ] **UI08 — Intégration sprites (couches A + B)** (L · **P2** · GROOMED) — *§ASSETS.* **Couche A** chibi cartoon (carte/combat : héros, façades, monstres, Malachar) + **Couche B** portraits pixel 128×128 à 6 émotions (overlays dialogue). **Règle stricte : jamais mélanger chibi et portrait pixel à la même échelle dans un même cadre.** Héros placeholder = chibi « Necromancer of the Shadow ». Dépend CONT01/CONT06. *(art à produire — d'où GROOMED, pas READY.)*
+- [ ] **CONT01 — Sprites de carte/combat chibi (couche A)** (M · **P2** · GROOMED) — *§ASSETS.* **✅ Héros placeholder + 16/16 monstres surface + 5/9 façades liés** (2026-06-08). **Reste (art)** : 3 boss (Crypt Keeper, Lord of the Forsaken, Malachar), 6 monstres Grimspire, 2 élites Blighted Road, 2 réserve ; 4 façades (master_smith, knight_trainer, academy, guild) + déco. Pipeline `public/monsters/README.md`.
+- [ ] **CONT05 — ASSETS.md + sourcing licences** (S · **P2** · READY) — **✅ `ASSETS.md` + `public/ASSET_LICENSES/` committés** ; livraison résolue (DEPLOY01). **Reste** : optimiser les 3 gros PNG (map 9.7 Mo, rotting_shambler 5.9, gloom_bat 5.6) via squoosh (réduit le bloat d'historique) ; un set d'icônes SVG (remplace emoji). *(optionnel sauf compression avant push.)*
+- [ ] **C03 — Portraits personnage** (S · **P3** · GROOMED) — 8 icônes au choix en CharCreation (warrior/rogue/mage/ranger/monk/knight/witch/bard) ; art à produire.
+
 ### Bloc 1 — NPC & vie urbaine
 
 > **DÉCIDÉ — répartition par localité** : Auberge (partout) = dormir + informateurs. En **ville** : auberge = dormir + informateurs seulement, les quêtes passent à la **Guilde**. En **village** : auberge = dormir + informateurs + quêtes + init carte d'aventurier. NPC par bâtiment : auberge, marchand, alchimiste, forgeron, guilde. 1-2 informateurs/auberge. 1 chef de village (présent à toute heure tant que BLD01 pas fait).
@@ -295,14 +332,14 @@ _(aucune dépendance externe bloquante)_
 - [x] **Q09 — Récompenses de quête variées (gold / équipement / ressources / stat)** (S) - étendre `quest.reward` : `equipment:{templateId,rarity}`, `resources:{id:qty}`, `stat:{name,amount}` (base de STA03b/ACA04/TAV01). Adapter `completeQuest` + RewardBadge + toast Q07
 - [x] **Z07 — Stock d'équipement différencié village vs ville** (S/M) - village = communs + 1 rare ; ville = rares + 1 epic. Pondérer `equipStock` selon `location.type`. **Bloqué par PROG02** (distinction de localité)
 > 🔗 **D01 + D03 + D06 = le détail de `DUNREV01` (v1.3, umbrella).** Même travail, **compté une seule fois** ; conservés ici pour la spec détaillée, à dérouler quand `D01-SPEC` sera écrit.
-- [ ] **D01 — Flux donjon complet** (L) - path map : Entrée → choix A (Combat|Trésor) → choix B (CombatElite|Repos|Event) → Boss ; idle interdit. ⏸ **Différé : nécessite `D01-SPEC` (DESIGN.md) avant dev** — PV/loot par type de nœud, probabilités, génération
-- [ ] **D03 — Carte de donjon** (M) - 5 nodes Canvas/SVG par type, chemin tracé, nœud actuel mis en évidence — dépend D01
-- [ ] **D06 — Donjon spawn la nuit suivante** (M) - cycle sommeil déclenche respawn + position aléatoire + marker "?" — dépend CAL01 + MAP01
+- [ ] **D01 — Flux donjon complet** · L · P3 · 🟡 · v1.3 — path map : Entrée → choix A (Combat|Trésor) → choix B (CombatElite|Repos|Event) → Boss ; idle interdit. ⏸ **Différé : nécessite `D01-SPEC` (DESIGN.md) avant dev** — PV/loot par type de nœud, probabilités, génération
+- [ ] **D03 — Carte de donjon** · M · P3 · 🟡 · v1.3 — 5 nodes Canvas/SVG par type, chemin tracé, nœud actuel mis en évidence — dépend D01
+- [ ] **D06 — Donjon spawn la nuit suivante** · M · P3 · 🟡 · v1.3 — cycle sommeil déclenche respawn + position aléatoire + marker "?" — dépend CAL01 + MAP01
 - [x] **T02 — Transmigration animée** (M) - écran de transition animé entre GodsShop et renaissance
 - [x] **T05 — Socle universel d'héritage (écran dédié)** (M) — ✅ couvert par PostMortem (section « Transmigration — Choose what to carry » : 1 stat + 1 active + 1 passive, puis « Enter the Gods' Shop → ») - **UI uniquement** (la logique d'héritage existe déjà dans `applyTransmigration`) : écran de choix 1 stat + 1 active + 1 passive avant la boutique
 - [x] **T12 — Skill suprême Demon Lord ("Soul Rend") héritable** (M) - flag `skill.alwaysInheritable: true` (transgresse DV10)
 - [x] **I08 — Choix joueur en idle** (M) - config avant idle : monster type + seuil HP personnalisable (le "craft en parallèle" reporté). Garder minimal pour v1.2
-- [ ] **TUT01 — Premier run guidé : tooltips contextuels** (L) - hints progressifs restants (TUT02/TUT03 déjà faits) : J2 donjons, 1er dieu, 1er craft… ⏸ **Différé : lister les 5-6 hints restants (mini-spec) avant dev**. **→ absorbé/élargi par ONB01-03** (backlog design 2026-06-08 : tutoriel contextuel + chaîne MQ comme fil tuto + codex de règles).
+- [ ] **TUT01 — Premier run guidé : tooltips contextuels** · L · P3 · 🟡 · v1.3 — hints progressifs restants (TUT02/TUT03 déjà faits) : J2 donjons, 1er dieu, 1er craft… ⏸ **Différé : lister les 5-6 hints restants (mini-spec) avant dev**. **→ absorbé/élargi par ONB01-03** (backlog design 2026-06-08 : tutoriel contextuel + chaîne MQ comme fil tuto + codex de règles).
 
 ---
 
@@ -322,95 +359,125 @@ _(aucune dépendance externe bloquante)_
 
 - [x] ~~**HIDE01 — Masquer Aura & Concentration jusqu'au déblocage** (S)~~ — **⛔ SUPERSÉDÉ par `HS-AURA01` (2026-06-08)** : décision changée → on **affiche flouté/🔒** au lieu de masquer (le joueur doit savoir que ces stats existent). Voir HS-AURA01 (v1.2 / HeroSheet).
 
+### UI & QoL — session Chat 2026-06-19 (format 16:9 + panneau Église)
+
+> Lot issu de la session de design 2026-06-19 (fichier `Downloads/TASKS.md`). **⚠️ Renumérotation au merge** : les IDs source `UI01`/`UI02` entraient en collision avec les `UI01`/`UI02` **déjà livrés** (coquille parchemin + World Map, v1.1) → renommés **`UI10`/`UI11`** ; `TST-UI` conservé. Cible : **v1.3**. Stack rappel : React 19 · Vite 8 · Zustand 5 · Tailwind 4 · Vitest 4 · JS pur.
+
+- [ ] **UI10 — Refonte du format d'affichage : passage en 16:9** · S/M · P4 · 🟡 · v1.3 — **Contexte** : le layout est perçu comme une **boîte fixe (~750×580 px)** centrée sur fond noir, quasi 1:1 et non-responsive ; l'espace écran large (laptop/desktop) est mal exploité. **Objectif** : adopter un ratio standard — **Option A `16:9`** (widescreen, **à préférer**) ou Option B `3:4` (portrait, si centrage village/donjon). **Scope** : conteneur principal (`src/screens/` ou layout racine) px fixe → ratio CSS (`aspect-ratio: 16/9`) ; Map + zones (village/donjon) + HUD s'adaptent (flex/grid ou viewBox SVG) ; vérifier **1366×768** et **1920×1080** (mobile hors scope) ; **ne pas casser les sprites/bâtiments positionnés en absolu** sur la carte. **AC** : (a) zone de jeu ≥ **80 %** de la largeur du viewport sur 1366px ; (b) ratio maintenu **sans déformation** des sprites ; (c) **0 régression visuelle** sur les écrans déjà fonctionnels. **Lié à** : TST-UI. **⚠️ Note de grooming (réconciliation requise)** : v1.1 a acté un **stage fixe 1920×1080 + scaler** `transform: scale(min(vw/1920,vh/1080))` (déjà 16:9, cf. UI01 parchemin) et **responsive renvoyé à `U02`/v2** → clarifier l'écart entre « boîte ~750×580 » observée et le stage théorique avant de coder (régression du scaler ? écran hors-coquille ?).
+- [ ] **UI11 — Refonte panneau NPC Église : accès direct en 1 clic [POC B split 2 colonnes]** · M · P2 · 🟢 · v1.3 — **Contexte** : l'interaction actuelle demande **2 clics** (intro NPC → « Enter the Church ») avant les fonctionnalités ; le HP/MP du panneau est **redondant** avec la top bar ; les quest cards en **fond noir** cassent l'esthétique parchemin. **Objectif (POC B validé en session)** : un seul render **split deux colonnes** dès le 1er clic bâtiment.
+  - **Colonne gauche (~200px)** : portrait NPC compact + nom/rôle + bouton **Talk** + séparateur + section **Pray** (bouton + hint d'état).
+  - **Colonne droite (flex)** : titre « Acts of Devotion » + badge count + timer + quote NPC + liste de **quest cards scrollable** + bouton **× Leave**.
+  - Supprimer l'affichage **HP/MP** du panneau (top bar suffit). Quest cards en couleurs chaudes (bg `#e8d4a0`, border-left 3px `#c89432`, texte `#2c1a0a`) — retirer le fond noir.
+  - **⚠️ Actions à NE PAS régresser** : **Talk** (overlay dialogue, bouton dédié col. gauche) · **Enter Church** (logique métier absorbée dans le panneau direct — vérifier triggers) · **Leave/Fermer** (ferme + repositionne le héros sur la carte) · **Pray disabled** (« Already at full strength » si HP/MP pleins) · **Pray active** (restauration HP/MP si blessé) · **Accept quest** (ajout au journal) · **Cooldown quêtes** (« New deeds in X days » affiché et bloquant).
+  - **Scope** : identifier le composant Church (`src/screens/` — *cf. `SafeZone.jsx` ChurchPanel* / `src/components/`) ; fusionner les deux états (intro + détail) en un seul render split-B dès le 1er clic ; reparenter « Talk » sous le portrait ; remplacer classes CSS quest cards (noir → amber/parchemin) ; retirer le render conditionnel HP/MP ; lancer la suite NPC avant merge.
+  - **AC** : (a) 1 clic bâtiment → panneau split B immédiat ; (b) Talk fonctionnel (overlay dialogue) ; (c) HP/MP absent ; (d) quest cards thème parchemin ; (e) Pray disabled/active selon l'état réel ; (f) Accept quest OK (journal MAJ) ; (g) cooldown respecté/affiché ; (h) **0 test rouge** sur la suite existante (~1101+). **Lié à** : TST-UI, et les autres chantiers église **DVQ01** (quêtes divines) / **ALT01** (autels) ci-dessous.
+- [ ] **TST-UI — Tests de non-régression UI (couverture cible ≥ 70 %)** · S · P2 · 🟢 · v1.3 — **Contexte** : couverture actuelle ~**76 %** ; UI10 (layout) et UI11 (panneau NPC) touchent du layout et des composants Église → risque de régression. **Objectif** : maintenir la couverture **> 70 %** sur toute la v1.3 via des tests ciblés.
+  - **UI10 — Layout** : conteneur principal respecte le ratio `16:9` (ou `3:4` si option B) ; zone de jeu ≥ 80 % largeur sur viewport 1366px ; pas de débordement/déformation des sprites.
+  - **UI11 — Church Panel** : 1 clic bâtiment → render split B ; col. gauche présente portrait + Talk + section Pray ; Talk → overlay dialogue visible ; Pray disabled si HP/MP pleins, actif si blessé ; HP/MP non rendus ; Accept quest → journal MAJ ; cooldown « New deeds in X days » affiché/bloquant ; quest cards = classes parchemin présentes, fond noir absent.
+  - **Commande** : `npm run test:run -- --coverage`. **AC** : (a) couverture globale ≥ 70 % après merge UI10+UI11 ; (b) ≥ 1 test par ticket UI## corrigé ; (c) 0 test existant cassé.
+
 ### Divin — église *(priorité basse mais important)*
 
-- [ ] **DVQ01 — Quêtes divines à l'église** (M) — *retour playtest 2026-06-07.* L'église propose des **quêtes liées aux dieux** (en plus des « œuvres de dévotion » CHQ01) ; récompenses orientées **faveur divine**. **À cadrer** : pool, conditions, lien `deities.js` + relations (ALT01). Dépend CHQ01/Q09. *Priorité basse.*
-- [ ] **ALT01 — Autels des dieux + relations divines** (M) — *retour playtest 2026-06-07.* Un **autel par dieu** dans l'église ; **offrandes/prières** pour augmenter une **jauge de relation/faveur** par dieu (au-delà du `divineBonds` actuel). **À cadrer** : données `divineFavor:{deityId:score}`, coûts d'offrande (gold/ressources/tokens), effets de la faveur (bénédictions, accès skills divins…). Lien DV03/DV04/`deities.js`. *Priorité basse mais important.*
+- [ ] **DVQ01 — Quêtes divines à l'église** · M · P3 · 🟡 · v1.3 — *retour playtest 2026-06-07.* L'église propose des **quêtes liées aux dieux** (en plus des « œuvres de dévotion » CHQ01) ; récompenses orientées **faveur divine**. **À cadrer** : pool, conditions, lien `deities.js` + relations (ALT01). Dépend CHQ01/Q09. *Priorité basse.*
+- [ ] **ALT01 — Autels des dieux + relations divines** · M · P3 · 🟡 · v1.3 — *retour playtest 2026-06-07.* Un **autel par dieu** dans l'église ; **offrandes/prières** pour augmenter une **jauge de relation/faveur** par dieu (au-delà du `divineBonds` actuel). **À cadrer** : données `divineFavor:{deityId:score}`, coûts d'offrande (gold/ressources/tokens), effets de la faveur (bénédictions, accès skills divins…). Lien DV03/DV04/`deities.js`. *Priorité basse mais important.*
 
 ### Craft
 
-- [ ] **CRAFTMG01 — Mini-jeux dédiés par métier de craft** (M) — *retour playtest 2026-06-07.* Concevoir/revoir un **mini-jeu spécifique par métier** (forge, alchimie, cuisine, cordonnier…) au lieu du `CraftingMinigame` générique unique. **À cadrer** : 1 mécanique par métier + mapping métier→mini-jeu + impact qualité (lien STA03 Concentration).
-- [ ] **COOK01 — Métier de cuisine** (M) — *retour playtest 2026-06-07.* Introduire un **craft de cuisine** : recettes de plats → **consommables/buffs** (≠ équipement). **À cadrer** : bâtiment/NPC cuisine, ingrédients, effets (buffs temporaires ATK/vigueur/regen…), intégration `recipes.js` + `resources.js`. Lien CRAFTMG01.
-- [ ] **LEAT01 — Séparer forge (métal) et cordonnier (cuir)** (M) — *retour playtest 2026-06-07.* **DÉCIDÉ : séparer les équipements métal et cuir.** La **forge** ne traite que le **métal** ; un **cordonnier/maroquinier** traite le **cuir** (bottes, armures légères, gants…). **À cadrer** : tag `material:'metal'|'leather'` sur `EQUIPMENT_TEMPLATES`, répartition des recettes par bâtiment, nouveau bâtiment/NPC cordonnier (BLD_POS/NPCS/BUILDING_INFO). Lien Z07/Z03.
+- [ ] **CRAFTMG01 — Mini-jeux dédiés par métier de craft** · M · P3 · 🟡 · v1.3 — *retour playtest 2026-06-07.* Concevoir/revoir un **mini-jeu spécifique par métier** (forge, alchimie, cuisine, cordonnier…) au lieu du `CraftingMinigame` générique unique. **À cadrer** : 1 mécanique par métier + mapping métier→mini-jeu + impact qualité (lien STA03 Concentration).
+- [ ] **COOK01 — Métier de cuisine** · M · P3 · 🟡 · v1.3 — *retour playtest 2026-06-07.* Introduire un **craft de cuisine** : recettes de plats → **consommables/buffs** (≠ équipement). **À cadrer** : bâtiment/NPC cuisine, ingrédients, effets (buffs temporaires ATK/vigueur/regen…), intégration `recipes.js` + `resources.js`. Lien CRAFTMG01.
+- [ ] **LEAT01 — Séparer forge (métal) et cordonnier (cuir)** · M · P3 · 🟡 · v1.3 — *retour playtest 2026-06-07.* **DÉCIDÉ : séparer les équipements métal et cuir.** La **forge** ne traite que le **métal** ; un **cordonnier/maroquinier** traite le **cuir** (bottes, armures légères, gants…). **À cadrer** : tag `material:'metal'|'leather'` sur `EQUIPMENT_TEMPLATES`, répartition des recettes par bâtiment, nouveau bâtiment/NPC cordonnier (BLD_POS/NPCS/BUILDING_INFO). Lien Z07/Z03.
 
 ### Contenu & systèmes
 
-- [ ] **ZADV01 — Design de la zone avancée (Grimspire) + bestiaire** (L) — *retour playtest 2026-06-07.* Design **complet de Grimspire** (zone avancée) : **spots de chasse**, **monstres dédiés** (refonte façon MON01 d'Ashenvale), niveaux, loot, ambiance. **À spec avant dev.** Lien MON01.
-- [ ] **MONLV01 — Système de niveau des monstres** (M/L, **P2**) — *retour playtest 2026-06-07/08.* **✅ DÉCIDÉ (2026-06-08)** :
+- [ ] **ZADV01 — Design de la zone avancée (Grimspire) + bestiaire** · L · P3 · 🟡 · v1.3 — *retour playtest 2026-06-07.* Design **complet de Grimspire** (zone avancée) : **spots de chasse**, **monstres dédiés** (refonte façon MON01 d'Ashenvale), niveaux, loot, ambiance. **À spec avant dev.** Lien MON01.
+- [ ] **MONLV01 — Système de niveau des monstres** · M/L · P3 · 🟡 · v1.3 — *retour playtest 2026-06-07/08.* **✅ DÉCIDÉ (2026-06-08)** :
   - **Niveau** : `lvl_monster = random_int( max(start, hero−3), max( min(hero, end), start ) )` — bande ~4 niveaux **près du héros** ; le `max(…, start)` gère l'**edge case héros < start** (range non inversée).
   - **Stats** : `base_stats × 1.25^(lvl_monster − start)` (**+25 %/niveau**). `start`/`end` dérivés du `levelRange` du **spot**.
   - **Run-scaling** : **conservé** mais **`1.08 → 1.03`** (power creep méta plus doux). *(À noter : `zoneMult` × niveau peuvent se recouper — à surveiller au playtest.)*
   - **Récompenses exp/gold ET taux de drop scalés avec le niveau** — facteurs **dans BAL-CSV01** (proposition à valider : exp/gold `×1.25^Δ` ; drop `+X%`/niveau ou meilleure rareté).
   - **Affichage** : **montrer la RANGE** de niveau (ex. « Lv 2-5 ») sur la **carte de spot + bestiaire** (aléa visible pour le joueur) ; le **niveau réel** affiché **en combat**.
   - Ouvert : bonus élite (niveau ou mult. supérieur). Lien `zones.js` (`scaleMonsterStats`/`getMonsterLevel`) + combat + **BAL-CSV01** + **ZV-CARDS01** (emplacement du niveau sur la carte).
-- [ ] **DUNREV01 — Revue complète du système de donjon (umbrella)** (L) — *retour playtest 2026-06-07.* **Reprendre tout le système de donjon.** Regroupe les différés **D01** (flux nœuds Entrée→choix→Boss), **D03** (carte), **D06** (respawn nuit). **Prérequis : `D01-SPEC` (DESIGN.md)** — types de nœuds, PV/loot par nœud, probabilités, génération. **À spec avant dev.**
-- [ ] **MVAR01 — Variante d'image par ennemi (combats multi-ennemis)** (S/M) — *retour playtest 2026-06-08.* En combat avec **plusieurs ennemis du même monstre**, chacun utilise une **variante d'image différente** quand plusieurs existent (sinon réutilise `<id>.png`). **✅ Assets prêts** : schéma de nommage `public/monsters/<id>.png` + `<id>_2.png` + `<id>_3.png` déjà en place (2026-06-08) — pools actuels : **3 variantes** (mire_slime, fenrot_devourer, stone_golem, hollow_knight, ruin_specter, graven_sentinel, hill_slime, russet_fox, knoll_goblin, thunderhoof) · **2** (thicket_hare, briar_wraith) · **1** (ashwood_wolf, tuskmaw_boar, old_oakheart, marsh_serpent). **À cadrer (décision clé)** : le navigateur ne peut pas lister `public/` → le loader doit **connaître le nombre de variantes** par monstre : soit (a) un **manifeste data** `MONSTER_VARIANTS={ russet_fox:3, … }`, soit (b) tenter `<id>_N.png` avec **fallback onError** sur `<id>.png` (génère des 404). Attribution variante = par **index d'ennemi** (`(i % count) + 1`, ou aléatoire distinct). Touche `MonsterPortrait` (Combat) + `<img>` ZoneView + Codex. Fallback : moins de variantes que d'ennemis → on cycle ; aucune image → emoji.
-- [ ] **QA01 — Audit compteurs de monstres + intégrité & fonctionnel des items** (M) — *retour playtest 2026-06-08.* Passe de **vérification** en 3 volets : **(1) Compteurs de monstres bien actualisés** — `world.monsterKillCounts` incrémenté à chaque kill (combat + idle), propagation correcte vers : déblocage idle (≥5 kills), Codex/Bestiaire (stats après X kills, skill flou < 5), objectifs de quête `kill`, succès. **(2) Items bien liés** — auditer toutes les références d'items (drops monstres `resourceDrops`/`skillDrop`, recettes `recipes.js`, stock marchand/forge, récompenses de quête `resources`/`consumables`/`equipment`, livres ITM01) pointent vers des ids **existants** dans `RESOURCES`/`EQUIPMENT_TEMPLATES`/`SKILLS` (test d'intégrité data, type npc02.test). **(3) Items fonctionnellement ET logiquement corrects** — chaque item « lié » a un **effet qui marche** (potions heal/mana, élixirs/buffs, antidote `cureDebuffs` CRF06, livres `gain_stat` ITM01, équipement = stats appliquées) **et cohérent** : l'effet correspond au **type/à la description/à la rareté** (ex. une potion de soin soigne bien, un tome de Focus donne bien de la Concentration, un équipement « lourd » n'a pas de stats incohérentes, le rendement d'une recette est logique). AC : un test d'intégrité référentielle + une checklist d'effets vérifiés (fonctionnels **+ logiques**) ; corriger les références mortes ou effets incohérents. **NB** : une partie est déjà couverte par les tests existants (npc02/z07/itm01/crf06…) — ce ticket les consolide et comble les trous.
+- [ ] **DUNREV01 — Revue complète du système de donjon (umbrella)** · L · P3 · 🟡 · v1.3 — *retour playtest 2026-06-07.* **Reprendre tout le système de donjon.** Regroupe les différés **D01** (flux nœuds Entrée→choix→Boss), **D03** (carte), **D06** (respawn nuit). **Prérequis : `D01-SPEC` (DESIGN.md)** — types de nœuds, PV/loot par nœud, probabilités, génération. **À spec avant dev.**
+- [ ] **MVAR01 — Variante d'image par ennemi (combats multi-ennemis)** · S/M · P3 · 🟡 · v1.3 — *retour playtest 2026-06-08.* En combat avec **plusieurs ennemis du même monstre**, chacun utilise une **variante d'image différente** quand plusieurs existent (sinon réutilise `<id>.png`). **✅ Assets prêts** : schéma de nommage `public/monsters/<id>.png` + `<id>_2.png` + `<id>_3.png` déjà en place (2026-06-08) — pools actuels : **3 variantes** (mire_slime, fenrot_devourer, stone_golem, hollow_knight, ruin_specter, graven_sentinel, hill_slime, russet_fox, knoll_goblin, thunderhoof) · **2** (thicket_hare, briar_wraith) · **1** (ashwood_wolf, tuskmaw_boar, old_oakheart, marsh_serpent). **À cadrer (décision clé)** : le navigateur ne peut pas lister `public/` → le loader doit **connaître le nombre de variantes** par monstre : soit (a) un **manifeste data** `MONSTER_VARIANTS={ russet_fox:3, … }`, soit (b) tenter `<id>_N.png` avec **fallback onError** sur `<id>.png` (génère des 404). Attribution variante = par **index d'ennemi** (`(i % count) + 1`, ou aléatoire distinct). Touche `MonsterPortrait` (Combat) + `<img>` ZoneView + Codex. Fallback : moins de variantes que d'ennemis → on cycle ; aucune image → emoji.
+- [ ] **MQUI01 — Distinguer visuellement la quête principale (board + tracker)** · S/M · P3 · 🟡 · v1.3 — *retour playthrough 2026-06-14.* La chaîne principale (`mainQuests.js`, mq01→mq06) est bien **surfacée et fonctionnelle** (board du lieu émetteur, gating `isMainQuestAvailable`, `getQuestById` la résout, complétion OK), mais **rien ne la distingue** d'une quête secondaire : `QuestCard` n'affiche aucun marqueur pour `isMainQuest` → le joueur ne « voit » pas de quête principale (ex. « The Waking » mq01 ressemble à une commission de village). **À faire** : (1) **badge** « ⚔ Quête principale » sur `QuestCard` quand `quest.isMainQuest` (couleur dédiée, distincte du ⚜ prestige) ; (2) **section/tri dédié** en tête du board (« Quête principale » avant Active/Available) ; (3) **épingler l'étape MQ courante** en tête du tracker `Quests` (overlay) avec le « next » de la chaîne (`nextMainQuest`). AC : sur le board de Greywatch au démarrage, la quête principale est immédiatement identifiable ; après acceptation/complétion elle reste mise en avant (section active/épinglée) ; tests de rendu (badge présent si `isMainQuest`, absent sinon). UX uniquement — aucune logique de chaîne à changer. Lien B6/MQ-CHAIN01.
+- [ ] **QTOAST01 — Pop-up de progrès de quête (toast latéral)** · S · P3 · 🟡 · v1.3 — *retour playthrough 2026-06-14.* Quand une action fait avancer un objectif d'une **quête active** (kill comptabilisé, craft, visite…), afficher une **petite pop-up sur le bas-côté** : « *Quête X : Tuer des loups 3/5* » (et « ✓ Objectif terminé / Quête prête à rendre » au palier). **À cadrer** : déclencher sur l'incrément (combat + idle) ; ne montrer que pour les **quêtes actives** ; anti-spam (regrouper / throttle, surtout en idle) ; réutiliser `toastStore` (type `quest`) ou un encart dédié. Lien Q07 (toast récompense) + le tracker `Quests`. Données dispo via le snapshot `questProgress` (delta).
+- [ ] **QA01 — Audit compteurs de monstres + intégrité & fonctionnel des items** · M · P3 · 🟡 · v1.3 — *retour playtest 2026-06-08.* Passe de **vérification** en 3 volets : **(1) Compteurs de monstres bien actualisés** — `world.monsterKillCounts` incrémenté à chaque kill (combat + idle), propagation correcte vers : déblocage idle (≥5 kills), Codex/Bestiaire (stats après X kills, skill flou < 5), objectifs de quête `kill`, succès. **(2) Items bien liés** — auditer toutes les références d'items (drops monstres `resourceDrops`/`skillDrop`, recettes `recipes.js`, stock marchand/forge, récompenses de quête `resources`/`consumables`/`equipment`, livres ITM01) pointent vers des ids **existants** dans `RESOURCES`/`EQUIPMENT_TEMPLATES`/`SKILLS` (test d'intégrité data, type npc02.test). **(3) Items fonctionnellement ET logiquement corrects** — chaque item « lié » a un **effet qui marche** (potions heal/mana, élixirs/buffs, antidote `cureDebuffs` CRF06, livres `gain_stat` ITM01, équipement = stats appliquées) **et cohérent** : l'effet correspond au **type/à la description/à la rareté** (ex. une potion de soin soigne bien, un tome de Focus donne bien de la Concentration, un équipement « lourd » n'a pas de stats incohérentes, le rendement d'une recette est logique). AC : un test d'intégrité référentielle + une checklist d'effets vérifiés (fonctionnels **+ logiques**) ; corriger les références mortes ou effets incohérents. **NB** : une partie est déjà couverte par les tests existants (npc02/z07/itm01/crf06…) — ce ticket les consolide et comble les trous.
+
+### Refonte Hero Sheet (V2 — maquette validée 2026-06-14)
+
+> Direction **V2** (barres uniformes + jalons) validée sur maquette. Toutes UX du même écran (`HeroSheet.jsx`) — peuvent être livrées ensemble ou en petits lots. Règle de session : **chaque fix de bug embarque ses tests de régression**.
+
+- [ ] **HSV2-01 — Avatar : fix affichage + remontée en tête de colonne** (S · bug+UI · **P1**) — *retour playthrough 2026-06-14.* L'avatar (`<img src={HERO_SPRITE}>` dans `.hs-portrait`) **ne s'affiche plus** (slot effondré / sprite non rendu — à diagnostiquer) **et** doit être **remonté au-dessus du bloc Allégeance** (HS-DEITY01 avait remonté le bloc divin avant l'avatar → inverser). AC : avatar visible en haut de la colonne gauche au chargement ; **test de régression** (présence de l'`<img>` avatar + ordre avant Allégeance).
+- [ ] **HSV2-02 — Vitalité : barres de longueur uniforme** (XS · UI · **P1**) — HP / Mana / Vigueur / XP : tous les `VitalBar` ont la **même longueur** (track pleine largeur, remplissage en %). Test de rendu.
+- [ ] **HSV2-03 — Aura & Concentration : déplacées dans les attributs + masquées si verrouillées** (S · UI · **P1**) — sortir Aura/Concentration du bloc **vitalité** (haut) → les placer **en bas du bloc attributs** ; tant que `locked` (aura ≤ 0 / concentration ≤ 0) : **barre floutée + nom masqué** (« ??? » / 🔒), affichage normal au déblocage. Test : verrouillé = nom masqué ; débloqué = nom + valeur.
+- [ ] **HSV2-04 — Attributs : barres uniformes + jalons tous les 35 pts** (S · UI · **P1**) — **DÉCIDÉ : jalons tous les 35 points.** Attributs (FOR/AGI/INT/CHA/DÉF) en barres **de longueur égale** avec des **repères (ticks) tous les 35 pts** (paliers franchis marqués « on »). Pour l'instant **visuel/placeholder** — le sens gameplay vient avec HSV2-06. AC : ticks à 35/70/105… alignés, barres uniformes ; test de rendu (nb de ticks selon la valeur).
+- [ ] **HSV2-05 — Skills : retirer l'affichage du cooldown** (XS · UI · **P1**) — sur `SkillRow` (actifs + divin), **supprimer l'info CD** (« CD 3t ») ; garder Lv + coût MP/HP. AC : plus aucune mention de cooldown ; test de non-régression (pas de « CD » rendu).
+- [ ] **HSV2-06 — Jalons branchés sur de vrais paliers de skill** (M · feature · **P3**, futur) — donner un **sens gameplay** aux jalons HSV2-04 : débloquer un skill/bonus quand un attribut franchit un palier (ex. tous les 35 pts). **À spec** (quels skills/bonus par stat). Rend la barre d'attribut réellement utile (cf. discussion « barres utiles si déblocage par palier »). Dépend d'une mini-spec.
 
 ### Démarrage restreint « Greywatch » (découpage — étend PROG01/02/03)
 
 > Vision (playtest 2026-06-07) : le run **démarre à Greywatch**, seule la **forêt** est accessible ; **nuages (fog)** sur le reste de la carte ; les nuages **se dissipent** au fur et à mesure que les zones/spots se débloquent. ⚠️ Étend le déblocage data-driven (PROG01/02/03, livré au **niveau « grande zone »**) **au niveau des nodes de la WorldMap** (= la version *littérale* de PROG02, plus ambitieuse que l'implémentation actuelle).
 
-- [ ] **START01 — Le run démarre à Greywatch (village de départ)** (M) — **✅ DÉCIDÉ (2026-06-08) : le starting point est `greywatch`.** `world.currentLocation`/`currentNode` initial = **greywatch** (au lieu d'ironhaven) ; le héros spawn au village de départ. Migration : anciennes saves inchangées. **À cadrer** : impact sur les tests qui supposent `ironhaven` au départ. Dépend rien (point d'entrée du bloc).
-- [ ] **START02 — Accès initial limité à la forêt + déblocage par node** (M) — au démarrage, seuls **Greywatch** + **Ashenvale Forest** sont accessibles ; les autres **nodes** WorldMap (marais, ruines, collines, ville, route, Grimspire) sont **verrouillés**. **Étend `zone.unlock` / `unlockedZones` / `isZoneUnlocked` au niveau des hunting spots/nodes** (aujourd'hui : seulement les grandes zones). Dépend START01 + PROG01/PROG02.
-- [ ] **START03 — Fog of war généralisé (nuage par node) + dissipation** (M) — afficher un **nuage** sur **chaque node/zone non débloqué(e)** de la WorldMap (généralise le fog PROG01 aujourd'hui limité à Grimspire) ; le nuage **disparaît** au déblocage. Dépend START02. *(= le « nuage » de la session design 2026-06-08, non encore posé.)*
-- [ ] **START04 — Conditions de déblocage progressif des nodes** (M) — définir les **conditions par node** (forêt → marais → ruines → collines → ville → route → Grimspire) en data-driven (kills / niveau / quête / info), cohérent avec PROG01/PROG03. Dépend START02. *Ordre & conditions à affiner au grooming.* **→ résolu par MQ-CHAIN01** (session design 2026-06-08 : le chaînage de quêtes EST la condition de déblocage).
+- [x] **START01 — Le run démarre à Greywatch (village de départ)** (M) — **fait 2026-06-14 (B6).** `INITIAL_WORLD.currentLocation`/`currentNode` = **greywatch**. Fallout corrigé : tests QuestBoard/screens qui supposaient ironhaven (ville) placent désormais explicitement le héros en ville ; `travel.test` assertion par défaut mise à jour.
+- [x] **START02 — Accès initial limité à la forêt + déblocage par node** (M) — **fait 2026-06-14 (B6).** Helper `isNodeUnlocked(nodeId, world)` + `START_OPEN_NODES = ['greywatch','ashenvale_forest']` (zones.js) ; sélecteur store `isNodeUnlocked`. WorldMap : `WmNode locked` (clic bloqué + 🔒) sur tout node ashenvale non débloqué. Tests `start02.test.js`.
+- [x] **START03 — Fog of war généralisé (nuage par node) + dissipation** (M) — **fait 2026-06-14 (B6).** `.wm-fog` (nuage ☁) rendu sur chaque node ashenvale verrouillé (`data-testid=fog-node-<id>`), disparaît au déblocage (réactif à `world.unlockedNodes`). Réutilise le pattern fog PROG01/Grimspire.
+- [x] **START04 — Conditions de déblocage progressif des nodes** (M) — **fait 2026-06-14 (B6) via MQ-CHAIN01.** Les conditions = le spine : compléter un palier MQ écrit ses `unlocks` (localités/spots) dans `world.unlockedNodes`, que `isNodeUnlocked` consomme. **Surfaçage** : la chaîne MQ est postée sur le board du Doyen (`QuestBoard`, gated `isMainQuestAvailable`) → le déblocage est jouable. Tests `start02.test.js` (mq02 ouvre Millhaven) + `QuestBoard.mq.test.jsx`.
 
 ---
 
 > 🔁 **Ex-v2 basculé dans v1.3 (2026-06-08)** — les sections ci-dessous étaient l'ancienne milestone *« v2 — Refonte / ambition (L/XL) »*. Conservées dans v1.3 comme **items lourds d'ambition (L/XL)** : à prioriser/découper au grooming, séparément du backlog playtest plus léger ci-dessus.
 
 ### Compagnons de combat (ambition L/XL)
-- [ ] **CMP01 — Structure données Companion + traits** (S) - `companion` : traits{loyal,stubborn,cowardly,reckless,prudent}/relationScore(−10→+10)/daysKnown/stats/skills/alive/universeOfMeeting
-- [ ] **CMP02 — Génération aléatoire traits à la rencontre** (M) - pondérés par contexte : donjon→cowardly+0.3, taverne→loyal+0.2, disciple allié→loyal+0.3, Zone 2+→reckless+0.2 ; random [0.1–0.9]
-- [ ] **CMP03 — followProbability() dans combat.js** (M) - `base(dominantTrait) + relationScore×0.04 − cowardly×riskLevel + daysKnown>10?0.08:0` ; clampé 0.05–0.95
-- [ ] **CMP04 — CompanionCard en combat** (M) - HP/mana, action en cours, réponse textuelle selon trait (5 pools de phrases)
-- [ ] **CMP05 — Interface conseil joueur (3s)** (L) - fenêtre flottante au tour du compagnon ; sans conseil → companionAI() seul
-- [ ] **CMP06 — Recrutement compagnon SafeZone + donjon** (M) - taverne (gold) + survivants en salle Event ; max 1 actif. Recoupe EVT02 (réfugié)
-- [ ] **CMP07 — Permadeath + message narratif** (S) - relationScore ≥ 7 → message spécial ; transmigration → "resté dans cet univers"
-- [ ] **CMP08 — Easter egg relation ≥ 9** (S) - laisse un item ou skill dans la boutique des dieux au run suivant
-- [ ] **CMP09 — Évolution relationScore** (S) - +1 conseil suivi+survie, +2 soin, +3 protection à 0HP, −1 ignoré+blessure, −3 fuite, −1 dieu ennemi, +1/5 jours
+- [ ] **CMP01 — Structure données Companion + traits** · S · P3 · 🟡 · v1.3 — `companion` : traits{loyal,stubborn,cowardly,reckless,prudent}/relationScore(−10→+10)/daysKnown/stats/skills/alive/universeOfMeeting
+- [ ] **CMP02 — Génération aléatoire traits à la rencontre** · M · P3 · 🟡 · v1.3 — pondérés par contexte : donjon→cowardly+0.3, taverne→loyal+0.2, disciple allié→loyal+0.3, Zone 2+→reckless+0.2 ; random [0.1–0.9]
+- [ ] **CMP03 — followProbability() dans combat.js** · M · P3 · 🟡 · v1.3 — `base(dominantTrait) + relationScore×0.04 − cowardly×riskLevel + daysKnown>10?0.08:0` ; clampé 0.05–0.95
+- [ ] **CMP04 — CompanionCard en combat** · M · P3 · 🟡 · v1.3 — HP/mana, action en cours, réponse textuelle selon trait (5 pools de phrases)
+- [ ] **CMP05 — Interface conseil joueur (3s)** · L · P3 · 🟡 · v1.3 — fenêtre flottante au tour du compagnon ; sans conseil → companionAI() seul
+- [ ] **CMP06 — Recrutement compagnon SafeZone + donjon** · M · P3 · 🟡 · v1.3 — taverne (gold) + survivants en salle Event ; max 1 actif. Recoupe EVT02 (réfugié)
+- [ ] **CMP07 — Permadeath + message narratif** · S · P3 · 🟡 · v1.3 — relationScore ≥ 7 → message spécial ; transmigration → "resté dans cet univers"
+- [ ] **CMP08 — Easter egg relation ≥ 9** · S · P3 · 🟡 · v1.3 — laisse un item ou skill dans la boutique des dieux au run suivant
+- [ ] **CMP09 — Évolution relationScore** · S · P3 · 🟡 · v1.3 — +1 conseil suivi+survie, +2 soin, +3 protection à 0HP, −1 ignoré+blessure, −3 fuite, −1 dieu ennemi, +1/5 jours
 
 ### Événements aléatoires
-- [ ] **EVT01 — Framework événements aléatoires** (L) - `triggerZoneEvent(zoneId, dayCount)` : proba par zone + cooldown 3j min ; types merchant_visit/ambush/treasure_chest/divine_omen/refugee
-- [ ] **EVT02 — Événements de zone implémentés** (M) - 5 événements (marchand errant, embuscade, coffre piégé, omen divin, réfugié→CMP06) — dépend EVT01
-- [ ] **EVT03 — Événements nocturnes** (M) - au sommeil : rêve divin (indice éveil), vol ressources (relation divine −), vision (preview donjon) — dépend EVT01
+- [ ] **EVT01 — Framework événements aléatoires** · L · P3 · 🟡 · v1.3 — `triggerZoneEvent(zoneId, dayCount)` : proba par zone + cooldown 3j min ; types merchant_visit/ambush/treasure_chest/divine_omen/refugee
+- [ ] **EVT02 — Événements de zone implémentés** · M · P3 · 🟡 · v1.3 — 5 événements (marchand errant, embuscade, coffre piégé, omen divin, réfugié→CMP06) — dépend EVT01
+- [ ] **EVT03 — Événements nocturnes** · M · P3 · 🟡 · v1.3 — au sommeil : rêve divin (indice éveil), vol ressources (relation divine −), vision (preview donjon) — dépend EVT01
 
 ### Foyer (HOME01 éclaté)
-- [ ] **HOME01a — Achat du foyer + emplacement sur la map du village** (M) - acheter une maison ; nouveau node "foyer" dans le village ; question méta : persiste-t-il entre transmigrations ?
-- [ ] **HOME01b — Lit (dormir chez soi)** (S) - dormir au foyer = équivalent auberge (restaure vigueur/HP/mana, avance le jour)
-- [ ] **HOME01c — Coffre de stockage** (M) - stocker items/équipement/ressources ; déplacer inventaire ↔ coffre ; persistance à décider (run vs méta)
+- [ ] **HOME01a — Achat du foyer + emplacement sur la map du village** · M · P3 · 🟡 · v1.3 — acheter une maison ; nouveau node "foyer" dans le village ; question méta : persiste-t-il entre transmigrations ?
+- [ ] **HOME01b — Lit (dormir chez soi)** · S · P3 · 🟡 · v1.3 — dormir au foyer = équivalent auberge (restaure vigueur/HP/mana, avance le jour)
+- [ ] **HOME01c — Coffre de stockage** · M · P3 · 🟡 · v1.3 — stocker items/équipement/ressources ; déplacer inventaire ↔ coffre ; persistance à décider (run vs méta)
 
 ### Combat & moteur
-- [ ] **B06 — ATB (Active Time Battle)** (XL) - refonte moteur combat : barre de vitesse par acteur, action quand pleine, interruptions
-- [ ] **MAP03 — Migration WorldMap vers PixiJS v8** (L) - `pixi.js` + `@pixi/react` ; Sprite héros + effets WebGL (glow/bloom/shaders) ; Zustand reste source de vérité — dépend UI02
+- [ ] **B06 — ATB (Active Time Battle)** · XL · P3 · 🟡 · v1.3 — refonte moteur combat : barre de vitesse par acteur, action quand pleine, interruptions
+- [ ] **MAP03 — Migration WorldMap vers PixiJS v8** · L · P3 · 🟡 · v1.3 — `pixi.js` + `@pixi/react` ; Sprite héros + effets WebGL (glow/bloom/shaders) ; Zustand reste source de vérité — dépend UI02
 
 ### Boss — fidélité complète (versions allégées faites en Batch N)
-- [ ] **BSS01b — Crypt Keeper : vraie invocation de Skeleton Adds** (M) - 2 entités séparées (HP faible, interrompent les skills si non tuées en 2 tours, pas de loot). Stand-in actuel = enrage +40% ATK
-- [ ] **BSS02b — Lord of the Forsaken : couche d'armure régénérante** (M) - DEF +30% régénérée tous les 3 tours. Stand-in actuel = Cursed Strike seul
+- [ ] **BSS01b — Crypt Keeper : vraie invocation de Skeleton Adds** · M · P3 · 🟡 · v1.3 — 2 entités séparées (HP faible, interrompent les skills si non tuées en 2 tours, pas de loot). Stand-in actuel = enrage +40% ATK
+- [ ] **BSS02b — Lord of the Forsaken : couche d'armure régénérante** · M · P3 · 🟡 · v1.3 — DEF +30% régénérée tous les 3 tours. Stand-in actuel = Cursed Strike seul
 
 ### Multi-univers
-- [ ] **X08 — Architecture multi-univers** (L) - `currentUniverse` + `universeHistory[]` ; data namespaced `src/data/universes/{id}/` ; WorldMap switche selon univers
-- [ ] **X09 — Règle de rotation (fenêtre glissante)** (M) - `forbidden = {actuel, précédent}` ; pool = 2 restants ; pondération par ancienneté — dépend X08
+- [ ] **X08 — Architecture multi-univers** · L · P3 · 🟡 · v1.3 — `currentUniverse` + `universeHistory[]` ; data namespaced `src/data/universes/{id}/` ; WorldMap switche selon univers
+- [ ] **X09 — Règle de rotation (fenêtre glissante)** · M · P3 · 🟡 · v1.3 — `forbidden = {actuel, précédent}` ; pool = 2 restants ; pondération par ancienneté — dépend X08
 
 ### Divinités avancées
-- [ ] **DV05 — Aura divine visuelle** (S) - border colorée sur HeroCard selon divinité active
-- [ ] **DV11 — Relations inter-divines −10/+10** (L) - matrice symétrique `DIVINE_RELATIONS[idA][idB]` ; actions joueur font bouger les scores
-- [ ] **DV12 — Oracle divin (boutique)** (S) - révèle le score de relation pour le prochain univers (8 tokens) — dépend DV11
+- [ ] **DV05 — Aura divine visuelle** · S · P3 · 🟡 · v1.3 — border colorée sur HeroCard selon divinité active
+- [ ] **DV11 — Relations inter-divines −10/+10** · L · P3 · 🟡 · v1.3 — matrice symétrique `DIVINE_RELATIONS[idA][idB]` ; actions joueur font bouger les scores
+- [ ] **DV12 — Oracle divin (boutique)** · S · P3 · 🟡 · v1.3 — révèle le score de relation pour le prochain univers (8 tokens) — dépend DV11
 
 ### Profondeur & polish
-- [ ] **EQP01 — Bonus de set d'équipement** (M) - **DÉCIDÉ : système technique seul** (`equipment.set` + `getSetBonus`, sets de 3 à 6 pièces) ; contenu des sets plus tard. **→ contenu fourni par SET-CONTENT01 + modèle de bonus par SET-G1** (backlog design 2026-06-08 ; étendre 6→9 pièces, cf. SLOT01).
-- [ ] **CODEX02 — Codex de lore** (S) - écran consultable regroupant le flavor text — dépend CONT02/CONT03
-- [ ] **HIS01 — Historique des runs** (M) - N derniers runs : cause de mort, zone max, boss tués, durée, tokens ; `meta.runHistory[]`
-- [ ] **HIS02 — Statistiques globales meta** (S) - total kills/type, temps joué, Demon Lords tués, compagnons perdus, skills uniques
-- [ ] **NPC03 — NPCs récurrents avec mémoire** (M) - se souviennent du rang aventurier + divinité → dialogues différents au retour
-- [ ] **NPC05 — Maître itinérant à la Guilde** (M) - maître de passage proposant entraînement/quêtes ponctuels (lié TRA01/GLD01)
-- [ ] **TECH06 — Feature flags** (M) - `FEATURE_FLAGS` dans `config.js` : activer/désactiver des features sans recompiler
-- [ ] **CONT02 — Descriptions lore par zone** (XS) - flavor text dans le header ZoneView (3-4 lignes/zone)
-- [ ] **CONT03 — Flavor text sur les skills** (XS) - champ `lore` dans les skill templates, affiché en italique InventoryCard
-- [ ] **U02 — Responsive mobile** (L) - layout <768px, touch events, Canvas 2D scaled
-- [ ] **U05 — SFX combat + ambiance** (L) - Web Audio API : attaque, skill, mort, level-up, divine call, déroulement parchmin
-- [ ] **UX04 — Navigation clavier complète** (M) - Tab + Entrée + Echap sur tous les écrans ; combat jouable sans souris
+- [ ] **EQP01 — Bonus de set d'équipement** · M · P3 · 🟡 · v1.3 — **DÉCIDÉ : système technique seul** (`equipment.set` + `getSetBonus`, sets de 3 à 6 pièces) ; contenu des sets plus tard. **→ contenu fourni par SET-CONTENT01 + modèle de bonus par SET-G1** (backlog design 2026-06-08 ; étendre 6→9 pièces, cf. SLOT01).
+- [ ] **CODEX02 — Codex de lore** · S · P3 · 🟡 · v1.3 — écran consultable regroupant le flavor text — dépend CONT02/CONT03
+- [ ] **HIS01 — Historique des runs** · M · P3 · 🟡 · v1.3 — N derniers runs : cause de mort, zone max, boss tués, durée, tokens ; `meta.runHistory[]`
+- [ ] **HIS02 — Statistiques globales meta** · S · P3 · 🟡 · v1.3 — total kills/type, temps joué, Demon Lords tués, compagnons perdus, skills uniques
+- [ ] **NPC03 — NPCs récurrents avec mémoire** · M · P3 · 🟡 · v1.3 — se souviennent du rang aventurier + divinité → dialogues différents au retour
+- [ ] **NPC05 — Maître itinérant à la Guilde** · M · P3 · 🟡 · v1.3 — maître de passage proposant entraînement/quêtes ponctuels (lié TRA01/GLD01)
+- [ ] **TECH06 — Feature flags** · M · P3 · 🟡 · v1.3 — `FEATURE_FLAGS` dans `config.js` : activer/désactiver des features sans recompiler
+- [ ] **CONT02 — Descriptions lore par zone** · XS · P3 · 🟡 · v1.3 — flavor text dans le header ZoneView (3-4 lignes/zone)
+- [ ] **CONT03 — Flavor text sur les skills** · XS · P3 · 🟡 · v1.3 — champ `lore` dans les skill templates, affiché en italique InventoryCard
+- [ ] **U02 — Responsive mobile** · L · P3 · 🟡 · v1.3 — layout <768px, touch events, Canvas 2D scaled
+- [ ] **U05 — SFX combat + ambiance** · L · P3 · 🟡 · v1.3 — Web Audio API : attaque, skill, mort, level-up, divine call, déroulement parchmin
+- [ ] **UX04 — Navigation clavier complète** · M · P3 · 🟡 · v1.3 — Tab + Entrée + Echap sur tous les écrans ; combat jouable sans souris
 
 ---
 
@@ -423,7 +490,9 @@ _(aucune dépendance externe bloquante)_
 > Filtre demandé : **« rien ne manque » (🟢) ET typologie perf/safety/ux/log**. Lot recommandé pour le prochain passage de code. *(BAL/audio/contenu/specs → v1.2 ; idle → v2.1.)*
 
 **Perf**
-- [~] **PERF-IMG01 — Optimisation des assets** (S, **P1 — avant 1er push**) — **[→ remonté v1]** **PARTIE CODE ✅ FAIT 2026-06-10** : `loading="lazy"` sur les sprites de monstres (`MonsterSprite`) et les assets `ArtSlot` (bâtiments/façades). +test. ⚠️ **RESTE (manuel, hors scope code)** : **compresser les binaires** (map 9.7 Mo + `rotting_shambler` 5.9 / `gloom_bat` 5.6 → squoosh, cible ≤ 300–500 KB) **avant le 1er push** — nécessite un outil d'image (squoosh/sharp), impossible à faire de façon fiable par édition de code. À faire à la main.
+- [x] **PERF-IMG01 — Lazy-loading des images (code)** (S, **P2**) — **✅ FAIT 2026-06-10.** `loading="lazy"` sur les sprites de monstres (`MonsterSprite`) et les assets `ArtSlot` (bâtiments/façades). +test. *(Scindé : la compression binaire des assets — qui n'est pas du code — est sortie dans le ticket asset/manuel **PERF-IMG02** ci-dessous, hors lot « Prêt à coder ».)*
+- [x] **PERF-IMG02 — Compression des assets binaires (MANUEL — asset)** (S, **P1**) — **✅ FAIT 2026-06-10 (utilisateur, via iLoveIMG).** Gros binaires (map 9,7 Mo + `rotting_shambler`/`gloom_bat`) compressés avant le 1er push.
+- [ ] **COV-COMBAT01 — Couverture de test approfondie de `Combat.jsx`** · M · P3 · 🟡 · v1.3 — *TC 2026-06-10 (demande utilisateur).* Le cœur du jeu (`Combat.jsx`, ~1900 l.) est sous-testé (~66 % lignes) : c'est la zone la plus risquée et la moins couverte. Construire une **vraie suite de tests Combat** couvrant : tous les **types d'effet de skill** (physical/magical/heal/buff/debuff/percentage/DoT/AoE/multi-cibles), les **mécaniques de boss** (phases, enrage, soul drain, summon — `bossMechanics`), la **gluttony/assassinat** (GLT02), les **passifs** en combat, l'**aura/vigueur** appliquées aux dégâts, la **fuite** (succès/échec), la **défaite** (heroDeath → post-mortem), et les **invariants de fin** (jamais coincé). Pattern : fake timers + `startCombat` + `act`/`advanceTimers` (cf. `Combat.victory.test.jsx`). 🎯 **Cible : remonter `Combat.jsx` à ≥ 85 %** → couverture globale ≥ 80 %, puis **remonter `thresholds.lines` de 76 à 80** dans `vite.config.js`. Reprend la dette laissée par COV80.
 - [x] **PERF-SPLIT01 — Code-splitting du bundle** (S, **P2**) — **✅ FAIT 2026-06-10.** `React.lazy` sur Combat / CodexOverlay / GodsShop + `<Suspense fallback={<ScreenFallback/>}>` autour de la zone d'écran. Build : chunks séparés (Combat 34.8 kB, GodsShop 8 kB, Codex 1.8 kB) ; chunk principal 480 → 445 kB. +test (chargement lazy de Combat via Suspense).
 
 **Safety / robustesse**
@@ -444,8 +513,8 @@ _(aucune dépendance externe bloquante)_
 - [x] **DEVBP02 — Contrats de composants (JSDoc / PropTypes)** (M, **P3**) — **✅ FAIT 2026-06-10.** JSDoc `@param` ajouté sur les **primitives réutilisables** de `components/` : `ConfirmDialog`, `Tooltip`, `QTEBar`, `ArtSlot`, `HeroAvatar`, `ParchmentFrame` (pas de TS — JSDoc, cf. ADR-002). *Reste incrémental : documenter les autres composants (DialoguePanel, InformantsPanel, OfflineRecapModal…) et les props publiques des screens au fil de l'eau.*
 - [x] **COV80 — Monter la couverture lignes (gate aligné)** (M, **P3**) — **✅ FAIT 2026-06-10.** Couverture lignes **71,06 % → 77,87 %** (~290 lignes en plus via ~70 nouveaux tests : panneaux SafeZone, PostMortem, flux Combat, interactions WorldMap, errorLog, saveAudit…). SafeZone 18→44 %, WorldMap 59→73 %, etc. **Décision utilisateur (2026-06-10)** : seuil `thresholds.lines` baissé **80 → 76** dans `vite.config.js` → `npm run test:coverage` **VERT** (CI passe). 🎯 **Cible 80 % conservée** comme aspiration : les ~2 % restants sont les internes de `Combat.jsx` (boss/DoT/skills, timer-heavy) — à reprendre quand utile (remonter le seuil au passage).
 - [x] **REFAC01 — Découpage de `gameStore.js` en slices** (M, **P2**) — **✅ FAIT 2026-06-10.** `gameStore.js` (1939 l.) réduit à **39 l.** : état racine + recomposition de **7 slices** (`slices/heroSlice` 35 actions, `combatSlice` 5, `questsSlice` 6, `worldSlice` 8, `idleSlice` 6, `metaSlice` 13, `saveSlice` 5). Extraits aussi : `initialState.js` (INITIAL_*/SAVE_VERSION), `helpers.js` (applyLevelUps), `migrations.js` (migrateV1ToV2/normalizeSave/runMigrations). `gameStore.js` **ré-exporte** `SAVE_VERSION/normalizeSave/runMigrations` (API publique préservée). Découpe **verbatim** (script d'extraction + scan d'imports auto). **Zéro changement de comportement** : 1032 tests verts + build OK + lint/format verts. Bonus hygiène : `coverage/` ajouté aux ignores eslint.
-- [ ] **REFAC02 — Découpage de `SafeZone.jsx` (1 fichier/panneau)** (M, **P3**) — *TC 2026-06-08.* Sortir chaque panneau de bâtiment (Inn/Church/Merchant/Alchemy/Blacksmith/MasterSmith/KnightTrainer/Academy) + `NpcOverlay`/`VilBuilding` dans leurs fichiers. Refacto pur, tests verts inchangés. **Différé après v1.1** (les tickets v1.1 modifient SafeZone → éviter le conflit).
-- [ ] **REFAC03 — Découpage de `Combat.jsx` (sous-composants + hook)** (M, **P3**) — *TC 2026-06-08.* Extraire `EnemyCard`/`HeroCard`/`ActionPanel`/`VictoryPanel`/`FloatingNumbers` + un hook de logique combat. ⚠️ le **plus risqué** (moins de tests sur le rendu) → prudent. **Différé après v1.1**.
+- [ ] **REFAC02 — Découpage de `SafeZone.jsx` (1 fichier/panneau)** · M · P5 · 🟡 · v1.3 — *TC 2026-06-08.* Sortir chaque panneau de bâtiment (Inn/Church/Merchant/Alchemy/Blacksmith/MasterSmith/KnightTrainer/Academy) + `NpcOverlay`/`VilBuilding` dans leurs fichiers. Refacto pur, tests verts inchangés. **Différé après v1.1** (les tickets v1.1 modifient SafeZone → éviter le conflit).
+- [ ] **REFAC03 — Découpage de `Combat.jsx` (sous-composants + hook)** · M · P5 · 🟡 · v1.3 — *TC 2026-06-08.* Extraire `EnemyCard`/`HeroCard`/`ActionPanel`/`VictoryPanel`/`FloatingNumbers` + un hook de logique combat. ⚠️ le **plus risqué** (moins de tests sur le rendu) → prudent. **Différé après v1.1**.
 
 **UX — QoL & écrans**
 - [x] **INN-WAKE01 — Réveil à 8h en dormant à l'auberge** (XS, **P2**) — **✅ FAIT 2026-06-10.** `worldSlice.sleep` met `tickCount: 8` (+ `isNight: false`). Test sleep mis à jour.
@@ -470,34 +539,34 @@ _(aucune dépendance externe bloquante)_
 
 ### → v1.2 — Décision / contenu / spec requis (pas encore « prêts »)
 
-- [ ] **BAL-AUDIT01 — Passe d'équilibrage globale** (M, **P1**) — **✅ DÉCIDÉ** : XP **×1.32** · XP **×5** · gold **×8**. À trancher : drops/prix/tokens/vigueur. Via **BAL-CSV01**.
-- [ ] **BAL-CSV01 — Données d'équilibrage pilotées par CSV (live-linked)** (M, **P1**) — centraliser les constantes tunables dans `public/balance.csv` (**fetch runtime** reco, fallback défaut). Constantes : `xp_curve_mult=1.32`, `reward_xp_mult=5`, `reward_gold_mult=8`, `monster_level_stat_mult=1.25`, `run_scaling=1.03`, `monster_level_reward_mult=1.25`(à valider), `monster_level_drop_bonus`(à valider), + vigueur/zones/prix/drops. **Archi à valider.**
-- [ ] **STA01b — Finaliser la Fatigue** (S/M, **P2**) — retirer le debuff dormant CRF01 + maj ~22 tests ; +40 Fatigue sur échec ; craft-fail ×4 sous 30 vigueur.
-- [ ] **TIME-DISPLAY01 — Refonte de l'affichage de l'heure** (S, **P2**) — choisir une version **A→E** (24h / 12h / +période / cadran SVG / arc jour-nuit). **Décision requise.**
-- [ ] **SETTINGS-FULL01 — Compléter l'écran Options** (S, **P2**) — volume (dépend AUDIO01) + vitesse texte + reduced-motion + exposer export/import save. Animations déjà fonctionnel.
-- [ ] **A11Y01 — Accessibilité de base** (M, **P2**) — `prefers-reduced-motion` + focus + ARIA + contrastes (périmètre à border). Recoupe UX04.
-- [ ] **ONBOARD01 — Onboarding premier run** (M, **P2**, = TUT01) — hints **validés** ; reste déclencheurs + copy définitive.
-- [ ] **AUDIO-ASSETS01 — Sourcing des assets sonores (info)** (S, **P2**) — **mix IA + libres de droit** décidé ; reste style sonore + volume. Prépare AUDIO01.
-- [ ] **AUDIO01 — Système audio (SFX + musique)** (L, **P2**, = U05) — dépend AUDIO-ASSETS01.
-- [ ] **DROP-FIX01 — Réaligner les tables de drop (ressources thématiques, solution B)** (S/M, **P2**) — créer `hare_pelt`/`boar_tusk`/`fox_pelt`/`beast_hide`, corriger Hare/Boar/Fox/Thunderhoof, skill drop pour Hare+Fox, leur donner un usage (recettes — lien LEAT01/COOK01). Recoupe QA01. *(dépend d'un usage des ressources)*
-- [ ] **META-ACHIEVE02 — Écran de succès + élargir le pool** (S, **P2**) — panneau de consultation (ACH01 = 8 succès, aucun écran) + nouveaux succès **à définir**.
-- [ ] **META-HISTORY01 — Historique & stats de runs** (M, **P3**, = HIS01/HIS02).
-- [ ] **CODEX-LORE01 — Codex de lore** (S, **P3**, = CODEX02) — dépend d'écrire le lore.
-- [ ] **HS-EQUIP01 — Icônes/assets pour les objets équipés** (S, **P2**) — remplacer le texte par une icône/asset par pièce. **Dépend d'un set d'icônes** (CONT05).
-- [ ] **HS-STATPERK01 — Paliers de stats → perks/skills passifs (« The Gamer »)** (M, **P3**) — table de paliers + effets data-driven. **Design à spécifier.**
+- [ ] **BAL-AUDIT01 — Passe d'équilibrage globale** · M · P2 · 🟡 · v1.3 — **✅ DÉCIDÉ** : XP **×1.32** · XP **×5** · gold **×8**. À trancher : drops/prix/tokens/vigueur. Via **BAL-CSV01**.
+- [ ] **BAL-CSV01 — Données d'équilibrage pilotées par CSV (live-linked)** · M · P2 · 🟡 · v1.3 — centraliser les constantes tunables dans `public/balance.csv` (**fetch runtime** reco, fallback défaut). Constantes : `xp_curve_mult=1.32`, `reward_xp_mult=5`, `reward_gold_mult=8`, `monster_level_stat_mult=1.25`, `run_scaling=1.03`, `monster_level_reward_mult=1.25`(à valider), `monster_level_drop_bonus`(à valider), + vigueur/zones/prix/drops. **Archi à valider.**
+- [ ] **STA01b — Finaliser la Fatigue** · S/M · P3 · 🟡 · v1.3 — retirer le debuff dormant CRF01 + maj ~22 tests ; +40 Fatigue sur échec ; craft-fail ×4 sous 30 vigueur.
+- [ ] **TIME-DISPLAY01 — Refonte de l'affichage de l'heure** · S · P3 · 🟡 · v1.3 — choisir une version **A→E** (24h / 12h / +période / cadran SVG / arc jour-nuit). **Décision requise.**
+- [ ] **SETTINGS-FULL01 — Compléter l'écran Options** · S · P3 · 🟡 · v1.3 — volume (dépend AUDIO01) + vitesse texte + reduced-motion + exposer export/import save. Animations déjà fonctionnel.
+- [ ] **A11Y01 — Accessibilité de base** · M · P3 · 🟡 · v1.3 — `prefers-reduced-motion` + focus + ARIA + contrastes (périmètre à border). Recoupe UX04.
+- [ ] **ONBOARD01 — Onboarding premier run** · M · P3 · 🟡 · v1.3 — hints **validés** ; reste déclencheurs + copy définitive.
+- [ ] **AUDIO-ASSETS01 — Sourcing des assets sonores (info)** · S · P3 · 🟡 · v1.3 — **mix IA + libres de droit** décidé ; reste style sonore + volume. Prépare AUDIO01.
+- [ ] **AUDIO01 — Système audio (SFX + musique)** · L · P3 · 🟡 · v1.3 — dépend AUDIO-ASSETS01.
+- [ ] **DROP-FIX01 — Réaligner les tables de drop (ressources thématiques, solution B)** · S/M · P3 · 🟡 · v1.3 — créer `hare_pelt`/`boar_tusk`/`fox_pelt`/`beast_hide`, corriger Hare/Boar/Fox/Thunderhoof, skill drop pour Hare+Fox, leur donner un usage (recettes — lien LEAT01/COOK01). Recoupe QA01. *(dépend d'un usage des ressources)*
+- [ ] **META-ACHIEVE02 — Écran de succès + élargir le pool** · S · P3 · 🟡 · v1.3 — panneau de consultation (ACH01 = 8 succès, aucun écran) + nouveaux succès **à définir**.
+- [ ] **META-HISTORY01 — Historique & stats de runs** · M · P5 · 🟡 · v1.3 — .
+- [ ] **CODEX-LORE01 — Codex de lore** · S · P5 · 🟡 · v1.3 — dépend d'écrire le lore.
+- [ ] **HS-EQUIP01 — Icônes/assets pour les objets équipés** · S · P3 · 🟡 · v1.3 — remplacer le texte par une icône/asset par pièce. **Dépend d'un set d'icônes** (CONT05).
+- [ ] **HS-STATPERK01 — Paliers de stats → perks/skills passifs (« The Gamer »)** · M · P5 · 🟡 · v1.3 — table de paliers + effets data-driven. **Design à spécifier.**
 
 ### → v1.2 — Académie (suite) & Refonte des quêtes v2 (2026-06-08)
 
-- [ ] **ACA06 — Acheter des skills déjà montés (Lv2-5) à prix premium** (M, **P2**) — *décision 2026-06-08.* À l'Académie, en plus du skill Lv1, proposer le **même skill déjà au niveau 2 à 5**, à un **prix dissuasif = 3 à 5× le prix de revente** de ce niveau (`skillSellPrice(id, lvl)` ; ex. ×3 au Lv2 → ×5 au Lv5) pour **inciter à le monter soi-même** plutôt qu'à l'acheter. **DÉCIDÉ : pas de « payer pour monter » un skill possédé.** Catalogue élargi = plus tard. À cadrer : UI (sélecteur de niveau par skill), affichage des prix par niveau.
+- [ ] **ACA06 — Acheter des skills déjà montés (Lv2-5) à prix premium** · M · P3 · 🟡 · v1.3 — *décision 2026-06-08.* À l'Académie, en plus du skill Lv1, proposer le **même skill déjà au niveau 2 à 5**, à un **prix dissuasif = 3 à 5× le prix de revente** de ce niveau (`skillSellPrice(id, lvl)` ; ex. ×3 au Lv2 → ×5 au Lv5) pour **inciter à le monter soi-même** plutôt qu'à l'acheter. **DÉCIDÉ : pas de « payer pour monter » un skill possédé.** Catalogue élargi = plus tard. À cadrer : UI (sélecteur de niveau par skill), affichage des prix par niveau.
 > ↗️ **QSV2-LOCALITY01** + **QSV2-TURNIN01** remontés en **v1.1** (faisables maintenant, remplacent GLD03).
-- [ ] **QSV2-TIMED01 — Quêtes chronométrées (deadline en jours, trajet inclus)** (M, **P2**) — *TC 2026-06-08.* Ex. « tuer 5 loups en < 4 jours », le **temps de trajet comptant**. Données : `quest.deadlineDays` ; on stocke le **jour d'acceptation** ; échec si non complétée à temps (la quête tombe / se réinitialise). À cadrer : UI compte à rebours, comportement à l'échec (perte, re-disponible ?), interaction `dayCount`.
-- [ ] **QSV2-MULTIMON01 — Objectifs multi-monstres** (S/M, **P2**) — *TC 2026-06-08.* Ex. « 3 Hares **+** 2 Boars ». Le modèle `objectives:[]` + `isQuestComplete().every()` **le supporte déjà** ; reste à **créer du contenu** multi-objectifs + s'assurer que l'UI (QuestCard/Overlay) affiche **plusieurs barres** proprement.
-- [ ] **QSV2-NPCONLY01 — Quêtes maître & église : prise + rendu uniquement au NPC** (S, **P2**) — *TC 2026-06-08.* Les quêtes de **maître** (ACA04) et **d'église** (CHQ01, rotation) **ne doivent pas apparaître sur les quest boards** ; prise **et** rendu **uniquement** chez leur NPC. **✅ Déjà largement le cas** (AcademyPanel / ChurchPanel ; le board lit `QUESTS`, pas church/master) → ticket de **vérification + verrouillage** (s'assurer qu'aucune n'apparaît/se rend sur un board).
+- [ ] **QSV2-TIMED01 — Quêtes chronométrées (deadline en jours, trajet inclus)** · M · P3 · 🟡 · v1.3 — *TC 2026-06-08.* Ex. « tuer 5 loups en < 4 jours », le **temps de trajet comptant**. Données : `quest.deadlineDays` ; on stocke le **jour d'acceptation** ; échec si non complétée à temps (la quête tombe / se réinitialise). À cadrer : UI compte à rebours, comportement à l'échec (perte, re-disponible ?), interaction `dayCount`.
+- [ ] **QSV2-MULTIMON01 — Objectifs multi-monstres** · S/M · P3 · 🟡 · v1.3 — *TC 2026-06-08.* Ex. « 3 Hares **+** 2 Boars ». Le modèle `objectives:[]` + `isQuestComplete().every()` **le supporte déjà** ; reste à **créer du contenu** multi-objectifs + s'assurer que l'UI (QuestCard/Overlay) affiche **plusieurs barres** proprement.
+- [ ] **QSV2-NPCONLY01 — Quêtes maître & église : prise + rendu uniquement au NPC** · S · P3 · 🟡 · v1.3 — *TC 2026-06-08.* Les quêtes de **maître** (ACA04) et **d'église** (CHQ01, rotation) **ne doivent pas apparaître sur les quest boards** ; prise **et** rendu **uniquement** chez leur NPC. **✅ Déjà largement le cas** (AcademyPanel / ChurchPanel ; le board lit `QUESTS`, pas church/master) → ticket de **vérification + verrouillage** (s'assurer qu'aucune n'apparaît/se rend sur un board).
 
 ### → v2.1_idle — Idle (fortement repoussé — pas de plus-value pour le moment)
 
-- [ ] **IDLE-AUDIT01 — Cohérence de l'idle** (S, **P3**) — *repoussé.* zones interdites / arrêt au changement d'écran / seuil HP / vigueur / spots verrouillés + tests.
-- [ ] **UX-NUMFMT01 — Formatage des grands nombres** (XS, **P3**) — *prio abaissée (surtout utile pour l'idle).* `1.2k`/`3.4M`, helper `formatNumber()`.
+- [ ] **IDLE-AUDIT01 — Cohérence de l'idle** · S · P5 · 🟡 · v2 — *repoussé.* zones interdites / arrêt au changement d'écran / seuil HP / vigueur / spots verrouillés + tests.
+- [ ] **UX-NUMFMT01 — Formatage des grands nombres** · XS · P5 · 🟡 · v2 — *prio abaissée (surtout utile pour l'idle).* `1.2k`/`3.4M`, helper `formatNumber()`.
 
 > 💡 **Top « avant alpha » (mon avis)** : v1.1 → `PERF-IMG01` (avant push) + `DX-CI01` + finir l'art (`CONT01`/`UI08`/`C03`). v1.2 → `SAVE-AUDIT01` · `FIX-QUESTSNAP01` · `BAL-AUDIT01` · `CMB-ESCAPE01`.
 
@@ -513,9 +582,9 @@ _(aucune dépendance externe bloquante)_
 >
 > Idle interdit (D07 ✅). Cette section **porte en v1.4** les tickets donjon existants : **D01** (flux, v1.2), **D03** (carte, v1.2), **D06** (respawn, v1.2), **DUNREV01** (umbrella, v1.3).
 
-- [ ] **D01-SPEC — Spécifier le flux de donjon (DESIGN.md)** (M · READY) — formaliser la chaîne 9 salles ci-dessus en data : `dungeon.rooms[]` (type + index), **PV/loot par type de salle**, contenu du coffre (salle 5), effet de repos (salles 3/8), boss (salle 9 — loot exclusif) ; règle : salle N+1 débloquée à la résolution de N. **Débloque D01/D03/D06/DUNREV01.**
-- [ ] **DUN-MODEL01 — Modèle de données « donjon à salles »** (M · READY) — `dungeon = { mapId, rooms: [{ index, type:'combat'|'rest'|'treasure'|'boss', cleared }], currentRoom }` + migration save ; remplace le donjon « one-shot » actuel. Dépend D01-SPEC.
-- [ ] **DUN-ART01 — Carte graphique du donjon (9 salles)** (M · GROOM) — rendu **graphique** de la chaîne de salles (≠ simples formes géométriques) : salle courante en évidence, salles franchies / à venir, icône par type. Affine **D03**. **À designer — cf. reco outil ci-dessous.** *(Asset de fond de donjon + icônes de salle à produire ; gitignoré comme le reste de `public/` jusqu'à push.)*
+- [ ] **D01-SPEC — Spécifier le flux de donjon (DESIGN.md)** · M · P3 · 🟢 · v1.4 — formaliser la chaîne 9 salles ci-dessus en data : `dungeon.rooms[]` (type + index), **PV/loot par type de salle**, contenu du coffre (salle 5), effet de repos (salles 3/8), boss (salle 9 — loot exclusif) ; règle : salle N+1 débloquée à la résolution de N. **Débloque D01/D03/D06/DUNREV01.**
+- [ ] **DUN-MODEL01 — Modèle de données « donjon à salles »** · M · P3 · 🟢 · v1.4 — `dungeon = { mapId, rooms: [{ index, type:'combat'|'rest'|'treasure'|'boss', cleared }], currentRoom }` + migration save ; remplace le donjon « one-shot » actuel. Dépend D01-SPEC.
+- [ ] **DUN-ART01 — Carte graphique du donjon (9 salles)** · M · P3 · 🟡 · v1.4 — rendu **graphique** de la chaîne de salles (≠ simples formes géométriques) : salle courante en évidence, salles franchies / à venir, icône par type. Affine **D03**. **À designer — cf. reco outil ci-dessous.** *(Asset de fond de donjon + icônes de salle à produire ; gitignoré comme le reste de `public/` jusqu'à push.)*
 
 ---
 
@@ -547,196 +616,207 @@ _(aucune dépendance externe bloquante)_
 **Onboarding / progression Map 1**
 - [x] **BLDUNL01 — Modèle `building.unlock`** (S · READY) — **fait 2026-06-13 (B4).** Modèle data-driven `data/buildingUnlocks.js` (`BUILDING_UNLOCKS` : `default`/`trigger`/`lockedReason` par bâtiment) + helper pur `isBuildingUnlocked(id, locks)`. État runtime dans `world.buildingLocks` (ids verrouillés). Store (`worldSlice`) : sélecteur `isBuildingUnlocked(id)` + actions `lockBuilding`/`unlockBuilding`. Tests `bldunl01.test.jsx`.
 - [x] **BLDUNL05 — Feedback bâtiment verrouillé** (S · READY) — **fait 2026-06-13 (B4).** `VilBuilding` rend l'état verrouillé (grisé + 🔒 + `title`=raison) ; `openBuilding` refuse l'entrée + toast la raison (prime sur l'horaire BLD01). Testé (rendu `.bld-locked` + refus + toast). *Cohérence fog START03 : à raccorder en B6.*
-- [~] **BLDUNL02 — Déblocage progressif des bâtiments** (M) — ⚠️ **FLAG / différé.** Le **modèle + plumbing + feedback** sont livrés (BLDUNL01/05), mais les **triggers réels** (dialogue du **doyen** au centre ; **quête du maître** par bâtiment) dépendent de **MQ-CHAIN01** (B5) et du **start Greywatch + doyen** (START01/B6), non construits. Capturé en data (`trigger: 'elder_dialogue' | 'master_quest'`) mais **non appliqué** (rien de verrouillé au démarrage → POC jouable). **Reste** : décider quels bâtiments démarrent verrouillés + appeler `unlockBuilding(id)` au bon trigger. ⟶ MQ-CHAIN01, START01.
-- [~] **BLDUNL03 — Académie via quête** (S) — ⚠️ **FLAG / différé.** Câblage prêt (`trigger: 'arrival_city'`, `unlockBuilding('academy')`) mais non activé (académie non verrouillée au démarrage). À activer quand la décision « académie verrouillée jusqu'à l'arrivée en ville » sera groomée (+ effet d'arrivée). ⟶ BLDUNL02.
-- [~] **BLDUNL04 — Guilde via quête** (S) — ⚠️ **FLAG / différé.** Idem BLDUNL03 pour la Guilde (`unlockBuilding('guild')` à l'arrivée en ville). ⟶ GLD01, BLDUNL02.
-- [ ] **MQ-CHAIN01 — Chaîne de quêtes Map 1** (L · READY) — spine unifié zones+bâtiments (détail ci-dessous) ; **résout START04**. Map 2 (MQ07-10) **gelé**.
-- [ ] **MQ-ELITETURN01 — Type de quête « élite » (remise)** (M · READY) — *décision 2026-06-14.* C'est le **type de quête du spine** (MQ02/04/06, donneur **Doyen**). Objectif : 3× item rare de l'élite **OU** son arme ; récompense : **arme signature de l'élite** ; si l'arme a déjà été rendue → **même arme +1 rareté**. **Distinct des `nc_*_elite`** (qui restent dispo mais ne donnent jamais l'arme d'élite — leur récompense « autre chose » est à définir plus tard, garder le placeholder actuel). **À créer (B5a)** : 3 armes signature (Oakheart/Thunderhoof/Graven ; Fenrot = Map 2 gelé) + échelle de rareté pour le +1 (défaut proposé : rare→épique→légendaire) + flag mémoire « arme rendue » par élite. ⚠️ **Reclasser `nc_fenrot_elite`** hors Map 1 (Fenrot réservé Map 2).
+- [~] **BLDUNL02 — Déblocage progressif des bâtiments** (M · **P1**) — ⚠️ **FLAG / différé.** Le **modèle + plumbing + feedback** sont livrés (BLDUNL01/05), mais les **triggers réels** (dialogue du **doyen** au centre ; **quête du maître** par bâtiment) dépendent de **MQ-CHAIN01** (B5) et du **start Greywatch + doyen** (START01/B6), non construits. Capturé en data (`trigger: 'elder_dialogue' | 'master_quest'`) mais **non appliqué** (rien de verrouillé au démarrage → POC jouable). **Reste** : décider quels bâtiments démarrent verrouillés + appeler `unlockBuilding(id)` au bon trigger. ⟶ MQ-CHAIN01, START01.
+- [~] **BLDUNL03 — Académie via quête** (S · **P1**) — ⚠️ **FLAG / différé.** Câblage prêt (`trigger: 'arrival_city'`, `unlockBuilding('academy')`) mais non activé (académie non verrouillée au démarrage). À activer quand la décision « académie verrouillée jusqu'à l'arrivée en ville » sera groomée (+ effet d'arrivée). ⟶ BLDUNL02.
+- [~] **BLDUNL04 — Guilde via quête** (S · **P1**) — ⚠️ **FLAG / différé.** Idem BLDUNL03 pour la Guilde (`unlockBuilding('guild')` à l'arrivée en ville). ⟶ GLD01, BLDUNL02.
+- [x] **MQ-CHAIN01 — Chaîne de quêtes Map 1** (L) — **fait 2026-06-14 (B5a+B5b).** **Data** : `data/mainQuests.js` (MQ01-06, Doyens Elder Moira / Warden Halric*(nouveau)* / Captain Vaern ; `requires` chaînage + `unlocks` localités/spots + `mqStep` + `nextMainQuest`), enregistré dans `getQuestById`/`QUEST_NPC_REGISTRY`. **Flux** : sélecteur `isMainQuestAvailable(id)` (gate par prérequis) ; à la complétion d'un palier → `unlocks` appliqués dans `world.unlockedNodes` ; ONB02 câblé (`MQ_TUTORIAL_HINTS` + `triggerHint` à l'acceptation). Tests `mainQuests.test.js` + `mqchain.test.js`. **résout START04** (les conditions = le spine). ⚠️ **Reste pour B6** : surfacer les MQ chez le Doyen (UI) + faire consommer `world.unlockedNodes` par le gating/fog (START02/03). **Différé** : MQ03/MQ05 objectifs simplifiés (seuil de niveau, dépendaient de TIER01) ; quêtes de bâtiment BQ-* (avec BLDUNL02) ; Map 2 (MQ07-10) gelé.
+- [x] **MQ-ELITETURN01 — Type de quête « élite » (remise)** (M) — *décision 2026-06-14, **fait B5a+B5b**.* Objectif `elite_turnin` (3× item rare de l'élite **OU** son arme) + résolveur : **consomme** les items rendus (ou retire l'arme rendue) et **escalade la rareté** de l'arme signature (`meta.eliteTurnins` → rare→epic→legendary…). 3 armes signature créées (Oakheart/Thunderhoof/Graven). `nc_fenrot_elite` reclassé **Map 2** (`mapTier:2` + filtre `getBoardQuests`). **Distinct des `nc_*_elite`** (placeholder de reward conservé). ⚠️ **Follow-up** : le mécanisme d'escalade est prêt mais MQ02/04/06 sont **one-time** (chaîne) → une quête de remise **répétable** (pour réellement farmer le +1 rareté) reste à créer.
 
 > **MQ-CHAIN01 — détail (Map 1)** — *Greywatch* : `MQ01` L'éveil (Doyen → Auberge + Ashenvale Forest, kit+tuto) · `BQ-GW1` Le feu de la forge (Forgeron, 5× minerai → Forge, ressources monstres+tuto) · `BQ-GW2` Remèdes des bois (Alchimiste, 5× herbe → Alchimie) · *(Marchand ouvert d'office)* · `MQ02` La route de Millhaven (Doyen, 3× rare **Old Oakheart** OU arme → **Millhaven**, arme d'Oakheart ou +1 rareté). *Millhaven* : `MQ03` Nouveaux horizons (2× équip. **T1/T2 Ashenvale** → **Barrow Hills + Crumbled Ruins**, or + carte d'aventurier) · `BQ-MH1` Cuir et lanières (Cordonnier, 5× cuir → **Cordonnier**) · `BQ-MH2` Éclats et gemmes (Bijoutier, 5× gemme → **Bijoutier**) · `MQ04` Les portes d'Ironhaven (3× rare **Thunderhoof** OU arme → **Ironhaven**). *Ironhaven* : `MQ05` La cité de fer (2× équip. T1/T2 → marché ville) · `BQ-IH1` L'épreuve de l'Académie (→ **Académie**, tome de skill) · `BQ-IH2` La Guilde (→ **Guilde**, rang+tokens) · `MQ06` Au-delà du marais (3× rare **Graven Sentinel** OU arme → **Thornmarsh**). *Map 2 (gelé)* : `MQ07` Veteran's Playground · `MQ08` Final Outpost · `MQ09` Draconic + Vampire Castle · `MQ10` Demon Lord (élite réservé : Fenrot Devourer).
 
 - [x] **ONB01 — Tutoriel contextuel** (M · READY) — **fait 2026-06-13 (B7).** Framework générique : registre `data/hints.js` (copie centralisée), action `triggerHint(id)` (one-shot via `meta.seenHints`, dédupliquée, **désactivable** par `meta.settings.tutorials` + toggle dans `SettingsModal`). Câblé aux 1ères occurrences : **idle_unlock** (recordKill au seuil — l'ancien hint TUT02 hardcodé est désormais routé par le framework), **first_quest** (startQuest), **first_levelup** (gainExp), **first_craft** (incrementCraftCount), **transmigration** (heroDeath). Tests `onb01.test.js`. *(absorbe l'ancien `TUT01` « Premier run guidé ».)*
-- [x] **ONB02 — Chaîne MQ = fil tuto** (M · READY) — **stub posé + ⚠️ FLAG (B7, 2026-06-13).** La chaîne MQ (**MQ-CHAIN01**, batch B5) n'existe pas encore : impossible de câbler les tips aux étapes. **Livré** : structure de câblage `MQ_TUTORIAL_HINTS` + `getMqTutorialHint(stepId)` dans `data/hints.js` (renvoie `null` tant que la map est vide → aucun déclenchement). **Reste à faire quand MQ-CHAIN01 sera livré** : remplir la map (étape → id de hint) et appeler `triggerHint(getMqTutorialHint(step))` à chaque avancée de quête principale. ⟶ **MQ-CHAIN01**.
+- [x] **ONB02 — Chaîne MQ = fil tuto** (M) — stub posé en B7, **câblé en B5b (2026-06-14)** : `MQ_TUTORIAL_HINTS` rempli (mq02/04/06 → `mq_elite_turnin`, mq03 → `mq_new_region`) + hints ajoutés dans `data/hints.js` ; `questsSlice.startQuest` déclenche `triggerHint(getMqTutorialHint(mqStep))` à l'acceptation d'un palier principal. Testé (`mqchain.test.js`).
 - [x] **ONB03 — Panneau d'aide / codex de règles** (S · READY) — **fait 2026-06-13 (B7).** Second onglet **« Rules »** dans le `CodexOverlay` (à côté de Bestiary), alimenté par `data/codexRules.js` : sections Stats, Vigor & Fatigue, Idle Mastery, Reputation & Ranks, Divinities, Transmigration. Tests dans `CodexOverlay.test.jsx`.
 
 ### v1.x — Systèmes
 
 **A — Skill drops physical/magic/passive** *(`SKL`→`SKD`)*
-- [ ] **SKD01 — Refactor `skillDropType`** (M · READY) — `active`→`physical_active`|`magic_active` (garder `passive`/`none`) ; maj `MONSTERS` + logique combat/héritage. ⟶ MON01.
-- [ ] **SKD02 — Rethème Thicket Hare → Fire Hare** (S · READY) — rename id + ASSET_PROMPTS.md + regen asset (lapin de feu).
-- [ ] **SKD03 — Skill `ember_burst`** (S · READY) — magic_active, drop Fire Hare ; 12 mana, CD 2, 1.0×INT feu + 20% Burn.
-- [ ] **SKD04 — Skill `fox_fire`** (S · READY) — magic_active, drop Russet Fox ; 18 mana, CD 3, 1.2×INT feu + 30% Burn.
-- [ ] **SKD05 — Passif `caustic_coat`** (S · READY) — Mire Slime ; retour acide 15% en mêlée + debuff Corroded (−DEF, stack 5).
-- [ ] **SKD06 — `bramble_slam`** (S · READY) — Oakheart (élite physical_active AoE) ; 16 mana, CD 4, 1.1×ATK cible / 0.6× autres, 30% Thorned DoT.
-- [ ] **SKD07 — Mapping des 16 skill drops** (S · READY) — table physique/magique/passif/élite par zone.
-- [ ] **SKD-G1 — Stats des skills d'élite** (M · GROOM) — typage confirmé (Fenrot=magic, autres=physical) ; **définir stats complètes** `plague_maw`, `tomb_judgment`, `trample_charge`.
-- [ ] **SKD-G2 — Doc design physical/magic** (S · GROOM) — formaliser physical (renfort corps / multi-coups / infusion / charge / contre) vs magic (élémentaire / âme-ombre / illusion / bouclier).
-- [ ] **SKD-E1 — Revue de `skills.js` (27 skills)** (L · BLOCKED) — ⛔ **bloqué tant que `skills.js` n'est pas transmis** ; à découper par catégorie ensuite.
+- [ ] **SKD01 — Refactor `skillDropType`** · M · P3 · 🟢 · v1.3 — `active`→`physical_active`|`magic_active` (garder `passive`/`none`) ; maj `MONSTERS` + logique combat/héritage. ⟶ MON01.
+- [ ] **SKD02 — Rethème Thicket Hare → Fire Hare** · S · P3 · 🟢 · v1.3 — rename id + ASSET_PROMPTS.md + regen asset (lapin de feu).
+- [ ] **SKD03 — Skill `ember_burst`** · S · P3 · 🟢 · v1.3 — magic_active, drop Fire Hare ; 12 mana, CD 2, 1.0×INT feu + 20% Burn.
+- [ ] **SKD04 — Skill `fox_fire`** · S · P3 · 🟢 · v1.3 — magic_active, drop Russet Fox ; 18 mana, CD 3, 1.2×INT feu + 30% Burn.
+- [ ] **SKD05 — Passif `caustic_coat`** · S · P3 · 🟢 · v1.3 — Mire Slime ; retour acide 15% en mêlée + debuff Corroded (−DEF, stack 5).
+- [ ] **SKD06 — `bramble_slam`** · S · P3 · 🟢 · v1.3 — Oakheart (élite physical_active AoE) ; 16 mana, CD 4, 1.1×ATK cible / 0.6× autres, 30% Thorned DoT.
+- [ ] **SKD07 — Mapping des 16 skill drops** · S · P3 · 🟢 · v1.3 — table physique/magique/passif/élite par zone.
+- [ ] **SKD-G1 — Stats des skills d'élite** · M · P3 · 🟡 · v1.3 — typage confirmé (Fenrot=magic, autres=physical) ; **définir stats complètes** `plague_maw`, `tomb_judgment`, `trample_charge`.
+- [ ] **SKD-G2 — Doc design physical/magic** · S · P3 · 🟡 · v1.3 — formaliser physical (renfort corps / multi-coups / infusion / charge / contre) vs magic (élémentaire / âme-ombre / illusion / bouclier).
+- [ ] **SKD-E1 — Revue de `skills.js` (27 skills)** · L · P3 · ⛔ · v1.3 — ⛔ **bloqué tant que `skills.js` n'est pas transmis** ; à découper par catégorie ensuite.
 
 **B — Ressources droppées & tiers**
-- [ ] **RES01 — Modèle de données ressource** (S · READY) — `{id, name, rarityTier, dropRate, sources[], uses[]}`.
-- [ ] **RES02 — Drops commun + rare par monstre** (M · READY) — 1 commune (collecte) + 1 rare par monstre (~32 ressources) ; **taux rares = tier-based** (cf. RES-TIER01).
-- [ ] **RES03 — Câblage ressources → recettes** (M · READY) — inputs alchimie / forge / cuir / bijou.
-- [ ] **RES04 — Ressources « junk » vendeur** (XS · READY) — `rotting_hide`, `grave_stone`, `goblin_trinket` : valeur de revente seule.
-- [ ] **TIER01 — Champ `tier` (T1/T2/T3)** (S · READY) — classer les 3 monstres normaux de chaque zone par puissance.
-- [ ] **RES-TIER01 — Item rare de craft tier-based** (S · READY) — input de recettes, **distinct de l'équipement** : T2 @15%, T3 @7.5% (T1 aucun).
-- [ ] **RES-G1 — Bande commune + scaling** (S · GROOM) — confirmer 40-65% commun + scaling éventuel par zone/run_count (rares déjà tranchés).
-- [ ] **RES-G2 — Audit recettes existantes** (S · GROOM) — cohérence ids (ex. CRF06 antidote ↔ `venom_gland`). ⟶ STA03, recipes.
+- [ ] **RES01 — Modèle de données ressource** · S · P3 · 🟢 · v1.3 — `{id, name, rarityTier, dropRate, sources[], uses[]}`.
+- [ ] **RES02 — Drops commun + rare par monstre** · M · P3 · 🟢 · v1.3 — 1 commune (collecte) + 1 rare par monstre (~32 ressources) ; **taux rares = tier-based** (cf. RES-TIER01).
+- [ ] **RES03 — Câblage ressources → recettes** · M · P3 · 🟢 · v1.3 — inputs alchimie / forge / cuir / bijou.
+- [ ] **RES04 — Ressources « junk » vendeur** · XS · P3 · 🟢 · v1.3 — `rotting_hide`, `grave_stone`, `goblin_trinket` : valeur de revente seule.
+- [ ] **TIER01 — Champ `tier` (T1/T2/T3)** · S · P3 · 🟢 · v1.3 — classer les 3 monstres normaux de chaque zone par puissance.
+- [ ] **RES-TIER01 — Item rare de craft tier-based** · S · P3 · 🟢 · v1.3 — input de recettes, **distinct de l'équipement** : T2 @15%, T3 @7.5% (T1 aucun).
+- [ ] **RES-G1 — Bande commune + scaling** · S · P3 · 🟡 · v1.3 — confirmer 40-65% commun + scaling éventuel par zone/run_count (rares déjà tranchés).
+- [ ] **RES-G2 — Audit recettes existantes** · S · P3 · 🟡 · v1.3 — cohérence ids (ex. CRF06 antidote ↔ `venom_gland`). ⟶ STA03, recipes.
 
 **C — Quêtes de village (adjacence)** *(pool distinct du spine MQ-CHAIN01)*
-- [ ] **VQ01 — Modèle de données quête** (S · READY) — `type` kill/collect/visit, `target`, `count`, `giver`, `rewards`, `sourceZone`, `difficultyTier`.
-- [ ] **VQ02 — Moteur d'adjacence** (M · READY) — pool village = union des monstres/ressources des zones adjacentes.
-- [ ] **VQ03 — Pool Greywatch** (S · READY) — Ashenvale, tier facile (8 quêtes).
-- [ ] **VQ04 — Pool Millhaven** (S · READY) — Ashenvale (difficile) + Barrow Hills + Crumbled Ruins.
-- [ ] **VQ05 — Pool Ironhaven** (S · READY) — Crumbled Ruins (difficile) + Thornmarsh + Goblin Cave.
-- [ ] **VQ06 — Rotation du board** (S · READY) — 3 actives, refresh /3 jours (seed `dayCount`). ⟶ GLD02.
-- [ ] **VQ07 — Câblage givers** (S · READY) — Marta / Elder / Blacksmith / Priest.
-- [ ] **VQ-G1 — Tokens en village ?** (XS · GROOM) — récompenser des tokens en village, ou réserver guilde/église ? ⟶ REP01.
-- [ ] **VQ-G2 — Tracking collect** (XS · GROOM) — inventaire-à-l'acceptation vs track-après-acceptation.
-- [ ] **VQ-G3 — Quêtes d'élite** (XS · GROOM) — level-gate ou optionnel dans le pool ?
-- [ ] **VQ-G4 — Nb de quêtes actives** (XS · GROOM) — 3 partout vs 4 pour Millhaven.
-- [ ] **VQ-G5 — Ironhaven inn vs guilde** (XS · GROOM) — board d'inn séparé de la Guilde (GLD01) ? pool endgame Final Outpost ?
+- [ ] **VQ01 — Modèle de données quête** · S · P2 · 🟢 · v1.3 — `type` kill/collect/visit, `target`, `count`, `giver`, `rewards`, `sourceZone`, `difficultyTier`.
+- [ ] **VQ02 — Moteur d'adjacence** · M · P2 · 🟢 · v1.3 — pool village = union des monstres/ressources des zones adjacentes.
+- [ ] **VQ03 — Pool Greywatch** · S · P2 · 🟢 · v1.3 — Ashenvale, tier facile (8 quêtes).
+- [ ] **VQ04 — Pool Millhaven** · S · P2 · 🟢 · v1.3 — Ashenvale (difficile) + Barrow Hills + Crumbled Ruins.
+- [ ] **VQ05 — Pool Ironhaven** · S · P2 · 🟢 · v1.3 — Crumbled Ruins (difficile) + Thornmarsh + Goblin Cave.
+- [ ] **VQ06 — Rotation du board** · S · P3 · 🟢 · v1.3 — 3 actives, refresh /3 jours (seed `dayCount`). ⟶ GLD02.
+- [ ] **VQ07 — Câblage givers** · S · P2 · 🟢 · v1.3 — Marta / Elder / Blacksmith / Priest.
+- [ ] **VQ-G1 — Tokens en village ?** · XS · P3 · 🟡 · v1.3 — récompenser des tokens en village, ou réserver guilde/église ? ⟶ REP01.
+- [ ] **VQ-G2 — Tracking collect** · XS · P3 · 🟡 · v1.3 — inventaire-à-l'acceptation vs track-après-acceptation.
+- [ ] **VQ-G3 — Quêtes d'élite** · XS · P3 · 🟡 · v1.3 — level-gate ou optionnel dans le pool ?
+- [ ] **VQ-G4 — Nb de quêtes actives** · XS · P3 · 🟡 · v1.3 — 3 partout vs 4 pour Millhaven.
+- [ ] **VQ-G5 — Ironhaven inn vs guilde** · XS · P3 · 🟡 · v1.3 — board d'inn séparé de la Guilde (GLD01) ? pool endgame Final Outpost ?
+- [ ] **QSV2-ADJ-AUDIT01 — Audit d'adjacence des quêtes + re-domiciliation** · M · P2 · 🟢 · v1.3 — *audit 2026-06-19 (croisement `worldGraph.EDGES` × `MONSTERS_BY_SPOT` × `resourceDrops` × `giverNpc.location`).* **Constat** : la **majorité des quêtes secondaires** (hors spine MQ) ciblent des monstres/drops de **zones NON adjacentes** à leur lieu émetteur (`getQuestIssuer`) — séquelle de quêtes *legacy* rattachées à 3-4 donneurs fourre-tout, antérieures au node-locking (B6). Ce ticket **documente les écarts** et fixe la **re-domiciliation cible** ; il sert de **spec data** à VQ02 (moteur) + VQ03/04/05 (pools par localité) + VQ07 (givers).
+  - **Adjacence de référence (spots voisins par localité, Map 1)** : **Greywatch** = {`ashenvale_forest` 1-8}. **Millhaven** = {`ashenvale_forest` 1-8, `crumbled_ruins` 12-22, `thornmarsh` 20-30}. **Ironhaven** = {`thornmarsh` 20-30, `wildmere_hills` 6-14, `crypt`(donjon)}.
+  - **Règle posée** : une quête **non-spine** ne doit cibler (kill / collect / visit / elite_turnin) que des monstres ou drops d'un **spot adjacent à son émetteur**. Le **spine MQ** est exempté (il route vers l'avant via `unlocks`), mais doit éviter de surfacer des cibles **Map 2**.
+  - **Violations — Greywatch (émetteur greywatch_elder)** : `bog_purge` (mire_slime → thornmarsh), `ruins_cleanse` (ruin_specter+hollow_knight → crumbled_ruins), `nc_scout_marsh` (visit thornmarsh), `nc_explore_hills` (visit wildmere + **unlock Grimspire** depuis le village de départ !), `nc_fenrot_elite` (fenrot → thornmarsh **+ `mapTier:2`**). *Seuls `mq01`/`mq02` sont conformes.*
+  - **Violations — Ironhaven (émetteurs sir_aldric / ironhaven_captain / merchant_pell)** : `first_blood` (wolves → forest, **doublon mq01**), `nc_thin_the_boars` (boar → forest), `nc_oakheart_elite` (oakheart → forest, **doublon mq02**), `nc_graven_elite` (graven → crumbled_ruins = zone Millhaven), `mq06` (graven → crumbled_ruins), `nc_deliver_ruins` (visit crumbled_ruins), **`storm_the_citadel` + `end_the_demon` = boss Map 2 surfacés à Ironhaven**. *Conformes : `clear_the_marsh`, `nc_thunderhoof_elite`, `silence_the_crypt`.*
+  - **Violations — Millhaven** : `mq04` (thunderhoof → wildmere, zone Ironhaven) — toléré (spine). **Aucune quête secondaire** (village creux → cible n°1 de VQ04).
+  - **Problème donneur** : `sir_aldric` est titré « Knight of Millhaven » mais `location: ironhaven`, et porte des quêtes d'intro ciblant la forêt → **relocaliser à Greywatch** (ou créer des givers dédiés VQ07). Besoin d'un émetteur Millhaven pour le pool secondaire (réutiliser `millhaven_elder`/Warden Halric).
+  - **Re-domiciliation cible (proposition à valider)** : `first_blood`/`proof_of_worth`/`nc_thin_the_boars`/`nc_oakheart_elite` → **Greywatch** ; `ruins_cleanse`/`nc_graven_elite`/`nc_deliver_ruins` → **Millhaven** ; `bog_purge`/`nc_scout_marsh` → **Millhaven ou Ironhaven** (thornmarsh adj. aux deux) ; `nc_explore_hills` (visit wildmere) → **Ironhaven** ; `clear_the_marsh`/`nc_thunderhoof_elite`/`silence_the_crypt` → **rester Ironhaven** ; `storm_the_citadel`/`end_the_demon`/`nc_fenrot_elite` → **Map 2 (Stonehaven)** / **gelés** tant que Map 2 fermée. **Doublons** `first_blood`↔`mq01` et `nc_oakheart_elite`↔`mq02` : trancher (retirer la legacy, ou la garder comme variante « répétable » sans l'arme signature).
+  - **Sous-correctif A — `CHQ-LOC01` (église globale, S)** : `church_caelum.location='any'` + `getActiveChurchQuests(dayCount)` **non filtré par lieu** → les **mêmes 2 quêtes** s'affichent partout. Le pool (forêt+ruins+marais) est calibré pour **Millhaven** : à Greywatch 5/6 sont hors adjacence (peut demander de purger le marais L20-30). **Fix** : filtrer le pool d'église par les spots adjacents à `currentLocation` avant la rotation (sous-ensemble du pool global).
+  - **Sous-correctif B — `MQ-TURNIN-SIG01` (turn-in non signature, S)** : `questObjectiveStatus(elite_turnin)` ne vérifie **que la possession** de `resourceId`, pas sa **provenance** ; or `earth_crystal` (Oakheart) tombe aussi de stone_golem/hill_slime, `ancient_bone` (Thunderhoof) de fenrot/graven/Crypt Keeper, `cursed_gem` (Graven, 15%) de Crypt Keeper (50%). → on « valide l'élite » en farmant ailleurs. **Fix** : soit une **ressource signature unique par élite** (RES02), soit conserver l'item rare mais lier la complétion à un **compteur de kill de l'élite** ; la branche *arme signature* reste l'alternative voulue.
+  - **AC** : (1) **test d'intégrité** — pour chaque quête `!isMainQuest`, toute cible kill/collect/visit pointe vers un monstre/drop d'un spot **adjacent** à `getQuestIssuer(quest)` (sinon le test liste l'écart) ; (2) aucune quête non gelée ne cible une zone **Map 2** ; (3) église : les quêtes proposées à un lieu ⊂ ses spots adjacents ; (4) doublons legacy/spine tranchés. **Lien** : VQ01-07 (ce ticket = leur contenu data), MQUI01, REP01, RES02, START04/MQ-CHAIN01.
 
 **D — Restructuration WorldMap** *(`MAP`→`WMAP`. Niveaux : Ashenvale 1-8 · Barrow Hills 6-14 · Crumbled Ruins 12-22 · Thornmarsh 20-30 · Veteran's 28-38 · Draconic 36-50)*
-- [ ] **WMAP01 — `worldGraph` v2** (M · READY) — 2 conteneurs (map1/map2), nodes typés (village/city/zone/safe/dungeon).
-- [ ] **WMAP02 — Nouvelles `levelRange` par zone** (S · READY) — appliquer le barème ci-dessus.
-- [ ] **WMAP04 — `EDGES` v2** (S · READY) — Map 1 : 8 edges noirs ; Map 2 : 5 edges orange + pont inter-map.
-- [ ] **WMAP05 — Re-mapping donjons** (S · READY) — Goblin Cave→Ironhaven ; Vampire Castle→Map 2 ; Demon Lord→Map 2.
-- [ ] **WMAP06 — Asset Map 1** (M · READY) — génération Nano Banana (prompt cartographie parchemin, réf `eldenmoor.png`) + chemins tracés.
-- [ ] **WMAP08 — Recalibrage `POS`** (S · READY) — coordonnées % des nodes sur les 2 illustrations.
-- [ ] **WMAP-G1 — Re-leveling Barrow Hills** (XS · GROOM) — stats inchangées, zone passe mid-game : valider le ressenti.
-- [ ] **WMAP-G2 — Bestiaire Thornmarsh Lv 20-30** (XS · GROOM) — vérifier la formule de scaling sur la nouvelle range.
-- [ ] **WMAP-G3 — Nommage assets** (XS · GROOM) — `eldenmoor_map1.png` / `draconic_frontier_map2.png` ?
+- [x] **WMAP01 — `worldGraph` v2** (M) — 2 conteneurs (`MAPS.map1`/`map2`), nodes typés (village/city/spot/dungeon), helpers `getMap`/`getNodeMap`, vue agrégée `ALL_NODES`/`ALL_EDGES`/`DUNGEON_NODES`. Rétro-compat : `NODES`/`EDGES`/`POS`/`areAdjacent`/`neighborsOf` === Map 1.
+- [x] **WMAP02 — Nouvelles `levelRange` par zone** (S) — barème appliqué : Ashenvale `[1,8]` · Barrow Hills (`wildmere_hills`) `[6,14]` · Crumbled Ruins `[12,22]` · Thornmarsh `[20,30]`. `mapId` posé sur ashenvale=`map1` / grimspire=`map2` / blighted_road=`bridge`.
+- [x] **WMAP04 — `EDGES` v2** (S) — Map 1 : 8 edges (inchangés) ; Map 2 : 5 edges (squelette) ; `MAP_BRIDGE` = `ironhaven→stonehaven`.
+- [x] **WMAP05 — Re-mapping donjons** (S) — `goblin_cave` (frozen) près d'Ironhaven sur Map 1 ; `vampire_castle` (frozen) + `demon_lord` sur Map 2.
+- [ ] **WMAP06 — Asset Map 1** · M · P3 · 🟢 · v1.3 — génération Nano Banana (prompt cartographie parchemin, réf `eldenmoor.png`) + chemins tracés.
+- [ ] **WMAP08 — Recalibrage `POS`** · S · P3 · 🟢 · v1.3 — coordonnées % des nodes sur les 2 illustrations.
+- [ ] **WMAP-G1 — Re-leveling Barrow Hills** · XS · P3 · 🟡 · v1.3 — stats inchangées, zone passe mid-game : valider le ressenti.
+- [ ] **WMAP-G2 — Bestiaire Thornmarsh Lv 20-30** · XS · P3 · 🟡 · v1.3 — vérifier la formule de scaling sur la nouvelle range.
+- [ ] **WMAP-G3 — Nommage assets** · XS · P3 · 🟡 · v1.3 — `eldenmoor_map1.png` / `draconic_frontier_map2.png` ?
 
 **G — Artisanat créatif & métiers étendus** *(gating 3 axes : Concentration STA03 · grade par métier · outils par métier · plafond par lieu)*
-- [ ] **CRAFT-GRADE01 — Grades de craft par métier** (M · READY) — progression par profession débloquant ses recettes. *(remplace l'idée de « niveau » global `CRAFT-LVL01`, jamais entré dans TASKS.md.)*
-- [ ] **CRAFT-TOOL01 — Outils de craft par métier** (M · READY) — équipables, +taux de succès **et** +chance de rareté, spécifiques à la profession.
-- [ ] **CRAFT-QUEST01 — Quêtes de craft** (S · READY) — récompensent des outils (et/ou Concentration).
-- [ ] **CRAFT-KNOWN01 — Recettes connues vs à découvrir** (S · READY) — connues = débloquées par grade/livre ; découvrables = assemblage libre.
-- [ ] **CRAFT-MULTI01 — Plusieurs recettes → même objet** (M · READY) — `itemId` cible + N combinaisons valides.
-- [ ] **CRAFT-RARITY01 — Recette → taux de rareté** (S · READY) — chaque combinaison porte sa table de qualité.
-- [ ] **CRAFT-LOC01 — Plafond de rareté par lieu** (M · READY) — forgeron **village** (Greywatch/Millhaven) → normal+rare ; **ville** (Ironhaven) → normal→épique ; sup. + recettes via quête. ⟶ PROG02, LEAT01. ⚠️ **conflit Z06** (cf. CRAFT-LOC-G1).
-- [ ] **BIJOU01 — Métier bijoutier** (M · READY) — 5ᵉ profession (bagues/amulettes), alimente les nouveaux slots ; pattern LEAT01.
-- [ ] **BIJOU-BLD01 — Bâtiment + NPC bijoutier** (M · READY) — BLD_POS / NPCS / BUILDING_INFO ; prérequis de BIJOU01.
-- [ ] **CRAFT-DISC01 — Craft expérimental (découverte)** (M · GROOM) — assembler librement des ingrédients pour tenter un objet hors recette connue.
-- [ ] **CRAFT-G2 — Mécanique de découverte** (S · GROOM) — slots libres ? indices ? échec = perte d'ingrédients ? lien CraftingMinigame/CRAFTMG01.
-- [ ] **CRAFT-G3 — Pondération qualité** (S · GROOM) — articulation rareté ↔ Concentration (STA03) ↔ outils ↔ score mini-jeu.
-- [ ] **CRAFT-LOC-G1 — Exception maître forgeron** (S · GROOM) — **Z06** (spawn village, recettes Rare/Epic) = exception au plafond village (CRAFT-LOC01) ? + axe grade. ⚠️ **conflit à arbitrer**.
+- [ ] **CRAFT-GRADE01 — Grades de craft par métier** · M · P3 · 🟢 · v1.3 — progression par profession débloquant ses recettes. *(remplace l'idée de « niveau » global `CRAFT-LVL01`, jamais entré dans TASKS.md.)*
+- [ ] **CRAFT-TOOL01 — Outils de craft par métier** · M · P3 · 🟢 · v1.3 — équipables, +taux de succès **et** +chance de rareté, spécifiques à la profession.
+- [ ] **CRAFT-QUEST01 — Quêtes de craft** · S · P3 · 🟢 · v1.3 — récompensent des outils (et/ou Concentration).
+- [ ] **CRAFT-KNOWN01 — Recettes connues vs à découvrir** · S · P3 · 🟢 · v1.3 — connues = débloquées par grade/livre ; découvrables = assemblage libre.
+- [ ] **CRAFT-MULTI01 — Plusieurs recettes → même objet** · M · P3 · 🟢 · v1.3 — `itemId` cible + N combinaisons valides.
+- [ ] **CRAFT-RARITY01 — Recette → taux de rareté** · S · P3 · 🟢 · v1.3 — chaque combinaison porte sa table de qualité.
+- [ ] **CRAFT-LOC01 — Plafond de rareté par lieu** · M · P3 · 🟢 · v1.3 — forgeron **village** (Greywatch/Millhaven) → normal+rare ; **ville** (Ironhaven) → normal→épique ; sup. + recettes via quête. ⟶ PROG02, LEAT01. ⚠️ **conflit Z06** (cf. CRAFT-LOC-G1).
+- [ ] **BIJOU01 — Métier bijoutier** · M · P3 · 🟢 · v1.3 — 5ᵉ profession (bagues/amulettes), alimente les nouveaux slots ; pattern LEAT01.
+- [ ] **BIJOU-BLD01 — Bâtiment + NPC bijoutier** · M · P3 · 🟢 · v1.3 — BLD_POS / NPCS / BUILDING_INFO ; prérequis de BIJOU01.
+- [ ] **CRAFT-DISC01 — Craft expérimental (découverte)** · M · P3 · 🟡 · v1.3 — assembler librement des ingrédients pour tenter un objet hors recette connue.
+- [ ] **CRAFT-G2 — Mécanique de découverte** · S · P3 · 🟡 · v1.3 — slots libres ? indices ? échec = perte d'ingrédients ? lien CraftingMinigame/CRAFTMG01.
+- [ ] **CRAFT-G3 — Pondération qualité** · S · P3 · 🟡 · v1.3 — articulation rareté ↔ Concentration (STA03) ↔ outils ↔ score mini-jeu.
+- [ ] **CRAFT-LOC-G1 — Exception maître forgeron** · S · P3 · 🟡 · v1.3 — **Z06** (spawn village, recettes Rare/Epic) = exception au plafond village (CRAFT-LOC01) ? + axe grade. ⚠️ **conflit à arbitrer**.
 
 **I — Monotonie / burnout** *(distinct de la Fatigue STA01 : burnout = manque de variété)*
-- [ ] **BURN01 — Tracker de variété d'actions** (M · READY) — fenêtre glissante (combat/craft/repos/collecte/voyage) ; réutilise `countWithinDays`.
-- [ ] **BURN02 — Malus de monotonie** (M · READY) — sur-combat → **−Aura** temp ; sur-craft → **−Concentration** temp ; exempt si **≥2 activités** planifiées. *(pas de mitigation par palier de stat.)*
-- [ ] **BURN-G1 — Chiffrage** (S · GROOM) — taille de fenêtre, seuils, magnitude/durée du malus ; border l'interaction avec STA04 (éviter spirale Fatigue+burnout).
+- [ ] **BURN01 — Tracker de variété d'actions** · M · P3 · 🟢 · v1.3 — fenêtre glissante (combat/craft/repos/collecte/voyage) ; réutilise `countWithinDays`.
+- [ ] **BURN02 — Malus de monotonie** · M · P3 · 🟢 · v1.3 — sur-combat → **−Aura** temp ; sur-craft → **−Concentration** temp ; exempt si **≥2 activités** planifiées. *(pas de mitigation par palier de stat.)*
+- [ ] **BURN-G1 — Chiffrage** · S · P3 · 🟡 · v1.3 — taille de fenêtre, seuils, magnitude/durée du malus ; border l'interaction avec STA04 (éviter spirale Fatigue+burnout).
 
 **J — Titres (affichage + buffs)**
-- [ ] **TITLE-DISP01 — Titre au-dessus du nom** (S · READY) — afficher le titre actif au-dessus du nom (carte + combat), en plus du HeroSheet (M01).
-- [ ] **TITLE-BUF01 — Buffs de titre** (S · READY) — `statBuffs` sur les données de titre + application aux stats dérivées.
-- [ ] **TITLE-G1 — Actif vs cumul** (XS · GROOM) — un titre actif (affiché+buff) ou cumul de tous ? + barème de buffs par titre.
+- [ ] **TITLE-DISP01 — Titre au-dessus du nom** · S · P3 · 🟢 · v1.3 — afficher le titre actif au-dessus du nom (carte + combat), en plus du HeroSheet (M01).
+- [ ] **TITLE-BUF01 — Buffs de titre** · S · P3 · 🟢 · v1.3 — `statBuffs` sur les données de titre + application aux stats dérivées.
+- [ ] **TITLE-G1 — Actif vs cumul** · XS · P3 · 🟡 · v1.3 — un titre actif (affiché+buff) ou cumul de tous ? + barème de buffs par titre.
 
 **K — Équipement : drops, tiers, sets, slots** *(9 slots : casque, armure, gants, bottes, amulette, 2 bagues, arme principale, arme secondaire ; ceinture reportée)*
-- [ ] **EQDROP01b — Drops d'équipement tier-based** (M · READY) — pièce de set : **T1 @15% · T2 @7.5% · T3 @3% · élite @10%** ; l'élite droppe l'**arme signature = 4ᵉ pièce de set**. ⚠️ **modifie les taux de drop d'équipement** (à arbitrer).
-- [ ] **EQDROP-G1 — Pool d'équipement** (S · GROOM) — par zone/tier + rareté ; lien EQUIPMENT_TEMPLATES + Z07.
-- [ ] **SET-CONTENT01 — Contenu des sets** (M · READY) — sets de zone (3 normaux + arme élite = 4 pièces) **+ sets au max de slots** (jusqu'à 9) en haut-level ou craftables ; renseigne `equipment.set`. ⟶ **EQP01** (système technique existant).
-- [ ] **SET-G1 — Modèle de bonus de set** (S · GROOM) — bonus = **% du stat fourni par les pièces** : 2→+5%, 3→+12-14%, 4→+20% (étendre 5→9) ; 1-3 stats/set ; chaque pièce = stat fixe (ex. 5-9 STR). ⟶ EQP01.
-- [ ] **SET-UI01 — Affichage des bonus de set actifs** (S · READY) — pièces 2/3/4… + bonus appliqués (HeroSheet / onglet Équipement).
-- [ ] **SLOT01 — Étendre `equipped` 6 → 9 slots** (M · READY) — + amulette/2 bagues/arme secondaire + **migration save** ; armes : 2M = 2 slots ; 1M + (bouclier OU 2ᵉ arme OU vide). *(synergies arme↔skill plus tard.)*
-- [ ] **SLOT02 — Onglet « Équipement » dans l'inventaire** (S · READY) — étendre la grille Equipped de UI07 (plutôt que surcharger le HeroSheet UI06).
-- [ ] **UX-COMPARE-EXT01 — Comparaison équipement étendue** (S · READY) — étendre UX02 (6 slots) aux nouveaux slots (bagues/amulette).
+- [ ] **EQDROP01b — Drops d'équipement tier-based** · M · P3 · 🟢 · v1.3 — pièce de set : **T1 @15% · T2 @7.5% · T3 @3% · élite @10%** ; l'élite droppe l'**arme signature = 4ᵉ pièce de set**. ⚠️ **modifie les taux de drop d'équipement** (à arbitrer).
+- [ ] **EQDROP-G1 — Pool d'équipement** · S · P3 · 🟡 · v1.3 — par zone/tier + rareté ; lien EQUIPMENT_TEMPLATES + Z07.
+- [ ] **SET-CONTENT01 — Contenu des sets** · M · P3 · 🟢 · v1.3 — sets de zone (3 normaux + arme élite = 4 pièces) **+ sets au max de slots** (jusqu'à 9) en haut-level ou craftables ; renseigne `equipment.set`. ⟶ **EQP01** (système technique existant).
+- [ ] **SET-G1 — Modèle de bonus de set** · S · P3 · 🟡 · v1.3 — bonus = **% du stat fourni par les pièces** : 2→+5%, 3→+12-14%, 4→+20% (étendre 5→9) ; 1-3 stats/set ; chaque pièce = stat fixe (ex. 5-9 STR). ⟶ EQP01.
+- [ ] **SET-UI01 — Affichage des bonus de set actifs** · S · P3 · 🟢 · v1.3 — pièces 2/3/4… + bonus appliqués (HeroSheet / onglet Équipement).
+- [ ] **SLOT01 — Étendre `equipped` 6 → 9 slots** · M · P3 · 🟢 · v1.3 — + amulette/2 bagues/arme secondaire + **migration save** ; armes : 2M = 2 slots ; 1M + (bouclier OU 2ᵉ arme OU vide). *(synergies arme↔skill plus tard.)*
+- [ ] **SLOT02 — Onglet « Équipement » dans l'inventaire** · S · P3 · 🟢 · v1.3 — étendre la grille Equipped de UI07 (plutôt que surcharger le HeroSheet UI06).
+- [ ] **UX-COMPARE-EXT01 — Comparaison équipement étendue** · S · P3 · 🟢 · v1.3 — étendre UX02 (6 slots) aux nouveaux slots (bagues/amulette).
 
 **L — Idle & planification**
 - [x] **IDLE-MASTERY01** — *remonté en **v1*** ; **fait 2026-06-13 (B3)** — combat déjà à 5×, constante `IDLE_MASTERY_KILLS` extraite, pas d'idle-craft à unifier. Détail dans la section v1.
-- [ ] **IDLE-CRAFT01 — Idle généralisé au craft** (M · READY) — une recette craftée 5× peut être produite automatiquement en idle.
-- [ ] **PLAN01 — Écran de planification (auberge/foyer)** (M · READY) — choisir zone de combat / objet à forger / type de potion / chaussure-ceinture / bijou ; **conseils contextuels** (« danger ! », « risqué… »).
-- [ ] **PLAN02 — Prérequis ≥3 activités** (S · GROOM) — au moins 3 parmi combat/forge/potion/cordonnier/bijoutier pour que la planification ait un intérêt.
-- [ ] **IDLE-SAFE01 — Sécurité idle** (M · READY) — auto-stop HP + auto-fuite réglables ; gestion de la **mort pendant l'idle** (embuscade) ; récap offline gère la mort. ⟶ QOL01, IDLE-OFF.
-- [ ] **IDLE-INT01 — Interactions idle (résolu)** (S · READY) — idle de nuit → **drops nocturnes obtenus** ; embuscade en idle → **risque de mort** ; burnout exempté si ≥2 activités.
+- [ ] **IDLE-CRAFT01 — Idle généralisé au craft** · M · P3 · 🟢 · v1.3 — une recette craftée 5× peut être produite automatiquement en idle.
+- [ ] **PLAN01 — Écran de planification (auberge/foyer)** · M · P3 · 🟢 · v1.3 — choisir zone de combat / objet à forger / type de potion / chaussure-ceinture / bijou ; **conseils contextuels** (« danger ! », « risqué… »).
+- [ ] **PLAN02 — Prérequis ≥3 activités** · S · P3 · 🟡 · v1.3 — au moins 3 parmi combat/forge/potion/cordonnier/bijoutier pour que la planification ait un intérêt.
+- [ ] **IDLE-SAFE01 — Sécurité idle** · M · P3 · 🟢 · v1.3 — auto-stop HP + auto-fuite réglables ; gestion de la **mort pendant l'idle** (embuscade) ; récap offline gère la mort. ⟶ QOL01, IDLE-OFF.
+- [ ] **IDLE-INT01 — Interactions idle (résolu)** · S · P3 · 🟢 · v1.3 — idle de nuit → **drops nocturnes obtenus** ; embuscade en idle → **risque de mort** ; burnout exempté si ≥2 activités.
 
 **Transverses**
-- [ ] **MIGRATE-EXT01 — Migration de save étendue** (M · READY) — `loadGame` couvre `tier`, `equipment.set`, slots étendus, `titleBuffs`, `building.unlock`, état burnout, `nightSkill`.
-- [ ] **BAL-INTEG01 — Intégrer les nouveaux drops au balancing** (M · READY) — items rares tier, équipement, pièces de set, skills nocturnes dans BAL-CSV01 + courbe d'économie.
-- [ ] **QA-EXT01 — Étendre l'audit d'intégrité** (S · READY) — **QA01** couvre les nouveaux ids : sets, tiers, ressources craft, skills nocturnes, bijoux. ⟶ QA01.
-- [ ] **ACHIEVE-SYS01 — Système d'achievements formel** (M · READY) — `src/data/achievements.js` (id, condition, cible, récompense) ; prérequis de UI-ACHIEVE-PREVIEW. ⚠️ **`achievements.js` existe déjà (ACH01)** — vérifier le delta plutôt que recréer.
-- [ ] **ZONE-NAMING01 — Nettoyage des ids de zone** (S · READY) — cohérence `crumbled_ruins` / `draconic_supra_metal_rock` après restructuration ; pas de référence morte.
+- [ ] **MIGRATE-EXT01 — Migration de save étendue** · M · P3 · 🟢 · v1.3 — `loadGame` couvre `tier`, `equipment.set`, slots étendus, `titleBuffs`, `building.unlock`, état burnout, `nightSkill`.
+- [ ] **BAL-INTEG01 — Intégrer les nouveaux drops au balancing** · M · P3 · 🟢 · v1.3 — items rares tier, équipement, pièces de set, skills nocturnes dans BAL-CSV01 + courbe d'économie.
+- [ ] **QA-EXT01 — Étendre l'audit d'intégrité** · S · P3 · 🟢 · v1.3 — **QA01** couvre les nouveaux ids : sets, tiers, ressources craft, skills nocturnes, bijoux. ⟶ QA01.
+- [ ] **ACHIEVE-SYS01 — Système d'achievements formel** · M · P3 · 🟢 · v1.3 — `src/data/achievements.js` (id, condition, cible, récompense) ; prérequis de UI-ACHIEVE-PREVIEW. ⚠️ **`achievements.js` existe déjà (ACH01)** — vérifier le delta plutôt que recréer.
+- [ ] **ZONE-NAMING01 — Nettoyage des ids de zone** · S · P3 · 🟢 · v1.3 — cohérence `crumbled_ruins` / `draconic_supra_metal_rock` après restructuration ; pas de référence morte.
 
 > *(Housekeeping — REORG01/DOC-SYNC01/CHANGELOG-CATCHUP01/TASK-HIST01/TEST-COV01 **remontés en v1** ; D01-SPEC déplacé en **v1.4 Donjon**.)*
 
 **SUG-E2 — Maîtrise du bestiaire**
-- [ ] **BEST01 — Paliers de kills → bonus permanents** (M · GROOM) — 10/50/100 kills → bonus ciblés inscrits au Codex.
-- [ ] **BEST02 — Lore & recettes via Codex** (S · GROOM) — déblocages à la complétion d'entrées.
+- [ ] **BEST01 — Paliers de kills → bonus permanents** · M · P3 · 🟡 · v1.3 — 10/50/100 kills → bonus ciblés inscrits au Codex.
+- [ ] **BEST02 — Lore & recettes via Codex** · S · P3 · 🟡 · v1.3 — déblocages à la complétion d'entrées.
 
 ### v1.9 — Polish (game feel)
 
-- [ ] **DN01 — Indicateur visuel jour/nuit** (S · READY) — code couleur + icône ☀/🌙 dérivés du tic.
-- [ ] **DN02 — Animation d'incrément de temps** (S · READY) — feedback à chaque tic.
-- [ ] **FEEL01 — SFX par action** (M · READY) — coup, craft, loot, level-up.
-- [ ] **FEEL02 — Musique par zone & jour/nuit** (M · READY) — ambiance médiévale fantasy.
-- [ ] **FEEL03 — Juice visuel** (M · READY) — screen-shake, particules de loot, transitions ; lien DN02.
+- [ ] **DN01 — Indicateur visuel jour/nuit** · S · P4 · 🟢 · v2 — code couleur + icône ☀/🌙 dérivés du tic.
+- [ ] **DN02 — Animation d'incrément de temps** · S · P4 · 🟢 · v2 — feedback à chaque tic.
+- [ ] **FEEL01 — SFX par action** · M · P4 · 🟢 · v2 — coup, craft, loot, level-up.
+- [ ] **FEEL02 — Musique par zone & jour/nuit** · M · P4 · 🟢 · v2 — ambiance médiévale fantasy.
+- [ ] **FEEL03 — Juice visuel** · M · P4 · 🟢 · v2 — screen-shake, particules de loot, transitions ; lien DN02.
 
 ### v2 — Ambition
 
 **E — Embuscade (voyage, Map 2 ; s'applique aussi en idle → IDLE-INT01)**
-- [ ] **AMB01 — Champ `ambush` sur edges Map 2** (S · READY) — `{baseChance, eliteChance}`.
-- [ ] **AMB02 — Roll par tick** (M · READY) — `taux = max(15%, baseChance − floor(sumStats/30) × 1%)` (plancher **15%**).
-- [ ] **AMB03 — Sous-roll élite** (S · READY) — 10% que l'embuscade soit un élite.
-- [ ] **AMB04 — Surprise** (S · READY) — l'agresseur joue en premier.
-- [ ] **AMB05 — Fuite pénalisée** (S · READY) — +1 tick.
-- [ ] **AMB06 — Spawn haut de range** (XS · READY) — l'agresseur spawn en haut de la level range de la zone source.
-- [ ] **AMB07 — Taux de base par route** (XS · READY) — 30→50% selon l'edge Map 2.
-- [ ] **AMB-G1 — Map 2 seulement ?** (XS · GROOM) — extension future à Map 1 ?
-- [ ] **AMB-G2 — Définition `sum_stats`** (XS · GROOM) — STR+AGI+INT+DEF+Chance ?
+- [ ] **AMB01 — Champ `ambush` sur edges Map 2** · S · P4 · 🟢 · v2 — `{baseChance, eliteChance}`.
+- [ ] **AMB02 — Roll par tick** · M · P4 · 🟢 · v2 — `taux = max(15%, baseChance − floor(sumStats/30) × 1%)` (plancher **15%**).
+- [ ] **AMB03 — Sous-roll élite** · S · P4 · 🟢 · v2 — 10% que l'embuscade soit un élite.
+- [ ] **AMB04 — Surprise** · S · P4 · 🟢 · v2 — l'agresseur joue en premier.
+- [ ] **AMB05 — Fuite pénalisée** · S · P4 · 🟢 · v2 — +1 tick.
+- [ ] **AMB06 — Spawn haut de range** · XS · P4 · 🟢 · v2 — l'agresseur spawn en haut de la level range de la zone source.
+- [ ] **AMB07 — Taux de base par route** · XS · P4 · 🟢 · v2 — 30→50% selon l'edge Map 2.
+- [ ] **AMB-G1 — Map 2 seulement ?** · XS · P4 · 🟡 · v2 — extension future à Map 1 ?
+- [ ] **AMB-G2 — Définition `sum_stats`** · XS · P4 · 🟡 · v2 — STR+AGI+INT+DEF+Chance ?
 
 **D — WorldMap (Map 2)**
-- [ ] **WMAP03 — Zone Draconic Supra Metal Rock** (S · READY) — rethème zone haute Map 2 (id `draconic_supra_metal_rock`).
-- [ ] **WMAP07 — Asset Map 2** (M · READY) — génération Nano Banana (variante hostile) + chemins orange.
-- [ ] **WMAP09 — Transition inter-map** (M · SPLIT) — UI + state de bascule Thornmarsh ↔ Veteran's Playground.
+- [ ] **WMAP03 — Zone Draconic Supra Metal Rock** · S · P4 · 🟢 · v2 — rethème zone haute Map 2 (id `draconic_supra_metal_rock`).
+- [ ] **WMAP07 — Asset Map 2** · M · P4 · 🟢 · v2 — génération Nano Banana (variante hostile) + chemins orange.
+- [ ] **WMAP09 — Transition inter-map** · M · P4 · ✂️ · v2 — UI + state de bascule Thornmarsh ↔ Veteran's Playground.
 
 **H — Cycle jour/nuit (complet)**
-- [ ] **DN03 — Variantes de map jour/nuit** (M · READY) — assets soir/nuit + bascule (4 illustrations avec les 2 maps).
-- [ ] **DN04 — Capacités nocturnes des monstres** (M · GROOM) — skills/buffs actifs uniquement la nuit.
-- [ ] **DN05 — Récompenses majorées la nuit** (S · GROOM) — loot/exp/or bonus, contrepartie de la difficulté.
-- [ ] **DN-G1 — Cadrage jour/nuit** (S · GROOM) — seuils (tics = nuit), capacités par monstre, barème de bonus ; liens EVT03 + AMB.
-- [ ] **NSKL01 — Drop de skill rare nocturne** (M · READY) — 5% sur **n'importe quel** monstre d'une zone, **uniquement la nuit** ; flag `nightRareSkill` + état nuit.
-- [ ] **NSKL02 — 6 skills rares nocturnes** (M · GROOM) — 1 par zone (Ashenvale, Barrow Hills, Crumbled Ruins, Thornmarsh, Veteran's, Draconic).
-- [ ] **NSKL-G1 — Balance** (S · GROOM) — puissance « assez bon », interaction drops normaux, héritabilité (T12), Codex.
+- [ ] **DN03 — Variantes de map jour/nuit** · M · P4 · 🟢 · v2 — assets soir/nuit + bascule (4 illustrations avec les 2 maps).
+- [ ] **DN04 — Capacités nocturnes des monstres** · M · P4 · 🟡 · v2 — skills/buffs actifs uniquement la nuit.
+- [ ] **DN05 — Récompenses majorées la nuit** · S · P4 · 🟡 · v2 — loot/exp/or bonus, contrepartie de la difficulté.
+- [ ] **DN-G1 — Cadrage jour/nuit** · S · P4 · 🟡 · v2 — seuils (tics = nuit), capacités par monstre, barème de bonus ; liens EVT03 + AMB.
+- [ ] **NSKL01 — Drop de skill rare nocturne** · M · P4 · 🟢 · v2 — 5% sur **n'importe quel** monstre d'une zone, **uniquement la nuit** ; flag `nightRareSkill` + état nuit.
+- [ ] **NSKL02 — 6 skills rares nocturnes** · M · P4 · 🟡 · v2 — 1 par zone (Ashenvale, Barrow Hills, Crumbled Ruins, Thornmarsh, Veteran's, Draconic).
+- [ ] **NSKL-G1 — Balance** · S · P4 · 🟡 · v2 — puissance « assez bon », interaction drops normaux, héritabilité (T12), Codex.
 
 **G — Stats définitives**
-- [ ] **PERMSTAT01 — Items de stats définitives** (M · GROOM) — craftables, coût en ingrédients **très rares OU en grande quantité** ; étend ITM01. *Non prioritaire.*
+- [ ] **PERMSTAT01 — Items de stats définitives** · M · P4 · 🟡 · v2 — craftables, coût en ingrédients **très rares OU en grande quantité** ; étend ITM01. *Non prioritaire.*
 
 **Transverses (v2)**
-- [ ] **REP-REBAL01 — Rééquilibrage des tokens** (M · GROOM) — débloquer **REP01** avec les nouveaux puits (Gods' Shop méta, enchantement) et sources (quêtes principales). **Trois points à trancher (relevés en B2 le 2026-06-13)** : **(a) rang = solde dépensable** — `getRankInfo(hero.reputationTokens)` calcule le rang sur la monnaie *dépensable* → acheter au Gods' Shop fait *baisser* le rang. Décider : compteur **cumulatif séparé** (`lifetimeReputationTokens`) pour le rang vs solde pour les achats ? **(b) seuils inatteignables** — v1 ne donne que **20 tokens** (4 élites × 5) hors Malachar ; `RANK_TIERS` Gold 30 / Plat 70 / Diam 150 et la prestige à `PRESTIGE_MIN_TOKENS=10` sont à recaler sur la vraie courbe d'offre (ou ajouter des sources : quêtes principales MQ-CHAIN, donjon v1.4). **(c) sources à 0** — confirmer si église / maîtres de bâtiment / boss de zone restent à 0 token (défaut actuel) ou en octroient.
-- [ ] **SEC02 — Durcissement sécurité (post-alpha)** (L · GROOM) — backend / autorité serveur, comptes & rôles, validation server-side des saves, anti-triche. **Référencé par DEPLOY01** : l'alpha privée ne s'appuie aujourd'hui que sur **Vercel Authentication** (pas d'autorité serveur). À cadrer : périmètre minimal d'un vrai compte joueur + ce qui doit passer côté serveur.
+- [ ] **REP-REBAL01 — Rééquilibrage des tokens** · M · P4 · 🟡 · v2 — débloquer **REP01** avec les nouveaux puits (Gods' Shop méta, enchantement) et sources (quêtes principales). **Trois points à trancher (relevés en B2 le 2026-06-13)** : **(a) rang = solde dépensable** — `getRankInfo(hero.reputationTokens)` calcule le rang sur la monnaie *dépensable* → acheter au Gods' Shop fait *baisser* le rang. Décider : compteur **cumulatif séparé** (`lifetimeReputationTokens`) pour le rang vs solde pour les achats ? **(b) seuils inatteignables** — v1 ne donne que **20 tokens** (4 élites × 5) hors Malachar ; `RANK_TIERS` Gold 30 / Plat 70 / Diam 150 et la prestige à `PRESTIGE_MIN_TOKENS=10` sont à recaler sur la vraie courbe d'offre (ou ajouter des sources : quêtes principales MQ-CHAIN, donjon v1.4). **(c) sources à 0** — confirmer si église / maîtres de bâtiment / boss de zone restent à 0 token (défaut actuel) ou en octroient.
+- [ ] **SEC02 — Durcissement sécurité (post-alpha)** · L · P4 · 🟡 · v2 — backend / autorité serveur, comptes & rôles, validation server-side des saves, anti-triche. **Référencé par DEPLOY01** : l'alpha privée ne s'appuie aujourd'hui que sur **Vercel Authentication** (pas d'autorité serveur). À cadrer : périmètre minimal d'un vrai compte joueur + ce qui doit passer côté serveur.
 
 **SUG-E1 — Enchantement & sertissage**
-- [ ] **ENCH01 — Renforcement +N** (M · READY) — améliorer une pièce par paliers via matériaux, plafond selon rareté.
-- [ ] **SOCKET01 — Sertir des mana stones** (M · READY) — emplacements sur l'équipement, bonus stat/élémentaire ; réutilise l'inventaire de pierres.
-- [ ] **ENCH02 — Risque d'échec** (M · GROOM) — perte/rétrogradation atténuée par pierres de protection.
+- [ ] **ENCH01 — Renforcement +N** · M · P4 · 🟢 · v2 — améliorer une pièce par paliers via matériaux, plafond selon rareté.
+- [ ] **SOCKET01 — Sertir des mana stones** · M · P4 · 🟢 · v2 — emplacements sur l'équipement, bonus stat/élémentaire ; réutilise l'inventaire de pierres.
+- [ ] **ENCH02 — Risque d'échec** · M · P4 · 🟡 · v2 — perte/rétrogradation atténuée par pierres de protection.
 
 **SUG-E5 — Profondeur méta / prestige**
-- [ ] **META01 — Arbre méta persistant** (L · GROOM) — bonus globaux durables entre transmigrations (monnaie méta).
-- [ ] **META02 — Choix de carryover étendus** (M · GROOM) — sélectionner skills/stats/ressources à conserver.
-- [ ] **META03 — Modificateurs NG+** (M · GROOM) — modificateurs optionnels (plus durs / plus de loot) selon les runs.
+- [ ] **META01 — Arbre méta persistant** · L · P4 · 🟡 · v2 — bonus globaux durables entre transmigrations (monnaie méta).
+- [ ] **META02 — Choix de carryover étendus** · M · P4 · 🟡 · v2 — sélectionner skills/stats/ressources à conserver.
+- [ ] **META03 — Modificateurs NG+** · M · P4 · 🟡 · v2 — modificateurs optionnels (plus durs / plus de loot) selon les runs.
 
 **SUG-E6 — Compagnon / familier**
-- [ ] **COMP01 — Familier d'assistance** (L · GROOM) — aide combat/idle, barre de vie + slot dédié.
-- [ ] **COMP02 — Apprivoisement** (XL · GROOM) — capturer des créatures vaincues.
-- [ ] **COMP03 — Progression du familier** (L · GROOM) — niveaux/évolutions/compétences.
+- [ ] **COMP01 — Familier d'assistance** · L · P4 · 🟡 · v2 — aide combat/idle, barre de vie + slot dédié.
+- [ ] **COMP02 — Apprivoisement** · XL · P4 · 🟡 · v2 — capturer des créatures vaincues.
+- [ ] **COMP03 — Progression du familier** · L · P4 · 🟡 · v2 — niveaux/évolutions/compétences.
 
 **SUG-E9 — Exploration & secrets de map**
-- [ ] **EXPL01 — Nodes cachés** (M · GROOM) — révélés par dissipation du fog ou indice d'informateur.
-- [ ] **EXPL02 — Événements de route non-combat** (M · GROOM) — marchand ambulant, sanctuaire, voyageur.
-- [ ] **EXPL03 — Coffres / trésors de zone** (S · GROOM) — découverte unique, loot/ressources rares.
+- [ ] **EXPL01 — Nodes cachés** · M · P4 · 🟡 · v2 — révélés par dissipation du fog ou indice d'informateur.
+- [ ] **EXPL02 — Événements de route non-combat** · M · P4 · 🟡 · v2 — marchand ambulant, sanctuaire, voyageur.
+- [ ] **EXPL03 — Coffres / trésors de zone** · S · P4 · 🟡 · v2 — découverte unique, loot/ressources rares.
 
 **SUG-E10 — QoL & accessibilité**
-- [ ] **QOL01 — Contrôle de vitesse + auto-battle** (M · READY) — ×1/×2/×4 + seuils HP/mana, fuite auto. ⟶ IDLE-SAFE01.
-- [ ] **QOL02 — Multi-slots de sauvegarde + export/import** (S · READY) — JSON.
-- [ ] **QOL03 — Raccourcis clavier remappables** (S · READY) — actions fréquentes.
+- [ ] **QOL01 — Contrôle de vitesse + auto-battle** · M · P4 · 🟢 · v2 — ×1/×2/×4 + seuils HP/mana, fuite auto. ⟶ IDLE-SAFE01.
+- [ ] **QOL02 — Multi-slots de sauvegarde + export/import** · S · P4 · 🟢 · v2 — JSON.
+- [ ] **QOL03 — Raccourcis clavier remappables** · S · P4 · 🟢 · v2 — actions fréquentes.
 
 **SUG-E2 — Bestiaire (v2)**
-- [ ] **BEST03 — Succès de complétion de zone** (S · GROOM) — titre ou bonus de set à la complétion.
+- [ ] **BEST03 — Succès de complétion de zone** · S · P4 · 🟡 · v2 — titre ou bonus de set à la complétion.
 
 ### v3 — Lointain
 
-- [ ] **ECO-DYN01 (SUG-E4) — Économie dynamique** (L · GROOM) — *référencée à l'index, non détaillée dans la session* : prix marchands/offres réactifs à l'activité du joueur. **À spécifier.**
+- [ ] **ECO-DYN01 (SUG-E4) — Économie dynamique** · L · P5 · 🟡 · v3 — *référencée à l'index, non détaillée dans la session* : prix marchands/offres réactifs à l'activité du joueur. **À spécifier.**
 
 ---
 

@@ -6,8 +6,12 @@ import { useGameStore } from '../store/gameStore'
 
 beforeEach(() => {
   useGameStore.getState().resetGame()
-  // Évite la modal CharacterCreation
-  useGameStore.setState((state) => ({ hero: { ...state.hero, heroNamed: true, name: 'Tester' } }))
+  // Évite la modal CharacterCreation ; place le héros en VILLE (START01 démarre à
+  // Greywatch/village : ces tests exercent le board complet de la Guilde d'Ironhaven).
+  useGameStore.setState((state) => ({
+    hero: { ...state.hero, heroNamed: true, name: 'Tester' },
+    world: { ...state.world, currentLocation: 'ironhaven', currentNode: 'ironhaven' },
+  }))
   localStorage.clear()
 })
 
