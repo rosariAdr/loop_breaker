@@ -86,10 +86,7 @@ chore(deps): bump vitest to 4.1.4
 docs(readme): add monster portrait generation guide
 ```
 
-**Co-authoring avec Claude** : non utilisé sur ce projet (préférence du dev). Si tu veux l'activer plus tard, ajouter en pied de commit :
-```
-Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
-```
+**Co-authoring avec Claude** : **désactivé** sur ce projet (préférence du dev) — **aucun footer `Co-Authored-By` dans les commits**. Claude **propose** le message ; le dev **commite lui-même** (via GitKraken).
 
 ---
 
@@ -151,6 +148,20 @@ Avant de fermer un ticket, vérifier que **tous** les critères du type s'appliq
 | Fonction engine | `camelCase` verbe + objet | `calcBaseDamage`, `buildEnemy` |
 | ID en data (skillId, monsterId) | `snake_case` | `ashwood_wolf`, `inferno_strike` |
 | ID de ticket | Préfixe + numéro | `MAP01`, `CMP03`, `GLT02`, `PROC00` |
+
+### Création & rédaction d'un ticket (backlog)
+
+Le backlog (`TASKS.md`) suit le système **PRIO-SYS01** — la **légende en tête de `TASKS.md` est la source unique** du vocabulaire (ne pas la dupliquer ici). À la création d'un ticket :
+
+1. **ID unique** — préfixe d'épic + numéro (`VQ02`, `RES01`, `UI11`). **Vérifier qu'il n'existe pas déjà** (`grep "<ID> —" TASKS.md`) avant de le poser : les collisions arrivent (ex. `UI01` v1.1 ↔ session UI v1.3 → renommé `UI10`).
+2. **Ligne canonique** — porter les **4 axes orthogonaux** :
+   ```
+   - [ ] **ID — Titre** · <Taille> · P<1-5> · <🟢|🟡|✂️|⛔> · <milestone> — description. ⟶ renvois
+   ```
+   Taille `XS·S·M·L·XL` · Priorité `P1`(critique)→`P5`(lointain) · Maturité 🟢 Ready / 🟡 Groom / ✂️ Split / ⛔ Blocked · Milestone `v1.3·v1.4·v2·v3`. **Priorité, maturité et milestone sont indépendants** (un ticket peut être P4 mais 🟡, ou P2 et ⛔).
+3. **Contenu minimum** — titre explicite + **critères d'acceptation (AC)** + renvois `⟶`. Pour un **M/L** : description **self-contained** (lisible sans contexte) + check **INVEST** avant de démarrer.
+4. **Maturité de départ** — un ticket neuf est **🟡 Groom** tant qu'une décision/AC reste ouverte ; **🟢 Ready** seulement si codable sans arbitrage ; **⛔ Blocked** si dépendance non levée ; **✂️ Split** si > L ou plusieurs livrables (le découper en sous-tickets).
+5. **Placement** — dans la section du **milestone** cible. Le **thème** est porté par le préfixe d'ID (épic), **pas** par une sous-section « par version ».
 
 ### Organisation des imports
 
@@ -360,7 +371,7 @@ Les décisions structurantes sont documentées dans **`CONTEXT.md` §11**. Avant
 - `TASKS.md` — backlog source de vérité
 - `CONTEXT.md` — état du projet, ADRs, processus condensé
 - `CHANGELOG.md` — historique versions
-- `ROADMAP.csv` — liste originale 60 items (lecture seule, archive)
+- `docs/ROADMAP.csv` — **tracker hérité périmé** (early-planning, ~60 items) **superséd. par `TASKS.md`** ; conservé pour archive, **ne pas réaligner**
 - `balance/combat_stats.csv` — stats monstres calculées (×zone × run scaling)
 - `public/monsters/README.md` — guide génération portraits
 
