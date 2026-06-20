@@ -88,6 +88,15 @@ docs(readme): add monster portrait generation guide
 
 **Co-authoring avec Claude** : **désactivé** sur ce projet (préférence du dev) — **aucun footer `Co-Authored-By` dans les commits**. Claude **propose** le message ; le dev **commite lui-même** (via GitKraken).
 
+### Découpage par épique & numérotation des sous-versions (`v1.xy`)
+
+Une **release** `v1.X` est définie par ses **épiques** (cf. table « 🗺 Plan de release » de `TASKS.md`). Chaque épique de la release est une **sous-version `v1.Xy`** (`y` = rang de l'épique dans la release) et constitue **un lot de commits dédié** :
+
+- **1 épique = 1 lot** : on traite les tickets d'une épique ensemble, sur une branche `feat/v1.Xy-<epic>` (ex. `feat/v1.31-quetes`).
+- **Bugfix de pré-release** : la passe de correctifs avant de sortir `v1.X` prend le **cran suivant** `v1.X(y+1)` (après la dernière épique de la release).
+- **Ordre** = celui de la table ; respecter la colonne « Dépendances / bloqueurs » (ne pas démarrer une épique dont une dépendance est planifiée plus tard).
+- **Replanifier** = déplacer une épique dans la table (aux dépendances près) ; **les tickets ne sont pas réédités** (ils ne portent pas de tag de version).
+
 ---
 
 ## 3. Definition of Done (DoD) par type de ticket
@@ -156,12 +165,12 @@ Le backlog (`TASKS.md`) suit le système **PRIO-SYS01** — la **légende en tê
 1. **ID unique** — préfixe d'épic + numéro (`VQ02`, `RES01`, `UI11`). **Vérifier qu'il n'existe pas déjà** (`grep "<ID> —" TASKS.md`) avant de le poser : les collisions arrivent (ex. `UI01` v1.1 ↔ session UI v1.3 → renommé `UI10`).
 2. **Ligne canonique** — porter les **4 axes orthogonaux** :
    ```
-   - [ ] **ID — Titre** · <Taille> · P<1-5> · <🟢|🟡|✂️|⛔> · <milestone> — description. ⟶ renvois
+   - [ ] **ID — Titre** · <Taille> · P<1-5> · <🟢|🟡|✂️|⛔> — description. ⟶ renvois
    ```
-   Taille `XS·S·M·L·XL` · Priorité `P1`(critique)→`P5`(lointain) · Maturité 🟢 Ready / 🟡 Groom / ✂️ Split / ⛔ Blocked · Milestone `v1.3·v1.4·v2·v3`. **Priorité, maturité et milestone sont indépendants** (un ticket peut être P4 mais 🟡, ou P2 et ⛔).
+   Taille `XS·S·M·L·XL` · Priorité `P1`(critique)→`P5`(lointain) · Maturité 🟢 Ready / 🟡 Groom / ✂️ Split / ⛔ Blocked. **Le milestone n'est PAS sur la ligne** : il est porté par l'**épique** (table « 🗺 Plan de release » de `TASKS.md`). Priorité et maturité sont indépendantes (un ticket peut être P4 mais 🟡, ou P2 et ⛔).
 3. **Contenu minimum** — titre explicite + **critères d'acceptation (AC)** + renvois `⟶`. Pour un **M/L** : description **self-contained** (lisible sans contexte) + check **INVEST** avant de démarrer.
 4. **Maturité de départ** — un ticket neuf est **🟡 Groom** tant qu'une décision/AC reste ouverte ; **🟢 Ready** seulement si codable sans arbitrage ; **⛔ Blocked** si dépendance non levée ; **✂️ Split** si > L ou plusieurs livrables (le découper en sous-tickets).
-5. **Placement** — dans la section du **milestone** cible. Le **thème** est porté par le préfixe d'ID (épic), **pas** par une sous-section « par version ».
+5. **Placement** — dans la section de son **épique** (`## Backlog par épique` de `TASKS.md`). Le **milestone** est porté par l'épique dans la table **« 🗺 Plan de release »** ; déplacer une épique d'une version à l'autre = éditer cette table (les tickets ne bougent pas, aux dépendances près).
 
 ### Organisation des imports
 
