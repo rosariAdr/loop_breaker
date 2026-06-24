@@ -2,12 +2,14 @@
 // baseStats sont les stats au run 0, zone_mult est appliqué via la formule de scaling
 // huntingSpot : sous-zone Ashenvale ('ashenvale_forest' | 'thornmarsh' | 'crumbled_ruins' | 'wildmere_hills')
 //
-// MON01 — champ `skillDropType: 'active' | 'passive' | 'none'` (INTERNE : drop + bestiaire).
-//   'active'/'passive' → lègue un mana stone du skill `skillDrop.skillId` (cohérent avec SKILLS[id].type).
-//   'none' → pas de skillDrop, pas de mana stone de technique.
-//   ⚠️ L'UI n'affiche JAMAIS actif/passif : seulement le NOM du skill (après le seuil de kills S02).
+// MON01/SKD01 — champ `skillDropType: 'physical_active' | 'magic_active' | 'passive' | 'none'`
+//   (INTERNE : drop + bestiaire). Doit rester cohérent avec `getSkillDropType` (source de vérité,
+//   dérivée du skill droppé) : active → physical_active si dégâts physiques, sinon magic_active.
+//   'none' → pas de skillDrop. ⚠️ L'UI n'affiche JAMAIS la classe : seulement le NOM du skill (S02).
 // MON01 — `reserve: true` → monstre conservé en données mais HORS surface (jamais spawn ;
 //   exclu de MONSTERS_BY_SPOT / MONSTERS_BY_ZONE), réservé à un usage futur (donjons).
+
+import { SKILLS } from './skills'
 
 export const MONSTERS = {
   // ── Ashenvale Forest (lv 1-8) ───────────────────────────────────────
@@ -20,7 +22,7 @@ export const MONSTERS = {
     baseStats: { hp: 40, atk: 8, def: 3, spd: 12 },
     expReward: 15,
     goldReward: { min: 1, max: 3 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.1, skillId: 'savage_bite' },
     resourceDrops: [
       { resourceId: 'wolf_fang', chance: 0.7, qty: { min: 1, max: 2 } },
@@ -30,14 +32,15 @@ export const MONSTERS = {
 
   thicket_hare: {
     id: 'thicket_hare',
-    name: 'Thicket Hare',
+    name: 'Fire Hare', // SKD02 — rethème (id 'thicket_hare' conservé : pas de cascade saves/refs)
     zone: 'ashenvale',
     huntingSpot: 'ashenvale_forest',
     rank: 'common',
     baseStats: { hp: 22, atk: 4, def: 1, spd: 22 },
     expReward: 10,
     goldReward: { min: 1, max: 2 },
-    skillDropType: 'none',
+    skillDropType: 'magic_active', // SKD03 — drop ember_burst (feu)
+    skillDrop: { chance: 0.1, skillId: 'ember_burst' },
     resourceDrops: [
       { resourceId: 'wolf_pelt', chance: 0.8, qty: { min: 1, max: 2 } },
       { resourceId: 'wolf_fang', chance: 0.3, qty: { min: 1, max: 1 } },
@@ -70,7 +73,7 @@ export const MONSTERS = {
     baseStats: { hp: 160, atk: 22, def: 14, spd: 6 },
     expReward: 70,
     goldReward: { min: 8, max: 16 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.18, skillId: 'bramble_slam' },
     resourceDrops: [
       { resourceId: 'briar_thorn', chance: 0.85, qty: { min: 1, max: 3 } },
@@ -88,7 +91,7 @@ export const MONSTERS = {
     baseStats: { hp: 50, atk: 11, def: 4, spd: 10 },
     expReward: 22,
     goldReward: { min: 1, max: 4 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.1, skillId: 'venom_strike' },
     resourceDrops: [
       { resourceId: 'serpent_scale', chance: 0.65, qty: { min: 1, max: 3 } },
@@ -105,7 +108,7 @@ export const MONSTERS = {
     baseStats: { hp: 35, atk: 10, def: 2, spd: 14 },
     expReward: 20,
     goldReward: { min: 2, max: 4 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.1, skillId: 'thorn_lash' },
     resourceDrops: [
       { resourceId: 'ectoplasm', chance: 0.6, qty: { min: 1, max: 2 } },
@@ -139,7 +142,7 @@ export const MONSTERS = {
     baseStats: { hp: 175, atk: 21, def: 12, spd: 6 },
     expReward: 90,
     goldReward: { min: 10, max: 20 },
-    skillDropType: 'active',
+    skillDropType: 'magic_active',
     skillDrop: { chance: 0.18, skillId: 'plague_maw' },
     resourceDrops: [
       { resourceId: 'marsh_venom', chance: 0.85, qty: { min: 1, max: 3 } },
@@ -174,7 +177,7 @@ export const MONSTERS = {
     baseStats: { hp: 80, atk: 14, def: 10, spd: 8 },
     expReward: 35,
     goldReward: { min: 3, max: 7 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.1, skillId: 'cursed_cleave' },
     resourceDrops: [
       { resourceId: 'rusted_iron', chance: 0.7, qty: { min: 1, max: 2 } },
@@ -191,7 +194,7 @@ export const MONSTERS = {
     baseStats: { hp: 45, atk: 16, def: 3, spd: 16 },
     expReward: 32,
     goldReward: { min: 3, max: 6 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.12, skillId: 'soul_chill' },
     resourceDrops: [
       { resourceId: 'ectoplasm', chance: 0.8, qty: { min: 1, max: 3 } },
@@ -208,7 +211,7 @@ export const MONSTERS = {
     baseStats: { hp: 190, atk: 24, def: 16, spd: 7 },
     expReward: 110,
     goldReward: { min: 12, max: 24 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.18, skillId: 'tomb_judgment' },
     resourceDrops: [
       { resourceId: 'rusted_iron', chance: 0.8, qty: { min: 1, max: 3 } },
@@ -244,7 +247,8 @@ export const MONSTERS = {
     baseStats: { hp: 60, atk: 18, def: 6, spd: 20 },
     expReward: 45,
     goldReward: { min: 4, max: 8 },
-    skillDropType: 'none',
+    skillDropType: 'magic_active', // SKD04 — drop fox_fire (feu spectral)
+    skillDrop: { chance: 0.1, skillId: 'fox_fire' },
     resourceDrops: [
       { resourceId: 'wolf_pelt', chance: 0.8, qty: { min: 1, max: 2 } },
       { resourceId: 'wolf_fang', chance: 0.4, qty: { min: 1, max: 1 } },
@@ -260,7 +264,7 @@ export const MONSTERS = {
     baseStats: { hp: 85, atk: 20, def: 8, spd: 12 },
     expReward: 55,
     goldReward: { min: 6, max: 12 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.1, skillId: 'cheap_shot' },
     resourceDrops: [
       { resourceId: 'rusted_iron', chance: 0.6, qty: { min: 1, max: 2 } },
@@ -277,7 +281,7 @@ export const MONSTERS = {
     baseStats: { hp: 210, atk: 28, def: 12, spd: 14 },
     expReward: 130,
     goldReward: { min: 15, max: 30 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.18, skillId: 'trample_charge' },
     resourceDrops: [
       { resourceId: 'wolf_pelt', chance: 0.8, qty: { min: 1, max: 3 } },
@@ -315,7 +319,7 @@ export const MONSTERS = {
     baseStats: { hp: 200, atk: 28, def: 12, spd: 12 },
     expReward: 100,
     goldReward: { min: 10, max: 20 },
-    skillDropType: 'active',
+    skillDropType: 'magic_active',
     skillDrop: { chance: 0.2, skillId: 'soul_crush' },
     resourceDrops: [
       { resourceId: 'ectoplasm', chance: 0.9, qty: { min: 2, max: 4 } },
@@ -332,7 +336,7 @@ export const MONSTERS = {
     baseStats: { hp: 250, atk: 30, def: 18, spd: 10 },
     expReward: 120,
     goldReward: { min: 15, max: 30 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.175, skillId: 'cursed_blade' },
     resourceDrops: [
       { resourceId: 'cursed_steel', chance: 0.9, qty: { min: 1, max: 2 } },
@@ -348,7 +352,7 @@ export const MONSTERS = {
     baseStats: { hp: 350, atk: 25, def: 28, spd: 5 },
     expReward: 140,
     goldReward: { min: 20, max: 35 },
-    skillDropType: 'active',
+    skillDropType: 'physical_active',
     skillDrop: { chance: 0.175, skillId: 'bone_crush' },
     resourceDrops: [
       { resourceId: 'giant_bone', chance: 0.9, qty: { min: 2, max: 4 } },
@@ -397,7 +401,7 @@ export const MONSTERS = {
     baseStats: { hp: 130, atk: 35, def: 12, spd: 18 },
     expReward: 85,
     goldReward: { min: 5, max: 10 },
-    skillDropType: 'active',
+    skillDropType: 'magic_active',
     skillDrop: { chance: 0.1, skillId: 'abyss_howl' },
     resourceDrops: [
       { resourceId: 'shadow_fur', chance: 0.65, qty: { min: 1, max: 2 } },
@@ -413,7 +417,7 @@ export const MONSTERS = {
     baseStats: { hp: 160, atk: 30, def: 15, spd: 16 },
     expReward: 95,
     goldReward: { min: 8, max: 18 },
-    skillDropType: 'active',
+    skillDropType: 'magic_active',
     skillDrop: { chance: 0.1, skillId: 'wing_gust' },
     resourceDrops: [
       { resourceId: 'wyvern_scale', chance: 0.7, qty: { min: 1, max: 3 } },
@@ -445,7 +449,7 @@ export const MONSTERS = {
     baseStats: { hp: 140, atk: 33, def: 8, spd: 15 },
     expReward: 92,
     goldReward: { min: 7, max: 16 },
-    skillDropType: 'active',
+    skillDropType: 'magic_active',
     skillDrop: { chance: 0.1, skillId: 'iron_shroud' },
     resourceDrops: [
       { resourceId: 'spectral_iron', chance: 0.65, qty: { min: 1, max: 2 } },
@@ -462,7 +466,7 @@ export const MONSTERS = {
     baseStats: { hp: 400, atk: 22, def: 14, spd: 8 },
     expReward: 300,
     goldReward: { min: 30, max: 60 },
-    skillDropType: 'active',
+    skillDropType: 'magic_active',
     skillDrop: { chance: 0.6, skillId: 'soul_crush' },
     resourceDrops: [
       { resourceId: 'crypt_seal', chance: 1.0, qty: { min: 1, max: 1 } },
@@ -481,7 +485,7 @@ export const MONSTERS = {
     baseStats: { hp: 900, atk: 48, def: 35, spd: 11 },
     expReward: 700,
     goldReward: { min: 80, max: 150 },
-    skillDropType: 'active',
+    skillDropType: 'magic_active',
     skillDrop: { chance: 0.6, skillId: 'forsaken_curse' },
     resourceDrops: [
       { resourceId: 'forsaken_seal', chance: 1.0, qty: { min: 1, max: 1 } },
@@ -501,7 +505,7 @@ export const MONSTERS = {
     baseStats: { hp: 3000, atk: 90, def: 60, spd: 14 },
     expReward: 5000,
     goldReward: { min: 500, max: 1000 },
-    skillDropType: 'active',
+    skillDropType: 'magic_active',
     skillDrop: { chance: 1.0, skillId: 'soul_rend' }, // skill suprême unique
     resourceDrops: [
       { resourceId: 'demon_lord_heart', chance: 1.0, qty: { min: 1, max: 1 } },
@@ -513,6 +517,17 @@ export const MONSTERS = {
     // BSS03 — combat en 3 phases (cf. engine/bossMechanics.getMalacharPhase)
     bossMechanics: { type: 'phases' },
   },
+}
+
+// SKD01 — classe de drop de skill DÉRIVÉE du skill droppé (source de vérité unique).
+// active → physical_active (dégâts physiques) | magic_active (magie/élément/true/sans dégâts) ;
+// passive ; none (pas de skillDrop). Sert au bestiaire + au mapping SKD07.
+export function getSkillDropType(monster) {
+  const sid = monster?.skillDrop?.skillId
+  const skill = sid ? SKILLS[sid] : null
+  if (!skill) return 'none'
+  if (skill.type === 'passive') return 'passive'
+  return skill.effect?.damage?.type === 'physical' ? 'physical_active' : 'magic_active'
 }
 
 // MON01 — monstres en réserve (hors surface, jamais spawn ; usage futur donjons)
@@ -560,4 +575,23 @@ export const MONSTERS_BY_SPOT = {
 export const DUNGEON_BOSSES = {
   hollow_crypt: 'hollow_crypt_boss',
   forsaken_citadel: 'forsaken_citadel_boss',
+}
+
+// SKD07 — Table des drops de skill par zone : { zone: [{ monsterId, skillId, class, elite }] }.
+// `class` dérivé par getSkillDropType (physical_active | magic_active | passive). Sert au
+// design/équilibrage (répartition physique/magique/passif/élite) + au bestiaire.
+export function getSkillDropMap() {
+  const map = {}
+  for (const [zone, ids] of Object.entries(MONSTERS_BY_ZONE)) {
+    map[zone] = ids
+      .map((id) => MONSTERS[id])
+      .filter((m) => m?.skillDrop)
+      .map((m) => ({
+        monsterId: m.id,
+        skillId: m.skillDrop.skillId,
+        class: getSkillDropType(m),
+        elite: m.rank === 'elite',
+      }))
+  }
+  return map
 }

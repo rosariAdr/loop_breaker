@@ -81,3 +81,21 @@ La valeur finale est calculée à l'application : `tickDamage = base.tickDamage 
 - Mapping icône : poison 🟢, burn 🔥, stun 💫, slow 🐌, defense_break 🛡️‍💥, atk_down ⬇️⚔️, max_hp_reduction 💔, all_stats_down 🌀.
 
 ---
+
+## SKD — Skill drops : physique vs magique (SKD01 / SKD-G2)
+
+Chaque monstre lègue (via mana stone) une **technique** classée par `getSkillDropType(monster)`
+(source de vérité, dérivée du skill droppé) — **jamais affichée** en UI (seul le **nom** l'est, après 5 kills) :
+
+- **`physical_active`** — `effect.damage.type === 'physical'`. Familles : renfort de corps, multi-coups,
+  charge, contre, infusion d'arme. Scale **Force**. Ex. Savage Bite, Bramble Slam, Tomb Judgment,
+  Trample Charge, Cursed Cleave, Cheap Shot, Venom Strike, Thorn Lash, Soul Chill.
+- **`magic_active`** — dégâts non physiques (`magical`/`fire`/`lightning`/`true`) **ou** skill sans
+  dégâts (contrôle / bouclier / illusion). Familles : élémentaire, âme-ombre, illusion, bouclier. Scale
+  **Intelligence**. Ex. Ember Burst 🔥, Fox Fire 🔥, Plague Maw, Wing Gust, Abyss Howl, Iron Shroud,
+  Soul Crush, Forsaken Curse, Soul Rend.
+- **`passive`** — bonus permanent (regen / DEF / résistance). Ex. Thick Hide, Stoneskin, Caustic Coat, Mossy Hide.
+
+La sous-classe sert au **design / bestiaire / SKD07** ; l'héritage de transmigration reste 1 active + 1 passive.
+
+---
