@@ -1,9 +1,20 @@
 // Tests techniques sur la structure des données QUESTS et QUEST_NPCS (Q03 + Q08)
 
 import { describe, it, expect } from 'vitest'
-import { QUESTS, QUEST_NPCS } from './quests'
+import { QUESTS, QUEST_NPCS, QUEST_NPC_REGISTRY } from './quests'
 import { MONSTERS } from './monsters'
 import { SKILLS } from './skills'
+import { CHURCH_QUESTS } from './churchQuests'
+import { MASTER_QUESTS } from './masterQuests'
+import { MAIN_QUESTS } from './mainQuests'
+
+describe('QSV2-NPCONLY01 — quêtes maître/église hors board', () => {
+  it('aucun id d’église/maître n’est dans le pool de board (QUESTS + MAIN_QUESTS)', () => {
+    const boardIds = new Set([...Object.keys(QUESTS), ...Object.keys(MAIN_QUESTS)])
+    for (const id of Object.keys(CHURCH_QUESTS)) expect(boardIds.has(id), id).toBe(false)
+    for (const id of Object.keys(MASTER_QUESTS)) expect(boardIds.has(id), id).toBe(false)
+  })
+})
 
 describe('QUEST_NPCS — Q08', () => {
   it('contient au moins les 3 NPCs donneurs', () => {
@@ -43,9 +54,10 @@ describe('QUESTS — structure valide', () => {
     })
   })
 
-  it('chaque giverNpc existe dans QUEST_NPCS', () => {
+  it('chaque giverNpc existe dans le registre', () => {
+    // QSV2-ADJ-AUDIT01 — givers re-domiciliés peuvent venir du registre (ex. Warden Halric).
     Object.values(QUESTS).forEach((q) => {
-      expect(QUEST_NPCS[q.giverNpc]).toBeDefined()
+      expect(QUEST_NPC_REGISTRY[q.giverNpc], q.id).toBeDefined()
     })
   })
 
@@ -109,15 +121,15 @@ describe('Q03 — Quêtes boss donjon', () => {
   })
 })
 
-describe('Q08 — Quêtes Greywatch Elder', () => {
-  it('bog_purge vient de greywatch_elder', () => {
-    expect(QUESTS.bog_purge.giverNpc).toBe('greywatch_elder')
+describe('Q08 / QSV2-ADJ-AUDIT01 — quêtes secondaires re-domiciliées', () => {
+  it('bog_purge re-domicilié à Millhaven (thornmarsh adjacent)', () => {
+    expect(QUESTS.bog_purge.giverNpc).toBe('millhaven_elder')
     expect(QUESTS.bog_purge.objectives[0].monsterId).toBe('mire_slime')
   })
 
-  it('ruins_cleanse a plusieurs objectifs', () => {
+  it('ruins_cleanse (Millhaven) a plusieurs objectifs', () => {
     const q = QUESTS.ruins_cleanse
-    expect(q.giverNpc).toBe('greywatch_elder')
+    expect(q.giverNpc).toBe('millhaven_elder')
     expect(q.objectives).toHaveLength(2)
   })
 })
@@ -133,8 +145,8 @@ describe('Répartition des quêtes par NPC', () => {
     expect(count).toBeGreaterThanOrEqual(3)
   })
 
-  it('greywatch_elder a au moins 2 quêtes', () => {
-    const count = Object.values(QUESTS).filter((q) => q.giverNpc === 'greywatch_elder').length
+  it('millhaven_elder (Warden Halric) porte ≥ 2 quêtes re-domiciliées', () => {
+    const count = Object.values(QUESTS).filter((q) => q.giverNpc === 'millhaven_elder').length
     expect(count).toBeGreaterThanOrEqual(2)
   })
 })

@@ -7,6 +7,9 @@
 //
 // Standalone (n'importe RIEN de quests.js) → quests.js peut l'importer sans cycle.
 
+import { MONSTERS } from './monsters'
+import { neighborsOf } from './worldGraph'
+
 // NPC donneur (le prêtre déjà présent dans SafeZone : Brother Caelum)
 export const CHURCH_QUEST_NPC = {
   church_caelum: {
@@ -149,12 +152,29 @@ export function churchRotationBlock(dayCount = 1) {
   return Math.floor((dayCount ?? 1) / CHURCH_ROTATION_DAYS)
 }
 
+// CHQ-LOC01 — spot ciblé par une quête d'église (1er objectif kill), null si non géographique.
+function churchQuestSpot(q) {
+  const kill = q?.objectives?.find((o) => o.type === 'kill')
+  return kill ? (MONSTERS[kill.monsterId]?.huntingSpot ?? null) : null
+}
+
 /**
  * Quêtes de l'église actives pour la journée donnée (fenêtre glissante de N quêtes
  * dans le pool, avançant d'un bloc tous les 3 jours). Déterministe (pas d'alea).
+ *
+ * CHQ-LOC01 — si `location` est fourni, le pool est d'abord filtré aux quêtes ciblant
+ * un spot ADJACENT au lieu courant (graphe worldGraph). Sans `location` : pool complet
+ * (rétro-compat).
  */
-export function getActiveChurchQuests(dayCount = 1, count = CHURCH_ACTIVE_COUNT) {
-  const pool = Object.values(CHURCH_QUESTS)
+export function getActiveChurchQuests(dayCount = 1, count = CHURCH_ACTIVE_COUNT, location = null) {
+  let pool = Object.values(CHURCH_QUESTS)
+  if (location) {
+    const adj = new Set(neighborsOf(location))
+    pool = pool.filter((q) => {
+      const spot = churchQuestSpot(q)
+      return spot == null || adj.has(spot)
+    })
+  }
   if (pool.length === 0) return []
   const n = Math.min(count, pool.length)
   const start = (churchRotationBlock(dayCount) * n) % pool.length

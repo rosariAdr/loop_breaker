@@ -6,6 +6,7 @@ import { CHURCH_QUESTS, CHURCH_QUEST_NPC } from './churchQuests'
 import { MAIN_QUESTS, MAIN_QUEST_NPC } from './mainQuests'
 import { MASTER_QUESTS, MASTER_QUEST_NPC } from './masterQuests'
 import { MONSTERS } from './monsters'
+import { getVillageQuestById } from './villageQuests'
 
 // ── NPCs donneurs (Q08) ──────────────────────────────────────────────────────
 export const QUEST_NPCS = {
@@ -13,7 +14,7 @@ export const QUEST_NPCS = {
     id: 'sir_aldric',
     name: 'Sir Aldric',
     title: 'Knight of Millhaven',
-    location: 'ironhaven',
+    location: 'greywatch', // QSV2-ADJ-AUDIT01 — relocalisé (quêtes forêt ; futur maître martial MST05)
     sigil: '⚔',
   },
   ironhaven_captain: {
@@ -82,7 +83,7 @@ export const QUESTS = {
     id: 'clear_the_marsh',
     name: 'Clear the Marsh',
     description: 'Travelers have been disappearing near the Thornmarsh. End the serpent threat.',
-    giverNpc: 'sir_aldric',
+    giverNpc: 'ironhaven_captain', // QSV2-ADJ-AUDIT01 — thornmarsh adjacent à Ironhaven
     flavorText: '"Three merchants lost this week alone. The marsh must be cleansed."',
     objectives: [
       {
@@ -128,6 +129,7 @@ export const QUESTS = {
     name: 'Storm the Citadel',
     description: 'The Lord of the Forsaken rules Grimspire. Break his reign.',
     giverNpc: 'ironhaven_captain',
+    mapTier: 2, // QSV2-ADJ-AUDIT01 — boss Map 2 (gelé hors board tant que Map 2 fermée)
     flavorText: '"No army has taken the Citadel. A lone hero might. Go — prove us wrong."',
     objectives: [
       {
@@ -150,6 +152,7 @@ export const QUESTS = {
     name: 'End the Demon',
     description: 'Malachar the Undying cannot die. But perhaps you can.',
     giverNpc: 'ironhaven_captain',
+    mapTier: 2, // QSV2-ADJ-AUDIT01 — Demon Lord Map 2 (gelé hors board)
     flavorText: '"Four champions have tried. None returned. Yet here you stand."',
     objectives: [
       {
@@ -171,7 +174,7 @@ export const QUESTS = {
     id: 'bog_purge',
     name: 'Bog Purge',
     description: 'The Mire Slimes spread rot through the marsh. Cull their numbers.',
-    giverNpc: 'greywatch_elder',
+    giverNpc: 'millhaven_elder', // QSV2-ADJ-AUDIT01 — thornmarsh adjacent à Millhaven
     flavorText: '"My grandson fell last harvest. Do this, and the village remembers you."',
     objectives: [
       // MON01 — re-ciblé depuis bog_shambler (retiré du Thornmarsh) vers mire_slime.
@@ -193,7 +196,7 @@ export const QUESTS = {
     id: 'ruins_cleanse',
     name: 'Cleanse the Ruins',
     description: 'Ancient specters haunt the Crumbled Ruins. End their restless watch.',
-    giverNpc: 'greywatch_elder',
+    giverNpc: 'millhaven_elder', // QSV2-ADJ-AUDIT01 — crumbled_ruins adjacent à Millhaven
     flavorText: '"The dead do not rest here. They remember. They hunger."',
     objectives: [
       {
@@ -265,7 +268,7 @@ export const QUESTS = {
     id: 'nc_scout_marsh',
     name: 'Eyes on the Marsh',
     description: 'Scout the Thornmarsh and report what stirs there.',
-    giverNpc: 'greywatch_elder',
+    giverNpc: 'millhaven_elder', // QSV2-ADJ-AUDIT01 — thornmarsh adjacent à Millhaven
     flavorText: '"Walk it, mark it, come back breathing. That\'s all I ask."',
     objectives: [
       { id: 'visit_marsh', type: 'visit', spotId: 'thornmarsh', label: 'Explore the Thornmarsh' },
@@ -278,6 +281,7 @@ export const QUESTS = {
     name: 'A Package for the Ruins',
     description: 'Carry a sealed crate to the watch-camp at the Crumbled Ruins.',
     giverNpc: 'merchant_pell',
+    issuedBy: 'millhaven', // QSV2-ADJ-AUDIT01 — livraison émise à Millhaven (ruines adjacentes)
     flavorText: '"Don\'t open it. Don\'t shake it. Just get it there in one piece."',
     objectives: [
       {
@@ -329,7 +333,7 @@ export const QUESTS = {
     id: 'nc_graven_elite',
     name: 'The Graven Sentinel',
     description: 'An elite construct guards the inner ruins. Shatter its watch.',
-    giverNpc: 'ironhaven_captain',
+    giverNpc: 'millhaven_elder', // QSV2-ADJ-AUDIT01 — crumbled_ruins adjacent à Millhaven
     flavorText: '"It has stood there a thousand years. Make it kneel."',
     objectives: [
       {
@@ -370,7 +374,7 @@ export const QUESTS = {
     name: 'Beyond the Treeline',
     description:
       'Chart the Wildmere Hills for the Ironhaven survey — and find the pass to Grimspire.',
-    giverNpc: 'greywatch_elder',
+    giverNpc: 'ironhaven_captain', // QSV2-ADJ-AUDIT01 — wildmere adjacent à Ironhaven (+ unlock Grimspire depuis la cité, pas le village de départ)
     flavorText:
       '"The maps end where the hills begin. Help us draw the rest — and the road beyond."',
     objectives: [
@@ -421,7 +425,14 @@ export const QUEST_NPC_REGISTRY = {
 
 /** Résout une quête par id (board, église, maître ou chaîne principale MQ-CHAIN01). */
 export function getQuestById(id) {
-  return QUESTS[id] ?? CHURCH_QUESTS[id] ?? MASTER_QUESTS[id] ?? MAIN_QUESTS[id] ?? null
+  return (
+    QUESTS[id] ??
+    CHURCH_QUESTS[id] ??
+    MASTER_QUESTS[id] ??
+    MAIN_QUESTS[id] ??
+    getVillageQuestById(id) ?? // VQ — quêtes de village générées par adjacence
+    null
+  )
 }
 
 // ── GLD01/GLD02 — Répartition des quêtes du board par lieu (Guilde ville / auberge village) ──
@@ -469,12 +480,34 @@ export function getQuestIssuer(quest) {
 // instantanément complétable à l'acceptation).
 export function snapshotForQuest(quest, state) {
   const baseKills = {}
+  const baseResources = {}
   for (const obj of quest?.objectives ?? []) {
     if (obj.type === 'kill') {
       baseKills[obj.monsterId] = state.world?.monsterKillCounts?.[obj.monsterId] ?? 0
+    } else if (obj.type === 'collect') {
+      // VQ-G2 — collecte comptée en delta : on fige la quantité détenue à l'acceptation.
+      baseResources[obj.resourceId] = state.hero?.inventory?.resources?.[obj.resourceId] ?? 0
     }
   }
-  return { baseKills, baseCraft: state.meta?.craftCount ?? 0 }
+  return {
+    baseKills,
+    baseResources,
+    baseCraft: state.meta?.craftCount ?? 0,
+    acceptedDay: state.world?.dayCount ?? 1, // QSV2-TIMED01 — jour d'acceptation
+  }
+}
+
+// QSV2-TIMED01 — quêtes chronométrées (`deadlineDays`, trajet inclus car le temps de
+// voyage avance `dayCount`). L'expiration est indépendante des objectifs : si la quête
+// n'a pas été RENDUE avant l'échéance, elle échoue (et retombe dans le pool).
+export function questDaysLeft(quest, world) {
+  if (!quest?.deadlineDays) return null
+  const accepted = world?.questProgress?.[quest.id]?.acceptedDay ?? world?.dayCount ?? 1
+  return quest.deadlineDays - ((world?.dayCount ?? 1) - accepted)
+}
+export function isQuestExpired(quest, world) {
+  const left = questDaysLeft(quest, world)
+  return left != null && left < 0
 }
 
 // Statut par objectif, compté DEPUIS l'acceptation (kill/craft = delta vs snapshot ;
@@ -502,6 +535,14 @@ export function questObjectiveStatus(quest, state) {
     } else if (obj.type === 'craft') {
       target = obj.count
       raw = Math.max(0, (state.meta?.craftCount ?? 0) - baseCraft)
+    } else if (obj.type === 'collect') {
+      // VQ-G2 — collecte = ressources gagnées depuis l'acceptation (delta vs snapshot).
+      target = obj.count
+      const baseRes = base.baseResources ?? {}
+      raw = Math.max(
+        0,
+        (state.hero?.inventory?.resources?.[obj.resourceId] ?? 0) - (baseRes[obj.resourceId] ?? 0),
+      )
     } else if (obj.type === 'skill_levelup') {
       target = obj.targetLevel
       raw = skillLevels[obj.skillId] ?? 0
@@ -514,7 +555,12 @@ export function questObjectiveStatus(quest, state) {
       const equip = state.hero?.inventory?.equipment ?? []
       const hasItems = (res[obj.resourceId] ?? 0) >= (obj.count ?? 1)
       const hasWeapon = equip.some((e) => e.templateId === obj.weaponTemplateId)
-      raw = hasItems || hasWeapon ? 1 : 0
+      // MQ-TURNIN-SIG01 — provenance : le resourceId peut tomber ailleurs (earth_crystal,
+      // ancient_bone, cursed_gem ont d'autres sources). La voie « item » exige donc d'avoir
+      // VAINCU l'élite ; la voie « arme signature » prouve déjà la provenance (l'arme ne
+      // vient que de l'élite). [Provenance complète via ressource signature unique = RES02.]
+      const killedElite = (state.world?.monsterKillCounts?.[obj.eliteId] ?? 0) >= 1
+      raw = hasWeapon || (hasItems && killedElite) ? 1 : 0
     }
     return { obj, current: Math.min(raw, target), target, done: raw >= target }
   })

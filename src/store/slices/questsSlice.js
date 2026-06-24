@@ -1,7 +1,12 @@
 // REFAC01 — Slice « quests » du store (extrait de gameStore.js, comportement inchangé).
 import { createEquipmentInstance, RARITY_TIERS } from '../../data/equipment'
 import { getMqTutorialHint } from '../../data/hints'
-import { getQuestById, snapshotForQuest, isQuestCompleteState } from '../../data/quests'
+import {
+  getQuestById,
+  snapshotForQuest,
+  isQuestCompleteState,
+  isQuestExpired,
+} from '../../data/quests'
 import { RESOURCES } from '../../data/resources'
 import { SKILLS } from '../../data/skills'
 import { ZONES } from '../../data/zones'
@@ -67,6 +72,27 @@ export const createQuestsSlice = (set, get) => ({
     const quest = getQuestById(questId)
     return isQuestCompleteState(quest, get())
   },
+
+  // QSV2-TIMED01 — retire les quêtes chronométrées expirées (échec → elles retombent
+  // dans le pool, redevenant disponibles à la prochaine rotation).
+  pruneExpiredQuests: () =>
+    set((state) => {
+      const active = state.world.activeQuests ?? []
+      const expired = active.filter((id) => {
+        const q = getQuestById(id)
+        return q && isQuestExpired(q, state.world)
+      })
+      if (expired.length === 0) return state
+      const progress = { ...(state.world.questProgress ?? {}) }
+      for (const id of expired) delete progress[id]
+      return {
+        world: {
+          ...state.world,
+          activeQuests: active.filter((id) => !expired.includes(id)),
+          questProgress: progress,
+        },
+      }
+    }),
 
   completeQuest: (questId) =>
     set((state) => {

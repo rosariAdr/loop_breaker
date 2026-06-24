@@ -5,9 +5,9 @@ import { MAIN_QUESTS, MAIN_QUEST_ORDER, nextMainQuest } from './mainQuests'
 import { getQuestById, QUEST_NPC_REGISTRY, isQuestCompleteState } from './quests'
 import { EQUIPMENT_TEMPLATES, createEquipmentInstance } from './equipment'
 
-const stateWith = ({ resources = {}, equipment = [], level = 1 } = {}) => ({
+const stateWith = ({ resources = {}, equipment = [], level = 1, kills = {} } = {}) => ({
   hero: { level, inventory: { resources, equipment }, activeSkills: [], passiveSkills: [] },
-  world: { questProgress: {}, monsterKillCounts: {}, visitedSpots: [] },
+  world: { questProgress: {}, monsterKillCounts: kills, visitedSpots: [] },
   meta: { craftCount: 0 },
 })
 
@@ -78,22 +78,28 @@ describe('MQ-ELITETURN01 — armes signature d’élite', () => {
   })
 })
 
-describe('MQ-ELITETURN01 — complétude de l’objectif elite_turnin', () => {
+describe('MQ-ELITETURN01 / MQ-TURNIN-SIG01 — complétude de l’objectif elite_turnin', () => {
   const mq02 = MAIN_QUESTS.mq02_millhaven_road
 
   it('non rempli sans items ni arme', () => {
     expect(isQuestCompleteState(mq02, stateWith())).toBe(false)
   })
 
-  it('rempli avec 3× l’item rare', () => {
-    expect(isQuestCompleteState(mq02, stateWith({ resources: { earth_crystal: 3 } }))).toBe(true)
+  it('rempli avec 3× l’item rare ET l’élite vaincu', () => {
+    const st = stateWith({ resources: { earth_crystal: 3 }, kills: { old_oakheart: 1 } })
+    expect(isQuestCompleteState(mq02, st)).toBe(true)
+  })
+
+  it('MQ-TURNIN-SIG01 — PAS rempli avec les items mais sans avoir vaincu l’élite (provenance)', () => {
+    expect(isQuestCompleteState(mq02, stateWith({ resources: { earth_crystal: 3 } }))).toBe(false)
   })
 
   it('PAS rempli avec seulement 2× l’item rare', () => {
-    expect(isQuestCompleteState(mq02, stateWith({ resources: { earth_crystal: 2 } }))).toBe(false)
+    const st = stateWith({ resources: { earth_crystal: 2 }, kills: { old_oakheart: 1 } })
+    expect(isQuestCompleteState(mq02, st)).toBe(false)
   })
 
-  it('rempli si le héros possède déjà l’arme signature', () => {
+  it('rempli via l’arme signature (provenance prouvée, sans kill requis)', () => {
     const st = stateWith({ equipment: [{ templateId: 'oakheart_branch', instanceId: 'x' }] })
     expect(isQuestCompleteState(mq02, st)).toBe(true)
   })

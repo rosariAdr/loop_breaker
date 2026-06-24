@@ -8,8 +8,34 @@ import {
   CHURCH_ROTATION_DAYS,
 } from './churchQuests'
 import { useGameStore } from '../store/gameStore'
+import { MONSTERS } from './monsters'
+import { neighborsOf } from './worldGraph'
 
 const store = () => useGameStore.getState()
+
+describe('CHQ-LOC01 — pool d’église filtré par lieu', () => {
+  const spotOf = (q) => {
+    const k = q.objectives.find((o) => o.type === 'kill')
+    return k ? MONSTERS[k.monsterId]?.huntingSpot : null
+  }
+  it('à Greywatch, ne propose que des quêtes ciblant un spot adjacent', () => {
+    const adj = new Set(neighborsOf('greywatch'))
+    const qs = getActiveChurchQuests(1, 6, 'greywatch')
+    expect(qs.length).toBeGreaterThan(0)
+    for (const q of qs) {
+      const s = spotOf(q)
+      expect(s == null || adj.has(s), `${q.id}:${s}`).toBe(true)
+    }
+  })
+  it('Millhaven propose un pool ≥ Greywatch (plus de spots adjacents)', () => {
+    const gw = getActiveChurchQuests(1, 6, 'greywatch').length
+    const mh = getActiveChurchQuests(1, 6, 'millhaven').length
+    expect(mh).toBeGreaterThanOrEqual(gw)
+  })
+  it('sans lieu : pool complet (rétro-compat)', () => {
+    expect(getActiveChurchQuests(1, 6).length).toBe(6)
+  })
+})
 
 describe('CHQ01 — rotation du pool de quêtes', () => {
   it('expose un pool de quêtes (≥ 4)', () => {
