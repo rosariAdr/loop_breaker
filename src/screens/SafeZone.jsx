@@ -637,7 +637,7 @@ function ChurchPanel({ onBack }) {
   const activeIds = world.activeQuests ?? []
   const completedIds = world.completedQuests ?? []
   const dayCount = world.dayCount ?? 1
-  const rotating = getActiveChurchQuests(dayCount)
+  const rotating = getActiveChurchQuests(dayCount, undefined, world.currentLocation) // CHQ-LOC01
   const available = rotating.filter(
     (q) => !activeIds.includes(q.id) && !completedIds.includes(q.id),
   )

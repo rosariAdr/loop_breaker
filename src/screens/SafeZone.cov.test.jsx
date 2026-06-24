@@ -39,18 +39,22 @@ describe('TEST-COV01 — ChurchPanel reflète la rotation CHQ01', () => {
     return screen.getByTestId('church-quests')
   }
 
+  // CHQ-LOC01 — le panneau filtre par lieu (Ironhaven) ; on calcule les attentes avec
+  // le même filtre d'adjacence.
   it('affiche toutes les quêtes du pool tournant du jour', () => {
     const day = 1
     const panel = openChurchQuestsPanel(day)
-    for (const q of getActiveChurchQuests(day)) {
+    for (const q of getActiveChurchQuests(day, undefined, 'ironhaven')) {
       expect(within(panel).getByText(q.name)).toBeInTheDocument()
     }
   })
 
   it('un autre bloc de rotation affiche un pool différent', () => {
-    const block0 = new Set(getActiveChurchQuests(1).map((q) => q.id))
+    const block0 = new Set(getActiveChurchQuests(1, undefined, 'ironhaven').map((q) => q.id))
     const laterDay = CHURCH_ROTATION_DAYS + 1
-    const uniqueToBlock1 = getActiveChurchQuests(laterDay).filter((q) => !block0.has(q.id))
+    const uniqueToBlock1 = getActiveChurchQuests(laterDay, undefined, 'ironhaven').filter(
+      (q) => !block0.has(q.id),
+    )
     // garde-fou : la rotation produit bien au moins une quête neuve dans le bloc suivant
     expect(uniqueToBlock1.length).toBeGreaterThan(0)
 

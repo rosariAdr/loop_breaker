@@ -568,32 +568,36 @@ describe('QuestBoard — affichage quêtes', () => {
     }))
   })
 
-  it('affiche au moins une quête disponible (sir_aldric a 3 quêtes)', () => {
+  it('affiche au moins une quête disponible (Ironhaven)', () => {
     render(<QuestBoard />)
     // GLD01 — en ville la section s'intitule "Available · Guild Commissions"
     expect(screen.getByText(/Available/)).toBeInTheDocument()
-    expect(screen.getByText('First Blood')).toBeInTheDocument()
+    // QSV2-ADJ-AUDIT01 — Clear the Marsh émise à Ironhaven (thornmarsh adjacent)
+    expect(screen.getByText('Clear the Marsh')).toBeInTheDocument()
   })
 
-  it('affiche le NPC donneur sur chaque quête (Q08)', () => {
+  it('affiche le NPC donneur sur chaque quête', () => {
     render(<QuestBoard />)
-    // sir_aldric (titre = Knight of Millhaven)
-    expect(screen.getAllByText(/Knight of Millhaven/).length).toBeGreaterThan(0)
+    // QSV2-ADJ-AUDIT01 — à Ironhaven : Captain Vaern
+    expect(screen.getAllByText(/Captain of the Ironhaven Guard/).length).toBeGreaterThan(0)
   })
 
-  it('affiche les nouvelles quêtes Q03 (boss)', () => {
+  it('affiche la quête boss Map 1 ; les boss Map 2 sont gelés (QSV2-ADJ-AUDIT01)', () => {
     render(<QuestBoard />)
     expect(screen.getByText('Silence the Crypt')).toBeInTheDocument()
-    expect(screen.getByText('Storm the Citadel')).toBeInTheDocument()
-    expect(screen.getByText('End the Demon')).toBeInTheDocument()
+    // Storm the Citadel / End the Demon = Map 2 (mapTier:2) → hors board tant que Map 2 fermée
+    expect(screen.queryByText('Storm the Citadel')).not.toBeInTheDocument()
+    expect(screen.queryByText('End the Demon')).not.toBeInTheDocument()
   })
 
-  it('affiche les nouvelles quêtes Q08 (greywatch) — disponibles à Greywatch (QSV2)', () => {
-    // QSV2-LOCALITY01 — les quêtes de Greywatch ne sont disponibles qu'à Greywatch.
-    useGameStore.setState((s) => ({ world: { ...s.world, currentLocation: 'greywatch' } }))
+  it('affiche les quêtes de Greywatch (Sir Aldric relocalisé) — QSV2-ADJ-AUDIT01', () => {
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentLocation: 'greywatch', currentNode: 'greywatch' },
+    }))
     render(<QuestBoard />)
-    expect(screen.getByText('Bog Purge')).toBeInTheDocument()
-    expect(screen.getByText('Cleanse the Ruins')).toBeInTheDocument()
+    expect(screen.getByText('First Blood')).toBeInTheDocument()
+    // Bog Purge a été re-domicilié à Millhaven (thornmarsh non adjacent à Greywatch)
+    expect(screen.queryByText('Bog Purge')).not.toBeInTheDocument()
   })
 
   it('clic sur Accept ajoute la quête aux activeQuests', () => {

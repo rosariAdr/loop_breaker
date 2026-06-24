@@ -1,6 +1,6 @@
 // NPC02 — 10 quêtes de contenu : validité des références (monstres, spots, équip., ressources).
 import { describe, it, expect } from 'vitest'
-import { QUESTS, QUEST_NPCS } from './quests'
+import { QUESTS, QUEST_NPCS, QUEST_NPC_REGISTRY } from './quests'
 import { MONSTERS } from './monsters'
 import { ZONES } from './zones'
 import { EQUIPMENT_TEMPLATES } from './equipment'
@@ -21,7 +21,8 @@ describe('NPC02 — 10 nouvelles quêtes de contenu', () => {
   })
 
   it('chaque quête a un donneur valide', () => {
-    for (const q of ncQuests) expect(QUEST_NPCS[q.giverNpc]).toBeTruthy()
+    // QSV2-ADJ-AUDIT01 — givers re-domiciliés peuvent venir du registre (ex. Warden Halric).
+    for (const q of ncQuests) expect(QUEST_NPC_REGISTRY[q.giverNpc], q.id).toBeTruthy()
   })
 
   it('les objectifs kill ciblent des monstres existants', () => {

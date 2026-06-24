@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import {
   QUESTS,
   QUEST_NPC_REGISTRY,
+  getQuestById,
   getQuestIssuer,
   isPrestigiousQuest,
+  questDaysLeft,
   PRESTIGE_MIN_TOKENS,
 } from '../data/quests'
 import { MAIN_QUESTS } from '../data/mainQuests'
+import { getActiveVillageQuests } from '../data/villageQuests'
 import { getLocationType } from '../data/zones'
 import { SKILLS } from '../data/skills'
 import { RESOURCES } from '../data/resources'
@@ -58,8 +61,14 @@ export default function QuestBoard() {
     completeQuest,
     abandonQuest,
     isMainQuestAvailable,
+    pruneExpiredQuests,
   } = useGameStore()
   const [pendingAbandon, setPendingAbandon] = useState(null) // questObject
+
+  // QSV2-TIMED01 — purge les quêtes chronométrées expirées à l'ouverture / au changement de jour.
+  useEffect(() => {
+    pruneExpiredQuests()
+  }, [world.dayCount, pruneExpiredQuests])
 
   const activeIds = world.activeQuests ?? []
   const completedIds = world.completedQuests ?? []
@@ -82,13 +91,28 @@ export default function QuestBoard() {
   const allBoardQuests = [...Object.values(QUESTS), ...Object.values(MAIN_QUESTS)]
   const canTurnInHere = (q) => getQuestIssuer(q) === here || isCity
 
-  const available = allBoardQuests.filter((q) => {
-    if (getQuestIssuer(q) !== here) return false
-    if (activeIds.includes(q.id) || completedIds.includes(q.id)) return false
-    return q.isMainQuest ? isMainQuestAvailable(q.id) : true
+  // VQ06/VQ07 — quêtes de village générées par adjacence (rotation + level-gate VQ-G3/G4).
+  const villageActive = getActiveVillageQuests(here, {
+    dayCount: world.dayCount,
+    heroLevel: hero.level,
+    isCity,
   })
-  const active = allBoardQuests.filter((q) => activeIds.includes(q.id) && canTurnInHere(q))
-  const completed = allBoardQuests.filter((q) => completedIds.includes(q.id) && canTurnInHere(q))
+  const available = [
+    ...allBoardQuests.filter((q) => {
+      if ((q.mapTier ?? 1) > 1) return false // QSV2-ADJ-AUDIT01 — quêtes Map 2 gelées hors board
+      if (getQuestIssuer(q) !== here) return false
+      if (activeIds.includes(q.id) || completedIds.includes(q.id)) return false
+      return q.isMainQuest ? isMainQuestAvailable(q.id) : true
+    }),
+    ...villageActive.filter((q) => !activeIds.includes(q.id) && !completedIds.includes(q.id)),
+  ]
+  // active/completed résolus par id (inclut les quêtes de village acceptées).
+  const resolveIds = (ids) => ids.map((id) => getQuestById(id)).filter(Boolean)
+  const active = resolveIds(activeIds).filter(canTurnInHere)
+  const completed = resolveIds(completedIds).filter(canTurnInHere)
+  // MQUI01 — la chaîne principale a sa propre section en tête du board.
+  const mainAvailable = available.filter((q) => q.isMainQuest)
+  const otherAvailable = available.filter((q) => !q.isMainQuest)
 
   const rank = getRankInfo(hero.reputationTokens)
   // une quête prestigieuse ne peut être acceptée qu'à partir du rang Argent
@@ -135,6 +159,23 @@ export default function QuestBoard() {
         {/* Q06 — Rang aventurier (la « carte d'aventurier ») */}
         <RankBanner rank={rank} />
 
+        {mainAvailable.length > 0 && (
+          <Section title="⚔ Main Quest">
+            {mainAvailable.map((q) => (
+              <QuestCard
+                key={q.id}
+                quest={q}
+                questStatus="available"
+                heroLevel={hero.level}
+                killCounts={world.monsterKillCounts}
+                visitedSpots={visitedSpots}
+                craftCount={craftCount}
+                onAccept={() => acceptGuard(q)}
+              />
+            ))}
+          </Section>
+        )}
+
         {active.length > 0 && (
           <Section title={`Active (${active.length})`}>
             {active.map((q) => (
@@ -147,6 +188,7 @@ export default function QuestBoard() {
                 visitedSpots={visitedSpots}
                 craftCount={craftCount}
                 base={world.questProgress?.[q.id] ?? {}}
+                daysLeft={questDaysLeft(q, world)}
                 canComplete={isQuestComplete(q.id)}
                 onComplete={() => completeQuest(q.id)}
                 onAbandon={() => setPendingAbandon(q)}
@@ -155,9 +197,9 @@ export default function QuestBoard() {
           </Section>
         )}
 
-        {available.length > 0 && (
+        {otherAvailable.length > 0 && (
           <Section title={isGuild ? 'Available · Guild Commissions' : 'Available'}>
-            {available.map((q) => {
+            {otherAvailable.map((q) => {
               const locked = isPrestigiousQuest(q) && !canAcceptPrestige
               return (
                 <QuestCard
@@ -285,6 +327,7 @@ export function QuestCard({
   skillLevels = {},
   base = {}, // FIX-QUESTSNAP01 — snapshot { baseKills, baseCraft } pour la progression en delta
   prestige = false,
+  daysLeft = null,
   lockedReason = null,
   canComplete,
   onAccept,
@@ -312,6 +355,11 @@ export function QuestCard({
               fontSize: '0.9rem',
             }}
           >
+            {quest.isMainQuest && (
+              <span title="Main quest" style={{ color: '#ffd700', marginRight: 4 }}>
+                ⚔
+              </span>
+            )}
             {prestige && (
               <span title="Guild commission" style={{ color: '#c084fc', marginRight: 4 }}>
                 ⚜
@@ -319,6 +367,17 @@ export function QuestCard({
             )}
             {quest.name}
             {isCompleted && ' ✓'}
+            {isActive && daysLeft != null && (
+              <span
+                style={{
+                  color: daysLeft <= 1 ? '#e07070' : '#9a8060',
+                  fontSize: '0.7rem',
+                  marginLeft: 6,
+                }}
+              >
+                ⏳ {daysLeft >= 0 ? `${daysLeft}d` : 'expired'}
+              </span>
+            )}
           </p>
           {npc && (
             <p

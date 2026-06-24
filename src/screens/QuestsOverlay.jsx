@@ -16,7 +16,11 @@ export default function QuestsOverlay({ onClose }) {
 
   const gameState = { hero, world, meta }
   const activeQuests = world.activeQuests ?? []
-  const quests = activeQuests.map((id) => getQuestById(id)).filter(Boolean)
+  const quests = activeQuests
+    .map((id) => getQuestById(id))
+    .filter(Boolean)
+    // MQUI01 — épingle la quête principale en tête du tracker.
+    .sort((a, b) => (b.isMainQuest ? 1 : 0) - (a.isMainQuest ? 1 : 0))
 
   return (
     <div className="sheet-scrim" onClick={back}>
@@ -74,7 +78,7 @@ export default function QuestsOverlay({ onClose }) {
                       color: 'var(--ink, #2a1c0e)',
                     }}
                   >
-                    {giver?.sigil ? `${giver.sigil} ` : ''}
+                    {q.isMainQuest ? '⚔ ' : giver?.sigil ? `${giver.sigil} ` : ''}
                     {q.name}
                   </span>
                   {ready && (

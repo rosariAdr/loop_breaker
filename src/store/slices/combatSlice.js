@@ -1,6 +1,8 @@
 // REFAC01 — Slice « combat » du store (extrait de gameStore.js, comportement inchangé).
 import { IDLE_MASTERY_KILLS } from './idleSlice'
 import { VIGOR_COST, VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
+import { getQuestById } from '../../data/quests'
+import { useToastStore } from '../toastStore'
 
 export const createCombatSlice = (set, get) => ({
   // ── Kill count & idle ─────────────────────────────────────────────────────
@@ -19,6 +21,26 @@ export const createCombatSlice = (set, get) => ({
     // ONB01/TUT02 — au passage du seuil de maîtrise, tip « idle unlocked » (one-shot ;
     // déduplication + respect du réglage tutoriel gérés par triggerHint).
     if (before + 1 >= IDLE_MASTERY_KILLS) get().triggerHint('idle_unlock')
+
+    // QTOAST01 — pop-up de progrès pour les quêtes ACTIVES dont un objectif kill cible ce
+    // monstre (combat + idle). Progresse 1..N puis « done » à l'exact ; pas de spam après.
+    const st = get()
+    for (const id of st.world.activeQuests ?? []) {
+      const q = getQuestById(id)
+      const obj = q?.objectives?.find((o) => o.type === 'kill' && o.monsterId === monsterId)
+      if (!obj) continue
+      const baseKill = st.world.questProgress?.[id]?.baseKills?.[monsterId] ?? 0
+      const raw = (st.world.monsterKillCounts?.[monsterId] ?? 0) - baseKill
+      if (raw > obj.count) continue // déjà accompli → pas de spam
+      const done = raw === obj.count
+      useToastStore
+        .getState()
+        .addToast(
+          `${done ? '✓ ' : ''}${q.name}: ${obj.label} ${raw}/${obj.count}`,
+          'quest',
+          done ? 3000 : 2200,
+        )
+    }
   },
 
   // ── Combat ────────────────────────────────────────────────────────────────
