@@ -1,4 +1,5 @@
 // REFAC01 — Slice « quests » du store (extrait de gameStore.js, comportement inchangé).
+import { CHURCH_QUESTS, churchRotationBlock } from '../../data/churchQuests'
 import { createEquipmentInstance, RARITY_TIERS } from '../../data/equipment'
 import { getMqTutorialHint } from '../../data/hints'
 import {
@@ -6,6 +7,8 @@ import {
   snapshotForQuest,
   isQuestCompleteState,
   isQuestExpired,
+  questXpReward,
+  QUEST_XP_REPEAT_MULT,
 } from '../../data/quests'
 import { RESOURCES } from '../../data/resources'
 import { SKILLS } from '../../data/skills'
@@ -94,12 +97,27 @@ export const createQuestsSlice = (set, get) => ({
       }
     }),
 
-  completeQuest: (questId) =>
+  completeQuest: (questId) => {
+    let xpGain = 0
     set((state) => {
       const { activeQuests: active, completedQuests: completed } = state.world
       if (!active.includes(questId)) return state
       const quest = getQuestById(questId)
       if (!quest) return state
+      // FIX-CHURCH-DRY01 — les actes de dévotion (église) sont RÉPÉTABLES : au lieu d'être exclus
+      // à jamais, on stampe le bloc de rotation courant → re-proposables au bloc suivant.
+      const isChurchQuest = !!CHURCH_QUESTS[questId]
+      const churchDeeds = isChurchQuest
+        ? {
+            ...(state.world.churchDeeds ?? {}),
+            [questId]: churchRotationBlock(state.world.dayCount),
+          }
+        : (state.world.churchDeeds ?? {})
+      // FIX-QXP01 — XP de héros : plein la 1ʳᵉ fois, réduit sur re-complétion (quêtes répétables).
+      const firstTime = !completed.includes(questId)
+      xpGain = firstTime
+        ? questXpReward(quest)
+        : Math.round(questXpReward(quest) * QUEST_XP_REPEAT_MULT)
       const r = quest.reward
       const newManaStones = [...state.hero.inventory.manaStones]
       const newEquipment = [...state.hero.inventory.equipment]
@@ -174,6 +192,7 @@ export const createQuestsSlice = (set, get) => ({
 
       // Q07/Q09 — Toast récompense de quête
       const rewardParts = []
+      if (xpGain) rewardParts.push(`+${xpGain} XP`)
       if (r.gold) rewardParts.push(`+${r.gold}g`)
       if (repTokens) rewardParts.push(`+${repTokens} 🪙`)
       if (r.skill) rewardParts.push(SKILLS[r.skill.skillId]?.name ?? r.skill.skillId)
@@ -199,7 +218,8 @@ export const createQuestsSlice = (set, get) => ({
         world: {
           ...state.world,
           activeQuests: active.filter((q) => q !== questId),
-          completedQuests: [...completed, questId],
+          completedQuests: completed.includes(questId) ? completed : [...completed, questId],
+          churchDeeds,
           unlockedZones: newUnlockedZones,
           unlockedNodes: newUnlockedNodes,
         },
@@ -219,7 +239,10 @@ export const createQuestsSlice = (set, get) => ({
           },
         },
       }
-    }),
+    })
+    // FIX-QXP01 — octroi de l'XP hors du set (réutilise gainExp : level-up + hint gérés).
+    if (xpGain > 0) get().gainExp(xpGain)
+  },
 
   // ── Réputation ───────────────────────────────────────────────────────────
   addReputationTokens: (amount) =>

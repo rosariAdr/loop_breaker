@@ -7,6 +7,8 @@ import {
   getQuestIssuer,
   isPrestigiousQuest,
   questDaysLeft,
+  questObjectiveStatus,
+  questXpReward,
   PRESTIGE_MIN_TOKENS,
 } from '../data/quests'
 import { MAIN_QUESTS } from '../data/mainQuests'
@@ -72,8 +74,9 @@ export default function QuestBoard() {
 
   const activeIds = world.activeQuests ?? []
   const completedIds = world.completedQuests ?? []
-  const visitedSpots = world.visitedSpots ?? []
-  const craftCount = meta?.craftCount ?? 0
+  // FIX-QCARD-COLLECT01 — statut d'objectif via la source unique (gère collect/elite_turnin).
+  // `accepted=false` pour les cartes « available » (pas de cumul avant acceptation).
+  const qStatus = (q, accepted) => questObjectiveStatus(q, { world, hero, meta }, { accepted })
 
   // GLD01/GLD02 — venue : la ville = Guilde (titre/labels), le village = auberge.
   const locationType = getLocationType(world)
@@ -167,9 +170,7 @@ export default function QuestBoard() {
                 quest={q}
                 questStatus="available"
                 heroLevel={hero.level}
-                killCounts={world.monsterKillCounts}
-                visitedSpots={visitedSpots}
-                craftCount={craftCount}
+                objectiveStatus={qStatus(q, false)}
                 onAccept={() => acceptGuard(q)}
               />
             ))}
@@ -184,10 +185,7 @@ export default function QuestBoard() {
                 quest={q}
                 questStatus="active"
                 heroLevel={hero.level}
-                killCounts={world.monsterKillCounts}
-                visitedSpots={visitedSpots}
-                craftCount={craftCount}
-                base={world.questProgress?.[q.id] ?? {}}
+                objectiveStatus={qStatus(q, true)}
                 daysLeft={questDaysLeft(q, world)}
                 canComplete={isQuestComplete(q.id)}
                 onComplete={() => completeQuest(q.id)}
@@ -207,9 +205,7 @@ export default function QuestBoard() {
                   quest={q}
                   questStatus="available"
                   heroLevel={hero.level}
-                  killCounts={world.monsterKillCounts}
-                  visitedSpots={visitedSpots}
-                  craftCount={craftCount}
+                  objectiveStatus={qStatus(q, false)}
                   prestige={isPrestigiousQuest(q)}
                   lockedReason={locked ? `Requires ${PRESTIGE_MIN_TOKENS} 🪙 (Silver rank)` : null}
                   onAccept={() => acceptGuard(q)}
@@ -220,7 +216,7 @@ export default function QuestBoard() {
         )}
 
         {completed.length > 0 && (
-          <Section title={`Completed (${completed.length})`}>
+          <CollapsibleSection title={`Completed (${completed.length})`} defaultOpen={false}>
             {completed.map((q) => (
               <QuestCard
                 key={q.id}
@@ -230,7 +226,7 @@ export default function QuestBoard() {
                 killCounts={world.monsterKillCounts}
               />
             ))}
-          </Section>
+          </CollapsibleSection>
         )}
 
         {available.length === 0 && active.length === 0 && completed.length === 0 && (
@@ -326,6 +322,7 @@ export function QuestCard({
   craftCount = 0,
   skillLevels = {},
   base = {}, // FIX-QUESTSNAP01 — snapshot { baseKills, baseCraft } pour la progression en delta
+  objectiveStatus = null, // FIX-QCARD-COLLECT01 — statuts précalculés (source unique questObjectiveStatus)
   prestige = false,
   daysLeft = null,
   lockedReason = null,
@@ -343,6 +340,48 @@ export function QuestCard({
   const bgColor = isCompleted ? '#081008' : '#0a0a08'
 
   const npc = QUEST_NPC_REGISTRY[quest.giverNpc]
+
+  // FIX-QCARD-COLLECT01 — source unique : si `objectiveStatus` (issu de questObjectiveStatus)
+  // est fourni, on l'utilise tel quel (gère collect/elite_turnin) ; sinon calcul local
+  // rétro-compatible (kill/craft en delta, cf. FIX-QUESTPROG01).
+  const statuses =
+    objectiveStatus ??
+    (quest.objectives ?? []).map((obj) => {
+      const current =
+        obj.type === 'kill'
+          ? isActive
+            ? Math.min(
+                obj.count,
+                Math.max(0, (killCounts[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0)),
+              )
+            : 0
+          : obj.type === 'level'
+            ? Math.min(obj.targetLevel, heroLevel ?? 1)
+            : obj.type === 'visit'
+              ? visitedSpots.includes(obj.spotId)
+                ? 1
+                : 0
+              : obj.type === 'craft'
+                ? isActive
+                  ? Math.min(obj.count, Math.max(0, craftCount - baseCraft))
+                  : 0
+                : obj.type === 'skill_levelup'
+                  ? Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0)
+                  : 0
+      const target =
+        obj.type === 'kill'
+          ? obj.count
+          : obj.type === 'level'
+            ? obj.targetLevel
+            : obj.type === 'craft'
+              ? obj.count
+              : obj.type === 'collect'
+                ? obj.count
+                : obj.type === 'skill_levelup'
+                  ? obj.targetLevel
+                  : 1
+      return { obj, current, target, done: current >= target }
+    })
 
   return (
     <div className="p-4 rounded border" style={{ background: bgColor, borderColor }}>
@@ -470,55 +509,34 @@ export function QuestCard({
 
       {!isCompleted && (
         <div className="flex flex-col gap-2 mb-2">
-          {quest.objectives.map((obj) => {
-            // FIX-QUESTPROG01 — kill/craft sont des objectifs en DELTA (snapshot à
-            // l'acceptation). Avant d'accepter (carte « available »), la progression
-            // doit être 0 — sinon le board affiche le cumul de kills/crafts du joueur.
-            const current =
-              obj.type === 'kill'
-                ? isActive
-                  ? Math.min(
-                      obj.count,
-                      Math.max(
-                        0,
-                        (killCounts[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0),
-                      ),
-                    )
-                  : 0
-                : obj.type === 'level'
-                  ? Math.min(obj.targetLevel, heroLevel ?? 1)
-                  : obj.type === 'visit'
-                    ? visitedSpots.includes(obj.spotId)
-                      ? 1
-                      : 0
-                    : obj.type === 'craft'
-                      ? isActive
-                        ? Math.min(obj.count, Math.max(0, craftCount - baseCraft))
-                        : 0
-                      : obj.type === 'skill_levelup'
-                        ? Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0)
-                        : 0
-            const target =
-              obj.type === 'kill'
-                ? obj.count
-                : obj.type === 'level'
-                  ? obj.targetLevel
-                  : obj.type === 'craft'
-                    ? obj.count
-                    : obj.type === 'skill_levelup'
-                      ? obj.targetLevel
-                      : 1
-            const done = current >= target
+          {statuses.map(({ obj, current, target, done }) => {
             const pct = target > 0 ? current / target : 0
+            // QUI-QOBJ-STYLE01 — libellé lisible (14px/500) + compteur en pastille colorée par état
+            // (gris pas commencé → ambre en cours → vert fait). Carte sombre (board).
+            const started = current > 0
+            const iconColor = done ? '#80c040' : started ? '#d4af70' : '#7a6a4a'
+            const pillBg = done ? '#1e3010' : started ? '#3a2c12' : '#2a2418'
+            const pillFg = done ? '#8fd257' : started ? '#e6b95e' : '#9a8558'
 
             return (
               <div key={obj.id} className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <span style={{ color: done ? '#40c080' : '#4a3a2a', fontSize: '0.7rem' }}>
-                    {done ? '✓' : '○'}
+                  <span style={{ color: iconColor, fontSize: '0.85rem' }}>{done ? '✓' : '○'}</span>
+                  <span style={{ color: '#dcc79a', fontSize: '0.875rem', fontWeight: 500 }}>
+                    {obj.label}
                   </span>
-                  <span style={{ color: done ? '#60a060' : '#6a5a4a', fontSize: '0.75rem' }}>
-                    {obj.label} ({current}/{target})
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      fontSize: '0.7rem',
+                      fontWeight: 500,
+                      padding: '1px 8px',
+                      borderRadius: 10,
+                      background: pillBg,
+                      color: pillFg,
+                    }}
+                  >
+                    {current}/{target}
                   </span>
                 </div>
                 {/* Q02 — Barre de progression visuelle */}
@@ -530,13 +548,13 @@ export function QuestCard({
                   aria-valuemin={0}
                   aria-valuemax={target}
                   className="rounded overflow-hidden ml-4"
-                  style={{ height: '4px', background: '#1a1410' }}
+                  style={{ height: '5px', background: '#1a1410' }}
                 >
                   <div
                     className="h-full rounded transition-all duration-500"
                     style={{
                       width: `${Math.min(100, pct * 100)}%`,
-                      background: done ? '#80c040' : '#d4af70',
+                      background: done ? '#80c040' : '#c8912e',
                     }}
                   />
                 </div>
@@ -547,6 +565,10 @@ export function QuestCard({
       )}
 
       <div className="flex flex-wrap gap-2">
+        {/* FIX-QXP01 — chip XP (toute quête octroie de l'XP de héros) */}
+        <RewardBadge bg="#0f1024" color="#8ab0ff" border="#26325a">
+          +{questXpReward(quest)} XP
+        </RewardBadge>
         {quest.reward.gold && (
           <RewardBadge bg="#1a1408" color="#d4af70" border="#3a2808">
             +{quest.reward.gold}g
@@ -602,6 +624,35 @@ function RewardBadge({ bg, color, border, children }) {
     >
       {children}
     </span>
+  )
+}
+
+// FIX-QCOMPLETED-COLLAPSE01 — section repliable (utilisée pour « Completed », repliée par défaut).
+export function CollapsibleSection({ title, children, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="flex flex-col gap-3">
+      <button
+        type="button"
+        data-testid="collapsible-header"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="text-xs uppercase tracking-widest flex items-center gap-2"
+        style={{
+          color: '#4a3a2a',
+          fontFamily: 'Cinzel, serif',
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <span style={{ fontSize: '0.65rem' }}>{open ? '▾' : '▸'}</span>
+        <span>{title}</span>
+      </button>
+      {open && <div className="qb-grid">{children}</div>}
+    </div>
   )
 }
 

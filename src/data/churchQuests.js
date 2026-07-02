@@ -167,13 +167,21 @@ function churchQuestSpot(q) {
  * (rétro-compat).
  */
 export function getActiveChurchQuests(dayCount = 1, count = CHURCH_ACTIVE_COUNT, location = null) {
-  let pool = Object.values(CHURCH_QUESTS)
+  const all = Object.values(CHURCH_QUESTS)
+  let pool = all
   if (location) {
     const adj = new Set(neighborsOf(location))
-    pool = pool.filter((q) => {
+    const filtered = all.filter((q) => {
       const spot = churchQuestSpot(q)
       return spot == null || adj.has(spot)
     })
+    // CHQ-LOC02 (FIX-CHURCH-DRY01) — ne pas affamer un lieu à faible adjacence (ex. Greywatch =
+    // 1 seul spot voisin → 1 deed) : si le filtre local donne moins de deeds que `count`, on
+    // complète avec le reste du pool pour que la rotation propose toujours de nouveaux actes.
+    pool =
+      filtered.length >= count
+        ? filtered
+        : [...filtered, ...all.filter((q) => !filtered.includes(q))]
   }
   if (pool.length === 0) return []
   const n = Math.min(count, pool.length)
@@ -183,4 +191,20 @@ export function getActiveChurchQuests(dayCount = 1, count = CHURCH_ACTIVE_COUNT,
     out.push(pool[(start + i) % pool.length])
   }
   return out
+}
+
+// FIX-CHURCH-DRY01 — actes de dévotion DISPONIBLES (répétables par bloc de rotation) : on exclut
+// ceux déjà acceptés (activeQuests) et ceux déjà accomplis DANS LE BLOC COURANT
+// (churchDeeds[id] === bloc). Un acte accompli redevient proposable au bloc de rotation suivant
+// → l'église ne s'assèche plus après un cycle.
+export function getAvailableChurchDeeds({
+  dayCount = 1,
+  location = null,
+  activeQuests = [],
+  churchDeeds = {},
+} = {}) {
+  const block = churchRotationBlock(dayCount)
+  return getActiveChurchQuests(dayCount, CHURCH_ACTIVE_COUNT, location).filter(
+    (q) => !activeQuests.includes(q.id) && (churchDeeds[q.id] ?? -1) !== block,
+  )
 }

@@ -1,6 +1,6 @@
 // Q02 (barres progression) + Q06 (rang aventurier) — tests UI sur QuestBoard
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, within } from '@testing-library/react'
+import { render, screen, cleanup, within, fireEvent } from '@testing-library/react'
 import QuestBoard, { getRankInfo, RANK_TIERS } from './QuestBoard'
 import { useGameStore } from '../store/gameStore'
 
@@ -154,10 +154,10 @@ describe('Q02 — Barres de progression objectifs', () => {
       world: { ...state.world, completedQuests: ['first_blood'], activeQuests: [] },
     }))
     render(<QuestBoard />)
+    // FIX-QCOMPLETED-COLLAPSE01 — la section « Completed » est repliée par défaut : on la déplie.
+    fireEvent.click(screen.getByTestId('collapsible-header'))
     // Les progress bars d'objectif sont sur les quêtes non-complétées seulement.
     // first_blood est seul dans completed → 0 bars d'objectifs sur sa carte.
-    // Mais d'autres quêtes "available" ont des bars. On vérifie que la quête completed
-    // n'a pas de bar dans son card (parent text "First Blood ✓")
     const completedTitle = screen.getByText(/First Blood/)
     const card = completedTitle.closest('div.p-4')
     expect(within(card).queryAllByTestId('objective-progress')).toHaveLength(0)

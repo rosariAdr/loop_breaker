@@ -56,8 +56,8 @@ export const MONSTERS = {
     skillDropType: 'passive',
     skillDrop: { chance: 0.1, skillId: 'thick_hide' },
     resourceDrops: [
-      { resourceId: 'wolf_fang', chance: 0.7, qty: { min: 1, max: 2 } },
-      { resourceId: 'wolf_pelt', chance: 0.5, qty: { min: 1, max: 2 } },
+      { resourceId: 'boar_tusk', chance: 0.7, qty: { min: 1, max: 2 } },
+      { resourceId: 'boar_hide', chance: 0.5, qty: { min: 1, max: 2 } },
     ],
   },
 

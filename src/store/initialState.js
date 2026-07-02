@@ -155,6 +155,9 @@ export const INITIAL_WORLD = {
   // FIX-QUESTSNAP01 — snapshot des compteurs cumulés à l'ACCEPTATION de chaque quête.
   // { [questId]: { baseKills: { [monsterId]: n }, baseCraft: n } } → progression = delta.
   questProgress: {},
+  // FIX-CHURCH-DRY01 — actes de dévotion (église) accomplis, par bloc de rotation :
+  // { [churchQuestId]: blockIndex } → répétabilité (re-proposable au bloc suivant).
+  churchDeeds: {},
 }
 
 // ── État méta (persiste entre les runs) ─────────────────────────────────────

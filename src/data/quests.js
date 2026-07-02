@@ -512,7 +512,10 @@ export function isQuestExpired(quest, world) {
 
 // Statut par objectif, compté DEPUIS l'acceptation (kill/craft = delta vs snapshot ;
 // level/visit/skill_levelup = seuils d'état). Source unique pour le store ET l'UI.
-export function questObjectiveStatus(quest, state) {
+export function questObjectiveStatus(quest, state, { accepted = true } = {}) {
+  // FIX-QUESTPROG01 / FIX-QCARD-COLLECT01 — avant acceptation (`accepted:false`, carte
+  // « available »), les objectifs en DELTA (kill/craft/collect) affichent 0 : sinon le
+  // board montrerait le cumul du joueur. `accepted` défaut true → comportement du store.
   const base = state.world?.questProgress?.[quest?.id] ?? {}
   const baseKills = base.baseKills ?? {}
   const baseCraft = base.baseCraft ?? 0
@@ -522,10 +525,13 @@ export function questObjectiveStatus(quest, state) {
     let target = 1
     if (obj.type === 'kill') {
       target = obj.count
-      raw = Math.max(
-        0,
-        (state.world?.monsterKillCounts?.[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0),
-      )
+      raw = accepted
+        ? Math.max(
+            0,
+            (state.world?.monsterKillCounts?.[obj.monsterId] ?? 0) -
+              (baseKills[obj.monsterId] ?? 0),
+          )
+        : 0
     } else if (obj.type === 'level') {
       target = obj.targetLevel
       raw = state.hero?.level ?? 1
@@ -534,15 +540,18 @@ export function questObjectiveStatus(quest, state) {
       raw = (state.world?.visitedSpots ?? []).includes(obj.spotId) ? 1 : 0
     } else if (obj.type === 'craft') {
       target = obj.count
-      raw = Math.max(0, (state.meta?.craftCount ?? 0) - baseCraft)
+      raw = accepted ? Math.max(0, (state.meta?.craftCount ?? 0) - baseCraft) : 0
     } else if (obj.type === 'collect') {
       // VQ-G2 — collecte = ressources gagnées depuis l'acceptation (delta vs snapshot).
       target = obj.count
       const baseRes = base.baseResources ?? {}
-      raw = Math.max(
-        0,
-        (state.hero?.inventory?.resources?.[obj.resourceId] ?? 0) - (baseRes[obj.resourceId] ?? 0),
-      )
+      raw = accepted
+        ? Math.max(
+            0,
+            (state.hero?.inventory?.resources?.[obj.resourceId] ?? 0) -
+              (baseRes[obj.resourceId] ?? 0),
+          )
+        : 0
     } else if (obj.type === 'skill_levelup') {
       target = obj.targetLevel
       raw = skillLevels[obj.skillId] ?? 0
@@ -585,4 +594,16 @@ export function heroSkillLevels(hero) {
     map[s.skillId] = Math.max(map[s.skillId] ?? 0, s.level ?? 1)
   }
   return map
+}
+
+// ── FIX-QXP01 — XP de héros octroyée par une quête ──────────────────────────────
+// `reward.xp` (valeurs finales renseignées via l'Excel des quêtes) sinon défaut dérivé de la
+// difficulté (proxy = récompense en or). Réduit sur les re-complétions (quêtes répétables).
+export const QUEST_XP_REPEAT_MULT = 0.25
+export function defaultQuestXp(quest) {
+  const gold = quest?.reward?.gold ?? 0
+  return Math.max(10, Math.round(gold * 0.6))
+}
+export function questXpReward(quest) {
+  return quest?.reward?.xp ?? defaultQuestXp(quest)
 }

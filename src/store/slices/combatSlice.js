@@ -33,13 +33,11 @@ export const createCombatSlice = (set, get) => ({
       const raw = (st.world.monsterKillCounts?.[monsterId] ?? 0) - baseKill
       if (raw > obj.count) continue // déjà accompli → pas de spam
       const done = raw === obj.count
-      useToastStore
-        .getState()
-        .addToast(
-          `${done ? '✓ ' : ''}${q.name}: ${obj.label} ${raw}/${obj.count}`,
-          'quest',
-          done ? 3000 : 2200,
-        )
+      useToastStore.getState().addToast(
+        `${done ? '✓ ' : ''}${q.name}: ${obj.label} ${raw}/${obj.count}`,
+        'quest',
+        done ? 4000 : 3200, // FIX-QTOAST-DUR01 — un poil plus persistant (+1 s)
+      )
     }
   },
 
