@@ -54,3 +54,9 @@ Thumbs.db
 public/monsters/raw/
 public/buildings/raw/
 design/
+
+# ── Exports Excel de travail (design / balance) ──────────────────────────────
+# Régénérables depuis les données du jeu ; les valeurs (XP/rang, taux de drop) finiront
+# en code (FIX-QXP01/QRANK01). Les versions remplies sont conservées hors repo (Downloads/Drive).
+docs/balance/*.xlsx
+Loop_Breaker_*.xlsx
