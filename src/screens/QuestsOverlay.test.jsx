@@ -18,7 +18,8 @@ describe('UI-QUESTS — overlay de suivi', () => {
     render(<QuestsOverlay />)
     expect(screen.getByText(/First Blood/)).toBeInTheDocument()
     // progression 2/5 affichée
-    expect(screen.getByText(/Kill Ashwood Wolves \(2\/5\)/)).toBeInTheDocument()
+    expect(screen.getByText('Kill Ashwood Wolves')).toBeInTheDocument()
+    expect(screen.getByText('2/5')).toBeInTheDocument()
   })
 
   it('affiche une barre de progression par objectif', () => {
@@ -52,6 +53,7 @@ describe('UI-QUESTS — overlay de suivi', () => {
       hero: { ...s.hero, level: 2 },
     }))
     render(<QuestsOverlay />)
-    expect(screen.getByText(/Reach Level 3 \(2\/3\)/)).toBeInTheDocument()
+    expect(screen.getByText('Reach Level 3')).toBeInTheDocument()
+    expect(screen.getByText('2/3')).toBeInTheDocument()
   })
 })

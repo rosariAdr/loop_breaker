@@ -105,14 +105,33 @@ export default function QuestsOverlay({ onClose }) {
                 <div className="flex flex-col gap-2" style={{ marginBottom: 8 }}>
                   {questObjectiveStatus(q, gameState).map(({ obj, current, target, done }) => {
                     const pct = target > 0 ? current / target : 0
+                    // QUI-QOBJ-STYLE01 — libellé lisible + compteur en pastille colorée par état.
+                    // Palette parchemin (overlay).
+                    const started = current > 0
+                    const iconColor = done ? '#2f7d33' : started ? '#b8862a' : '#a58f5e'
+                    const pillBg = done ? '#bfe0a0' : started ? '#f0c775' : '#d8cdae'
+                    const pillFg = done ? '#27500a' : started ? '#633806' : '#6d5c38'
                     return (
                       <div key={obj.id} className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span style={{ color: done ? '#40c080' : '#4a3a2a', fontSize: '.7rem' }}>
+                          <span style={{ color: iconColor, fontSize: '.85rem' }}>
                             {done ? '✓' : '○'}
                           </span>
-                          <span style={{ color: done ? '#60a060' : '#6a5a4a', fontSize: '.75rem' }}>
-                            {obj.label} ({current}/{target})
+                          <span style={{ color: '#463014', fontSize: '.875rem', fontWeight: 500 }}>
+                            {obj.label}
+                          </span>
+                          <span
+                            style={{
+                              marginLeft: 'auto',
+                              fontSize: '.7rem',
+                              fontWeight: 500,
+                              padding: '1px 8px',
+                              borderRadius: 10,
+                              background: pillBg,
+                              color: pillFg,
+                            }}
+                          >
+                            {current}/{target}
                           </span>
                         </div>
                         <div
@@ -122,13 +141,13 @@ export default function QuestsOverlay({ onClose }) {
                           aria-valuemin={0}
                           aria-valuemax={target}
                           className="rounded overflow-hidden ml-4"
-                          style={{ height: 4, background: '#1a1410' }}
+                          style={{ height: 5, background: '#1a1410' }}
                         >
                           <div
                             className="h-full rounded transition-all duration-500"
                             style={{
                               width: `${Math.min(100, pct * 100)}%`,
-                              background: done ? '#80c040' : '#d4af70',
+                              background: done ? '#4fa24f' : '#c8912e',
                             }}
                           />
                         </div>

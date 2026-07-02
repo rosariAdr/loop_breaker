@@ -5,7 +5,7 @@ import { ZONES, getLocationType } from '../data/zones'
 import { RESOURCES } from '../data/resources'
 import { SKILLS } from '../data/skills'
 import { QUESTS, heroSkillLevels } from '../data/quests'
-import { CHURCH_QUESTS, getActiveChurchQuests, CHURCH_ROTATION_DAYS } from '../data/churchQuests'
+import { CHURCH_QUESTS, getAvailableChurchDeeds, CHURCH_ROTATION_DAYS } from '../data/churchQuests'
 import { MASTER_QUESTS } from '../data/masterQuests'
 import { QuestCard } from './QuestBoard'
 import { isBuildingOpen, nextOpenHour } from '../data/buildingHours'
@@ -635,12 +635,14 @@ function ChurchPanel({ onBack }) {
 
   // CHQ01 — quêtes de l'église : pool tournant tous les 3 jours
   const activeIds = world.activeQuests ?? []
-  const completedIds = world.completedQuests ?? []
   const dayCount = world.dayCount ?? 1
-  const rotating = getActiveChurchQuests(dayCount, undefined, world.currentLocation) // CHQ-LOC01
-  const available = rotating.filter(
-    (q) => !activeIds.includes(q.id) && !completedIds.includes(q.id),
-  )
+  // FIX-CHURCH-DRY01 — deeds répétables par bloc (world.churchDeeds) + pool min garanti (CHQ-LOC02).
+  const available = getAvailableChurchDeeds({
+    dayCount,
+    location: world.currentLocation,
+    activeQuests: activeIds,
+    churchDeeds: world.churchDeeds,
+  })
   // Quêtes d'église acceptées (restent rendables même après rotation hors du pool)
   const activeChurch = activeIds.map((id) => CHURCH_QUESTS[id]).filter(Boolean)
   const nextRotationDay = (Math.floor(dayCount / CHURCH_ROTATION_DAYS) + 1) * CHURCH_ROTATION_DAYS

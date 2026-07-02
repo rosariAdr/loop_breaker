@@ -18,14 +18,19 @@ describe('CHQ-LOC01 — pool d’église filtré par lieu', () => {
     const k = q.objectives.find((o) => o.type === 'kill')
     return k ? MONSTERS[k.monsterId]?.huntingSpot : null
   }
-  it('à Greywatch, ne propose que des quêtes ciblant un spot adjacent', () => {
+  it('à Greywatch : priorise les deeds adjacents mais garantit un pool minimum (CHQ-LOC02)', () => {
     const adj = new Set(neighborsOf('greywatch'))
-    const qs = getActiveChurchQuests(1, 6, 'greywatch')
-    expect(qs.length).toBeGreaterThan(0)
-    for (const q of qs) {
-      const s = spotOf(q)
-      expect(s == null || adj.has(s), `${q.id}:${s}`).toBe(true)
-    }
+    // FIX-CHURCH-DRY01 — Greywatch n'a qu'un spot voisin (1 deed local) : le pool est complété
+    // pour atteindre CHURCH_ACTIVE_COUNT (sinon l'église s'assèche après un cycle).
+    const qs = getActiveChurchQuests(1, CHURCH_ACTIVE_COUNT, 'greywatch')
+    expect(qs.length).toBe(CHURCH_ACTIVE_COUNT)
+    // le(s) deed(s) adjacent(s) restent prioritaires : au moins un est proposé.
+    expect(
+      qs.some((q) => {
+        const s = spotOf(q)
+        return s == null || adj.has(s)
+      }),
+    ).toBe(true)
   })
   it('Millhaven propose un pool ≥ Greywatch (plus de spots adjacents)', () => {
     const gw = getActiveChurchQuests(1, 6, 'greywatch').length

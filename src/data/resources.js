@@ -26,6 +26,23 @@ export const RESOURCES = {
     rarity: 'common',
     sellPrice: 4,
   },
+  // FIX-BOAR-DROP01 — ressources thématiques du Tuskmaw Boar (ne droppe plus des parts de loup).
+  boar_tusk: {
+    id: 'boar_tusk',
+    name: 'Boar Tusk',
+    description: 'A thick, curved tusk from a Tuskmaw Boar.',
+    zone: 'ashenvale',
+    rarity: 'common',
+    sellPrice: 3,
+  },
+  boar_hide: {
+    id: 'boar_hide',
+    name: 'Boar Hide',
+    description: 'Coarse, bristly hide from a Tuskmaw Boar.',
+    zone: 'ashenvale',
+    rarity: 'common',
+    sellPrice: 5,
+  },
   rotten_flesh: {
     id: 'rotten_flesh',
     name: 'Rotten Flesh',
