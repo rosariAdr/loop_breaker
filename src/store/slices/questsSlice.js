@@ -8,6 +8,7 @@ import {
   isQuestCompleteState,
   isQuestExpired,
   questXpReward,
+  questRankPoints,
   QUEST_XP_REPEAT_MULT,
 } from '../../data/quests'
 import { RESOURCES } from '../../data/resources'
@@ -99,6 +100,7 @@ export const createQuestsSlice = (set, get) => ({
 
   completeQuest: (questId) => {
     let xpGain = 0
+    let rankGain = 0
     set((state) => {
       const { activeQuests: active, completedQuests: completed } = state.world
       if (!active.includes(questId)) return state
@@ -118,6 +120,10 @@ export const createQuestsSlice = (set, get) => ({
       xpGain = firstTime
         ? questXpReward(quest)
         : Math.round(questXpReward(quest) * QUEST_XP_REPEAT_MULT)
+      // FIX-QRANK01 — points de rang d'aventurier (compteur dédié rankPoints), même logique 1ère fois/repeat.
+      rankGain = firstTime
+        ? questRankPoints(quest)
+        : Math.round(questRankPoints(quest) * QUEST_XP_REPEAT_MULT)
       const r = quest.reward
       const newManaStones = [...state.hero.inventory.manaStones]
       const newEquipment = [...state.hero.inventory.equipment]
@@ -193,6 +199,7 @@ export const createQuestsSlice = (set, get) => ({
       // Q07/Q09 — Toast récompense de quête
       const rewardParts = []
       if (xpGain) rewardParts.push(`+${xpGain} XP`)
+      if (rankGain) rewardParts.push(`+${rankGain} rang`)
       if (r.gold) rewardParts.push(`+${r.gold}g`)
       if (repTokens) rewardParts.push(`+${repTokens} 🪙`)
       if (r.skill) rewardParts.push(SKILLS[r.skill.skillId]?.name ?? r.skill.skillId)
@@ -229,6 +236,7 @@ export const createQuestsSlice = (set, get) => ({
           aura: newAura,
           concentration: newConcentration,
           reputationTokens: state.hero.reputationTokens + repTokens,
+          rankPoints: (state.hero.rankPoints ?? 0) + rankGain,
           inventory: {
             ...state.hero.inventory,
             manaStones: newManaStones,

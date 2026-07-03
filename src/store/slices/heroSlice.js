@@ -1,5 +1,5 @@
 // REFAC01 — Slice « hero » du store (extrait de gameStore.js, comportement inchangé).
-import { skillBuyPrice, skillSellPrice } from '../../data/academy'
+import { skillBuyPrice, skillSellPrice, skillPremiumBuyPrice } from '../../data/academy'
 import { RESOURCES } from '../../data/resources'
 import { SKILLS, SKILL_MAX_LEVEL, skillXpForLevel } from '../../data/skills'
 import { AURA, countWithinDays } from '../../engine/aura'
@@ -250,6 +250,31 @@ export const createHeroSlice = (set, get) => ({
     useToastStore
       .getState()
       .addToast(`Learned ${SKILLS[skillId]?.name ?? skillId} · −${price} 🪙`, 'info')
+    return true
+  },
+
+  // ACA06 — achète un skill DÉJÀ MONTÉ (Lv2-5) à prix premium. @returns {boolean} succès
+  buySkillAtLevel: (skillId, level) => {
+    const price = skillPremiumBuyPrice(skillId, level)
+    const { hero } = get()
+    if (price == null || hero.inventory.gold < price) {
+      useToastStore.getState().addToast('Not enough gold.', 'warning')
+      return false
+    }
+    set((state) => ({
+      hero: {
+        ...state.hero,
+        inventory: {
+          ...state.hero.inventory,
+          gold: state.hero.inventory.gold - price,
+          manaStones: [...state.hero.inventory.manaStones, { skillId, level, xp: 0 }],
+        },
+      },
+      unseenLoot: true,
+    }))
+    useToastStore
+      .getState()
+      .addToast(`Learned ${SKILLS[skillId]?.name ?? skillId} (Lv${level}) · −${price} 🪙`, 'info')
     return true
   },
 

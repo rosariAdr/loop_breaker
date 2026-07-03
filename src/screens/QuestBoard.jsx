@@ -9,6 +9,7 @@ import {
   questDaysLeft,
   questObjectiveStatus,
   questXpReward,
+  questRankPoints,
   PRESTIGE_MIN_TOKENS,
 } from '../data/quests'
 import { MAIN_QUESTS } from '../data/mainQuests'
@@ -16,41 +17,11 @@ import { getActiveVillageQuests } from '../data/villageQuests'
 import { getLocationType } from '../data/zones'
 import { SKILLS } from '../data/skills'
 import { RESOURCES } from '../data/resources'
+import { getRankInfo, nextRankLabel } from '../data/ranks'
 import ConfirmDialog from '../components/ConfirmDialog'
 
-// Q06 — Rangs aventurier basés sur les reputation tokens
-// Seuils : Copper 0-9, Silver 10-29, Gold 30-69, Platinum 70-149, Diamond 150+
-export const RANK_TIERS = [
-  { id: 'copper', label: 'Copper', color: '#b87333', threshold: 0, nextAt: 10 },
-  { id: 'silver', label: 'Silver', color: '#bbbbbb', threshold: 10, nextAt: 30 },
-  { id: 'gold', label: 'Gold', color: '#d4af70', threshold: 30, nextAt: 70 },
-  { id: 'platinum', label: 'Platinum', color: '#c0e0e0', threshold: 70, nextAt: 150 },
-  { id: 'diamond', label: 'Diamond', color: '#80c0ff', threshold: 150, nextAt: null },
-]
-
-export function getRankInfo(tokens) {
-  const t = Math.max(0, tokens ?? 0)
-  // Trouver le tier courant (le plus élevé dont on dépasse le seuil)
-  let current = RANK_TIERS[0]
-  for (const tier of RANK_TIERS) {
-    if (t >= tier.threshold) current = tier
-  }
-  const isMax = current.nextAt === null
-  const tokensInTier = t - current.threshold
-  const tokensNeededInTier = isMax ? 0 : current.nextAt - current.threshold
-  const pctToNext = isMax ? 1 : tokensInTier / tokensNeededInTier
-  return {
-    tier: current.id,
-    label: current.label,
-    color: current.color,
-    tokens: t,
-    tokensInTier,
-    tokensNeededInTier,
-    pctToNext: Math.min(1, pctToNext),
-    isMax,
-    nextAt: current.nextAt,
-  }
-}
+// FIX-QRANK01 — Rang d'aventurier : échelle 10 paliers pilotée par `hero.rankPoints`
+// (source : src/data/ranks.js). Les `reputationTokens` restent la monnaie / le gate Guilde.
 
 export default function QuestBoard() {
   const {
@@ -117,7 +88,7 @@ export default function QuestBoard() {
   const mainAvailable = available.filter((q) => q.isMainQuest)
   const otherAvailable = available.filter((q) => !q.isMainQuest)
 
-  const rank = getRankInfo(hero.reputationTokens)
+  const rank = getRankInfo(hero.rankPoints)
   // une quête prestigieuse ne peut être acceptée qu'à partir du rang Argent
   const canAcceptPrestige = (hero.reputationTokens ?? 0) >= PRESTIGE_MIN_TOKENS
   const acceptGuard = (q) => {
@@ -207,7 +178,7 @@ export default function QuestBoard() {
                   heroLevel={hero.level}
                   objectiveStatus={qStatus(q, false)}
                   prestige={isPrestigiousQuest(q)}
-                  lockedReason={locked ? `Requires ${PRESTIGE_MIN_TOKENS} 🪙 (Silver rank)` : null}
+                  lockedReason={locked ? `Requires ${PRESTIGE_MIN_TOKENS} 🪙 (réputation)` : null}
                   onAccept={() => acceptGuard(q)}
                 />
               )
@@ -262,7 +233,7 @@ export default function QuestBoard() {
 function RankBanner({ rank }) {
   const pctLabel = rank.isMax
     ? 'MAX'
-    : `${rank.tokensInTier} / ${rank.tokensNeededInTier} to ${nextLabel(rank.tier)}`
+    : `${rank.tokensInTier} / ${rank.tokensNeededInTier} to ${nextRankLabel(rank.tier)}`
 
   return (
     <div
@@ -305,12 +276,6 @@ function RankBanner({ rank }) {
       </div>
     </div>
   )
-}
-
-function nextLabel(currentTierId) {
-  const idx = RANK_TIERS.findIndex((t) => t.id === currentTierId)
-  const next = RANK_TIERS[idx + 1]
-  return next?.label ?? '???'
 }
 
 export function QuestCard({
@@ -569,6 +534,12 @@ export function QuestCard({
         <RewardBadge bg="#0f1024" color="#8ab0ff" border="#26325a">
           +{questXpReward(quest)} XP
         </RewardBadge>
+        {/* FIX-QRANK01 — chip points de rang d'aventurier */}
+        {questRankPoints(quest) > 0 && (
+          <RewardBadge bg="#1a1220" color="#c9a0e0" border="#3a2850">
+            +{questRankPoints(quest)} rang
+          </RewardBadge>
+        )}
         {quest.reward.gold && (
           <RewardBadge bg="#1a1408" color="#d4af70" border="#3a2808">
             +{quest.reward.gold}g

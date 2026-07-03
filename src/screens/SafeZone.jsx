@@ -9,7 +9,7 @@ import { CHURCH_QUESTS, getAvailableChurchDeeds, CHURCH_ROTATION_DAYS } from '..
 import { MASTER_QUESTS } from '../data/masterQuests'
 import { QuestCard } from './QuestBoard'
 import { isBuildingOpen, nextOpenHour } from '../data/buildingHours'
-import { getAcademyCatalog, skillSellPrice } from '../data/academy'
+import { getAcademyCatalog, skillSellPrice, skillPremiumBuyPrice } from '../data/academy'
 import {
   EQUIPMENT_TEMPLATES,
   RARITY_TIERS,
@@ -1898,6 +1898,7 @@ function AcademyPanel({ onBack }) {
     hero,
     world,
     buySkill,
+    buySkillAtLevel,
     sellSkill,
     unequipActiveSkill,
     unequipPassiveSkill,
@@ -1908,6 +1909,18 @@ function AcademyPanel({ onBack }) {
   } = useGameStore()
   const catalog = getAcademyCatalog()
   const owned = hero.inventory.manaStones ?? []
+  // ACA06 — achat d'un skill déjà monté (Lv2-5) à prix premium
+  const [premSkill, setPremSkill] = useState(catalog[0]?.skillId)
+  const [premLevel, setPremLevel] = useState(2)
+  const premPrice = skillPremiumBuyPrice(premSkill, premLevel)
+  const premAfford = premPrice != null && hero.inventory.gold >= premPrice
+  const selStyle = {
+    background: '#140e1a',
+    color: '#b090e0',
+    border: '1px solid #5a40b0',
+    borderRadius: 6,
+    padding: '4px 6px',
+  }
 
   // ACA04 — épreuves du maître (quêtes de level-up de skill)
   const activeIds = world.activeQuests ?? []
@@ -1968,6 +1981,53 @@ function AcademyPanel({ onBack }) {
             </button>
           )
         })}
+      </div>
+
+      {/* ACA06 — acheter un skill DÉJÀ MONTÉ (Lv2-5) à prix premium */}
+      <div className="t-label" style={{ marginBottom: 4 }}>
+        Buy a leveled skill (premium)
+      </div>
+      <div
+        className="flex items-center gap-2 text-xs"
+        style={{ maxWidth: 460, marginBottom: '0.9rem' }}
+      >
+        <select
+          data-testid="aca06-skill"
+          value={premSkill}
+          onChange={(e) => setPremSkill(e.target.value)}
+          style={selStyle}
+        >
+          {catalog.map(({ skillId, skill }) => (
+            <option key={skillId} value={skillId}>
+              {skill.name}
+            </option>
+          ))}
+        </select>
+        <select
+          data-testid="aca06-level"
+          value={premLevel}
+          onChange={(e) => setPremLevel(Number(e.target.value))}
+          style={selStyle}
+        >
+          {[2, 3, 4, 5].map((l) => (
+            <option key={l} value={l}>
+              Lv{l}
+            </option>
+          ))}
+        </select>
+        <button
+          data-testid="aca06-buy"
+          onClick={() => buySkillAtLevel(premSkill, premLevel)}
+          disabled={!premAfford}
+          className="px-3 py-2"
+          style={{
+            ...rowStyle(premAfford ? '#5a40b0' : '#1a1620'),
+            cursor: premAfford ? 'pointer' : 'not-allowed',
+            opacity: premAfford ? 1 : 0.55,
+          }}
+        >
+          Buy{premPrice != null ? ` · ${premPrice} 🪙` : ''}
+        </button>
       </div>
 
       <div className="t-label" style={{ marginBottom: 4 }}>

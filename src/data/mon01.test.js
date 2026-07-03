@@ -1,6 +1,12 @@
 // MON01 — Tests de la refonte du bestiaire de surface.
 import { describe, it, expect } from 'vitest'
-import { MONSTERS, MONSTERS_BY_SPOT, MONSTERS_BY_ZONE, MONSTERS_RESERVE } from './monsters'
+import {
+  MONSTERS,
+  MONSTERS_BY_SPOT,
+  MONSTERS_BY_ZONE,
+  MONSTERS_RESERVE,
+  getSkillDropType,
+} from './monsters'
 import { SKILLS } from './skills'
 import { ZONES, getMonsterLevel } from './zones'
 import { POS, NODES } from './worldGraph'
@@ -78,36 +84,50 @@ describe('MON01 — réserve (jamais spawn en surface)', () => {
   })
 })
 
-describe('MON01 — skillDropType (champ interne, cohérent avec SKILLS)', () => {
-  it('chaque monstre a un skillDropType valide', () => {
+describe('SKD01 — skillDropType (classe interne, dérivée des SKILLS)', () => {
+  it('chaque monstre a un skillDropType valide (vocab physical/magic)', () => {
     Object.values(MONSTERS).forEach((m) => {
-      expect(['active', 'passive', 'none']).toContain(m.skillDropType)
+      expect(['physical_active', 'magic_active', 'passive', 'none']).toContain(m.skillDropType)
     })
   })
 
-  it("'none' → pas de skillDrop ; 'active'/'passive' → skill existant du bon type", () => {
+  it('skillDropType stocké === getSkillDropType dérivé (source de vérité unique)', () => {
+    Object.values(MONSTERS).forEach((m) => {
+      expect(getSkillDropType(m), m.id).toBe(m.skillDropType)
+    })
+  })
+
+  it("'none' → pas de skillDrop ; sinon skill existant du bon type actif/passif", () => {
     Object.values(MONSTERS).forEach((m) => {
       if (m.skillDropType === 'none') {
         expect(m.skillDrop).toBeUndefined()
       } else {
-        expect(m.skillDrop?.skillId).toBeTruthy()
-        const skill = SKILLS[m.skillDrop.skillId]
-        expect(skill).toBeDefined()
-        expect(skill.type).toBe(m.skillDropType)
+        const skill = SKILLS[m.skillDrop?.skillId]
+        expect(skill, m.id).toBeDefined()
+        expect(skill.type).toBe(m.skillDropType === 'passive' ? 'passive' : 'active')
       }
     })
   })
 
-  it('monstres none = thicket_hare + russet_fox', () => {
-    const none = Object.values(MONSTERS)
-      .filter((m) => m.skillDropType === 'none')
-      .map((m) => m.id)
-    expect(none.sort()).toEqual(['russet_fox', 'thicket_hare'])
+  it('physical_active ⇔ dégâts physiques ; magic_active ⇔ magie/élément/sans dégâts', () => {
+    Object.values(MONSTERS).forEach((m) => {
+      const dt = SKILLS[m.skillDrop?.skillId]?.effect?.damage?.type
+      if (m.skillDropType === 'physical_active') expect(dt, m.id).toBe('physical')
+      if (m.skillDropType === 'magic_active') expect(dt, m.id).not.toBe('physical')
+    })
   })
 
-  it('ashwood_wolf garde Savage Bite (décision joueur)', () => {
+  it('SKD02/04 — Fire Hare & Russet Fox droppent des skills de feu (magic_active)', () => {
+    expect(MONSTERS.thicket_hare.name).toBe('Fire Hare')
+    expect(MONSTERS.thicket_hare.skillDropType).toBe('magic_active')
+    expect(MONSTERS.thicket_hare.skillDrop.skillId).toBe('ember_burst')
+    expect(MONSTERS.russet_fox.skillDropType).toBe('magic_active')
+    expect(MONSTERS.russet_fox.skillDrop.skillId).toBe('fox_fire')
+  })
+
+  it('ashwood_wolf garde Savage Bite (physical_active)', () => {
     expect(MONSTERS.ashwood_wolf.skillDrop.skillId).toBe('savage_bite')
-    expect(SKILLS.savage_bite.name).toBe('Savage Bite')
+    expect(MONSTERS.ashwood_wolf.skillDropType).toBe('physical_active')
   })
 })
 

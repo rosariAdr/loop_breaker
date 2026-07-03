@@ -1,7 +1,8 @@
 // Q02 (barres progression) + Q06 (rang aventurier) — tests UI sur QuestBoard
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, within, fireEvent } from '@testing-library/react'
-import QuestBoard, { getRankInfo, RANK_TIERS } from './QuestBoard'
+import QuestBoard from './QuestBoard'
+import { getRankInfo, RANK_TIERS } from '../data/ranks'
 import { useGameStore } from '../store/gameStore'
 
 beforeEach(() => {
@@ -20,96 +21,94 @@ afterEach(() => {
 })
 
 // ── Q06 — getRankInfo (logique pure) ────────────────────────────────────────
-describe('Q06 — getRankInfo', () => {
-  it('0 token → Copper, début de tier', () => {
+describe('FIX-QRANK01 — getRankInfo (échelle 10 paliers, rankPoints)', () => {
+  it('0 point → Aluminium, début de tier', () => {
     const r = getRankInfo(0)
-    expect(r.label).toBe('Copper')
+    expect(r.label).toBe('Aluminium')
     expect(r.tokensInTier).toBe(0)
     expect(r.pctToNext).toBe(0)
   })
 
-  it('5 tokens → Copper 5/10', () => {
+  it('5 points → Aluminium 5/10', () => {
     const r = getRankInfo(5)
-    expect(r.label).toBe('Copper')
+    expect(r.label).toBe('Aluminium')
     expect(r.tokensInTier).toBe(5)
     expect(r.tokensNeededInTier).toBe(10)
     expect(r.pctToNext).toBe(0.5)
   })
 
-  it('10 tokens → Silver début de tier', () => {
+  it('10 points → Fer début de tier', () => {
     const r = getRankInfo(10)
-    expect(r.label).toBe('Silver')
+    expect(r.label).toBe('Fer')
     expect(r.tokensInTier).toBe(0)
   })
 
-  it('25 tokens → Silver 15/20', () => {
-    const r = getRankInfo(25)
-    expect(r.label).toBe('Silver')
-    expect(r.tokensInTier).toBe(15)
+  it('30 points → Bronze 5/20', () => {
+    const r = getRankInfo(30)
+    expect(r.label).toBe('Bronze')
+    expect(r.tokensInTier).toBe(5)
     expect(r.tokensNeededInTier).toBe(20)
   })
 
-  it('70 tokens → Platinum début de tier', () => {
-    const r = getRankInfo(70)
-    expect(r.label).toBe('Platinum')
+  it('45 → Argent ; 100 → Or', () => {
+    expect(getRankInfo(45).label).toBe('Argent')
+    expect(getRankInfo(100).label).toBe('Or')
   })
 
-  it('150 tokens → Diamond, isMax=true', () => {
-    const r = getRankInfo(150)
-    expect(r.label).toBe('Diamond')
+  it('350 points → Suprême, isMax=true', () => {
+    const r = getRankInfo(350)
+    expect(r.label).toBe('Suprême')
     expect(r.isMax).toBe(true)
     expect(r.pctToNext).toBe(1)
   })
 
-  it('999 tokens → toujours Diamond, isMax=true', () => {
-    const r = getRankInfo(999)
-    expect(r.isMax).toBe(true)
+  it('999 points → toujours Suprême, isMax=true', () => {
+    expect(getRankInfo(999).isMax).toBe(true)
   })
 
-  it('tokens négatifs → traités comme 0 (Copper)', () => {
+  it('points négatifs → traités comme 0 (Aluminium)', () => {
     const r = getRankInfo(-5)
-    expect(r.label).toBe('Copper')
-    expect(r.tokens).toBe(0)
+    expect(r.label).toBe('Aluminium')
+    expect(r.tokensInTier).toBe(0)
   })
 
   it('undefined → traité comme 0', () => {
-    const r = getRankInfo(undefined)
-    expect(r.label).toBe('Copper')
+    expect(getRankInfo(undefined).label).toBe('Aluminium')
   })
 
-  it('RANK_TIERS exposé pour usage UI/tests externes', () => {
+  it('RANK_TIERS = 10 paliers (Aluminium → Suprême)', () => {
     expect(Array.isArray(RANK_TIERS)).toBe(true)
-    expect(RANK_TIERS.length).toBeGreaterThanOrEqual(5)
-    expect(RANK_TIERS[0].id).toBe('copper')
+    expect(RANK_TIERS.length).toBe(10)
+    expect(RANK_TIERS[0].id).toBe('aluminium')
+    expect(RANK_TIERS[RANK_TIERS.length - 1].id).toBe('supreme')
   })
 })
 
-// ── Q06 — RankBanner (rendu) ─────────────────────────────────────────────────
-describe('Q06 — RankBanner dans QuestBoard', () => {
-  it('affiche le rang Copper avec 0 tokens', () => {
+// ── FIX-QRANK01 — RankBanner (rendu, piloté par rankPoints) ──────────────────
+describe('FIX-QRANK01 — RankBanner dans QuestBoard', () => {
+  it('affiche Aluminium avec 0 point', () => {
     render(<QuestBoard />)
     const banner = screen.getByTestId('rank-banner')
-    expect(within(banner).getByText('Copper')).toBeInTheDocument()
+    expect(within(banner).getByText('Aluminium')).toBeInTheDocument()
   })
 
-  it('affiche Silver avec 15 tokens', () => {
-    useGameStore.setState((state) => ({ hero: { ...state.hero, reputationTokens: 15 } }))
+  it('affiche Bronze avec 30 points de rang', () => {
+    useGameStore.setState((state) => ({ hero: { ...state.hero, rankPoints: 30 } }))
     render(<QuestBoard />)
     const banner = screen.getByTestId('rank-banner')
-    expect(within(banner).getByText('Silver')).toBeInTheDocument()
+    expect(within(banner).getByText('Bronze')).toBeInTheDocument()
   })
 
-  it('affiche progressbar avec aria-valuenow correct', () => {
-    useGameStore.setState((state) => ({ hero: { ...state.hero, reputationTokens: 5 } }))
+  it('progressbar aria-valuenow correct (5/10 = 50%)', () => {
+    useGameStore.setState((state) => ({ hero: { ...state.hero, rankPoints: 5 } }))
     render(<QuestBoard />)
     const banner = screen.getByTestId('rank-banner')
     const bar = within(banner).getByRole('progressbar')
-    // 5/10 = 50%
     expect(bar.getAttribute('aria-valuenow')).toBe('50')
   })
 
-  it("affiche 'MAX' quand Diamond", () => {
-    useGameStore.setState((state) => ({ hero: { ...state.hero, reputationTokens: 200 } }))
+  it("affiche 'MAX' au palier Suprême", () => {
+    useGameStore.setState((state) => ({ hero: { ...state.hero, rankPoints: 400 } }))
     render(<QuestBoard />)
     const banner = screen.getByTestId('rank-banner')
     expect(within(banner).getByText(/MAX/)).toBeInTheDocument()
@@ -161,5 +160,25 @@ describe('Q02 — Barres de progression objectifs', () => {
     const completedTitle = screen.getByText(/First Blood/)
     const card = completedTitle.closest('div.p-4')
     expect(within(card).queryAllByTestId('objective-progress')).toHaveLength(0)
+  })
+})
+
+// ── FIX-QXP01 / FIX-QRANK01 — balance injectée, visible sur le board (intégration) ──────────
+describe('FIX-QXP01/QRANK01 — chips XP + rang injectés sur le board', () => {
+  it("une quête autorée affiche l'XP et les points de rang injectés (First Blood → +40 XP / +1 rang)", () => {
+    useGameStore.setState((state) => ({
+      world: { ...state.world, currentLocation: 'greywatch', currentNode: 'greywatch' },
+    }))
+    render(<QuestBoard />)
+    const card = screen.getByText('First Blood').closest('div.p-4')
+    expect(within(card).getByText('+40 XP')).toBeInTheDocument() // QUEST_BALANCE.first_blood.xp
+    expect(within(card).getByText('+1 rang')).toBeInTheDocument() // QUEST_BALANCE.first_blood.rankPoints
+  })
+
+  it('le rang affiché suit la nouvelle échelle 10 paliers (Aluminium → Fer au départ)', () => {
+    render(<QuestBoard />)
+    const banner = screen.getByTestId('rank-banner')
+    expect(within(banner).getByText('Aluminium')).toBeInTheDocument()
+    expect(within(banner).getByText(/to Fer/)).toBeInTheDocument()
   })
 })

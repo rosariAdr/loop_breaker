@@ -77,6 +77,7 @@ export const INITIAL_HERO = {
   deathCount: 0,
   reputationTokens: 0, // jetons gagnés via quêtes
   adventurerRankTokens: 0, // jetons convertis en rang
+  rankPoints: 0, // FIX-QRANK01 — points de rang cumulés (via quêtes) ; échelle 10 paliers (ranks.js)
 
   // Flag : le joueur a-t-il choisi son nom ? (faux = CharacterCreation à afficher)
   heroNamed: false,
