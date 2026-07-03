@@ -2385,6 +2385,23 @@ html.lb-no-anim *::after {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
+/* HSV2-04 — repères de palier d'attribut (/35 pts) */
+.attr-row .ar-ticks {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  min-width: 34px;
+}
+.attr-row .ar-tick {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(61, 43, 31, 0.22);
+}
+.attr-row .ar-tick.on {
+  background: var(--gold);
+  box-shadow: 0 0 3px rgba(201, 169, 110, 0.8);
+}
 .derived {
   display: flex;
   gap: 14px;
@@ -2708,6 +2725,26 @@ html.lb-no-anim *::after {
   background: rgba(201, 169, 110, 0.18);
   border-color: var(--parchment-shadow);
   color: var(--ink-soft);
+}
+/* TITLE-G1 — chips de titre cliquables (activer/désactiver) + titre actif */
+button.hs-title-chip {
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+button.hs-title-chip:hover {
+  border-color: var(--gold);
+}
+.hs-title-chip.active {
+  background: linear-gradient(180deg, rgba(96, 200, 120, 0.28), rgba(96, 200, 120, 0.12));
+  border-color: var(--forest-deep);
+}
+.sh-title .hs-active-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #7a3fb0;
+  font-family: var(--font-head);
+  margin-bottom: 2px;
 }
 
 /* ── Inventory : onglets + cartes parchemin ────────────────────────────────── */

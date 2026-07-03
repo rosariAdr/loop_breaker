@@ -30,6 +30,8 @@ import { hasGluttony, isGluttonyReady, rollGluttonyProc, GLUTTONY_STATS } from '
 import { getPassiveModifiers, PASSIVE_XP_PER_HIT } from '../engine/passives'
 import { applyVigorMalus, combatFatigueBuffer } from '../engine/vigor'
 import { auraDamageMult } from '../engine/aura'
+import { getBurnoutMalus } from '../data/burnout'
+import { bestiaryDamageBonus } from '../data/bestiary'
 import { getSkillVfx } from '../engine/skillVfx'
 
 // B05 — icône + libellé par type d'effet de statut (cf. DESIGN.md §B05-SPEC)
@@ -88,6 +90,7 @@ function StatusIcons({ effects = [] }) {
   )
 }
 import { calcEquippedStatBonuses } from '../data/equipment'
+import { TITLES, getTitleStatBuffs } from '../data/titles'
 import { applyDebuffsToStats } from '../utils/debuffs'
 import ConfirmDialog from '../components/ConfirmDialog'
 
@@ -227,8 +230,13 @@ export default function Combat() {
   } = useGameStore()
 
   const equipBonuses = calcEquippedStatBonuses(hero.equipped ?? {})
+  // TITLE-BUF01 — buffs du titre actif appliqués à la même couche que l'équipement.
+  const titleBuffs = getTitleStatBuffs(meta?.activeTitle)
   const equippedStats = { ...hero.stats }
   Object.entries(equipBonuses).forEach(([stat, bonus]) => {
+    if (stat in equippedStats) equippedStats[stat] = (equippedStats[stat] ?? 0) + bonus
+  })
+  Object.entries(titleBuffs).forEach(([stat, bonus]) => {
     if (stat in equippedStats) equippedStats[stat] = (equippedStats[stat] ?? 0) + bonus
   })
   // CRF01 — les debuffs passifs réduisent les stats de combat
@@ -381,7 +389,11 @@ export default function Combat() {
         setCombatStats((s) => ({ ...s, kills: defeatedEnemies.length })) // B08
         const allLoot = []
         defeatedEnemies.forEach((e) => {
-          const drops = calcDrops(e.monsterId, heroStatsRef.current.chance)
+          const drops = calcDrops(
+            e.monsterId,
+            heroStatsRef.current.chance,
+            meta?.bestiaryKills?.[e.monsterId] ?? 0,
+          )
           drops.resources.forEach(({ id, qty }) => {
             addResource(id, qty)
             const res = RESOURCES[id]
@@ -730,8 +742,13 @@ export default function Combat() {
     useGameStore.getState().recordSkillUse()
     if (template.effect?.damage) {
       // STA02 — l'Aura multiplie les dégâts des skills (+0.5%/point)
+      // BEST01 — bonus de dégâts contre l'espèce ciblée (+5% à 10 kills, +10% à 50+).
+      const speciesBonus =
+        1 + bestiaryDamageBonus(meta?.bestiaryKills?.[skillTarget?.monsterId] ?? 0)
       const dmg = Math.round(
-        calcSkillDamage(skill, heroStats, skill.level) * auraDamageMult(hero.aura),
+        calcSkillDamage(skill, heroStats, skill.level) *
+          auraDamageMult((hero.aura ?? 0) * (1 - getBurnoutMalus(world, 'aura'))) *
+          speciesBonus,
       )
       const isAoe = template.effect.aoe
       // ANIM02 — VFX propre au skill : projectile/frappe teinté par l'élément, flash sur la/les cible(s)
@@ -1021,6 +1038,7 @@ export default function Combat() {
           <HeroCard
             heroStats={heroStats}
             heroName={hero.name}
+            activeTitle={meta?.activeTitle}
             deity={hero.deity}
             hitFlash={heroHitFlash}
             isAnimHit={animatingHero}
@@ -1327,6 +1345,7 @@ function EnemyCard({
 function HeroCard({
   heroStats,
   heroName,
+  activeTitle,
   deity,
   hitFlash,
   isAnimHit,
@@ -1364,6 +1383,20 @@ function HeroCard({
 
       {/* Stats */}
       <div style={{ minWidth: '220px' }}>
+        {/* TITLE-DISP01 — titre actif au-dessus du nom en combat */}
+        {activeTitle && TITLES[activeTitle] && (
+          <p
+            data-testid="combat-title"
+            style={{
+              color: '#c9a0e0',
+              fontSize: '0.72rem',
+              fontFamily: 'Cinzel, serif',
+              marginBottom: 2,
+            }}
+          >
+            {TITLES[activeTitle].icon} {TITLES[activeTitle].name}
+          </p>
+        )}
         <div className="flex items-center gap-2 mb-3">
           <p style={{ fontFamily: 'Cinzel, serif', color: '#d4af70', fontSize: '0.95rem' }}>
             {heroName}

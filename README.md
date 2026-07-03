@@ -4,7 +4,7 @@
 
 Un **Roguelite Idle RPG dark-medieval** avec transmigration entre univers. Le héros meurt souvent ; à chaque mort il choisit ce qu'il emporte (1 stat + 1 skill actif + 1 skill passif) et renaît dans un nouveau monde via la **Boutique des Dieux**.
 
-> **État : POC complet et gagnable de bout en bout** (win condition — tuer le Demon Lord Malachar — implémentée). **v1.1** (UI parchemin + sprites + QoL) et **v1.2** (profondeur : NPC, stats, progression de zones, quêtes, guilde) livrés ; repo prêt pour déploiement Vercel (DEPLOY01). Pré-alpha, solo dev.
+> **État : jouable de bout en bout** (win condition — tuer le Demon Lord Malachar — implémentée). **v1 / v1.1 / v1.2 clôturées** (UI parchemin, sprites, QoL ; profondeur NPC → stats → progression de zones, quêtes église/maître/contenu, Guilde, chaîne de quête principale, node-locking + fog). **En cours** : v1.31 (quêtes) → v1.32 (skills/drops) → v1.33 (progression). Déployable sur Vercel (DEPLOY01, `public/` committé). Pré-alpha, solo dev.
 
 ## Stack
 
@@ -15,7 +15,7 @@ React 19 · Vite 8 · Zustand 5 · TailwindCSS 4 · Vitest 4 — **JavaScript pu
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm run test:run   # 1101 tests (~7s)
+npm run test:run   # 1268 tests (123 fichiers)
 npm run build      # dist/
 npm run lint
 ```
@@ -35,7 +35,7 @@ Explorer une zone → combattre (tour par tour, skills, effets de statut) → lo
 | **[docs/DESIGN.md](docs/DESIGN.md)** | Specs de game design validées (effets de statut, etc.). |
 | **[docs/PLAYTESTS.md](docs/PLAYTESTS.md)** | Journal de playtest structuré. |
 
-> 📁 Toute la doc (DESIGN, PLAYTESTS, ASSETS, ASSET_PROMPTS, UI_HANDOFF, CONTRIBUTING, CHANGELOG, ROADMAP) est dans **`docs/`** ; seuls README + CONTEXT + TASKS restent à la racine.
+> 📁 Toute la doc (DESIGN, PLAYTESTS, ASSETS, ASSET_PROMPTS, UI_HANDOFF, CONTRIBUTING, CHANGELOG) est dans **`docs/`** ; seuls README + CONTEXT + TASKS restent à la racine.
 
 ## Déploiement (Vercel — alpha privée)
 
@@ -54,14 +54,14 @@ Loop Breaker est une **SPA 100 % client-side** (React + Vite, pas de backend, sa
 - **Alpha PRIVÉE** : activer **Vercel Authentication** dans le dashboard (Settings → Deployment Protection) pour restreindre l'accès. Le durcissement réel (backend, autorité serveur, comptes/rôles) est repoussé à plus tard (cf. `SEC02`).
 - **Secrets** : ⚠️ **ne JAMAIS committer de secret** — tout le bundle est public côté client. Une variable destinée au client doit être préfixée `VITE_` et déclarée dans Vercel → Settings → Environment Variables. (À ce jour : aucune variable d'env requise.)
 
-> ⚠️ **Assets (`public/`) — prérequis avant un déploiement avec visuels.** Le dossier `public/` (carte, sprites héros, monstres, bâtiments, favicon) est **gitignoré** (taille + licences) → il **n'est pas dans le repo**, donc un build Vercel servirait l'app **sans ces visuels** (la carte et l'avatar n'ont pas de fallback ; monstres/bâtiments/portraits retombent sur emoji/placeholder). Le `npm run build` local fonctionne car `public/` existe en local. **Décision à prendre avant la 1re mise en ligne** : (a) committer tout/partie de `public/` (optimiser d'abord les PNG lourds via squoosh, vérifier les licences — OK pour une alpha privée), ou (b) prévoir une livraison d'assets séparée. Cf. `CONT05`.
+> ✅ **Assets (`public/`) committés** (DEPLOY01) : carte, sprites héros, monstres, bâtiments, portraits, favicon sont **dans le repo** → servis correctement par Vercel. Seules les **sources HD** `public/monsters/raw/` + `public/buildings/raw/` restent gitignorées (backups locaux ~344 Mo, jamais servis). ⚠️ 3 PNG lourds dans l'historique (`map/eldenmoor.png` ~9,7 Mo, `rotting_shambler` ~5,9 Mo, `gloom_bat` ~5,6 Mo) — optimisables via squoosh si besoin. Cf. `CONT05`.
 
 ## Architecture (résumé)
 
 - `src/data/` — données pures immuables (monstres, skills, zones, équipement, recettes, debuffs, titres).
 - `src/engine/` — logique pure testable sans React (combat, mécaniques de boss, gluttony).
-- `src/store/` — Zustand (`gameStore` principal + `toastStore`), avec save/migration localStorage.
+- `src/store/` — Zustand découpé en **slices** (`slices/{hero,world,meta,combat,quests,idle,save}Slice.js`) composés dans `gameStore.js` ; `initialState.js`, `migrations.js` (save/migration localStorage), `helpers.js`, `toastStore.js`.
 - `src/screens/` + `src/components/` — UI React.
-- `src/**/*.test.*` — 1101 tests (TDD).
+- `src/**/*.test.*` — **1268 tests** dans 123 fichiers (TDD).
 
 Voir **CONTEXT.md §3** pour la carte des fichiers détaillée.

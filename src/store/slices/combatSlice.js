@@ -2,6 +2,7 @@
 import { IDLE_MASTERY_KILLS } from './idleSlice'
 import { VIGOR_COST, VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
 import { getQuestById } from '../../data/quests'
+import { completedBestiaryZones, ZONE_BESTIARY } from '../../data/bestiary'
 import { useToastStore } from '../toastStore'
 
 export const createCombatSlice = (set, get) => ({
@@ -15,6 +16,14 @@ export const createCombatSlice = (set, get) => ({
         monsterKillCounts: {
           ...state.world.monsterKillCounts,
           [monsterId]: before + 1,
+        },
+      },
+      // BEST01 — compteur de bestiaire PERSISTANT (méta, cumulé entre runs).
+      meta: {
+        ...state.meta,
+        bestiaryKills: {
+          ...(state.meta.bestiaryKills ?? {}),
+          [monsterId]: ((state.meta.bestiaryKills ?? {})[monsterId] ?? 0) + 1,
         },
       },
     }))
@@ -38,6 +47,12 @@ export const createCombatSlice = (set, get) => ({
         'quest',
         done ? 4000 : 3200, // FIX-QTOAST-DUR01 — un poil plus persistant (+1 s)
       )
+    }
+    // BURN01 — un kill compte comme une action « combat » pour le burnout de monotonie.
+    get().logAction('combat')
+    // BEST03 — complétion du bestiaire d'une zone → titre dédié (awardTitle dédoublonne).
+    for (const zone of completedBestiaryZones(get().meta.bestiaryKills)) {
+      get().awardTitle(ZONE_BESTIARY[zone].titleId)
     }
   },
 

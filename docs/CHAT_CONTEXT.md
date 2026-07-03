@@ -2,6 +2,8 @@
 
 > **But** : fichier auto-suffisant à coller dans un chat Claude pour travailler **hors du repo** sur le **grooming**, la **génération d'images**, le **design de contenu**. Reflète l'état au **2026-06-20**.
 > **Source de vérité réelle** = le repo (`TASKS.md`, `docs/CONTRIBUTING.md`, `src/data/*`). Ce fichier en est un instantané condensé — en cas de doute, le repo prime.
+>
+> 🕒 **Mise à jour (2026-07-03)** — Livrés depuis le 2026-06-20 et **non reflétés dans le corps ci-dessous** : chaîne de **quête principale** (MQ-CHAIN01, mq01→mq06), **verrouillage de nodes + fog** de la carte (START01-04, départ Greywatch), **déblocage progressif des zones** (PROG01-03), refactor du store en **slices** (REFAC01 : `store/slices/*`), **déploiement Vercel** (DEPLOY01, `public/` committé), correctifs de quêtes (snapshot FIX-QUESTSNAP01, affichage FIX-QUESTPROG01/02), **VFX de skills** (ANIM02/03). Refonte **Hero Sheet V2** encore au stade ticket (HSV2-01→06). Compteurs à jour : **1268 tests / 123 fichiers**.
 
 ---
 

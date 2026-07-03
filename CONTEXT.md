@@ -2,7 +2,7 @@
 
 > **Comment utiliser ce fichier** : copier-coller (ou attacher) dans une conversation Claude Chat ou Claude Code pour reprendre le projet. Self-contained — un Claude sans contexte peut le lire en 5 min et comprendre l'état complet. **Mettre à jour à chaque fin de session.** Backlog détaillé : `TASKS.md`. Historique : `docs/CHANGELOG.md`. Specs de design : `docs/DESIGN.md`. *(Toute la doc est dans `docs/` — REORG01.)*
 
-**Dernière mise à jour : 2026-06-01** — après les Batches M, P, N, O (branche `feat/batch_MtoR`).
+**Dernière mise à jour : 2026-07-03** (audit docs) — v1.2 clôturée, en cours v1.31 → v1.33 (branche `feat/v1.33_progression`). Store refactoré en slices (`REFAC01`).
 
 ---
 
@@ -14,7 +14,7 @@
 - Loop principal : explorer une zone → combattre des monstres → gagner XP/loot → finir un donjon (boss) → mourir → transmigrer → recommencer plus fort.
 - 4 univers prévus (medieval fantasy, wushu, tower, post-apo Hokuto No Ken). **POC actuel : medieval fantasy uniquement**.
 - Public : joueur PC, sessions de 10-30 min, progression méta entre les runs.
-- **État : POC complet et gagnable de bout en bout.** La win condition (tuer le Demon Lord Malachar) est implémentée. Pré-alpha solo dev.
+- **État : jouable de bout en bout** (win condition — tuer le Demon Lord Malachar — implémentée). **v1 / v1.1 / v1.2 clôturées** ; en cours **v1.31 → v1.32 → v1.33** (quêtes / skills-drops / progression). Pré-alpha solo dev.
 
 ---
 
@@ -35,8 +35,8 @@ npm run lint          # ESLint check
 
 **Hébergement v1 (DEPLOY01)** : **Vercel + Vercel Authentication** (alpha **privée**). SPA 100 % client-side (pas de backend ; saves `localStorage`). Routing SPA via `vercel.json` (rewrites → `/index.html`). Réglages : preset Vite · build `npm run build` · output `dist`. ✅ **`public/` est committé** (DEPLOY01) → assets servis par Vercel (`raw/` HD exclus). Le **durcissement réel** (backend, autorité serveur, comptes/rôles, anti-triche) est repoussé à une version ultérieure (cf. `SEC02`) — l'alpha privée s'appuie uniquement sur l'auth Vercel.
 
-**État technique (2026-06-13)** :
-- **1101 tests** dans **96 fichiers** — tous verts (`npx vitest run`)
+**État technique (2026-07-03)** :
+- **1268 tests** dans **123 fichiers** — tous verts (`npx vitest run`)
 - Build prod : **~480 KB JS / ~138 KB gzipped** (code-split : chunks Combat/GodsShop/Codex lazy)
 - ESLint : **0 erreur**, quelques warnings intentionnels (`react-hooks/exhaustive-deps` sur des `useEffect` run-once)
 - **Milestones livrés** : v1 (POC), v1.1 (UI parchemin + sprites + QoL), **v1.2 (profondeur : NPC→STA→PROG, quêtes église/maître/contenu, guilde, équip. par lieu, VFX skills, transmigration)**. **DEPLOY01** : repo prêt pour Vercel (alpha privée), `public/` committé. Reste backlog v1.3/v1.4 (donjon) + design.
@@ -52,13 +52,14 @@ src/
 ├── main.jsx                    # Entry Vite
 ├── index.css                   # Tailwind + animations (.anim-shake/-flash/-pop/-float, screen-fade-in, hero-attack)
 ├── data/                       # Données pures, immuables — aucun state React
-│   ├── monsters.js             # 23 entrées dont 3 boss (Crypt Keeper, Lord of the Forsaken, Malachar) + bossMechanics
-│   ├── skills.js               # 31 skills (dont 4 divins, soul_rend suprême, reckless_blow B10, gluttony passif O)
+│   ├── monsters.js             # bestiaire MON01 (4 spots Ashenvale × 4 dont 1 élite) + 3 boss + Grimspire + réserve
+│   ├── skills.js               # skills actifs/passifs/divins (soul_rend suprême, gluttony) + techniques de bestiaire (MON01)
 │   ├── deities.js              # 3 divinités (Ignareth/Sylvara/Voltaris) + applyDeityBlessing + checkXxxAwakening + DIVINE_RELATIONS + ACTIVE_DEITIES
-│   ├── quests.js               # 8 quêtes + 3 NPCs
+│   ├── quests.js               # board + registre dynamique (getQuestById/isQuestCompleteState/questProgress)
+│   │                           # + mainQuests.js (chaîne mq01→06, elite_turnin), churchQuests.js (CHQ01), masterQuests.js (ACA04), informants.js (TAV01), academy.js (ACA01), dialogues.js, hints.js
 │   ├── equipment.js            # Templates (9) + RARITY_TIERS/RARITY_CONFIG + canCraft + createEquipmentInstance
 │   ├── resources.js            # Drops + 8 consommables (potions, rations, antidote) + RARITY_COLORS
-│   ├── zones.js                # ZONES (3) + huntingSpots + scaleMonsterStats + ZONE_ORDER + getMonsterLevel (B12)
+│   ├── zones.js                # ZONES + huntingSpots + node-locking (isNodeUnlocked/START_OPEN_NODES/getLocationType — PROG/START) + scaleMonsterStats + ZONE_ORDER
 │   ├── debuffs.js              # [CRF01] 4 debuffs passifs (Burnt Hands/Poisoned/Fatigue/Black Smoke)
 │   ├── recipes.js              # [Z04/Z06] ALCHEMY_RECIPES (6) + MASTER_RECIPES (5 Rare/Epic)
 │   └── titles.js               # [M01] TITLES permanents (first_steps, demon_lord_slayer, malachar_bane)
@@ -68,10 +69,13 @@ src/
 │   │                           # B10 getStatSacrifice, B12 isEnemyTooStrong, getEnemyCount
 │   ├── bossMechanics.js        # [N] getMalacharPhase (BSS03), getCryptKeeperEnrage (BSS01), rollCursedStrike (BSS02)
 │   └── gluttony.js             # [O] rollGluttonyProc, pickGluttonyStat, gluttonyAbsorbAmount, isGluttonyReady, hasGluttony
-├── store/
-│   ├── gameStore.js            # Zustand principal : { hero, world, meta, currentScreen, activeCombat, ... }
-│   │                           # 60+ actions + saveGame/loadGame avec migration (runMigrations, SAVE_VERSION=2)
-│   └── toastStore.js           # [U01] Store Zustand séparé pour les toasts (8 types, auto-dismiss)
+├── store/                      # REFAC01 — Zustand découpé en slices
+│   ├── gameStore.js            # compose les slices → { hero, world, meta, currentScreen, activeCombat, ... }
+│   ├── slices/                 # heroSlice · worldSlice · metaSlice · combatSlice · questsSlice · idleSlice · saveSlice
+│   ├── initialState.js         # INITIAL_HERO / INITIAL_WORLD / INITIAL_META + SAVE_VERSION
+│   ├── migrations.js           # runMigrations / normalizeSave (backfill idempotent, anti-piège node FIX-START01, SAVE_VERSION=2)
+│   ├── helpers.js              # utilitaires partagés entre slices
+│   └── toastStore.js           # [U01] Store Zustand séparé pour les toasts (auto-dismiss)
 ├── screens/
 │   ├── WorldMap.jsx / WorldMapCanvas (MAP01 Canvas 2D, rAF, DPR-aware) + QTE déplacement (MAP02)
 │   ├── ZoneView.jsx            # Liste monstres, Fight (generateEnemies B03) / Idle (5 kills), SkillDropPreview (S02)
@@ -99,7 +103,7 @@ racine/
 │   ├── CONTRIBUTING.md   # DoD par type, workflow Git, conventions, règle save, checklist
 │   ├── CHANGELOG.md      # Historique (Keep a Changelog + SemVer)
 │   ├── DESIGN.md         # Specs de design validées (§B05-SPEC effets de statut)
-│   ├── PLAYTESTS.md      # Journal de playtest · ASSETS.md · ASSET_PROMPTS.md · UI_HANDOFF.md · ROADMAP.csv
+│   ├── PLAYTESTS.md      # Journal de playtest · ASSETS.md · ASSET_PROMPTS.md · UI_HANDOFF.md · CHAT_CONTEXT.md · balance/
 ├── balance/combat_stats.csv + drops_summary.csv (PROC04) + dashboard.html · scripts/*.mjs|.py
 └── package.json · vite.config.js · eslint.config.js · vercel.json
 ```
@@ -119,7 +123,7 @@ racine/
 ## 4. Systèmes de jeu — état détaillé
 
 ### WorldMap — carte illustrée & coordonnées des nodes (UI02)
-- Le fond de la WorldMap est une **carte illustrée** : `public/map/eldenmoor.png` (16:9, `object-fit: cover`), avec un voile sombre radial léger par-dessus pour le contraste. *(asset local-only — `public/` gitignoré.)*
+- Le fond de la WorldMap est une **carte illustrée** : `public/map/eldenmoor.png` (16:9, `object-fit: cover`), avec un voile sombre radial léger par-dessus pour le contraste. *(committé — DEPLOY01 ; seules les sources `raw/` HD restent gitignorées.)*
 - **Les positions des 9 lieux sont en COORDONNÉES RELATIVES (%)** du conteneur de carte (table `POS` dans `src/screens/WorldMap.jsx`), calées sur l'illustration. Le scaler 1920×1080 étant uniforme, les % restent alignés à toute échelle.
 - **Si la carte de fond est remplacée**, il suffit de réajuster **ce seul tableau de 9 coordonnées** — aucune autre logique n'est impactée (navigation, déblocages, héros, trails dérivent tous de `POS` + du graphe d'adjacence `EDGES`).
 
@@ -147,18 +151,20 @@ racine/
 - 6 actifs max / 4 passifs max. 3 niveaux. Stack des doublons (S03), contenant cosmétique par univers (S06), aperçu skills ennemis (S02). 31 skills dont gluttony (passif suprême).
 
 ### Idle
-- 5 kills → idle débloqué. Tick 3s. Auto-désactivation HP<20%. Toasts (I04). **B12** : combat manuel forcé si monstre trop fort (niveau > hero+5).
-- **Manque** : choix joueur avant idle (I08).
+- 5 kills → idle débloqué. Tick 3s. **I08** : seuil de PV d'auto-stop configurable (20/35/50 %). Toasts (I04). **B12** : combat manuel forcé si monstre trop fort (niveau > hero+5).
 
 ### Crafting & artisans (Batch P)
 - **Debuffs passifs (CRF01)** : 4 debuffs (jours), décrément au sommeil, réduction de stats en combat, affichage HeroSheet (CRF05).
 - **Mini-jeux (CRF02/03)** : alchimie (dosage) + forge (3 frappes) → `scoreToTier` → `resolveCraftOutcome` (parfait +2 rareté … catastrophe = debuff permanent).
 - **Bâtiments** : Alchimiste (Z04, 6 potions, qualité=quantité) + Maître forgeron (Z06, 5 Rare/Epic, spawn 10% village).
-- **Manque** : CRF06 (antidote qui soigne les debuffs — `antidote_basic` existe déjà, reste à brancher `cureDebuffs`), Q05 (quêtes craft).
+- **CRF06** : `antidote_basic` soigne les debuffs (`cureDebuffs` branché). **Concentration** (STA03) module la qualité de craft. Quêtes craft (Q05) branchées.
 
-### Quêtes
-- 8 quêtes, 3 NPCs, barres de progression (Q02), rang aventurier (Q06).
-- **Manque** : types `visit`/`craft` (Q04/Q05), 10 nouvelles quêtes (NPC02), système de dialogue NPC (NPC01).
+### Quêtes (v1.2 + v1.31)
+- **Board venue-aware** : ville = **Guilde** (quêtes prestigieuses gardées par le rang Q06) ; village = **notice board** réduit + carte d'aventurier (GLD01/02). Registre dynamique `getQuestById` (board + église + maître + principale).
+- **Types d'objectif** : `kill` / `level` / `visit` (Q04) / `craft` (Q05) / `skill_levelup` (ACA04) / `elite_turnin`. Progression comptée **en delta** via snapshot à l'acceptation (`world.questProgress`, FIX-QUESTSNAP01).
+- **Chaîne de quête principale** (MQ-CHAIN01) : `mainQuests.js` mq01→mq06 (Greywatch → Millhaven → Ironhaven) ; chaque palier `unlocks` des nodes (= condition du node-locking START04). Dialogue NPC (NPC01) + informateurs (TAV01).
+- **Quêtes d'église** en rotation 3 jours (CHQ01, tokens + consommables), **quêtes de maître** (ACA04), **10 quêtes de contenu** (NPC02).
+- **À venir** : distinguer visuellement la quête principale (MQUI01), toast de progrès (QTOAST01), quêtes chronométrées (QSV2-TIMED01).
 
 ### Divinités
 - **3 actives** : Ignareth (20 victoires/5j, +15% STR), Sylvara (85% HP × 8, regen), Voltaris (5 victoires <30% HP, +20% AGI). Conditions cachées (ADR-006). Fidélité inter-run (DV03), refus = run solo (DV07).
@@ -167,7 +173,7 @@ racine/
 ### Transmigration & Boutique des Dieux
 - `heroDeath` → PostMortem → héritage → GodsShop → `applyTransmigration` → Run N+1. Économie tokens calibrée (BAL01).
 - **GLT01** : les `meta.permanentStatBoosts` (Gluttony) sont réinjectés à chaque transmigration.
-- **Manque** : transmigration animée (T02), socle universel écran dédié (T05), Soul Rend toujours-héritable (T12).
+- **T02** transmigration animée (écran de renaissance), **T05** choix d'héritage (PostMortem : 1 stat + 1 actif + 1 passif), **T12** Soul Rend `alwaysInheritable`.
 
 ### Win condition (Batch O — BOUCLÉE)
 - **Malachar the Undying** (Demon Lord, Grimspire) : combat 3 phases (BSS03) → drop **Soul Rend** garanti + **200 tokens** (W01) + titres permanents **Demon Lord Slayer / Malachar's Bane** (T13). Ressuscite après 4 transmigrations.
@@ -179,7 +185,19 @@ racine/
 ### Inventory / Equipment / Calendar / Donjons / Save
 - 4 slots équipement, mana stones, resources, consumables. Calendrier 24 ticks/jour, sleep (restore + spawn donjons + **tick debuffs CRF01**), church pray (1 tick CAL01).
 - Donjons : `world.dungeons[zoneId] = { active, cleared, position, discovered }`, loot exclusif (D04), warp sortie (D05), idle interdit (D07). **Manque** : flux 5 salles path map (D01), carte donjon (D03), respawn nuit (D06).
-- Save : localStorage `roguelite_save`, migration robuste (`runMigrations`, SAVE_VERSION=2). **Règle non négociable** : tout champ `INITIAL_*` → ligne de migration + test.
+- Save : localStorage `roguelite_save`, migration robuste (`runMigrations`/`normalizeSave` dans `store/migrations.js`, SAVE_VERSION=2). **Règle non négociable** : tout champ `INITIAL_*` → ligne de migration + test.
+
+### Stats de tension (STA — v1.2)
+- **Vigueur** (STA01, 0-100) : décroît à l'effort, restaurée au sommeil, malus par palier. **Aura** (STA02) : multiplicateur de dégâts permanent, débloquée à l'usage (masquée avant). **Concentration** (STA03) : qualité de craft. Atténuation Fatigue par Aura/Concentration (STA04). Livres de stats (ITM01), entraînement chez un maître (TRA01).
+
+### Vie urbaine (v1.2)
+- **Académie de magie** (ACA01-04) : acheter/revendre des skills (plus-value ACA03), déséquipement réservé (ACA02), skills jusqu'au **Lv5** (SKL01), quêtes de maître (ACA04). **Guilde** en ville (GLD01/02). **Équipement par lieu** (Z07 : village = communs + 1 rare / ville = rares + 1 epic). Horaires de bâtiments (BLD01) + déblocage progressif (BLDUNL01, stub).
+
+### Progression de zones & fog (PROG / START — v1.2 → v1.33)
+- **Zones** débloquées data-driven (`isZoneUnlocked`, `world.unlockedZones`) : conditions niveau/kills + déblocage explicite via quête/info (`unlockZone`). **Node-locking** (START01-04) : le run **démarre à Greywatch**, seuls les nodes ouverts (`START_OPEN_NODES` + `world.unlockedNodes`, écrits par la chaîne MQ) sont accessibles ; **fog** sur le reste de la carte. Anti-piège save (`normalizeSave` relocalise un héros bloqué sur un node verrouillé, FIX-START01).
+
+### VFX de combat par skill (ANIM02/03)
+- Rendu dérivé du type de dégât + portée (`engine/skillVfx.js` `getSkillVfx`) : flash élémentaire teinté, projectile (magie/distance) vs frappe (mêlée), onde AoE, secousse d'arène.
 
 ---
 
@@ -197,11 +215,13 @@ racine/
 | Consommables | 8 | hp/mana small+medium, stamina_ration, elixir_minor, mana_crystal, antidote_basic |
 | Titres permanents | 3 | first_steps, demon_lord_slayer, malachar_bane |
 | Articles boutique | 6 | rank_restore, bonus_skill, bonus_stat, skill_levelup, starter_kit, oracle |
-| Portraits monstres | 5/23 | reste en fallback emoji |
+| Assets liés | 16/16 monstres surface · 5/9 bâtiments | figurines `public/monsters/<id>.png` (+ variantes `_2/_3`), façades `public/buildings/` ; boss/Grimspire + portraits PNJ en emoji/placeholder fallback |
 
 ---
 
-## 6. Tests (729 total, 29 fichiers, ~7s)
+## 6. Tests (1268 total, 123 fichiers)
+
+> Aperçu non exhaustif ci-dessous (le nombre de fichiers a beaucoup augmenté avec v1.2/v1.3 : quêtes église/maître/principale, PROG/START, STA, VFX, migrations, slices…).
 
 ```
 engine/        combat.test.js · bossMechanics.test.js · gluttony.test.js
@@ -228,14 +248,17 @@ racine/        scenarios.test.js (parties simulées + BAL01)
 - **Batch P** (crafting) : debuffs (CRF01), mini-jeux (CRF02/03), rareté (CRF04), affichage (CRF05), alchimiste (Z04), maître forgeron (Z06).
 - **Batch N** (boss & titres) : titres permanents (M01, T13), mécaniques boss allégées (BSS01/02/03).
 - **Batch O** (POC bouclé) : Gluttony (GLT01-04) + Malachar POC (W01).
+- **v1.1** (UI parchemin + sprites + QoL) et **v1.2** (NPC → STA → PROG : quêtes église/maître/contenu, Guilde, Académie, équip. par lieu, VFX skills, transmigration) — **clôturées 2026-06-14**.
+- **MON01** (bestiaire de surface refondu) · **DEPLOY01** (Vercel, `public/` committé) · **REFAC01** (store découpé en slices).
+- **v1.31** (quêtes + chaîne MQ) · **v1.32** (skills/drops) · **v1.33** (progression : node-locking START01-04, fog) — **en cours**.
 
-> Détail ticket par ticket : section **Done** de `TASKS.md`. Git : `feat/batch_MtoR` — **M+P+N committés** ; **Batch O encore en working tree (à committer)**. Avant ces batches, `dev` était à jour via les PR A→L.
+> Détail ticket par ticket : section **Done** de `TASKS.md`. Planning par épiques : table « 🗺 Plan de release » de `TASKS.md`.
 
 ---
 
 ## 8. Prochaines étapes (roadmap par milestones)
 
-> `TASKS.md` a été réorganisé (2026-06-03) en **milestones versionnés** : `v1` (POC figé) → `v1.1` (présentable) → `v1.5` (profondeur) → `v2` (ambition). Ce §8 en est le résumé ; le détail (AC, estimations, dépendances, décisions chiffrées) est dans `TASKS.md`.
+> **Réorg épic-first (2026-06-20)** : `TASKS.md` planifie désormais par **épiques** — la version est portée par l'épique (table « 🗺 Plan de release »), pas par le ticket. **v1 / v1.1 / v1.2 clôturées** ; **en cours** v1.31 (quêtes/chaîne MQ) → v1.32 (skills/drops) → v1.33 (progression/node-locking). **Backlog** : v1.4 (donjon), v1.5+ (monde, divin, compagnons, UI/UX, méta…), gelé (Map 2), v2/v3 (ambition). Les sous-sections 🅰️/🅱️/🅲️ ci-dessous sont **historiques** (v1/v1.1/v1.5 : la plupart livrées) ; le détail à jour est dans `TASKS.md`.
 
 ### 🅰️ v1 — Stabilisation avant de figer le POC
 Le POC est **complet et gagnable**. Reste : **BAL02** (difficulté boss + playtest), **BAL03** (rythme idle), **TECH04** (60fps Canvas), **TECH05** (JSDoc engine). Voir `docs/PLAYTESTS.md`.

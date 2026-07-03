@@ -172,10 +172,10 @@ describe('CRF05 — HeroSheet debuffs', () => {
   })
 
   it('affiche un debuff temporaire avec sa durée restante', () => {
-    useGameStore.getState().addHeroDebuff('fatigue', 5)
+    useGameStore.getState().addHeroDebuff('sluggish', 5)
     render(<HeroSheet />)
     expect(screen.getByTestId('active-debuffs')).toBeInTheDocument()
-    expect(screen.getByText('Fatigue')).toBeInTheDocument()
+    expect(screen.getByText('Sluggish')).toBeInTheDocument()
     expect(screen.getByText('5d left')).toBeInTheDocument()
   })
 

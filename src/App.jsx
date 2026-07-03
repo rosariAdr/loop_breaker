@@ -27,12 +27,13 @@ import { Sidebar } from './components/parchment'
 // PERF-SPLIT01 — code-splitting des écrans lourds (chunks séparés chargés à la demande).
 const Combat = lazy(() => import('./screens/Combat'))
 const CodexOverlay = lazy(() => import('./screens/CodexOverlay'))
+const AchievementsOverlay = lazy(() => import('./screens/AchievementsOverlay'))
 const GodsShop = lazy(() => import('./screens/GodsShop'))
 
 // Écrans en takeover plein-canvas (sans topbar/breadcrumb)
 const FULLSCREEN = ['combat', 'post_mortem', 'gods_shop', 'divine_call']
 // IMM04 — écrans rendus en overlay AU-DESSUS du monde (immersion : on ne quitte pas la scène)
-const OVERLAY_SCREENS = ['hero_sheet', 'inventory', 'codex', 'quests']
+const OVERLAY_SCREENS = ['hero_sheet', 'inventory', 'codex', 'quests', 'achievements']
 
 // PERF-SPLIT01 — fallback affiché le temps de charger le chunk d'un écran lazy.
 function ScreenFallback() {
@@ -181,6 +182,8 @@ function App() {
         return <Inventory onClose={overlayClose} />
       case 'codex':
         return <CodexOverlay onClose={overlayClose} />
+      case 'achievements':
+        return <AchievementsOverlay onClose={overlayClose} />
       case 'quests':
         return <QuestsOverlay onClose={overlayClose} />
       case 'safe_zone':
@@ -225,6 +228,7 @@ function App() {
       { ico: '🎒', label: 'Inventory', onClick: () => setScreen('inventory') },
       // UI-BESTIARY-BTN — accès au bestiaire (CodexOverlay) depuis le panneau parchemin
       { ico: '📖', label: 'Bestiary', onClick: () => setScreen('codex') },
+      { ico: '🏆', label: 'Achievements', onClick: () => setScreen('achievements') },
     ],
   }
 

@@ -106,7 +106,7 @@ Avant de fermer un ticket, vérifier que **tous** les critères du type s'appliq
 ### 🎮 Feature gameplay (M/L)
 - [ ] Code implémenté avec le pattern existant (Zustand action + screen + helper engine si pur)
 - [ ] **Test unitaire** (logique pure dans `engine/` ou helper isolé)
-- [ ] **Test fonctionnel** (action store dans `gameStore.test.js`)
+- [ ] **Test fonctionnel** (action store dans `gameStore.test.js` ou un fichier `store/*.test.js` dédié au domaine)
 - [ ] **Scénario de jeu** (`scenarios.test.js`) si la feature s'intègre dans une boucle
 - [ ] Migration save si ajout de champ dans `INITIAL_*` (cf. §6 règle save)
 - [ ] `CONTEXT.md` mis à jour (compteurs, état système)
@@ -188,7 +188,7 @@ Pas de mix CSS modules / inline. Le projet utilise **Tailwind utility classes** 
 
 - **`data/`** : données pures, immuables, aucun state React
 - **`engine/`** : logique pure, fonctions exportées, **100% testable sans mock**
-- **`store/`** : Zustand global state + actions
+- **`store/`** : Zustand global state + actions, **découpé en slices** (`slices/{hero,world,meta,combat,quests,idle,save}Slice.js`) composées dans `gameStore.js` ; `initialState.js` (INITIAL_*), `migrations.js` (normalisation/migration des saves), `helpers.js`, `toastStore.js`
 - **`screens/`** : composants d'écrans, peuvent lire le store
 - **`components/`** : composants réutilisables (à créer si besoin)
 - **`test/setup.js`** : globals + mocks (jsdom, localStorage, RTL extends)
@@ -198,7 +198,7 @@ Pas de mix CSS modules / inline. Le projet utilise **Tailwind utility classes** 
 ### Tests
 
 - **Engine** (logique pure) : `*.test.js` à côté du fichier source
-- **Store actions** : `gameStore.test.js`
+- **Store actions** : `gameStore.test.js` (transverse) + fichiers `store/*.test.js` par domaine (ex. `saveNormalize.test.js`, `questSnapshot.test.js`, `mqchain.test.js`)
 - **Scénarios** (multi-actions, simulent une partie) : `scenarios.test.js`
 - **UI** (rendu, navigation, flow utilisateur) : `*.test.jsx` avec RTL
 
@@ -250,15 +250,15 @@ Si tu interromps la session sans clôturer, **commit "WIP"** sur la branche feat
 
 ## 6. Règle save (non négociable)
 
-Tout champ ajouté dans `INITIAL_HERO`, `INITIAL_WORLD` ou `INITIAL_META` doit déclencher :
+Tout champ ajouté dans `INITIAL_HERO`, `INITIAL_WORLD` ou `INITIAL_META` (définis dans `store/initialState.js`) doit déclencher :
 
-1. **Migration dans `loadGame()`** — garantir une valeur par défaut pour les vieilles saves
-2. **Test de régression** dans `gameStore.test.js` (section "Migration save")
+1. **Migration dans `normalizeSave()`** (`store/migrations.js`, appelée par `loadGame`) — garantir une valeur par défaut pour les vieilles saves
+2. **Test de régression** dans `store/saveNormalize.test.js`
 3. **Incrément `saveVersion`** dans le JSON sauvegardé (à introduire avec TECH02)
 
 Pattern :
 ```js
-// gameStore.js — loadGame
+// store/migrations.js — normalizeSave
 const migratedHero = {
   ...INITIAL_HERO,            // socle complet (anti-crash sur tout nouveau champ)
   ...hero,                    // valeurs préservées de la save
@@ -267,7 +267,7 @@ const migratedHero = {
 ```
 
 ```js
-// gameStore.test.js — section régression
+// store/saveNormalize.test.js — régression migration
 it('migration : ajoute newField avec valeur par défaut si absent', () => {
   const oldSave = { hero: { ...INITIAL_HERO }, world: …, meta: … }
   delete oldSave.hero.newField
@@ -380,7 +380,6 @@ Les décisions structurantes sont documentées dans **`CONTEXT.md` §11**. Avant
 - `TASKS.md` — backlog source de vérité
 - `CONTEXT.md` — état du projet, ADRs, processus condensé
 - `CHANGELOG.md` — historique versions
-- `docs/ROADMAP.csv` — **tracker hérité périmé** (early-planning, ~60 items) **superséd. par `TASKS.md`** ; conservé pour archive, **ne pas réaligner**
 - `balance/combat_stats.csv` — stats monstres calculées (×zone × run scaling)
 - `public/monsters/README.md` — guide génération portraits
 
