@@ -3,7 +3,7 @@
 > **Fichier maître** : étude des assets à produire + **prompts prêts à coller** + reco par asset
 > (🟢 **Gemini** / 🟣 **autre IA** / 🟠 **à sourcer** / ⚪ **ni l'un ni l'autre**).
 > **Chaque asset (§4 à §12) a son propre prompt COMPLET prêt à copier-coller** (style + cadrage + sujet + technique déjà assemblés) — un bloc = un asset. (`public/monsters/README.md` reste un guide secondaire.)
-> Rappel : `public/` est **gitignoré** → les assets restent local-only ; ce plan, lui, est committé.
+> Rappel : depuis **DEPLOY01 (2026-07)**, `public/` est **committé** (assets servis par Vercel) ; seules les **sources HD** `public/monsters/raw/` + `public/buildings/raw/` restent gitignorées (backups local-only).
 
 ---
 

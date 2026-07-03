@@ -49,7 +49,28 @@ Pour chaque playtest :
 
 ## Entrées
 
-_(aucun playtest enregistré pour l'instant — première session à venir)_
+### Playtest #1 — 2026-06-14 (chaîne principale & démarrage restreint)
+
+- **Build / branche** : `feat/v1.33_progression`
+- **Save** : reprise (run #1) + une save **antérieure au node-locking**
+- **Jusqu'où** : Greywatch → Millhaven (chaîne MQ mq01→mq02), ~jour 50
+
+**Boucle de jeu** : une fois les bugs de départ corrigés, la progression Greywatch → forêt → chaîne principale est fonctionnelle et lisible.
+
+**Bugs trouvés** (→ épique `BUG_v1.2` dans `TASKS.md`) :
+- [x] **FIX-START01** — une save d'avant le node-locking gardait le héros sur **Ironhaven (ville verrouillée)** → bloqué, rien de jouable. Corrigé (anti-piège `normalizeSave`).
+- [x] **FIX-QUESTPROG01** — board : quête **non acceptée** affichait le cumul de kills (5/5 au lieu de 0/5). Corrigé.
+- [ ] **FIX-QUESTPROG02** — même bug côté **panneau église** (affichage). Ouvert.
+- [ ] **HSV2-01** — **avatar du héros invisible** sur le Hero Sheet.
+- [ ] **MQUI01** — la **quête principale n'est pas distinguée** des secondaires (confusion « où est la main quest ? »).
+
+**Friction UX** :
+- Objectif `elite_turnin` (détenir 3× l'item d'un élite, drop 30 %) **peu lisible** : rien n'indique qu'il faut farmer l'item, ni de compteur x/3.
+- Aura/Concentration affichées dans les stats **avant déblocage** → refonte Hero Sheet V2 (les masquer, HSV2-03).
+
+**Ressenti global** : 7/10 — progression claire une fois débloquée ; frictions surtout de **lisibilité** (quête principale, elite_turnin) + un bug de save bloquant (corrigé).
+
+**Tickets créés** : BUG_v1.2 (FIX-QUESTPROG02), MQUI01, QTOAST01, HSV2-01→06, QA01.
 
 ---
 
@@ -58,9 +79,9 @@ _(aucun playtest enregistré pour l'instant — première session à venir)_
 | Aspect | Verdict actuel | Action |
 |---|---|---|
 | Onboarding | Livré (ONB01-03 : tips + codex Rules) | Tester clarté en jeu |
-| Chaîne principale (MQ) | Livré (B5+B6) | **Tester en priorité** — voir WATCHLIST |
-| Démarrage Greywatch + nodes verrouillés | Livré (B6) | Tester si le gating coince |
-| Remise d'élite (drops -> arme) | Livré (B5) | Vérifier rythme des drops (grind ?) |
+| Chaîne principale (MQ) | ✅ Testé (playtest #1) — jouable mq01→mq02 | Lisibilité à améliorer → **MQUI01** (distinguer la main quest) |
+| Démarrage Greywatch + nodes verrouillés | ✅ Testé (playtest #1) — bug bloquant corrigé | **FIX-START01** (save d'avant node-locking piégée) livré |
+| Remise d'élite (drops -> arme) | ✅ Testé (playtest #1) — fonctionne | Lisibilité `elite_turnin` faible (drop 30 %, pas de compteur x/3) |
 | Difficulté Zone 1 | À tester | BAL02 |
 | Difficulté boss | À tester | BAL02 |
 | Économie tokens | Régulé 0/5-élites (REP01) ; rang à recaler | REP-REBAL01 |

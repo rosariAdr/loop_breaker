@@ -4,6 +4,8 @@
 >
 > ⚠️ Les textes entre guillemets, les labels d'interface (`Run #1`, `ASHENVALE FOREST`, `Map/Hero/Bag/Save`, etc.), les valeurs de couleurs et les noms de fichiers d'assets sont **du contenu littéral** : garde-les exactement tels quels (le jeu est en anglais).
 
+> 🕒 **Note de fraîcheur (2026-07-03)** — Ce prompt de design **précède plusieurs écrans/systèmes désormais en jeu** : la **Guilde**, le **panneau de quêtes de l'Église**, la refonte **Hero Sheet V2** (barres uniformes de même longueur + jalons tous les 35 pts, avatar au-dessus du bloc divin, aura/concentration masquées jusqu'au déblocage — encore au stade *ticket* HSV2-01→06), et le **fog / verrouillage de nodes** sur la World Map (START01-04). Le canevas et les tokens visuels ci-dessous restent valides ; pour l'inventaire réel des écrans, se référer à `CONTEXT.md` et `TASKS.md` (**le repo prime**).
+
 ---
 
 ## PROJET

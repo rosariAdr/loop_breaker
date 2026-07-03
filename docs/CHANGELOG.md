@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> Suite v1.2 : **v1.31 → v1.33** (en cours) + refonte technique + déploiement + correctifs de playthrough. Détail ticket par ticket : `TASKS.md` (§Done + « 🗺 Plan de release »).
+
+### Added (v1.31–v1.33 — quêtes, skills, progression)
+- **MQ-CHAIN01** — Chaîne de quête principale : `mainQuests.js` mq01→mq06 (Greywatch → Millhaven → Ironhaven). Nouveau type d'objectif `elite_turnin` (remise de N× l'item rare d'un élite OU son arme signature). Chaque palier `unlocks` des localités/spots.
+- **START01-04** — Le run **démarre à Greywatch** ; **node-locking** data-driven (`isNodeUnlocked` / `START_OPEN_NODES` / `world.unlockedNodes`, écrits par la chaîne MQ) + **fog of war** sur les nodes non ouverts de la World Map.
+- **PROG01-03** — Déblocage de **zones** data-driven (`isZoneUnlocked` / `world.unlockedZones` / `unlockZone`) : conditions niveau/kills + déblocage explicite via quête (`reward.unlockZone`) ou info d'informateur.
+- **v1.32 — skills / drops** : branche `feat/v1.32_skills` (mergée). Détails : `TASKS.md` §Done.
+
+### Changed
+- **REFAC01** — Store Zustand **découpé en slices** : `store/slices/{hero,world,meta,combat,quests,idle,save}Slice.js` composés dans `gameStore.js` ; `initialState.js`, `migrations.js`, `helpers.js` extraits.
+- **FIX-QUESTSNAP01** — Progression de quête comptée **en delta** via un snapshot des compteurs à l'acceptation (`world.questProgress`) : une quête déjà « remplie » en cumulé n'est plus complétable instantanément.
+- **ANIM02 / ANIM03** — VFX de combat **propres à chaque skill** (`engine/skillVfx.js` `getSkillVfx`) : flash élémentaire teinté, projectile (magie/distance) vs frappe (mêlée), onde AoE, secousse d'arène.
+- **UI09** — Déroulé de parchemin à l'entrée/sortie de zone (`utils/transitions.js`) ; fallback gracieux d'`ArtSlot` (image → placeholder légendé).
+- **TASKS.md** — Réorganisation **épic-first** (2026-06-20) : la version est portée par l'épique (table « 🗺 Plan de release »), plus de tag de version sur la ligne ; axes prio (P1-P5) / maturité (🟢/🟡/✂️/⛔) séparés.
+
+### Fixed
+- **FIX-START01** — Héros piégé sur un node verrouillé (ne démarrait pas à Greywatch) : anti-piège dans `normalizeSave` (relocalisation au village de départ si `currentNode` verrouillé) + fallbacks `ironhaven` → `greywatch` (`migrations.js`, `WorldMap.jsx`). +3 tests.
+- **FIX-QUESTPROG01** — Board : une quête **non acceptée** affichait le cumul de kills/crafts du joueur (5/5) au lieu de 0/5 ; `QuestCard` affiche 0 pour les objectifs delta (kill/craft) tant que la quête n'est pas active. +4 tests.
+- **FIX-QUESTPROG02** *(ouvert)* — Même bug côté **panneau église** : la `QuestCard` active ne reçoit pas le snapshot `base` → affiche le cumul (bug d'affichage uniquement).
+
+### Infrastructure
+- **DEPLOY01** — Préparation **Vercel** (alpha privée) : `vercel.json` (rewrites SPA → `/index.html`), `.gitignore` durci (`.env`, `.vercel`), **`public/` committé** (assets servis ; `raw/` HD exclus), `index.html` meta description, README + CONTEXT §Déploiement. Durcissement réel (backend/comptes) repoussé → `SEC02`.
+
 ### Changed (MON01 — Refonte du bestiaire de surface)
 - **MON01** — Refonte des 4 spots d'Ashenvale : rosters revus (4 monstres/spot dont 1 élite). Ajouts : Thicket Hare, Tuskmaw Boar, Old Oakheart (forêt) ; Mire Slime, Fenrot Devourer (marais) ; Graven Sentinel (ruines, = ex-Grave Knight déplacé + renommé) ; Hill Slime, Russet Fox, Knoll Goblin, Thunderhoof (collines).
 - **MON01** — Zone **Barrow Hills → Wildmere Hills** (id `barrow_hills` → `wildmere_hills` renommé partout : monsters/zones/worldGraph/arène ; remap des saves dans `normalizeSave`).
