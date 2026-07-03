@@ -8,12 +8,15 @@ import { MONSTERS, MONSTERS_BY_ZONE } from '../data/monsters'
 import { SKILLS } from '../data/skills'
 import { ZONES } from '../data/zones'
 import { CODEX_RULES } from '../data/codexRules'
+import { bestiaryTier, bestiaryLore } from '../data/bestiary'
 
 const STATS_REVEAL = 3
 const SKILL_REVEAL = 5
 
 export default function CodexOverlay({ onClose }) {
   const kills = useGameStore((s) => s.world.monsterKillCounts)
+  // BEST01/02 — maîtrise de bestiaire = compteur PERSISTANT (méta, cumulé entre runs).
+  const bestiaryKills = useGameStore((s) => s.meta.bestiaryKills ?? {})
   const setScreen = useGameStore((s) => s.setScreen)
   const back = onClose ?? (() => setScreen('world_map'))
   const [tab, setTab] = useState('bestiary') // ONB03 — 'bestiary' | 'rules'
@@ -82,8 +85,11 @@ export default function CodexOverlay({ onClose }) {
                     const m = MONSTERS[id]
                     if (!m) return null
                     const k = kills[id] || 0
-                    const seen = k > 0
-                    const statsKnown = k >= STATS_REVEAL
+                    const bk = bestiaryKills[id] || 0
+                    const tier = bestiaryTier(bk)
+                    const seen = k > 0 || bk > 0
+                    // BEST01 — stats complètes au Codex dès la maîtrise Lv2 (50 kills cumulés).
+                    const statsKnown = k >= STATS_REVEAL || tier.codexFull
                     const skillTpl = m.skillDrop ? SKILLS[m.skillDrop.skillId] : null
                     return (
                       <div
@@ -106,7 +112,34 @@ export default function CodexOverlay({ onClose }) {
                         )}
                         {seen && skillTpl && (
                           <div className="codex-skill" data-testid={`codex-skill-${id}`}>
-                            ✦ {k >= SKILL_REVEAL ? skillTpl.name : '████████'}
+                            ✦ {k >= SKILL_REVEAL || tier.mastered ? skillTpl.name : '████████'}
+                          </div>
+                        )}
+                        {/* BEST01 — badge de maîtrise (paliers de bestiaire, persistants). */}
+                        {tier.level > 0 && (
+                          <div
+                            data-testid={`codex-mastery-${id}`}
+                            style={{
+                              fontSize: 11,
+                              marginTop: 3,
+                              color: tier.mastered ? 'var(--gold)' : 'var(--amber-deep)',
+                            }}
+                          >
+                            {tier.mastered ? '★ Mastered' : `Bestiary Lv ${tier.level}`}
+                          </div>
+                        )}
+                        {/* BEST02 — lore révélé à la maîtrise (100 kills cumulés). */}
+                        {tier.loreUnlocked && (
+                          <div
+                            data-testid={`codex-lore-${id}`}
+                            style={{
+                              fontSize: 10,
+                              marginTop: 3,
+                              color: 'var(--ink-soft)',
+                              fontStyle: 'italic',
+                            }}
+                          >
+                            {bestiaryLore(id)}
                           </div>
                         )}
                       </div>

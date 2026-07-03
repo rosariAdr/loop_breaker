@@ -74,6 +74,7 @@ function migrateV1ToV2(save) {
     ...meta,
     divineBonds: meta.divineBonds ?? {},
     titlesEarned: Array.isArray(meta.titlesEarned) ? meta.titlesEarned : [],
+    activeTitle: meta.activeTitle ?? null,
     permanentStatBoosts: meta.permanentStatBoosts ?? {}, // GLT01
     gluttonyLastUsed: meta.gluttonyLastUsed ?? null, // GLT01
   }
@@ -174,6 +175,7 @@ export function normalizeSave(save) {
     ...sMeta,
     achievements: asArray(sMeta.achievements),
     titlesEarned: asArray(sMeta.titlesEarned),
+    activeTitle: sMeta.activeTitle ?? null,
     seenHints: asArray(sMeta.seenHints),
     knownInfo: asArray(sMeta.knownInfo),
     divineBonds: asObject(sMeta.divineBonds),

@@ -159,6 +159,9 @@ export const INITIAL_WORLD = {
   // FIX-CHURCH-DRY01 — actes de dévotion (église) accomplis, par bloc de rotation :
   // { [churchQuestId]: blockIndex } → répétabilité (re-proposable au bloc suivant).
   churchDeeds: {},
+  // BURN01 — journal d'actions (type + jour) pour le burnout de monotonie + état courant.
+  actionLog: [],
+  burnout: null,
 }
 
 // ── État méta (persiste entre les runs) ─────────────────────────────────────
@@ -169,6 +172,8 @@ export const INITIAL_META = {
   // Préparation X08 multi-univers. Pour le POC : un seul univers 'medieval_fantasy'.
   demonLordKills: {},
   titlesEarned: [],
+  activeTitle: null, // TITLE-G1 — id du titre actif (ses statBuffs s'appliquent) ou null
+  bestiaryKills: {}, // BEST01 — kills cumulés par espèce (persistant) → paliers de bestiaire
   totalRepTokensEarned: 0,
 
   // W03 — Flag levé si Malachar killed durant ce run (consommé au PostMortem)

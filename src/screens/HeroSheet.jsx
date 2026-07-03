@@ -4,12 +4,21 @@ import { SKILLS } from '../data/skills'
 import { DEITIES } from '../data/deities'
 import { RARITY_CONFIG, calcEquippedStatBonuses } from '../data/equipment'
 import { DEBUFFS } from '../data/debuffs'
-import { TITLES } from '../data/titles'
+import { TITLES, getTitleStatBuffs } from '../data/titles'
+import { STAT_MILESTONES } from '../data/statMilestones'
 import { hasGluttony, isGluttonyReady, gluttonyDaysRemaining } from '../engine/gluttony'
 import { ArtSlot } from '../components/parchment'
 import Tooltip from '../components/Tooltip'
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
+
+// TITLE-BUF01 — résumé des buffs d'un titre pour le tooltip.
+const buffText = (buffs) =>
+  buffs && Object.keys(buffs).length
+    ? ` · ${Object.entries(buffs)
+        .map(([k, v]) => `+${v} ${k}`)
+        .join(', ')}`
+    : ''
 
 // UX01 — Descriptions in-game des stats du héros
 const STAT_TOOLTIPS = {
@@ -38,12 +47,16 @@ const ATTR_DEFS = [
 ]
 
 export default function HeroSheet({ onClose }) {
-  const { hero, meta, world, setScreen, unequipItem } = useGameStore()
+  const { hero, meta, world, setScreen, unequipItem, setActiveTitle } = useGameStore()
   // ACA02 — équiper est libre partout, mais déséquiper un skill se fait UNIQUEMENT à
   // l'Académie de magie. Ailleurs, on donne un feedback clair au lieu de déséquiper.
   const blockSkillUnequip = () =>
     useToastStore.getState().addToast('Visit the Academy of Magic to unequip skills.', 'info')
-  const equippedBonuses = calcEquippedStatBonuses(hero.equipped ?? {})
+  // TITLE-BUF01 — bonus affichés = équipement + buffs du titre actif.
+  const equippedBonuses = { ...calcEquippedStatBonuses(hero.equipped ?? {}) }
+  for (const [stat, bonus] of Object.entries(getTitleStatBuffs(meta?.activeTitle))) {
+    equippedBonuses[stat] = (equippedBonuses[stat] ?? 0) + bonus
+  }
   const earnedTitles = (meta?.titlesEarned ?? []).map((id) => TITLES[id]).filter(Boolean) // M01
   // GLT03 — statut Gluttony
   const gluttonyEquipped = hasGluttony(hero.passiveSkills ?? [])
@@ -58,6 +71,11 @@ export default function HeroSheet({ onClose }) {
         {/* En-tête */}
         <div className="sheet-hd">
           <div className="sh-title">
+            {meta?.activeTitle && TITLES[meta.activeTitle] && (
+              <span className="hs-active-title" data-testid="active-title">
+                {TITLES[meta.activeTitle].icon} {TITLES[meta.activeTitle].name}
+              </span>
+            )}
             {hero.name}
             <span className="sh-meta">
               Wanderer · Run #{hero.runNumber} · Level {hero.level} · {hero.deathCount} deaths
@@ -77,7 +95,20 @@ export default function HeroSheet({ onClose }) {
         <div className="sheet-body" style={{ overflowY: 'auto' }}>
           {/* Colonne gauche */}
           <div className="hs-left">
-            {/* HS-DEITY01 — bloc Divinité remonté en haut de la colonne gauche, avant l'avatar */}
+            {/* HSV2-01 — avatar en tête de colonne gauche (remonté au-dessus d'Allegiance) */}
+            <div className="lb-slot hs-portrait art-slot" data-testid="hero-avatar">
+              <img
+                src={HERO_SPRITE}
+                alt="Hero avatar"
+                draggable={false}
+                style={{
+                  imageRendering: 'pixelated',
+                  maxHeight: '88%',
+                  maxWidth: '92%',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
             <div className="panel-block">
               <div className="pb-title">Allegiance</div>
               {hero.deity ? (
@@ -97,15 +128,6 @@ export default function HeroSheet({ onClose }) {
                 </div>
               )}
             </div>
-            <div className="lb-slot hs-portrait art-slot">
-              <img
-                src={HERO_SPRITE}
-                alt=""
-                draggable={false}
-                style={{ imageRendering: 'pixelated', height: '88%', objectFit: 'contain' }}
-              />
-            </div>
-
             <div className="panel-block">
               <div className="pb-title">Equipment</div>
               <div className="equip-grid">
@@ -178,6 +200,13 @@ export default function HeroSheet({ onClose }) {
               >
                 📖 Bestiary
               </button>
+              <button
+                className="pbtn wide"
+                style={{ marginTop: 6 }}
+                onClick={() => setScreen('achievements')}
+              >
+                🏆 Achievements
+              </button>
             </div>
           </div>
 
@@ -223,25 +252,6 @@ export default function HeroSheet({ onClose }) {
                   cur={hero.exp}
                   max={hero.expToNext}
                 />
-                {/* STA02 — Aura (mult. de dégâts) */}
-                <VitalBar
-                  label="Aura"
-                  tip={STAT_TOOLTIPS.Aura}
-                  color="#c084fc"
-                  cur={hero.aura ?? 0}
-                  max={20}
-                  locked={(hero.aura ?? 0) <= 0}
-                  display={`${hero.aura ?? 0} (+${((hero.aura ?? 0) * 0.5).toFixed(1)}% dmg)`}
-                />
-                {/* STA03 — Concentration (qualité de craft) */}
-                <VitalBar
-                  label="Concentration"
-                  tip={STAT_TOOLTIPS.Concentration}
-                  color="#60a0d0"
-                  cur={hero.concentration ?? 0}
-                  max={150}
-                  locked={(hero.concentration ?? 0) <= 0}
-                />
               </div>
               <div className="attr-grid">
                 {ATTR_DEFS.map(({ key, label }) => {
@@ -256,7 +266,18 @@ export default function HeroSheet({ onClose }) {
                         </span>
                       </Tooltip>
                       <span className="ar-bar">
-                        <i style={{ width: `${Math.min(100, (total / 25) * 100)}%` }} />
+                        <i style={{ width: `${Math.min(100, ((total % 35) / 35) * 100)}%` }} />
+                      </span>
+                      {/* HSV2-04 — repères tous les 35 pts (paliers franchis = « on ») */}
+                      <span className="ar-ticks">
+                        {Array.from({ length: Math.floor(total / 35) }).map((_, i) => (
+                          <span
+                            key={i}
+                            className="ar-tick on"
+                            data-testid="stat-milestone"
+                            title={`Palier ${(i + 1) * 35} — ${STAT_MILESTONES[key]?.label ?? ''}`}
+                          />
+                        ))}
                       </span>
                       <span className="ar-val">
                         {total}
@@ -270,6 +291,26 @@ export default function HeroSheet({ onClose }) {
                     </div>
                   )
                 })}
+              </div>
+              {/* HSV2-03 — Aura & Concentration au bas du bloc attributs (masquées si verrouillées) */}
+              <div className="hs-vitals" style={{ marginTop: 16 }}>
+                <VitalBar
+                  label="Aura"
+                  tip={STAT_TOOLTIPS.Aura}
+                  color="#c084fc"
+                  cur={hero.aura ?? 0}
+                  max={20}
+                  locked={(hero.aura ?? 0) <= 0}
+                  display={`${hero.aura ?? 0} (+${((hero.aura ?? 0) * 0.5).toFixed(1)}% dmg)`}
+                />
+                <VitalBar
+                  label="Concentration"
+                  tip={STAT_TOOLTIPS.Concentration}
+                  color="#60a0d0"
+                  cur={hero.concentration ?? 0}
+                  max={150}
+                  locked={(hero.concentration ?? 0) <= 0}
+                />
               </div>
             </div>
 
@@ -378,13 +419,21 @@ export default function HeroSheet({ onClose }) {
               <div className="panel-block">
                 <div className="pb-title">Titles</div>
                 <div className="hs-titles" data-testid="permanent-titles">
-                  {earnedTitles.map((t) => (
-                    <Tooltip key={t.id} content={t.description}>
-                      <span className="hs-title-chip" style={{ cursor: 'help' }}>
-                        <span>{t.icon}</span> {t.name}
-                      </span>
-                    </Tooltip>
-                  ))}
+                  {earnedTitles.map((t) => {
+                    const active = meta?.activeTitle === t.id
+                    return (
+                      <Tooltip key={t.id} content={`${t.description}${buffText(t.statBuffs)}`}>
+                        <button
+                          className={`hs-title-chip ${active ? 'active' : ''}`}
+                          data-testid={`title-chip-${t.id}`}
+                          onClick={() => setActiveTitle(active ? null : t.id)}
+                        >
+                          <span>{t.icon}</span> {t.name}
+                          {active ? ' ✓' : ''}
+                        </button>
+                      </Tooltip>
+                    )
+                  })}
                   {hero.titles.map((t) => (
                     <span key={t} className="hs-title-chip legacy">
                       {t}
@@ -405,13 +454,14 @@ export default function HeroSheet({ onClose }) {
 // libellé reste net avec son tooltip explicatif.
 function VitalBar({ label, cur, max, color, tip, locked = false, display }) {
   const pct = max > 0 ? Math.min(100, Math.max(0, (cur / max) * 100)) : 0
-  const labelEl = <span className="hvb-label">{label}</span>
+  // HSV2-03 — verrouillé : nom masqué (« ??? ») + pas de tooltip (masquage complet).
+  const labelEl = <span className="hvb-label">{locked ? '???' : label}</span>
   return (
     <div
       className={`hvb ${locked ? 'hvb-locked' : ''}`}
       data-testid={`vital-${label.toLowerCase()}`}
     >
-      {tip ? <Tooltip content={tip}>{labelEl}</Tooltip> : labelEl}
+      {tip && !locked ? <Tooltip content={tip}>{labelEl}</Tooltip> : labelEl}
       <span className="hvb-bar">
         <i style={{ width: `${locked ? 100 : pct}%`, background: color }} />
       </span>
@@ -499,9 +549,6 @@ function SkillRow({ skill, isDivine = false, onUnequip, compact = false }) {
           )}
           {template.cost.hp > 0 && (
             <span style={{ color: 'var(--danger)' }}>{template.cost.hp} HP</span>
-          )}
-          {template.cooldown > 0 && (
-            <span style={{ color: 'var(--ink-soft)' }}>CD {template.cooldown}t</span>
           )}
         </div>
         {skill.level < 3 && (

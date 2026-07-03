@@ -23,9 +23,11 @@ export const DEBUFFS = {
     reduction: 0.15, // HPmax −15%
     description: 'Toxic fumes linger in your blood. Maximum HP is reduced.',
   },
-  fatigue: {
-    id: 'fatigue',
-    name: 'Fatigue',
+  // STA01b — l'ancien debuff « Fatigue » (doublon nominal de la Vigueur = engine/vigor.js) est
+  // renommé « Sluggish » pour lever la confusion : la vraie Fatigue est la jauge de vigueur.
+  sluggish: {
+    id: 'sluggish',
+    name: 'Sluggish',
     icon: '😩',
     stat: 'agility',
     reduction: 0.2, // AGI −20%

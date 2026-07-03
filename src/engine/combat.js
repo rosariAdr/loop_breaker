@@ -4,6 +4,8 @@
 import { MONSTERS } from '../data/monsters'
 import { SKILLS, getLevelBonus } from '../data/skills'
 import { RESOURCES } from '../data/resources'
+import { getStatMilestoneBonuses, milestonesFor, STAT_MILESTONES } from '../data/statMilestones'
+import { bestiaryDropBonus } from '../data/bestiary'
 import { scaleMonsterStats, ZONE_MULTS, ZONE_ORDER } from '../data/zones'
 import {
   checkIgnarethAwakening,
@@ -36,14 +38,18 @@ export function calcSkillDamage(skill, heroStats, level = 1) {
   const effect = template.effect
   if (!effect?.damage) return 0
 
-  const baseStat =
-    effect.damage.baseStat === 'intelligence' ? heroStats.intelligence : heroStats.strength
+  const isMagic = effect.damage.baseStat === 'intelligence'
+  const baseStat = isMagic ? heroStats.intelligence : heroStats.strength
 
   let multiplier = effect.damage.multiplier
   // Bonus de niveau : +30% par niveau au-delà de 1
   multiplier += (level - 1) * 0.3
 
-  return Math.max(1, Math.round(baseStat * multiplier))
+  // HS-STATPERK01 — perk de palier (FOR/INT) : +3% dégâts phys/magiques par palier de 35 (0 sous 35).
+  const ms = getStatMilestoneBonuses(heroStats)
+  const perk = 1 + (isMagic ? ms.magicDmg : ms.physDmg)
+
+  return Math.max(1, Math.round(baseStat * multiplier * perk))
 }
 
 // ── Ordre des tours ───────────────────────────────────────────────────────────
@@ -246,13 +252,18 @@ export function isEnemyTooStrong(enemyLevel, heroLevel, gap = 5) {
  * @returns {{ skillDrop: string|null, resources: {id:string, qty:number}[], gold:number, exp:number }}
  * @example calcDrops('ashwood_wolf', 10)
  */
-export function calcDrops(monsterId, heroChance = 5) {
+export function calcDrops(monsterId, heroChance = 5, speciesKills = 0) {
   const monster = MONSTERS[monsterId]
   if (!monster) return { skillDrop: null, resources: [] }
 
   // Modificateur de drop lié à la stat Chance du héros
   // Chance = 5 (base) → aucun bonus. Chaque point au-delà de 5 = +0.5%
-  const chanceBonus = Math.max(0, (heroChance - 5) * 0.005)
+  // HS-STATPERK01 — perk CHANCE : +2% drop par palier de 35 (0 sous 35), cumulé au bonus par point.
+  // BEST01 — bonus de drop de bestiaire (+5% à la maîtrise 100 kills de l'espèce).
+  const chanceBonus =
+    Math.max(0, (heroChance - 5) * 0.005) +
+    milestonesFor(heroChance) * STAT_MILESTONES.chance.per +
+    bestiaryDropBonus(speciesKills)
 
   // Skill drop
   let skillDrop = null
@@ -358,7 +369,10 @@ export function generateEnemies(monsterId, zoneId, runCount) {
  */
 export function enemyAI(enemy, heroStats) {
   // POC : toujours attaque basique (TODO B05 — diversifier l'IA avec skills/effets)
-  const dmg = calcBaseDamage(enemy.stats.atk, heroStats.def)
+  const raw = calcBaseDamage(enemy.stats.atk, heroStats.def)
+  // HS-STATPERK01 — perk DÉF : −3% dégâts subis par palier de 35 (0 sous 35).
+  const { reduction } = getStatMilestoneBonuses(heroStats)
+  const dmg = Math.max(1, Math.round(raw * (1 - reduction)))
   return {
     type: 'attack',
     damage: dmg,

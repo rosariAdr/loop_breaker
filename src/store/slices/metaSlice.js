@@ -66,6 +66,13 @@ export const createMetaSlice = (set, get) => ({
       return { meta: { ...state.meta, titlesEarned: [...earned, titleId] } }
     }),
 
+  // TITLE-G1 — active un titre GAGNÉ (ou null pour aucun) ; un seul titre actif à la fois.
+  setActiveTitle: (titleId) =>
+    set((state) => {
+      if (titleId != null && !(state.meta.titlesEarned ?? []).includes(titleId)) return state
+      return { meta: { ...state.meta, activeTitle: titleId } }
+    }),
+
   // ACH01 — Évalue les accomplissements ; débloque les nouveaux, applique leurs bonus de
   // stat (permanents, comme Gluttony) + toast. Appelé après kill / quête / mort / demon lord.
   checkAchievements: () =>

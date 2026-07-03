@@ -390,21 +390,21 @@ describe('processIdleTick', () => {
 // ── CRF01 — Debuffs passifs ───────────────────────────────────────────────────
 describe('CRF01 — debuffs (store)', () => {
   it('addHeroDebuff ajoute un debuff au héros', () => {
-    useGameStore.getState().addHeroDebuff('fatigue', 7)
+    useGameStore.getState().addHeroDebuff('sluggish', 7)
     const d = useGameStore.getState().hero.activeDebuffs
     expect(d).toHaveLength(1)
-    expect(d[0].debuffId).toBe('fatigue')
+    expect(d[0].debuffId).toBe('sluggish')
     expect(d[0].duration.remaining).toBe(7)
   })
 
   it('sleep décrémente la durée des debuffs temporaires', () => {
-    useGameStore.getState().addHeroDebuff('fatigue', 7)
+    useGameStore.getState().addHeroDebuff('sluggish', 7)
     useGameStore.getState().sleep()
     expect(useGameStore.getState().hero.activeDebuffs[0].duration.remaining).toBe(6)
   })
 
   it('sleep retire un debuff arrivé à expiration', () => {
-    useGameStore.getState().addHeroDebuff('fatigue', 1)
+    useGameStore.getState().addHeroDebuff('sluggish', 1)
     useGameStore.getState().sleep()
     expect(useGameStore.getState().hero.activeDebuffs).toHaveLength(0)
   })
