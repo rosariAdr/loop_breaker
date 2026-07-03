@@ -2,7 +2,7 @@
 
 > **Fichier maître** : étude des assets à produire + **prompts prêts à coller** + reco par asset
 > (🟢 **Gemini** / 🟣 **autre IA** / 🟠 **à sourcer** / ⚪ **ni l'un ni l'autre**).
-> **Chaque asset (§4 à §12) a son propre prompt COMPLET prêt à copier-coller** (style + cadrage + sujet + technique déjà assemblés) — un bloc = un asset. (`public/monsters/README.md` reste un guide secondaire.)
+> **Chaque asset (§4 à §12) a son propre prompt COMPLET prêt à copier-coller** (style + cadrage + sujet + technique déjà assemblés) — un bloc = un asset. **Ce fichier est la source unique** (pas de doc annexe).
 > Rappel : depuis **DEPLOY01 (2026-07)**, `public/` est **committé** (assets servis par Vercel) ; seules les **sources HD** `public/monsters/raw/` + `public/buildings/raw/` restent gitignorées (backups local-only).
 
 ---
@@ -39,165 +39,223 @@
 
 ## 3) Conventions techniques (communes)
 
-- **PNG**, généré en **1024²**, exporté à la taille cible, **fond plat neutre → détouré** (rembg / remove.bg / Photopea).
+- **PNG**, généré en **1024²**, exporté à la taille cible. **Props / façades / médaillons** : fond plat neutre → **détouré** (rembg / remove.bg / Photopea). **Monstres (§4)** *(depuis 2026-07-03)* : illustration à **fond d'ambiance peint → PAS de détourage** (le sujet est déjà cadré 1:1, générable direct en 512²).
 - **Nommage exact** indiqué par asset. Emplacements : `public/monsters/`, `public/sprites/hero/`, `public/buildings/`, `public/portraits/`, `public/deities/`, etc.
 - **Astuce cohérence** : générer 1 asset satisfaisant par lot, puis le **fournir en image de référence** pour les suivants (« même style que cette image »). Même modèle/mêmes réglages par lot.
 
 ---
 
-## 4) 🟢 MONSTRES — figurines 3D sur socle (Gemini)
+## 4) 🟢 MONSTRES — illustration « carte de bestiaire » (Gemini)
 
-> Direction complète + 29 prompts détaillés dans `public/monsters/README.md`. **Reco : 🟢 Gemini 2.5 Flash Image (« Nano Banana »)** — excellent en cohérence inter-images. Format **figurine 3D de collection sur socle**, fond neutre détourable, 512² final.
+> **Reco : 🟢 Gemini 2.5 Flash Image (« Nano Banana »)** — excellent en cohérence inter-images. Format **illustration peinte façon carte de bestiaire JRPG** : sujet centré 1:1 posé sur un **petit patch de sol thématisé** avec un **fond d'ambiance flou peint** (lueur d'habitat, particules, runes). Nomme `<id>.png`, dépose dans `public/monsters/`, **512² final**.
 
-**Règle de format (décidée 2026-06-07) :**
-- **Monstres normaux (`common`)** → **figurine + socle thématique** (style « Charme » Ghibli × Dragon Quest). Le **socle est thématisé selon l'habitat** du monstre.
-- **Élites / boss / demon lord** → **figurine SEULE, sans socle** (style « Cruel » réaliste, menaçant).
-- Tous : **fond gris neutre uni** → on **détoure ensuite** (rembg). *(Gemini n'est pas fiable en transparent direct.)*
+**Règle de style (revue 2026-07-03 — d'après captures de référence) :**
+- **Style commun** : *Stylized fantasy adventure illustration, painterly digital art* — think **Studio Ghibli meets a JRPG bestiary card**. Ce n'est **plus** une figurine résine 3D : c'est une **illustration 2D peinte**.
+- **Monstres normaux (`common`)** → ambiance **chaleureuse** (« vibrant warm colors », *Joyful and adventurous, never grimdark*), petit patch de sol + lueur selon l'**habitat**.
+- **Élites / boss / demon lord** → **même format illustration + patch/lueur d'habitat**, mais ambiance **sombre et dramatique**, ton **menaçant** (on retire « joyful, never grimdark »).
+- **Fond d'ambiance peint et intégré** → **PAS de détourage** (le flou d'habitat fait partie de l'illustration). *(≠ des façades/props §6-§7 qui, eux, restent sur fond neutre détourable.)*
+- Chaque bloc se termine par **`Render : …`** (le sujet) puis **`Format : PNG, 512×512`**, exactement comme les prompts de référence.
 
-> **Reco : 🟢 Gemini 2.5 Flash Image (« Nano Banana »)**. Génère en **1024²**, nomme `<id>.png`, dépose dans `public/monsters/`, détoure, exporte en **512²**. 💡 Cohérence : génère un 1ᵉʳ monstre par style, puis fournis-le en **image de référence** pour les suivants.
+Chaque bloc ci-dessous est un **prompt complet prêt à copier-coller** (style + composition + sujet déjà assemblés). 💡 Cohérence : génère un 1ᵉʳ monstre par ambiance (1 normal + 1 menaçant), puis fournis-le en **image de référence** pour les suivants.
 
-Chaque bloc ci-dessous est un **prompt complet prêt à copier-coller** (style + cadrage + sujet déjà assemblés).
-
-### 🌲 Ashenvale Forest — Lv 1-8 *(socle : sol forestier moussu, feuilles d'automne)*
+### 🌲 Ashenvale Forest — Lv 1-8 *(décor : sol forestier moussu, feuilles d'automne)*
 
 **`ashwood_wolf.png`** — Ashwood Wolf *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of an Ashwood Wolf — a sleek silver-grey forest wolf with warm amber eyes and slightly tousled fur, in an alert mid-step prowl with ears forward and a friendly-fierce expression — standing on a small round sculpted display base themed as a mossy forest floor with fallen autumn leaves and a little twig. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of mossy forest floor with fallen autumn leaves and a little twig, with drifting leaves and glowing pollen motes and faint glowing runes swirling in the dappled air, and a soft blurred sunlit-forest glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : An Ashwood Wolf — a sleek silver-grey forest wolf with warm amber eyes and slightly tousled fur, in an alert mid-step prowl with ears forward and a friendly-fierce expression.
+Format : PNG, 512×512
 ```
 **`thicket_hare.png`** — Thicket Hare *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Thicket Hare — a plump brown woodland hare with oversized alert ears and big round bright eyes, perched up on its hind legs with a twitching nose, harmless and cute — standing on a small round sculpted display base themed as a mossy forest floor with fallen autumn leaves and a little twig. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of mossy forest floor with fallen autumn leaves and a little twig, with drifting leaves and glowing pollen motes and faint glowing runes swirling in the dappled air, and a soft blurred sunlit-forest glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Thicket Hare — a plump brown woodland hare with oversized alert ears and big round bright eyes, perched up on its hind legs with a twitching nose, harmless and cute.
+Format : PNG, 512×512
 ```
 **`tuskmaw_boar.png`** — Tuskmaw Boar *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Tuskmaw Boar — a stocky bristly wild boar with thick hide, curved ivory tusks and a broad wet snout, hooves planted and head lowered ready to charge, grumpy but rounded — standing on a small round sculpted display base themed as a mossy forest floor with fallen autumn leaves and a little twig. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of mossy forest floor with fallen autumn leaves and a little twig, with drifting leaves and glowing pollen motes and faint glowing runes swirling in the dappled air, and a soft blurred sunlit-forest glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Tuskmaw Boar — a stocky bristly wild boar with thick hide, curved ivory tusks and a broad wet snout, hooves planted and head lowered ready to charge, grumpy but rounded.
+Format : PNG, 512×512
 ```
-**`old_oakheart.png`** — Old Oakheart *(élite — figurine seule, sans socle)*
+**`old_oakheart.png`** — Old Oakheart *(élite — style menaçant)*
 ```
-Premium collectible 3D figurine / painted statue of Old Oakheart — an ancient towering oak treant with a gnarled bark-skin face and deep-set glowing eyes, massive limb-branches wreathed in moss and brambles, rooted gnarled feet, weathered and imposing — a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — detailed sculpt, realistic bark and moss textures, intimidating proportions, darker dramatic palette, menacing and ominous presence, cinematic and imposing. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and a dark magical atmosphere. Slightly cartoonish but expressive, imposing and menacing — think Studio Ghibli meets a JRPG boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of shadowed forest floor with gnarled roots and dead leaves, with drifting dark leaves and dim glowing spore-motes and faint glowing runes swirling in the murky air, and a soft blurred brooding shadowed-forest glow framing the subject. Strong rim-light catches the menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and imposing tone.
+Render : Old Oakheart — an ancient towering oak treant with a gnarled bark-skin face and deep-set glowing eyes, massive limb-branches wreathed in moss and brambles, rooted gnarled feet, weathered and imposing.
+Format : PNG, 512×512
 ```
 
-### 🌿 Thornmarsh — Lv 6-14 *(socle : marais, eau trouble, roseaux, nénuphar)*
+### 🌿 Thornmarsh — Lv 6-14 *(décor : marais, eau trouble, roseaux, nénuphar)*
 
 **`marsh_serpent.png`** — Marsh Serpent *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Marsh Serpent — a coiled green-and-gold marsh serpent rising to strike, with glistening wet scales, a forked tongue and slit golden eyes, sleek and sinuous — standing on a small round sculpted display base themed as a murky swamp with dark water, reeds and a lily pad. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of murky swamp ground with dark water, reeds and a lily pad, with drifting fireflies and pale wisps of marsh mist and faint glowing runes curling in the air, and a soft blurred hazy misty-swamp glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Marsh Serpent — a coiled green-and-gold marsh serpent rising to strike, with glistening wet scales, a forked tongue and slit golden eyes, sleek and sinuous.
+Format : PNG, 512×512
 ```
 **`briar_wraith.png`** — Briar Wraith *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Briar Wraith — a tattered thorn-wreathed wraith of living briar and torn grey cloth, with a faint hollow softly-glowing face and vines and thorns curling around a wispy ghostly body, eerie but stylized — standing on a small round sculpted display base themed as a murky swamp with dark water, reeds and a lily pad. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of murky swamp ground with dark water, reeds and a lily pad, with drifting fireflies and pale wisps of marsh mist and faint glowing runes curling in the air, and a soft blurred hazy misty-swamp glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Briar Wraith — a tattered thorn-wreathed wraith of living briar and torn grey cloth, with a faint hollow softly-glowing face and vines and thorns curling around a wispy ghostly body, eerie but stylized.
+Format : PNG, 512×512
 ```
 **`mire_slime.png`** — Mire Slime *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Mire Slime — a translucent murky-green gelatinous slime blob with a glossy wet surface, a few bubbles and tiny bits of swamp debris suspended inside, with simple cute eyes and one little pseudopod — standing on a small round sculpted display base themed as a murky swamp with dark water, reeds and a lily pad. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of murky swamp ground with dark water, reeds and a lily pad, with drifting fireflies and pale wisps of marsh mist and faint glowing runes curling in the air, and a soft blurred hazy misty-swamp glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Mire Slime — a translucent murky-green gelatinous slime blob with a glossy wet surface, a few bubbles and tiny bits of swamp debris suspended inside, with simple cute eyes and one little pseudopod.
+Format : PNG, 512×512
 ```
-**`fenrot_devourer.png`** — Fenrot Devourer *(élite — figurine seule, sans socle)*
+**`fenrot_devourer.png`** — Fenrot Devourer *(élite — style menaçant)*
 ```
-Premium collectible 3D figurine / painted statue of the Fenrot Devourer — a hulking rotting marsh beast, part crocodile part wolf, with a slavering oversized maw lined with jagged teeth and a mottled diseased hide dripping bog filth, predatory and vicious — a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — detailed sculpt, realistic wet diseased-hide textures, intimidating proportions, darker dramatic palette, menacing and cruel presence, cinematic and fierce. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and a dark magical atmosphere. Slightly cartoonish but expressive, imposing and menacing — think Studio Ghibli meets a JRPG boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of fetid bog with black water, dead reeds and bones, with drifting flies and putrid green vapor and faint glowing runes curling in the air, and a soft blurred sickly murky-swamp gloom glow framing the subject. Strong rim-light catches the menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and imposing tone.
+Render : The Fenrot Devourer — a hulking rotting marsh beast, part crocodile part wolf, with a slavering oversized maw lined with jagged teeth and a mottled diseased hide dripping bog filth, predatory and vicious.
+Format : PNG, 512×512
 ```
 
-### 🏚 Crumbled Ruins — Lv 12-20 *(socle : dalles antiques fissurées, gravats)*
+### 🏚 Crumbled Ruins — Lv 12-20 *(décor : dalles antiques fissurées, gravats)*
 
 **`stone_golem.png`** — Stone Golem *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Stone Golem — a chunky humanoid golem built of cracked mossy ruin-stones and ancient masonry, with glowing rune-light along its chest seams and heavy blocky fists, sturdy and stoic — standing on a small round sculpted display base themed as cracked ancient flagstones and rubble. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of cracked ancient flagstones and rubble, with drifting motes of dust and faint glowing carved runes swirling in the air, and a soft blurred sunlit-ruins glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Stone Golem — a chunky humanoid golem built of cracked mossy ruin-stones and ancient masonry, with glowing rune-light along its chest seams and heavy blocky fists, sturdy and stoic.
+Format : PNG, 512×512
 ```
 **`hollow_knight.png`** — Hollow Knight *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Hollow Knight — an empty suit of tarnished medieval armor animated by a faint ghost-light inside the helm, holding a notched longsword, hollow, silent and a touch eerie — standing on a small round sculpted display base themed as cracked ancient flagstones and rubble. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of cracked ancient flagstones and rubble, with drifting motes of dust and faint glowing carved runes swirling in the air, and a soft blurred sunlit-ruins glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Hollow Knight — an empty suit of tarnished medieval armor animated by a faint ghost-light inside the helm, holding a notched longsword, hollow, silent and a touch eerie.
+Format : PNG, 512×512
 ```
 **`ruin_specter.png`** — Ruin Specter *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Ruin Specter — a wispy translucent spectre drifting upright, a faintly glowing pale-blue form with a sorrowful elongated face and trailing ethereal tatters, melancholic and ghostly — standing on a small round sculpted display base themed as cracked ancient flagstones and rubble. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of cracked ancient flagstones and rubble, with drifting motes of dust and faint glowing carved runes swirling in the air, and a soft blurred sunlit-ruins glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Ruin Specter — a wispy translucent spectre drifting upright, a faintly glowing pale-blue form with a sorrowful elongated face and trailing ethereal tatters, melancholic and ghostly.
+Format : PNG, 512×512
 ```
-**`graven_sentinel.png`** — Graven Sentinel *(élite — figurine seule, sans socle)*
+**`graven_sentinel.png`** — Graven Sentinel *(élite — style menaçant)*
 ```
-Premium collectible 3D figurine / painted statue of a Graven Sentinel — a towering grave-warden in heavy weathered funerary armor and a tattered burial cloak, a helm shaped like a tomb death-mask, wielding a massive ceremonial greatsword, with a cold merciless gaze, grim and imposing — a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — detailed sculpt, realistic weathered-metal and stone textures, intimidating proportions, darker dramatic palette, menacing and cruel presence, cinematic and imposing. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and a dark magical atmosphere. Slightly cartoonish but expressive, imposing and menacing — think Studio Ghibli meets a JRPG boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of cracked ancient flagstones and grave rubble, with drifting dust and dark motes and faint glowing carved runes swirling in the air, and a soft blurred shadowed ruins glow framing the subject. Strong rim-light catches the menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and imposing tone.
+Render : The Graven Sentinel — a towering grave-warden in heavy weathered funerary armor and a tattered burial cloak, a helm shaped like a tomb death-mask, wielding a massive ceremonial greatsword, with a cold merciless gaze, grim and imposing.
+Format : PNG, 512×512
 ```
 
-### ⛰ Wildmere Hills — Lv 18-26 *(socle : sommet herbeux, fleurs sauvages)*
+### ⛰ Wildmere Hills — Lv 18-26 *(décor : sommet herbeux, fleurs sauvages)*
 
 **`hill_slime.png`** — Hill Slime *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Hill Slime — a rounded mossy-green hillside slime with a glossy surface, tufts of grass and a few tiny wildflowers growing on its back, with cheerful simple eyes, bouncy and friendly — standing on a small round sculpted display base themed as a grassy hilltop dotted with wildflowers. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round grassy hilltop patch dotted with wildflowers and clover, with drifting petals and dandelion seeds swirling in a breeze, faint glowing runes in the curling air, and a soft bright blurred open-sky-and-hills glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Hill Slime — a rounded mossy-green hillside slime with a glossy surface, tufts of grass and a few tiny wildflowers growing on its back, cheerful simple eyes, bouncy and friendly.
+Format : PNG, 512×512
 ```
 **`russet_fox.png`** — Russet Fox *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Russet Fox — a lithe russet-red fox with a bushy white-tipped tail and sharp clever eyes, caught mid-leap, playful, quick and elegant — standing on a small round sculpted display base themed as a grassy hilltop dotted with wildflowers. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round grassy hilltop patch dotted with wildflowers and clover, with drifting petals and dandelion seeds swirling in a breeze, faint glowing runes in the curling air, and a soft bright blurred open-sky-and-hills glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Russet Fox — a lithe russet-red fox with a bushy white-tipped tail and sharp clever eyes, caught mid-leap, playful, quick and elegant.
+Format : PNG, 512×512
 ```
 **`knoll_goblin.png`** — Knoll Goblin *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Knoll Goblin — a scrappy green-skinned goblin in patchwork leather and a crude dented helmet, gripping a jagged shiv with a sly toothy grin, hunched, wiry and mischievous — standing on a small round sculpted display base themed as a grassy hilltop dotted with wildflowers. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid warm colors, friendly-fierce adventurous tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round grassy hilltop patch dotted with wildflowers and clover, with drifting petals and dandelion seeds swirling in a breeze, faint glowing runes in the curling air, and a soft bright blurred open-sky-and-hills glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Joyful and adventurous tone, never grimdark.
+Render : A Knoll Goblin — a scrappy green-skinned goblin in patchwork leather and a crude dented helmet, gripping a jagged shiv with a sly toothy grin, hunched, wiry and mischievous.
+Format : PNG, 512×512
 ```
-**`thunderhoof.png`** — Thunderhoof *(élite — figurine seule, sans socle)*
+**`thunderhoof.png`** — Thunderhoof *(élite — style menaçant)*
 ```
-Premium collectible 3D figurine / painted statue of the Thunderhoof — a massive battle-scarred bison-bull with a storm-grey hide, cracked horns crackling with faint blue lightning, steam snorting from its nostrils and hooves striking sparks, powerful and brutal — a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — detailed sculpt, realistic fur and horn textures, intimidating proportions, darker dramatic palette, menacing and fierce presence, cinematic and imposing. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and a dark magical atmosphere. Slightly cartoonish but expressive, imposing and menacing — think Studio Ghibli meets a JRPG boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round storm-battered grassy hilltop patch with wind-flattened grass, with drifting torn grass and crackling blue sparks and faint glowing runes in the gusting air, and a soft blurred brooding storm-sky glow framing the subject. Strong rim-light catches the menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and imposing tone.
+Render : The Thunderhoof — a massive battle-scarred bison-bull with a storm-grey hide, cracked horns crackling with faint blue lightning, steam snorting from its nostrils and hooves striking sparks, powerful and brutal.
+Format : PNG, 512×512
 ```
 
 ### 💀 Réserve *(hors surface — usage futur donjon)*
 
-**`barrow_wight.png`** — Barrow Wight *(normal — figurine + socle)*
+**`barrow_wight.png`** — Barrow Wight *(normal — ton légèrement spooky)*
 ```
-Premium collectible 3D figurine / painted statuette of a Barrow Wight — a desiccated undead wight wrapped in ancient rotted grave-cloth, with sunken softly-glowing eye-sockets, clutching a rusted burial blade, gaunt and eerie but stylized — standing on a small round sculpted display base themed as grave dirt with a cracked mossy tombstone. Art style: a charming collectible figure halfway between Studio Ghibli warmth and a Dragon Quest / Akira Toriyama bestiary — rounded readable shapes, expressive face, vivid colors with a slightly spooky tone, hand-painted resin look, never grimdark. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors and a touch of magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of grave dirt with a cracked mossy tombstone, with drifting dust and pale wisps and faint glowing runes swirling in the air, and a soft blurred hazy barrow glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Adventurous tone with a slightly spooky edge, never grimdark.
+Render : A Barrow Wight — a desiccated undead wight wrapped in ancient rotted grave-cloth, with sunken softly-glowing eye-sockets, clutching a rusted burial blade, gaunt and eerie but stylized.
+Format : PNG, 512×512
 ```
-**`soul_harvester.png`** — Soul Harvester *(élite — figurine seule, sans socle)*
+**`soul_harvester.png`** — Soul Harvester *(élite — style menaçant)*
 ```
-Premium collectible 3D figurine / painted statue of a Soul Harvester — a tall cloaked reaper-like figure wreathed in shadow, skeletal hands gripping a curved soul-scythe, a swirl of small glowing captured souls orbiting it and a faceless dark hood, sinister and cruel — a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — detailed sculpt, realistic cloth and bone textures, intimidating proportions, darker dramatic palette, menacing and cruel presence, cinematic and fierce. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and a dark magical atmosphere. Slightly cartoonish but expressive, imposing and menacing — think Studio Ghibli meets a JRPG boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of grave dirt with cracked tombstones and scattered bones, with drifting pale captured souls and grave-dust and faint glowing runes swirling in the air, and a soft blurred cold ghostly-crypt gloom glow framing the subject. Strong rim-light catches the menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and imposing tone.
+Render : The Soul Harvester — a tall cloaked reaper-like figure wreathed in shadow, skeletal hands gripping a curved soul-scythe, a swirl of small glowing captured souls orbiting it and a faceless dark hood, sinister and cruel.
+Format : PNG, 512×512
 ```
 
-### 💀 The Blighted Road *(élites — figurine seule, sans socle)*
+### 💀 The Blighted Road *(élites — style menaçant)*
 
 **`cursed_warlord.png`** — Cursed Warlord *(élite)*
 ```
-Premium collectible 3D figurine / painted statue of a Cursed Warlord — a hulking armored warlord clad in blackened cursed plate etched with red glowing runes, wielding a massive jagged cursed blade, with a tattered war-banner cape and a helm with burning eye-slits, brutal and menacing — a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — detailed sculpt, realistic dark-metal textures, intimidating proportions, darker dramatic palette, menacing and cruel presence, cinematic and imposing. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and a dark magical atmosphere. Slightly cartoonish but expressive, imposing and menacing — think Studio Ghibli meets a JRPG boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of cracked blighted earth strewn with ash and bone, with drifting ash and dark embers and faint glowing runes swirling in the tainted air, and a soft blurred sickly red-tinged blight glow framing the subject. Strong rim-light catches the menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and imposing tone.
+Render : The Cursed Warlord — a hulking armored warlord clad in blackened cursed plate etched with red glowing runes, wielding a massive jagged cursed blade, with a tattered war-banner cape and a helm with burning eye-slits, brutal and menacing.
+Format : PNG, 512×512
 ```
 **`bone_colossus.png`** — Bone Colossus *(élite)*
 ```
-Premium collectible 3D figurine / painted statue of a Bone Colossus — a gigantic colossus assembled from countless fused bones and skulls, a towering skeletal frame with necrotic light glowing in its ribcage and massive bone fists, monstrous and dreadful — a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — detailed sculpt, realistic bone textures, intimidating colossal proportions, darker dramatic palette, menacing and dreadful presence, cinematic and imposing. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and a dark magical atmosphere. Slightly cartoonish but expressive, imposing and menacing — think Studio Ghibli meets a JRPG boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of cracked blighted earth strewn with ash and bone, with drifting ash and dark embers and faint glowing runes swirling in the tainted air, and a soft blurred sickly red-tinged blight glow framing the subject. Strong rim-light catches the menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and imposing tone.
+Render : The Bone Colossus — a gigantic colossus assembled from countless fused bones and skulls, a towering skeletal frame with necrotic light glowing in its ribcage and massive bone fists, monstrous and dreadful.
+Format : PNG, 512×512
 ```
 
-### 🌋 Grimspire — Lv 21+ *(socle : pierre volcanique sombre fissurée, braises)*
+### 🌋 Grimspire — Lv 21+ *(décor : pierre volcanique sombre fissurée, braises)*
 
-> Communs `common` → **Tier A « sombre »** (charme, palette plus grave) + socle. *(Cf. décision §16 : on peut les passer en Tier B cruel si tu préfères.)*
+> Communs `common` mais **zone sombre/fin de jeu** → on garde l'ambiance chaleureuse mais avec un **« darker volcanic cast »** (palette assombrie, ton grave sans être franchement menaçant). *(Cf. décision §16 : on peut les passer en variante menaçante comme les élites si tu préfères.)*
 
 **`grimstone_troll.png`** — Grimstone Troll *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Grimstone Troll — a massive lumbering troll with craggy grey grimstone skin and mossy growths, small mean eyes, long arms ending in heavy claws and slowly regenerating gashes, brutish — standing on a small round sculpted display base themed as dark cracked volcanic stone with faint glowing embers. Art style: a charming collectible figure between Studio Ghibli warmth and a Dragon Quest / Toriyama bestiary but with a darker, grimmer palette to match a volcanic realm — rounded readable shapes, expressive, hand-painted resin look. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors given a darker volcanic cast and a touch of ominous magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of dark cracked volcanic stone with faint glowing embers, with drifting sparks and floating embers and faint glowing runes swirling in the smoky air, and a soft blurred ember-lit volcanic glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Adventurous but grave tone, never fully grimdark.
+Render : A Grimstone Troll — a massive lumbering troll with craggy grey grimstone skin and mossy growths, small mean eyes, long arms ending in heavy claws and slowly regenerating gashes, brutish.
+Format : PNG, 512×512
 ```
 **`cursed_sentinel.png`** — Cursed Sentinel *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Cursed Sentinel — an animated suit of ornate cursed dark-iron armor with a faint purple soul-glow, holding a tower shield and a spiked mace, standing rigid in eternal guard — standing on a small round sculpted display base themed as dark cracked volcanic stone with faint glowing embers. Art style: a charming collectible figure between Studio Ghibli warmth and a Dragon Quest / Toriyama bestiary but with a darker, grimmer palette to match a volcanic realm — rounded readable shapes, expressive, hand-painted resin look. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors given a darker volcanic cast and a touch of ominous magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of dark cracked volcanic stone with faint glowing embers, with drifting sparks and floating embers and faint glowing runes swirling in the smoky air, and a soft blurred ember-lit volcanic glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Adventurous but grave tone, never fully grimdark.
+Render : A Cursed Sentinel — an animated suit of ornate cursed dark-iron armor with a faint purple soul-glow, holding a tower shield and a spiked mace, standing rigid in eternal guard.
+Format : PNG, 512×512
 ```
 **`abyssal_hound.png`** — Abyssal Hound *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of an Abyssal Hound — a sleek black six-eyed hound of the abyss with smoking shadowy fur and glowing void-fangs, in a low predatory stance, fierce — standing on a small round sculpted display base themed as dark cracked volcanic stone with faint glowing embers. Art style: a charming collectible figure between Studio Ghibli warmth and a Dragon Quest / Toriyama bestiary but with a darker, grimmer palette to match a volcanic realm — rounded readable shapes, expressive, hand-painted resin look. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors given a darker volcanic cast and a touch of ominous magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of dark cracked volcanic stone with faint glowing embers, with drifting sparks and floating embers and faint glowing runes swirling in the smoky air, and a soft blurred ember-lit volcanic glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Adventurous but grave tone, never fully grimdark.
+Render : An Abyssal Hound — a sleek black six-eyed hound of the abyss with smoking shadowy fur and glowing void-fangs, in a low predatory stance, fierce.
+Format : PNG, 512×512
 ```
 **`wyvern_scout.png`** — Wyvern Scout *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Wyvern Scout — a lean winged wyvern with leathery membrane wings spread wide, a barbed whipping tail and sharp reptilian eyes, perched and alert — standing on a small round sculpted display base themed as dark cracked volcanic stone with faint glowing embers. Art style: a charming collectible figure between Studio Ghibli warmth and a Dragon Quest / Toriyama bestiary but with a darker, grimmer palette to match a volcanic realm — rounded readable shapes, expressive, hand-painted resin look. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors given a darker volcanic cast and a touch of ominous magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of dark cracked volcanic stone with faint glowing embers, with drifting sparks and floating embers and faint glowing runes swirling in the smoky air, and a soft blurred ember-lit volcanic glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Adventurous but grave tone, never fully grimdark.
+Render : A Wyvern Scout — a lean winged wyvern with leathery membrane wings spread wide, a barbed whipping tail and sharp reptilian eyes, perched and alert.
+Format : PNG, 512×512
 ```
 **`plague_monk.png`** — Plague Monk *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of a Plague Monk — a gaunt hooded monk in stained plague-robes, clutching a smoking censer that trails toxic green vapor, with sickly grey skin and fanatical glowing eyes — standing on a small round sculpted display base themed as dark cracked volcanic stone with faint glowing embers. Art style: a charming collectible figure between Studio Ghibli warmth and a Dragon Quest / Toriyama bestiary but with a darker, grimmer palette to match a volcanic realm — rounded readable shapes, expressive, hand-painted resin look. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors given a darker volcanic cast and a touch of ominous magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of dark cracked volcanic stone with faint glowing embers, with drifting sparks and floating embers and faint glowing runes swirling in the smoky air, and a soft blurred ember-lit volcanic glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Adventurous but grave tone, never fully grimdark.
+Render : A Plague Monk — a gaunt hooded monk in stained plague-robes, clutching a smoking censer that trails toxic green vapor, with sickly grey skin and fanatical glowing eyes.
+Format : PNG, 512×512
 ```
 **`iron_wraith.png`** — Iron Wraith *(normal)*
 ```
-Premium collectible 3D figurine / painted statuette of an Iron Wraith — a spectral wraith fused with floating jagged shards of spectral iron around a glowing core, with ghostly metal tatters swirling, cold and eerie — standing on a small round sculpted display base themed as dark cracked volcanic stone with faint glowing embers. Art style: a charming collectible figure between Studio Ghibli warmth and a Dragon Quest / Toriyama bestiary but with a darker, grimmer palette to match a volcanic realm — rounded readable shapes, expressive, hand-painted resin look. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow under the base. Centered 1:1 square composition, slight 3/4 front angle, the full figure and its base fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with vibrant warm colors given a darker volcanic cast and a touch of ominous magical atmosphere. Slightly cartoonish but expressive — think Studio Ghibli meets a JRPG bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of dark cracked volcanic stone with faint glowing embers, with drifting sparks and floating embers and faint glowing runes swirling in the smoky air, and a soft blurred ember-lit volcanic glow framing the subject. Soft rim-light catches the silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Adventurous but grave tone, never fully grimdark.
+Render : An Iron Wraith — a spectral wraith fused with floating jagged shards of spectral iron around a glowing core, with ghostly metal tatters swirling, cold and eerie.
+Format : PNG, 512×512
 ```
 
-### 👑 Boss & Demon Lord *(figurine seule, sans socle, style cruel)*
+### 👑 Boss & Demon Lord *(style illustration menaçant)*
 
 **`hollow_crypt_boss.png`** — The Crypt Keeper *(boss)*
 ```
-Premium collectible 3D figurine / painted statue of The Crypt Keeper — a towering undead crypt-lord in a tattered hooded death-shroud over ancient bone-armor, a crowned skeletal skull face with burning eye-sockets, wielding a long necrotic staff-scythe and commanding the dead, terrifying and regal — a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — detailed sculpt, realistic bone and cloth textures, intimidating proportions, darker dramatic palette, menacing and regal presence, cinematic and imposing. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and a dark magical atmosphere. Slightly cartoonish but expressive, imposing and menacing — think Studio Ghibli meets a JRPG boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of cracked crypt flagstones scattered with bones, with drifting grave-dust and necrotic wisps and faint glowing runes swirling in the air, and a soft blurred cold necrotic crypt glow framing the subject. Strong rim-light catches the menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and regal tone.
+Render : The Crypt Keeper — a towering undead crypt-lord in a tattered hooded death-shroud over ancient bone-armor, a crowned skeletal skull face with burning eye-sockets, wielding a long necrotic staff-scythe and commanding the dead, terrifying and regal.
+Format : PNG, 512×512
 ```
 **`forsaken_citadel_boss.png`** — Lord of the Forsaken *(boss)*
 ```
-Premium collectible 3D figurine / painted statue of the Lord of the Forsaken — a dread armored sovereign in towering blackened spiked plate over a regenerating cursed-iron carapace, with a tattered dark royal cape, twin cruel blades and a malevolent crowned helm with void-fire eyes, imposing and merciless — a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — detailed sculpt, realistic dark-metal and cloth textures, intimidating proportions, darker dramatic palette, menacing and cruel presence, cinematic and imposing. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and a dark magical atmosphere. Slightly cartoonish but expressive, imposing and menacing — think Studio Ghibli meets a JRPG boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of blackened citadel stone and cursed ash, with drifting embers and dark motes and faint glowing runes swirling in the air, and a soft blurred brooding void-fire glow framing the subject. Strong rim-light catches the menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and imposing tone.
+Render : The Lord of the Forsaken — a dread armored sovereign in towering blackened spiked plate over a regenerating cursed-iron carapace, with a tattered dark royal cape, twin cruel blades and a malevolent crowned helm with void-fire eyes, imposing and merciless.
+Format : PNG, 512×512
 ```
 **`malachar.png`** — Malachar the Undying *(demon lord — final boss)*
 ```
-Premium collectible 3D figurine / painted statue of Malachar the Undying, a colossal demon-lord wreathed in dark flame and necrotic energy, an immense horned skull-crowned figure in shattered god-killer armor with eyes of cold violet fire, radiating overwhelming dread — an epic final-boss centerpiece, a full standing figure with NO display base, figure only. Art style: a high-end realistic collectible statue — extremely detailed sculpt, realistic textures, towering intimidating proportions, dark dramatic palette with violet and ember accents, terrifying and cruel, cinematic and awe-inspiring. Studio product shot: soft three-point lighting, gentle rim light, subtle contact shadow on the ground. Centered 1:1 square composition, slight 3/4 front angle, the full figure fully visible. Isolated on a perfectly flat, evenly-lit neutral seamless light-grey background, no gradient, no scenery, no extra props, so it is easy to cut out afterwards. Crisp clean silhouette, high detail. No text, no watermark, no UI, no border.
+Stylized fantasy adventure illustration, painterly digital art with rich dramatic colors and an overwhelming dark magical atmosphere. Slightly cartoonish but expressive, colossal and terrifying — think Studio Ghibli meets a JRPG final-boss bestiary card. The creature is centered in a square 1:1 composition, standing on a small round patch of scorched cracked ground veined with glowing necrotic embers, with swirling dark flame and violet cinders and faint glowing runes spiralling in the air, and a soft blurred overwhelming violet-and-ember dread glow framing the subject. Strong rim-light catches the towering menacing silhouette, a tiny sparkle accent in a corner. No text, no UI elements, no borders. Menacing, dramatic and awe-inspiring tone, an epic final-boss centerpiece.
+Render : Malachar the Undying — a colossal demon-lord wreathed in dark flame and necrotic energy, an immense horned skull-crowned figure in shattered god-killer armor with eyes of cold violet fire, radiating overwhelming dread.
+Format : PNG, 512×512
 ```
 
 ---
@@ -213,80 +271,118 @@ Premium collectible 3D figurine / painted statue of Malachar the Undying, a colo
 
 ## 6) 🟢 FAÇADES DE BÂTIMENTS (Gemini)
 
-> **Reco : 🟢 Gemini.** Style **village médiéval-fantaisie chaleureux (Ghibli × Dragon Quest)**, cohérent avec la carte parchemin. Vue de face 3/4, fond neutre détourable. Emplacement : `public/buildings/<id>.png`.
+> **Reco : 🟢 Gemini.** Style **village médiéval-fantaisie chaleureux (Ghibli × Dragon Quest)**, cohérent avec la carte parchemin. **Prompt concis** (cf. captures validées), vue de face 3/4, **fond neutre à détourer**, `Format : PNG, généré 1024²`. Emplacement : `public/buildings/<id>.png`.
 
 Chaque bloc est un **prompt complet prêt à copier-coller**.
 
 **`inn.png`** — The Hearth Inn
 ```
-A single charming medieval-fantasy village inn — a cozy two-storey timber-framed inn with a hanging wooden tavern sign shaped like a foaming ale mug, warm glowing amber windows, a worn thatched roof, a stone chimney with a thin wisp of smoke, and a welcoming arched wooden door. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+A single charming cozy timber-framed medieval-fantasy village inn, with a hanging wooden tavern sign shaped like a foaming ale mug, warm glowing amber windows, a worn thatched roof, a stone chimney with a wisp of smoke and a welcoming arched door. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`merchant.png`** — Merchant's Shop
 ```
-A single charming medieval-fantasy merchant's shop — a quaint timber-and-plaster shopfront with a striped red-and-cream awning, an open stall window, crates and barrels of colorful goods stacked by the door, and a hanging sign showing a gold coin and a weighing scale. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+A single charming medieval-fantasy merchant's shop, with a quaint timber-and-plaster shopfront, a striped red-and-cream awning, an open stall window, crates and barrels of colorful goods stacked by the door and a hanging sign showing a gold coin and a weighing scale. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`blacksmith.png`** — Blacksmith's Forge
 ```
-A single charming medieval-fantasy blacksmith's forge — a sturdy stone-and-timber smithy with a glowing orange furnace visible inside, an anvil with a hammer out front, a tall stone chimney puffing smoke, and a hanging sign shaped like a hammer crossed over an anvil. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+A single charming medieval-fantasy blacksmith's forge, with a sturdy stone-and-timber smithy, a glowing orange furnace visible inside, an anvil and hammer out front, a tall stone chimney puffing smoke and a hanging sign shaped like a hammer crossed over an anvil. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`alchemy.png`** — Alchemy Workshop
 ```
-A single charming medieval-fantasy alchemist's hut — a slightly crooked timber hut with bubbling colorful potion bottles glowing in the window, bunches of drying herbs hanging under the eaves, a hanging sign shaped like a mortar and pestle, and a thin wisp of green smoke from a crooked chimney. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+A single charming medieval-fantasy alchemist's hut, with a slightly crooked timber hut, bubbling colorful potion bottles glowing in the window, bunches of drying herbs hanging under the eaves, a hanging sign shaped like a mortar and pestle and a thin wisp of green smoke from a crooked chimney. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`church.png`** — Church of the Old Gods
 ```
-A single charming medieval-fantasy stone chapel — a modest grey-stone church with a small bell tower and a hanging bell, a round stained-glass window glowing with warm candlelight, a simple wooden holy symbol mounted over an arched door, and a slate roof. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting reverent colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+A single charming small stone medieval-fantasy chapel, with a modest bell tower and a hanging bell, a round stained-glass window glowing with warm candlelight, a simple wooden holy symbol over an arched door and a slate roof. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting reverent colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`master_smith.png`** — Master Smith *(forge améliorée, rare)*
 ```
-A single charming medieval-fantasy master smith's workshop — a grand upgraded forge of fine stone and dark timber with a large bright glowing furnace, an ornate anvil and masterwork weapons displayed on a rack out front, a tall chimney throwing bright sparks, and a hanging sign shaped like a crowned hammer-and-anvil. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm rich colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+A single charming medieval-fantasy master smith's workshop, with a grand upgraded forge of fine stone and dark timber, a large bright glowing furnace, an ornate anvil and masterwork weapons displayed on a rack out front, a tall chimney throwing bright sparks and a hanging sign shaped like a crowned hammer-and-anvil. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm rich colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`knight_trainer.png`** — Knight Trainer
 ```
-A single charming medieval-fantasy knight trainer's hall — a sturdy timber-and-stone training hall with a small fenced sparring yard, a weapon rack and a straw practice dummy out front, a heraldic shield mounted above the door, fluttering banners, and a hanging sign shaped like a crossed sword and shield. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+A single charming medieval-fantasy knight trainer's hall, with a sturdy timber-and-stone training hall, a small fenced sparring yard, a weapon rack and a straw practice dummy out front, a heraldic shield mounted above the door, fluttering banners and a hanging sign shaped like a crossed sword and shield. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`guild.png`** — Adventurers' Guild
 ```
-A single charming medieval-fantasy adventurers' guild hall — an imposing two-storey timber-and-stone hall hung with colorful pennant banners, a large hanging sign bearing a crossed-swords crest, a bounty notice board beside a heavy double door, and a peaked roof. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+A single charming medieval-fantasy adventurers' guild hall, with an imposing two-storey timber-and-stone hall, colorful pennant banners, a large hanging sign bearing a crossed-swords crest, a bounty notice board beside a heavy double door and a peaked roof. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`academy.png`** — Academy of Magic
 ```
-A single charming medieval-fantasy mage's academy — a slender scholarly stone tower with tall arched windows glowing with soft arcane light, faint blue runes etched along the stone, a conical tiled roof topped with a small observatory dome, and a hanging sign bearing a star-and-eye sigil. Front 3/4 view, storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm inviting colors with a touch of arcane blue, hand-painted look, the whole building centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery, no extra props.
+A single charming medieval-fantasy mage's academy, with a slender scholarly stone tower, tall arched windows glowing with soft arcane light, faint blue runes etched along the stone, a conical tiled roof topped with a small observatory dome and a hanging sign bearing a star-and-eye sigil. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors with a touch of arcane blue, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 
 ---
 
 ## 7) 🟢 DÉCO VILLAGE (Gemini)
 
-> **Reco : 🟢 Gemini.** Petits props isolés, même style village, fond neutre. `public/deco/<id>.png`. Chaque bloc est un **prompt complet prêt à copier-coller**.
+> **Reco : 🟢 Gemini.** Petits props isolés, **même style village concis** que §6, **fond neutre à détourer**, `Format : PNG, généré 1024²`. `public/deco/<id>.png`. Chaque bloc est un **prompt complet prêt à copier-coller**.
 
 **`well.png`** — Puits
 ```
-A single small medieval-fantasy village prop — a charming round stone wishing-well with a little peaked wooden roof, a hanging bucket on a rope, and a few mossy stones. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+A single small medieval-fantasy village prop — a charming round stone wishing-well with a little peaked wooden roof, a hanging bucket on a rope and a few mossy stones. Storybook Ghibli-meets-Dragon-Quest style, warm hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`barrels.png`** — Tonneaux
 ```
-A single small medieval-fantasy village prop — a small tidy stack of wooden barrels and a crate, iron-banded, with a little burlap sack leaning against them. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+A single small medieval-fantasy village prop — a small tidy stack of iron-banded wooden barrels and a crate with a little burlap sack leaning against them. Storybook Ghibli-meets-Dragon-Quest style, warm hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`hens.png`** — Poules
 ```
-A single small medieval-fantasy village prop — two or three plump cute brown-and-white hens pecking and clucking together. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, charming and rounded, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+A single small medieval-fantasy village prop — two or three plump cute brown-and-white hens pecking and clucking together, charming and rounded. Storybook Ghibli-meets-Dragon-Quest style, warm hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`signpost.png`** — Panneau
 ```
-A single small medieval-fantasy village prop — a weathered wooden signpost with two or three blank directional planks pointing different ways, slightly leaning. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+A single small medieval-fantasy village prop — a weathered wooden signpost with two or three blank directional planks pointing different ways, slightly leaning. Storybook Ghibli-meets-Dragon-Quest style, warm hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`market_stall.png`** — Étal de marché
 ```
-A single small medieval-fantasy village prop — a colorful little market stall with a striped awning and woven baskets of bright produce (fruit, vegetables, bread) on the counter. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+A single small medieval-fantasy village prop — a colorful little market stall with a striped awning and woven baskets of bright produce (fruit, vegetables, bread) on the counter. Storybook Ghibli-meets-Dragon-Quest style, warm hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`lantern_post.png`** — Lampadaire
 ```
-A single small medieval-fantasy village prop — a wrought-iron lantern post with a glass lantern holding a warm glowing flame, a little curl of decorative ironwork at the top. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+A single small medieval-fantasy village prop — a wrought-iron lantern post with a glass lantern holding a warm glowing flame and a little curl of decorative ironwork at the top. Storybook Ghibli-meets-Dragon-Quest style, warm hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 **`hay_cart.png`** — Charrette de foin
 ```
-A single small medieval-fantasy village prop — a small wooden hay cart with two large wheels, loaded with golden hay bales and a pitchfork resting against the side. Storybook style halfway between Studio Ghibli warmth and Dragon Quest, warm hand-painted look, centered and fully visible. Isolated on a perfectly flat, evenly-lit neutral light-grey background so it is easy to cut out afterwards. No text, no watermark, no UI, no border, no ground scenery.
+A single small medieval-fantasy village prop — a small wooden hay cart with two large wheels, loaded with golden hay bales and a pitchfork resting against the side. Storybook Ghibli-meets-Dragon-Quest style, warm hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
+```
+
+### 🧓 Puits & PNJ de village en vignette *(illustrations détourables — style bâtiment concis)*
+
+> **Reco : 🟢 Gemini.** Vignettes **personnage / centre de village** dans le **même style concis que les façades §6** (cf. captures de réf. : *Ghibli-meets-Dragon-Quest, warm inviting colors, hand-painted, fond neutre à détourer*). Emplacement proposé : **`public/village/<id>.png`** (nouveau dossier).
+> - **`well_elder_m` / `well_elder_f`** = **hub du village** (puits + **panneau directionnel** + **doyen/doyenne**). Ils **enrichissent/remplacent** `deco/well.png` + `deco/signpost.png` au centre (cf. placeholder `vil-well` dans `SafeZone.jsx`, où siège le doyen — trigger `elder_dialogue`). Génère les **2 variantes**.
+> - **`aldric_tree`** : **fournir `portraits/aldric` en image de référence** pour garder son visage (barbu blanc) cohérent — Aldric = *Sir Aldric, Knight Trainer*.
+
+**`well_elder_m.png`** — Puits + panneau + **doyen** (vieil homme)
+```
+A single charming medieval-fantasy village-square scene — a round stone wishing-well with a little peaked wooden roof and a hanging bucket on a rope, right next to a weathered wooden directional signpost with a few blank planks pointing different ways, and a kindly old village elder — a white-bearded man in a simple brown robe with a small medallion of office — sitting and resting on the well's stone rim, relaxed and welcoming. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
+```
+**`well_elder_f.png`** — Puits + panneau + **doyenne** (vieille femme)
+```
+A single charming medieval-fantasy village-square scene — a round stone wishing-well with a little peaked wooden roof and a hanging bucket on a rope, right next to a weathered wooden directional signpost with a few blank planks pointing different ways, and a kindly old village elder — a grey-haired woman in a simple long dress and a knitted shawl with a small medallion of office — sitting and resting on the well's stone rim, relaxed and welcoming. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
+```
+**`aldric_tree.png`** — Sir Aldric qui « chill » sous son arbre *(réf. visage : `portraits/aldric`)*
+```
+A single charming medieval-fantasy character vignette — Sir Aldric, a burly white-bearded veteran knight-trainer, relaxing and lounging back on a big fallen tree trunk beside a leafy tree, legs comfortably crossed and at ease, a single polished piece of plate armor (a breastplate with one pauldron) propped on the ground next to him, content and good-humored. Keep his head, face and white beard consistent with the provided Aldric reference portrait. Front 3/4 view, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look. Isolated on a flat neutral light background (easy to cut out). No text, no UI, no border, no ground scene.
+Format : PNG, généré 1024², fond neutre à détourer
 ```
 
 ---
@@ -445,8 +541,8 @@ A single circular game-map node medallion — a carved stone-and-bronze seal wit
 ## 14) Workflow Gemini (rappel)
 
 1. Copier-coller **le prompt complet de l'asset** (chaque bloc §4-§12 est déjà prêt, rien à assembler).
-2. Générer en **1024²**, fond plat neutre.
-3. **Détourer** (rembg) → PNG transparent.
+2. Générer en **1024²** (ou directement **512²** pour les monstres §4).
+3. **Détourage** : ⚠️ **uniquement props / façades / médaillons** (fond neutre → rembg → PNG transparent). **Monstres §4 : PAS de détourage** — le fond d'ambiance peint fait partie de l'illustration.
 4. Recadrer/redimensionner à la cible, **nommer exactement**, déposer dans le bon dossier `public/…`.
 5. **Cohérence** : 1ʳᵉ image satisfaisante → réutilisée en **référence** pour le reste du lot.
 
@@ -454,9 +550,17 @@ A single circular game-map node medallion — a carved stone-and-bronze seal wit
 
 ---
 
-## ✅ Décisions actées (2026-06-07)
-1. **Socle** : ✅ **figurine + socle pour les monstres normaux** ; **figurine seule (sans socle) pour les élites/boss/demon lord**. *(Reflété dans les prompts ci-dessus.)*
-2. **Socle thématique** : ✅ **oui** — le socle des normaux est **thématisé selon l'habitat** (forêt / marais / ruines / collines / Grimspire / barrow). *(Reflété.)*
-3. **Fond** : ✅ **fond neutre gris + détourage ensuite** (rembg) — pas de transparent direct (Gemini peu fiable là-dessus). *(Reflété.)*
-4. **Tiers Grimspire** : ⏳ **par défaut Tier A « sombre »** (charme à palette grave + socle volcanique), comme dans les prompts. **Explication** : les monstres de Grimspire sont de **rang `common`** (donc logiquement Tier A « charme »), mais la **zone est sombre/fin de jeu** → je leur ai mis un charme **assombri**. Si tu les veux plutôt **réalistes/cruels (Tier B, sans socle)** comme les élites, dis-le et je bascule les 6.
+## ✅ Décisions actées
+
+### Révision 2026-07-03 — monstres passés en **illustration peinte** (d'après captures de référence)
+Le style **figurine 3D / résine sur fond gris détourable est abandonné pour les monstres (§4)** au profit d'une **illustration 2D peinte façon carte de bestiaire** (Ghibli × JRPG) : sujet 1:1 sur un petit patch de sol + **fond d'ambiance flou peint**.
+1. **Style** : ✅ *painterly digital art*, plus de « collectible 3D figurine / resin ». *(Reflété §4.)*
+2. **Socle → patch** : ✅ le « display base » de figurine devient un **petit patch de sol thématisé habitat** intégré à la scène. *(Reflété.)*
+3. **Fond** : ✅ **fond d'ambiance peint, PAS de détourage** pour les monstres. Les **props / façades / médaillons** (§6-§7, §12B) restent en **fond neutre détouré**. *(Reflété §3/§14.)*
+4. **Normaux vs élites/boss** : ✅ normaux = ambiance chaleureuse *« joyful, never grimdark »* ; **élites / boss / demon lord = même format mais ambiance sombre / menaçante** (on retire la ligne joyeuse). *(Reflété.)*
+5. **Fin de prompt** : ✅ ajout des lignes **`Render : …`** + **`Format : PNG, 512×512`**, comme sur les captures. *(Reflété.)*
+6. **Doc annexe supprimée** : `public/monsters/README.md` (ancienne direction « figurine sur socle ») est **abandonné** — inutile, non committé (`public/` gitignoré), et remplacé par ce fichier comme **source unique**.
+
+### 2026-06-07 (historique — partiellement remplacé par la révision ci-dessus)
+4. **Tiers Grimspire** : ⏳ les 6 communs Grimspire restent en **ambiance chaleureuse assombrie** (opener « darker volcanic cast » du §4). Si tu les veux franchement **menaçants** (comme les élites), dis-le et je bascule les 6.
 5. **Façades / portraits** : ✅ **on garde le mix** illustration (bâtiments, divinités, char-select) + pixel (portraits PNJ de dialogue) — la règle anti-clash n'interdit que de les mélanger **au même cadre/échelle**, ce qui n'est pas le cas (écrans différents).
