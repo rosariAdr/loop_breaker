@@ -6,6 +6,7 @@ import { CHURCH_QUESTS, CHURCH_QUEST_NPC } from './churchQuests'
 import { MAIN_QUESTS, MAIN_QUEST_NPC } from './mainQuests'
 import { MASTER_QUESTS, MASTER_QUEST_NPC } from './masterQuests'
 import { MONSTERS } from './monsters'
+import { QUEST_BALANCE } from './questBalance'
 import { getVillageQuestById } from './villageQuests'
 
 // ── NPCs donneurs (Q08) ──────────────────────────────────────────────────────
@@ -596,14 +597,38 @@ export function heroSkillLevels(hero) {
   return map
 }
 
-// ── FIX-QXP01 — XP de héros octroyée par une quête ──────────────────────────────
-// `reward.xp` (valeurs finales renseignées via l'Excel des quêtes) sinon défaut dérivé de la
-// difficulté (proxy = récompense en or). Réduit sur les re-complétions (quêtes répétables).
+// ── FIX-QXP01 / FIX-QRANK01 — XP de héros & points de rang octroyés par une quête ───────────────
+// Priorité : overlay `QUEST_BALANCE` (quêtes autorées, valeurs Excel) → `reward.xp/rankPoints`
+// éventuel → défaut dérivé de la difficulté (quêtes de village générées). Réduit sur les
+// re-complétions (quêtes répétables). Visites / quêtes « INUTILE » = 0.
 export const QUEST_XP_REPEAT_MULT = 0.25
+const XP_BY_TIER = { easy: 40, medium: 110, hard: 150 }
+const RANK_BY_TIER = { easy: 1, medium: 3, hard: 5 }
+const normTier = (t) => (t === 'mid' ? 'medium' : t)
+const isVisitOnly = (q) =>
+  (q?.objectives?.length ?? 0) > 0 && q.objectives.every((o) => o.type === 'visit')
+
 export function defaultQuestXp(quest) {
+  if (isVisitOnly(quest)) return 0
+  const tier = normTier(quest?.difficultyTier)
+  if (tier && XP_BY_TIER[tier] != null) return XP_BY_TIER[tier] // quêtes de village (par tier)
   const gold = quest?.reward?.gold ?? 0
   return Math.max(10, Math.round(gold * 0.6))
 }
 export function questXpReward(quest) {
-  return quest?.reward?.xp ?? defaultQuestXp(quest)
+  return QUEST_BALANCE[quest?.id]?.xp ?? quest?.reward?.xp ?? defaultQuestXp(quest)
+}
+
+export function defaultQuestRankPoints(quest) {
+  if (isVisitOnly(quest)) return 0
+  const tier = normTier(quest?.difficultyTier)
+  if (tier && RANK_BY_TIER[tier] != null) return RANK_BY_TIER[tier]
+  return 1
+}
+export function questRankPoints(quest) {
+  return (
+    QUEST_BALANCE[quest?.id]?.rankPoints ??
+    quest?.reward?.rankPoints ??
+    defaultQuestRankPoints(quest)
+  )
 }
