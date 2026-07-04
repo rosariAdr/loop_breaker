@@ -3,7 +3,14 @@
 import { describe, it, expect } from 'vitest'
 import { MONSTERS } from './monsters'
 import { RESOURCES } from './resources'
-import { LEATHER_RECIPES, COOKING_RECIPES } from './recipes'
+import { getRecipesByProfession } from './craftRecipes'
+
+// Source unifiée : recettes cordonnier (`leather_*`, sortie templateId) et cuisine
+// (`cook_*`, sortie consommable). Plus de compat shims LEATHER/COOKING_RECIPES.
+const LEATHER_RECIPES = getRecipesByProfession('leatherworker').filter((r) =>
+  r.id.startsWith('leather_'),
+)
+const COOKING_RECIPES = getRecipesByProfession('cook').filter((r) => r.id.startsWith('cook_'))
 
 describe('FIX-BOAR-DROP01 — drops thématiques du sanglier', () => {
   it('boar_tusk et boar_hide existent dans RESOURCES (vendables)', () => {
@@ -72,13 +79,9 @@ describe('DROP-FIX01 — drops de cuir/gibier thématiques', () => {
   })
 
   it('les pelts/gibier sont câblés dans LEATHER_RECIPES / COOKING_RECIPES (usages réels)', () => {
-    const leatherIngredients = new Set(
-      LEATHER_RECIPES.flatMap((r) => Object.keys(r.ingredients)),
-    )
-    const cookingIngredients = new Set(
-      COOKING_RECIPES.flatMap((r) => Object.keys(r.ingredients)),
-    )
-    const wired = new Set([...leatherIngredients, ...cookingIngredients])
+    const ingredientIds = (recipes) =>
+      recipes.flatMap((r) => r.combinations.flatMap((c) => Object.keys(c.ingredients)))
+    const wired = new Set([...ingredientIds(LEATHER_RECIPES), ...ingredientIds(COOKING_RECIPES)])
     for (const id of NEW_PELTS) {
       expect(wired.has(id), `${id} n'est câblé dans aucune recette LEAT/COOK`).toBe(true)
     }
@@ -86,7 +89,7 @@ describe('DROP-FIX01 — drops de cuir/gibier thématiques', () => {
 
   it('LEATHER_RECIPES cible des templates existants (armures/bottes de cuir)', () => {
     for (const r of LEATHER_RECIPES) {
-      expect(['leather_armor', 'swift_boots']).toContain(r.templateId)
+      expect(['leather_armor', 'swift_boots']).toContain(r.output)
     }
   })
 

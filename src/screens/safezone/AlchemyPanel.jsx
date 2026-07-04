@@ -2,11 +2,15 @@ import { useState } from 'react'
 import { useGameStore } from '../../store/gameStore'
 import { RESOURCES } from '../../data/resources'
 import { alchemyQuantity, concentrationGain } from '../../utils/crafting'
-import { ALCHEMY_RECIPES } from '../../data/recipes'
+import { getRecipesByProfession } from '../../data/craftRecipes'
 import CraftingMinigame from '../../components/CraftingMinigame'
 import { Panel } from './Panel'
 
-// Z04 + CRF02 — Alchimiste : brassage de potions via mini-jeu de dosage
+// Z04 + CRF02 — Alchimiste : brassage de potions via mini-jeu de dosage.
+// v1.42 batch 6 — lit la source unifiée directement : recettes `alchemy_*` (profession
+// alchimiste, sortie = consommable, mono-combinaison). Plus de compat shim ALCHEMY_RECIPES.
+const ALCHEMY_RECIPES = getRecipesByProfession('alchemist').filter((r) => r.id.startsWith('alchemy_'))
+
 export default function AlchemyPanel({ onBack }) {
   const { hero, spendGold, removeResource, addConsumable, addHeroDebuff } = useGameStore()
   const [selected, setSelected] = useState(null)
@@ -14,18 +18,19 @@ export default function AlchemyPanel({ onBack }) {
   const [minigameOpen, setMinigameOpen] = useState(false)
 
   const recipe = ALCHEMY_RECIPES.find((r) => r.id === selected)
-  const hasIngredients = recipe
-    ? Object.entries(recipe.ingredients).every(
+  const combination = recipe?.combinations[0] // mono-combinaison (potion legacy)
+  const hasIngredients = combination
+    ? Object.entries(combination.ingredients).every(
         ([id, q]) => (hero.inventory.resources[id] ?? 0) >= q,
       )
     : false
-  const hasGold = recipe ? hero.inventory.gold >= recipe.gold : false
+  const hasGold = combination ? hero.inventory.gold >= combination.gold : false
   const canBrew = hasIngredients && hasGold
 
   const handleBrew = () => {
-    if (!canBrew || !recipe) return
-    Object.entries(recipe.ingredients).forEach(([id, q]) => removeResource(id, q))
-    spendGold(recipe.gold)
+    if (!canBrew || !combination) return
+    Object.entries(combination.ingredients).forEach(([id, q]) => removeResource(id, q))
+    spendGold(combination.gold)
     setMsg(null)
     setMinigameOpen(true)
   }
@@ -66,10 +71,11 @@ export default function AlchemyPanel({ onBack }) {
       </p>
       <div className="flex flex-col gap-1.5" style={{ maxWidth: '460px' }}>
         {ALCHEMY_RECIPES.map((r) => {
+          const combo = r.combinations[0]
           const ok =
-            Object.entries(r.ingredients).every(
+            Object.entries(combo.ingredients).every(
               ([id, q]) => (hero.inventory.resources[id] ?? 0) >= q,
-            ) && hero.inventory.gold >= r.gold
+            ) && hero.inventory.gold >= combo.gold
           return (
             <button
               key={r.id}
@@ -88,10 +94,10 @@ export default function AlchemyPanel({ onBack }) {
             >
               <span style={{ color: '#b090e0' }}>{r.name}</span>
               <span style={{ color: '#6a5a7a', marginLeft: '0.5rem' }}>
-                {Object.entries(r.ingredients)
+                {Object.entries(combo.ingredients)
                   .map(([id, q]) => `${RESOURCES[id]?.name ?? id}×${q}`)
                   .join(', ')}{' '}
-                · {r.gold}g
+                · {combo.gold}g
               </span>
             </button>
           )

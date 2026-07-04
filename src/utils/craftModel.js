@@ -7,16 +7,16 @@
 //   2. BUMPS BORNÉS ±1 : la Concentration (chance = concentration/150, STA03) et le bonus
 //      d'outil ajoutent chacun AU PLUS +1 cran ; le palier du mini-jeu ajoute ses crans ;
 //   3. clamp : jamais sous la base, jamais au-dessus du plafond du lieu (CRAFT-LOC01).
-// Ce modèle remplace l'ancienne formule MULTIPLICATIVE (CRAFT-G3, `craftedRarity` plus bas,
-// conservée pour compat/tests mais NON utilisée comme chemin de qualité). Le cœur de bump
-// est PARTAGÉ avec utils/crafting.js (applyRarityBumps) → resolveCraftOutcome (STA03) et
-// resolveCraftedRarity (hybride) convergent sur la même implémentation.
+// L'ancienne formule MULTIPLICATIVE (CRAFT-G3, `craftedRarity`) a été RETIRÉE en batch 6 :
+// le chemin de qualité unique est resolveCraftedRarity (roll de base + bumps bornés). Le
+// cœur de bump est PARTAGÉ avec utils/crafting.js (applyRarityBumps) → resolveCraftOutcome
+// (STA03) et resolveCraftedRarity/resolveHybridCraftOutcome convergent sur la même
+// implémentation. resolveHybridCraftOutcome est le point d'entrée RUNTIME (panneaux de craft).
 //
 // CRAFT-G2 (§ TASKS.md v1.42) — mécanique de découverte :
 //   N slots libres pour assembler des ingrédients ; en cas de SUCCÈS la recette est apprise ;
 //   en cas d'ÉCHEC on PERD 50 % des ingrédients engagés (arrondi bas, par type).
 
-import { RARITY_TIERS } from '../data/equipment'
 import { findRecipeByIngredients } from '../data/craftRecipes'
 import { applyRarityBumps, tierRarityBump, rollConcentrationBump } from './crafting'
 
@@ -68,68 +68,52 @@ export function resolveCraftedRarity({
   return applyRarityBumps({ baseRarity: base, bumps, locationCapRarity })
 }
 
-// ── CRAFT-G3 (LEGACY, non utilisé comme chemin de qualité) — formule multiplicative ──
-// Conservée pour compat & tests batch 4. Le chemin de qualité RÉEL est resolveCraftedRarity.
-
 /**
- * Multiplicateur de qualité issu de la Concentration et du bonus d'outil.
- *   mult = (1 + Concentration/150) × toolBonus
- * @param {number} concentration 0..150 (clampé)
- * @param {number} toolBonus multiplicateur d'outil (défaut 1 = aucun outil)
- * @returns {number} multiplicateur ≥ 0
- */
-export function qualityMultiplier(concentration = 0, toolBonus = 1) {
-  const conc = Math.min(CONCENTRATION_MAX, Math.max(0, concentration ?? 0))
-  const tool = Math.max(0, toolBonus ?? 1)
-  return (1 + conc / CONCENTRATION_MAX) * tool
-}
-
-/** Rang 1-based d'une rareté (common=1 … exx=7). 0 si rareté inconnue. */
-function rarityRank(rarity) {
-  const i = RARITY_TIERS.indexOf(rarity)
-  return i < 0 ? 0 : i + 1
-}
-/** Rareté correspondant à un rang 1-based (clampé aux bornes de RARITY_TIERS). */
-function rarityFromRank(rank) {
-  const clamped = Math.max(1, Math.min(RARITY_TIERS.length, rank))
-  return RARITY_TIERS[clamped - 1]
-}
-
-/**
- * @deprecated CRAFT-G3 (LEGACY) — formule MULTIPLICATIVE de rareté. N'est PLUS le chemin de
- * qualité du jeu (remplacée par le modèle hybride resolveCraftedRarity). Conservée pour ne
- * pas casser les tests batch 4 ; à retirer une fois ces tests migrés (batch 6).
+ * ISSUE DE CRAFT RUNTIME (chemin de qualité UNIQUE, câblage batch 6).
  *
- * Rareté craftée pondérée par la qualité, bornée par le plafond du lieu.
- * On travaille sur le RANG 1-based de la rareté (common=1) pour que le multiplicateur
- * ait un sens même sur du common (base × mult), puis on arrondit et on clampe :
- *   rankOut = floor( rankBase × (1 + Concentration/150) × toolBonus )
- * borné à [rankBase, rangDuPlafond] — la qualité ne fait jamais REDESCENDRE sous la base,
- * et ne dépasse jamais le plafond de rareté du lieu (locationCapRarity).
+ * Combine la gestion d'ÉCHEC (raté/catastrophe → pas d'objet + debuff) de resolveCraftOutcome
+ * avec le calcul de rareté HYBRIDE resolveCraftedRarity, à partir de la `rarityTable` de la
+ * combinaison choisie (CRAFT-RARITY01) — au lieu d'une rareté de base FIXE. Le palier du
+ * mini-jeu, la Concentration (STA03), l'outil (CRAFT-TOOL01) et le plafond du lieu
+ * (CRAFT-LOC01, optionnel) alimentent le bump borné.
  *
  * @param {object} p
- * @param {string} p.baseRarity  rareté de base de la combinaison (ex. 'common')
- * @param {number} [p.concentration=0] Concentration du héros (0..150)
- * @param {number} [p.toolBonus=1] multiplicateur d'outil (CRAFT-TOOL01, batch 5)
- * @param {string} [p.locationCapRarity] plafond de rareté du lieu (CRAFT-LOC01). Absent =
- *                 borne haute de RARITY_TIERS (aucun plafond).
- * @returns {string} rareté résultante ∈ RARITY_TIERS
+ * @param {string} p.tier palier du mini-jeu (scoreToTier) — 'fail'/'catastrophe' = échec.
+ * @param {Record<string,number>} [p.rarityTable] table de rareté de la combinaison.
+ * @param {string} [p.baseRarity] rareté de base explicite (prioritaire sur rarityTable).
+ * @param {number} [p.concentration=0] Concentration du héros (0..150).
+ * @param {number} [p.toolBonus=1] indice d'outil (borné ±1).
+ * @param {string} [p.locationCapRarity] plafond de rareté du lieu (CRAFT-LOC01).
+ * @param {() => number} [p.rng=Math.random] RNG injecté.
+ * @returns {{ success:boolean, tier:string, rarity:string|null, severity?:string, permanentDebuff?:boolean }}
  */
-export function craftedRarity({
+export function resolveHybridCraftOutcome({
+  tier,
+  rarityTable,
   baseRarity,
   concentration = 0,
   toolBonus = 1,
   locationCapRarity,
+  rng = Math.random,
 } = {}) {
-  const baseRank = rarityRank(baseRarity)
-  if (baseRank === 0) return baseRarity // rareté inconnue : renvoyée telle quelle
-  const capRank = locationCapRarity ? rarityRank(locationCapRarity) : RARITY_TIERS.length
-  const scaled = Math.floor(baseRank * qualityMultiplier(concentration, toolBonus))
-  // Jamais sous la base, jamais au-dessus du plafond du lieu (lui-même ≥ base ? sinon la
-  // base l'emporte pour ne pas produire une rareté négative — cap incohérent = borne base).
-  const upper = Math.max(baseRank, capRank || RARITY_TIERS.length)
-  const rankOut = Math.max(baseRank, Math.min(upper, scaled))
-  return rarityFromRank(rankOut)
+  if (tier === 'fail') {
+    return { success: false, tier, rarity: null, severity: 'fail', permanentDebuff: false }
+  }
+  if (tier === 'catastrophe') {
+    return { success: false, tier, rarity: null, severity: 'catastrophe', permanentDebuff: true }
+  }
+  const resolvedTier =
+    tier === 'perfect' || tier === 'good' || tier === 'neutral' ? tier : 'neutral'
+  const rarity = resolveCraftedRarity({
+    rarityTable,
+    baseRarity,
+    tier: resolvedTier,
+    concentration,
+    toolBonus,
+    locationCapRarity,
+    rng,
+  })
+  return { success: true, tier: resolvedTier, rarity }
 }
 
 /**

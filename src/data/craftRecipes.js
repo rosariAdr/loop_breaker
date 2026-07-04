@@ -7,10 +7,10 @@
 //   3. EQUIPMENT_TEMPLATES[*].craftRecipes (forge par rareté)           → data/equipment.js
 //   4. LEATHER_RECIPES     (cordonnier — cuir → templateId)             → data/recipes.js
 //   5. COOKING_RECIPES     (cuisine — gibier → consommable)             → data/recipes.js
-// Chaque système est désormais DÉRIVÉ de CRAFT_RECIPES (cf. compat shims plus bas). Les
-// anciens noms d'export (ALCHEMY_RECIPES…) restent exposés pour ne casser AUCUN consommateur
-// (SafeZone, store, tests) ; le rewire des consommateurs + le retrait des shims arrive en
-// batch 6.
+// Chaque système est désormais UNIFIÉ dans CRAFT_RECIPES / ALL_CRAFT_RECIPES. Batch 6 a
+// retiré les compat shims (ALCHEMY/MASTER/LEATHER/COOKING_RECIPES) : tous les consommateurs
+// (panneaux de craft, tests) lisent la source unifiée directement (filtre par profession /
+// sortie via les accesseurs plus bas). data/recipes.js n'existe plus.
 //
 // Tickets couverts (§ TASKS.md v1.42) :
 //   • CRAFT-KNOWN01 — chaque recette est CONNUE (`known:true`) ou DÉCOUVRABLE (`known:false`).
@@ -535,63 +535,21 @@ export function getCombinations(recipeId, recipes = CRAFT_RECIPES) {
   return getRecipeById(recipeId, recipes)?.combinations ?? []
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-// CRAFT-UNIFY01 — COMPAT SHIMS (batch 5)
-// Les anciens noms d'export (ALCHEMY/MASTER/LEATHER/COOKING_RECIPES) sont DÉRIVÉS de la
-// source unifiée ci-dessus. Tous les consommateurs actuels (SafeZone, store, tests)
-// continuent de fonctionner SANS édition. Le rewire des consommateurs vers CRAFT_RECIPES
-// puis le retrait de ces shims est prévu en batch 6.
-//
-// Chaque système legacy est mono-combinaison : on reprojette la 1ʳᵉ combinaison de la
-// recette unifiée migrée (préfixe d'id ci-dessous) vers la forme historique attendue.
-// ════════════════════════════════════════════════════════════════════════════════
+// ── Accesseurs par profession / sortie (v1.42 batch 6 — consommateurs sur la source unifiée) ──
+// Les panneaux de craft (Alchemy/MasterSmith/…) lisent désormais DIRECTEMENT la source
+// unifiée via ces filtres (plus de compat shims). `ALL_CRAFT_RECIPES` = vue exhaustive.
 
-// Recettes unifiées migrées depuis un système donné (par préfixe d'id de recette).
-function migratedByPrefix(prefix) {
-  return CRAFT_RECIPES.filter((r) => r.id.startsWith(prefix))
+/** Recettes d'une profession donnée (dans la table fournie, défaut = vue exhaustive). */
+export function getRecipesByProfession(profession, recipes = ALL_CRAFT_RECIPES) {
+  return recipes.filter((r) => r.profession === profession)
 }
 
 /**
- * Reprojette une recette unifiée migrée (mono-combinaison) vers la forme legacy à sortie
- * = consommable : { id, output, name, ingredients, gold }.
- * `legacyId` = id d'origine (les recettes ALCHEMY legacy n'avaient pas de préfixe ; on le
- * retire donc ; MASTER/LEATHER/COOKING conservaient leur préfixe → id unifié = id legacy).
+ * Retrouve, dans une recette, la combinaison portant une rareté FIXE donnée (mono-rareté
+ * legacy : `combination.rarity === rarity`). Sert aux panneaux qui craftent à rareté fixe
+ * (maître forgeron) ou par palier de rareté (forge par template).
+ * @returns {object | undefined} la combinaison, ou undefined si absente.
  */
-function toOutputShim(recipe, stripPrefix = '') {
-  const combo = recipe.combinations[0]
-  return {
-    id: stripPrefix ? recipe.id.slice(stripPrefix.length) : recipe.id,
-    output: recipe.output,
-    name: recipe.name,
-    ingredients: combo.ingredients,
-    gold: combo.gold,
-  }
+export function getCombinationByRarity(recipe, rarity) {
+  return recipe?.combinations?.find((c) => c.rarity === rarity)
 }
-
-/**
- * Reprojette une recette unifiée migrée (mono-combinaison) vers la forme legacy à sortie
- * = templateId : { id, templateId, rarity, name, ingredients, gold }.
- */
-function toTemplateShim(recipe, stripPrefix = '') {
-  const combo = recipe.combinations[0]
-  return {
-    id: stripPrefix ? recipe.id.slice(stripPrefix.length) : recipe.id,
-    templateId: recipe.output,
-    rarity: combo.rarity,
-    name: recipe.name,
-    ingredients: combo.ingredients,
-    gold: combo.gold,
-  }
-}
-
-// Z04 — Alchimiste (sortie consommable). Recettes `alchemy_*` ; id legacy sans préfixe.
-export const ALCHEMY_RECIPES = migratedByPrefix('alchemy_').map((r) => toOutputShim(r, 'alchemy_'))
-
-// Z06 — Maître forgeron (sortie templateId Rare/Epic). Id legacy = id unifié (`master_*`).
-export const MASTER_RECIPES = migratedByPrefix('master_').map((r) => toTemplateShim(r))
-
-// DROP-FIX01 — Cordonnier (cuir → templateId). Id legacy = id unifié (`leather_*`).
-export const LEATHER_RECIPES = migratedByPrefix('leather_').map((r) => toTemplateShim(r))
-
-// DROP-FIX01 — Cuisine (gibier → consommable). Id legacy = id unifié (`cook_*`).
-export const COOKING_RECIPES = migratedByPrefix('cook_').map((r) => toOutputShim(r))

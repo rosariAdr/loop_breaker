@@ -1,84 +1,61 @@
-// v1.42 batch 4 — Tests de la logique PURE du craft.
-// CRAFT-G3 : rareté = base × (1 + Concentration/150) × toolBonus, bornée par le plafond du lieu.
+// v1.42 batch 6 — Tests de la logique PURE du craft.
+// La formule MULTIPLICATIVE (CRAFT-G3, craftedRarity/qualityMultiplier) a été RETIRÉE :
+// le chemin de qualité unique est HYBRIDE (rollBaseRarity + bumps bornés). On y ajoute le
+// point d'entrée RUNTIME resolveHybridCraftOutcome (échec/catastrophe + rareté hybride).
 // CRAFT-G2 : découverte — N slots libres ; succès → recette apprise ; échec → perte 50 %.
 import { describe, it, expect } from 'vitest'
 import {
-  qualityMultiplier,
-  craftedRarity,
   rollBaseRarity,
   discoveryLossOnFail,
   attemptDiscovery,
+  resolveHybridCraftOutcome,
   CONCENTRATION_MAX,
 } from './craftModel'
-import { RARITY_TIERS } from '../data/equipment'
 
-describe('CRAFT-G3 — qualityMultiplier', () => {
-  it('sans concentration ni outil → 1', () => {
-    expect(qualityMultiplier(0, 1)).toBe(1)
-  })
-  it('Concentration 150 → ×2 (1 + 150/150)', () => {
-    expect(qualityMultiplier(150, 1)).toBe(2)
-  })
-  it('Concentration 75 → ×1.5', () => {
-    expect(qualityMultiplier(75, 1)).toBeCloseTo(1.5)
-  })
-  it('le bonus d’outil multiplie', () => {
-    expect(qualityMultiplier(150, 1.25)).toBeCloseTo(2.5)
-  })
-  it('clampe la Concentration à [0, 150]', () => {
-    expect(qualityMultiplier(-50, 1)).toBe(1)
-    expect(qualityMultiplier(999, 1)).toBe(2)
-  })
-})
-
-describe('CRAFT-G3 — craftedRarity (formule bornée par le plafond du lieu)', () => {
-  it('base seule (mult 1) → rareté inchangée', () => {
-    expect(craftedRarity({ baseRarity: 'common' })).toBe('common')
-    expect(craftedRarity({ baseRarity: 'rare' })).toBe('rare')
+describe('batch 6 — resolveHybridCraftOutcome (issue de craft runtime)', () => {
+  it('raté → pas d’objet, debuff non permanent', () => {
+    const o = resolveHybridCraftOutcome({ tier: 'fail', rarityTable: { common: 100 } })
+    expect(o).toMatchObject({ success: false, rarity: null, severity: 'fail', permanentDebuff: false })
   })
 
-  it('Concentration max double le RANG : common(1) → rare(2)', () => {
-    // floor(1 × 2) = 2 → RARITY_TIERS[1] = 'rare'
-    expect(craftedRarity({ baseRarity: 'common', concentration: 150 })).toBe('rare')
+  it('catastrophe → pas d’objet, debuff permanent', () => {
+    const o = resolveHybridCraftOutcome({ tier: 'catastrophe', rarityTable: { common: 100 } })
+    expect(o).toMatchObject({
+      success: false,
+      rarity: null,
+      severity: 'catastrophe',
+      permanentDebuff: true,
+    })
   })
 
-  it('rare(2) × 2 → epic(4) sans plafond', () => {
-    // floor(2 × 2) = 4 → RARITY_TIERS[3] = 'legendary'
-    expect(craftedRarity({ baseRarity: 'rare', concentration: 150 })).toBe('legendary')
+  it('neutre → rareté tirée dans la rarityTable, sans bump', () => {
+    const o = resolveHybridCraftOutcome({
+      tier: 'neutral',
+      rarityTable: { common: 80, rare: 20 },
+      rng: () => 0.0,
+    })
+    expect(o).toMatchObject({ success: true, tier: 'neutral', rarity: 'common' })
   })
 
-  it('le plafond du lieu borne la rareté (locationCapRarity)', () => {
-    // common × 2 viserait 'rare', mais plafond 'common' → reste 'common'.
-    expect(
-      craftedRarity({ baseRarity: 'common', concentration: 150, locationCapRarity: 'common' }),
-    ).toBe('common')
-    // rare × 2 viserait 'legendary', plafond 'epic' → clampé à 'epic'.
-    expect(
-      craftedRarity({ baseRarity: 'rare', concentration: 150, locationCapRarity: 'epic' }),
-    ).toBe('epic')
+  it('palier + Concentration montent la rareté depuis la table, bornés par le plafond', () => {
+    // base rare (rng bas), perfect(+2) + conc 150(+1) = +3 → viserait ex ; plafond epic → epic.
+    const o = resolveHybridCraftOutcome({
+      tier: 'perfect',
+      rarityTable: { rare: 100 },
+      concentration: 150,
+      locationCapRarity: 'epic',
+      rng: () => 0.0,
+    })
+    expect(o).toMatchObject({ success: true, tier: 'perfect', rarity: 'epic' })
   })
 
-  it('le bonus d’outil pousse la rareté plus haut', () => {
-    // common(1) × (1+150/150) × 2 = 4 → 'legendary' (sans plafond).
-    expect(craftedRarity({ baseRarity: 'common', concentration: 150, toolBonus: 2 })).toBe(
-      'legendary',
-    )
-  })
-
-  it('ne descend jamais sous la base même avec un plafond incohérent (< base)', () => {
-    // base 'epic', plafond 'common' (incohérent) → la base l’emporte.
-    expect(craftedRarity({ baseRarity: 'epic', locationCapRarity: 'common' })).toBe('epic')
-  })
-
-  it('clampe à la borne haute de RARITY_TIERS (exx)', () => {
-    const top = RARITY_TIERS[RARITY_TIERS.length - 1]
-    expect(
-      craftedRarity({ baseRarity: top, concentration: 150, toolBonus: 5 }),
-    ).toBe(top)
-  })
-
-  it('rareté inconnue renvoyée telle quelle', () => {
-    expect(craftedRarity({ baseRarity: 'ultra' })).toBe('ultra')
+  it('baseRarity explicite prime sur la rarityTable', () => {
+    const o = resolveHybridCraftOutcome({
+      tier: 'neutral',
+      baseRarity: 'epic',
+      rarityTable: { common: 100 },
+    })
+    expect(o.rarity).toBe('epic')
   })
 
   it('CONCENTRATION_MAX = 150', () => {

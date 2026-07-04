@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest'
 import { RESOURCES, COMMON_DROP_BAND, RARE_DROP_RATE_BY_TIER } from './resources'
 import { MONSTERS, MONSTERS_BY_SPOT, MONSTERS_BY_ZONE } from './monsters'
-import { ALCHEMY_RECIPES, MASTER_RECIPES } from './recipes'
+import { getRecipesByProfession } from './craftRecipes'
 
 // ── Dérivations (source de vérité) ───────────────────────────────────────────
 // Sources réelles = monstres dont resourceDrops référence la ressource.
@@ -18,10 +18,15 @@ function derivedSources() {
   return map
 }
 // Usages réels côté craft = ressources référencées comme ingrédient d'une recette.
+// Source unifiée : recettes alchimie (`alchemy_*`) + maître forgeron (`master_*`).
 function craftUsedIds() {
   const set = new Set()
-  for (const r of [...ALCHEMY_RECIPES, ...MASTER_RECIPES]) {
-    for (const id of Object.keys(r.ingredients)) set.add(id)
+  const alchemy = getRecipesByProfession('alchemist').filter((r) => r.id.startsWith('alchemy_'))
+  const master = getRecipesByProfession('blacksmith').filter((r) => r.id.startsWith('master_'))
+  for (const r of [...alchemy, ...master]) {
+    for (const c of r.combinations) {
+      for (const id of Object.keys(c.ingredients)) set.add(id)
+    }
   }
   return set
 }

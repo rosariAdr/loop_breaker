@@ -14,7 +14,7 @@ import { MONSTERS, MONSTERS_BY_ZONE } from '../data/monsters'
 import { RESOURCES } from '../data/resources'
 import { EQUIPMENT_TEMPLATES, createEquipmentInstance } from '../data/equipment'
 import { SKILLS } from '../data/skills'
-import { ALCHEMY_RECIPES, MASTER_RECIPES } from '../data/recipes'
+import { getRecipesByProfession } from '../data/craftRecipes'
 import { QUESTS } from '../data/quests'
 import { CHURCH_QUESTS } from '../data/churchQuests'
 import { MAIN_QUESTS } from '../data/mainQuests'
@@ -150,20 +150,32 @@ describe('QA01 — Volet 2 : intégrité référentielle des items', () => {
   })
 
   it('recettes alchimie : ingredients + output résolvent (output = consommable)', () => {
-    for (const r of ALCHEMY_RECIPES) {
+    // Source unifiée : recettes `alchemy_*` (profession alchimiste, sortie = consommable).
+    const alchemyRecipes = getRecipesByProfession('alchemist').filter((r) =>
+      r.id.startsWith('alchemy_'),
+    )
+    for (const r of alchemyRecipes) {
       expect(RESOURCES[r.output], `alchemy output ${r.output}`).toBeDefined()
       expect(RESOURCES[r.output].isConsumable, `${r.output} consommable`).toBe(true)
-      for (const id of Object.keys(r.ingredients)) {
-        expect(RESOURCES[id], `alchemy ingredient ${id}`).toBeDefined()
+      for (const c of r.combinations) {
+        for (const id of Object.keys(c.ingredients)) {
+          expect(RESOURCES[id], `alchemy ingredient ${id}`).toBeDefined()
+        }
       }
     }
   })
 
   it('recettes maître : templateId + ingredients résolvent', () => {
-    for (const r of MASTER_RECIPES) {
-      expect(EQUIPMENT_TEMPLATES[r.templateId], `master template ${r.templateId}`).toBeDefined()
-      for (const id of Object.keys(r.ingredients)) {
-        expect(RESOURCES[id], `master ingredient ${id}`).toBeDefined()
+    // Source unifiée : recettes `master_*` (profession blacksmith, sortie = templateId Rare/Epic).
+    const masterRecipes = getRecipesByProfession('blacksmith').filter((r) =>
+      r.id.startsWith('master_'),
+    )
+    for (const r of masterRecipes) {
+      expect(EQUIPMENT_TEMPLATES[r.output], `master template ${r.output}`).toBeDefined()
+      for (const c of r.combinations) {
+        for (const id of Object.keys(c.ingredients)) {
+          expect(RESOURCES[id], `master ingredient ${id}`).toBeDefined()
+        }
       }
     }
   })
