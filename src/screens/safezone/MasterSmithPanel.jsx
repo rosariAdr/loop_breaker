@@ -2,12 +2,17 @@ import { useState } from 'react'
 import { useGameStore } from '../../store/gameStore'
 import { RESOURCES } from '../../data/resources'
 import { RARITY_CONFIG, createEquipmentInstance } from '../../data/equipment'
-import { resolveCraftOutcome, concentrationGain, rollConcentrationBump } from '../../utils/crafting'
-import { MASTER_RECIPES } from '../../data/recipes'
+import { concentrationGain } from '../../utils/crafting'
+import { resolveHybridCraftOutcome } from '../../utils/craftModel'
+import { getRecipesByProfession } from '../../data/craftRecipes'
 import CraftingMinigame from '../../components/CraftingMinigame'
 import { Panel } from './Panel'
 
-// Z06 — Maître forgeron : recettes Rare/Epic via mini-jeu de forge
+// Z06 — Maître forgeron : recettes Rare/Epic via mini-jeu de forge.
+// v1.42 batch 6 — lit la source unifiée directement : recettes `master_*` (profession
+// blacksmith, mono-combinaison à rareté fixe Rare/Epic). Plus de compat shim MASTER_RECIPES.
+const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) => r.id.startsWith('master_'))
+
 export default function MasterSmithPanel({ onBack }) {
   const { hero, spendGold, removeResource, addEquipmentToInventory, addHeroDebuff } = useGameStore()
   const [selected, setSelected] = useState(null)
@@ -15,18 +20,19 @@ export default function MasterSmithPanel({ onBack }) {
   const [minigameOpen, setMinigameOpen] = useState(false)
 
   const recipe = MASTER_RECIPES.find((r) => r.id === selected)
-  const hasIngredients = recipe
-    ? Object.entries(recipe.ingredients).every(
+  const combination = recipe?.combinations[0] // mono-combinaison (legacy Rare/Epic)
+  const hasIngredients = combination
+    ? Object.entries(combination.ingredients).every(
         ([id, q]) => (hero.inventory.resources[id] ?? 0) >= q,
       )
     : false
-  const hasGold = recipe ? hero.inventory.gold >= recipe.gold : false
+  const hasGold = combination ? hero.inventory.gold >= combination.gold : false
   const canForge = hasIngredients && hasGold
 
   const handleForge = () => {
-    if (!canForge || !recipe) return
-    Object.entries(recipe.ingredients).forEach(([id, q]) => removeResource(id, q))
-    spendGold(recipe.gold)
+    if (!canForge || !combination) return
+    Object.entries(combination.ingredients).forEach(([id, q]) => removeResource(id, q))
+    spendGold(combination.gold)
     setMsg(null)
     setMinigameOpen(true)
   }
@@ -36,15 +42,17 @@ export default function MasterSmithPanel({ onBack }) {
     useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
     useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
     useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
-    const outcome = resolveCraftOutcome(
-      recipe.rarity,
+    // Chemin hybride : rareté depuis la rarityTable de la combinaison (mono-rareté Rare/Epic).
+    const outcome = resolveHybridCraftOutcome({
       tier,
-      rollConcentrationBump(hero.concentration),
-    ) // STA03
+      rarityTable: combination.rarityTable,
+      baseRarity: combination.rarity,
+      concentration: hero.concentration,
+    }) // STA03 + CRAFT-RARITY01
     if (outcome.success) {
-      const item = createEquipmentInstance(recipe.templateId, outcome.rarity)
+      const item = createEquipmentInstance(recipe.output, outcome.rarity)
       addEquipmentToInventory(item)
-      const bonus = outcome.rarity !== recipe.rarity ? ` (${tier}! → ${outcome.rarity})` : ''
+      const bonus = outcome.rarity !== combination.rarity ? ` (${tier}! → ${outcome.rarity})` : ''
       setMsg(`✓ ${item.name} forged!${bonus}`)
     } else {
       addHeroDebuff('burnt_hands', 7, outcome.permanentDebuff)
@@ -71,11 +79,12 @@ export default function MasterSmithPanel({ onBack }) {
       </p>
       <div className="flex flex-col gap-1.5" style={{ maxWidth: '500px' }}>
         {MASTER_RECIPES.map((r) => {
-          const rc = RARITY_CONFIG[r.rarity]
+          const combo = r.combinations[0]
+          const rc = RARITY_CONFIG[combo.rarity]
           const ok =
-            Object.entries(r.ingredients).every(
+            Object.entries(combo.ingredients).every(
               ([id, q]) => (hero.inventory.resources[id] ?? 0) >= q,
-            ) && hero.inventory.gold >= r.gold
+            ) && hero.inventory.gold >= combo.gold
           return (
             <button
               key={r.id}
@@ -94,10 +103,10 @@ export default function MasterSmithPanel({ onBack }) {
             >
               <span style={{ color: rc.color }}>{r.name}</span>
               <span style={{ color: 'var(--ink-soft)', marginLeft: '0.5rem' }}>
-                {Object.entries(r.ingredients)
+                {Object.entries(combo.ingredients)
                   .map(([id, q]) => `${RESOURCES[id]?.name ?? id}×${q}`)
                   .join(', ')}{' '}
-                · {r.gold}g
+                · {combo.gold}g
               </span>
             </button>
           )

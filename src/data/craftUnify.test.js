@@ -1,20 +1,26 @@
-// v1.42 batch 5 — CRAFT-UNIFY01 : la source unifiée + les compat shims.
-// Prouve que (1) la vue exhaustive ALL_CRAFT_RECIPES est bien formée, et que (2) les quatre
-// exports legacy (ALCHEMY/MASTER/LEATHER/COOKING_RECIPES) sont des DÉRIVATIONS fidèles de la
-// source unifiée — donc que les consommateurs actuels restent servis sans édition.
+// v1.42 batch 6 — CRAFT-UNIFY01 : la source unifiée (compat shims RETIRÉS).
+// Prouve que (1) la vue exhaustive ALL_CRAFT_RECIPES est bien formée, et que (2) les
+// accesseurs par profession/rareté servent correctement les 5 systèmes historiques depuis
+// la source unifiée (les consommateurs lisent CRAFT_RECIPES directement, plus de shims).
 import { describe, it, expect } from 'vitest'
 import {
   CRAFT_RECIPES,
   ALL_CRAFT_RECIPES,
   TEMPLATE_FORGE_RECIPES,
-  ALCHEMY_RECIPES,
-  MASTER_RECIPES,
-  LEATHER_RECIPES,
-  COOKING_RECIPES,
+  getRecipesByProfession,
+  getCombinationByRarity,
   findRecipeByIngredients,
 } from './craftRecipes'
 import { RESOURCES } from './resources'
 import { EQUIPMENT_TEMPLATES, RARITY_TIERS } from './equipment'
+
+// Regroupements par système (préfixe d'id + profession) — remplacent les anciens shims.
+const ALCHEMY_RECIPES = getRecipesByProfession('alchemist').filter((r) => r.id.startsWith('alchemy_'))
+const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) => r.id.startsWith('master_'))
+const LEATHER_RECIPES = getRecipesByProfession('leatherworker').filter((r) =>
+  r.id.startsWith('leather_'),
+)
+const COOKING_RECIPES = getRecipesByProfession('cook').filter((r) => r.id.startsWith('cook_'))
 
 const outputExists = (id) =>
   Boolean(EQUIPMENT_TEMPLATES[id]) || Boolean(RESOURCES[id]?.isConsumable)
@@ -96,51 +102,49 @@ describe('CRAFT-UNIFY01 — forge par template dérivée des EQUIPMENT_TEMPLATES
   })
 })
 
-describe('CRAFT-UNIFY01 — compat shims dérivés de la source unifiée', () => {
-  it('ALCHEMY_RECIPES : 6 recettes, forme legacy exacte, dérivées des `alchemy_*`', () => {
+describe('CRAFT-UNIFY01 — accès par profession/rareté sur la source unifiée', () => {
+  it('alchimiste : 6 recettes `alchemy_*`, sortie = consommable existant', () => {
     expect(ALCHEMY_RECIPES).toHaveLength(6)
     for (const r of ALCHEMY_RECIPES) {
-      const unified = CRAFT_RECIPES.find((u) => u.id === `alchemy_${r.id}`)
-      expect(unified, `source unifiée de ${r.id}`).toBeDefined()
-      expect(r.output).toBe(unified.output)
-      expect(r.name).toBe(unified.name)
-      expect(r.ingredients).toBe(unified.combinations[0].ingredients)
-      expect(r.gold).toBe(unified.combinations[0].gold)
+      const unified = CRAFT_RECIPES.find((u) => u.id === r.id)
+      expect(unified, `source unifiée de ${r.id}`).toBe(r)
+      expect(RESOURCES[r.output]?.isConsumable, `${r.output}`).toBe(true)
     }
   })
 
-  it('MASTER_RECIPES : 5 recettes, templateId/rarity dérivés (id = id unifié `master_*`)', () => {
+  it('maître forgeron : 5 recettes `master_*`, sortie = templateId Rare/Epic', () => {
     expect(MASTER_RECIPES).toHaveLength(5)
     for (const r of MASTER_RECIPES) {
-      const unified = CRAFT_RECIPES.find((u) => u.id === r.id)
-      expect(unified, `source unifiée de ${r.id}`).toBeDefined()
-      expect(r.templateId).toBe(unified.output)
-      expect(r.rarity).toBe(unified.combinations[0].rarity)
-      expect(['rare', 'epic']).toContain(r.rarity)
-      expect(r.ingredients).toBe(unified.combinations[0].ingredients)
+      expect(EQUIPMENT_TEMPLATES[r.output], `template ${r.output}`).toBeDefined()
+      const combo = r.combinations[0]
+      expect(['rare', 'epic']).toContain(combo.rarity)
+      // getCombinationByRarity retrouve bien la combinaison à rareté fixe.
+      expect(getCombinationByRarity(r, combo.rarity)).toBe(combo)
     }
   })
 
-  it('LEATHER_RECIPES : 3 recettes cuir → templateId existant', () => {
+  it('cordonnier : 3 recettes `leather_*` cuir → templateId existant', () => {
     expect(LEATHER_RECIPES).toHaveLength(3)
     for (const r of LEATHER_RECIPES) {
-      expect(EQUIPMENT_TEMPLATES[r.templateId]).toBeDefined()
-      expect(RARITY_TIERS).toContain(r.rarity)
+      expect(EQUIPMENT_TEMPLATES[r.output]).toBeDefined()
+      for (const c of r.combinations) expect(RARITY_TIERS).toContain(c.rarity)
     }
   })
 
-  it('COOKING_RECIPES : 2 recettes → consommable existant', () => {
+  it('cuisine : 2 recettes `cook_*` → consommable existant', () => {
     expect(COOKING_RECIPES).toHaveLength(2)
     for (const r of COOKING_RECIPES) {
       expect(RESOURCES[r.output]?.isConsumable, `${r.output}`).toBe(true)
     }
   })
 
-  it('tous les shims ont un id, un coût en or positif, et des ingrédients', () => {
+  it('toutes ces recettes ont un id, et chaque combinaison un coût en or positif + des ingrédients', () => {
     for (const r of [...ALCHEMY_RECIPES, ...MASTER_RECIPES, ...LEATHER_RECIPES, ...COOKING_RECIPES]) {
       expect(r.id).toBeTypeOf('string')
-      expect(r.gold).toBeGreaterThan(0)
-      expect(Object.keys(r.ingredients).length).toBeGreaterThan(0)
+      for (const c of r.combinations) {
+        expect(c.gold).toBeGreaterThan(0)
+        expect(Object.keys(c.ingredients).length).toBeGreaterThan(0)
+      }
     }
   })
 })

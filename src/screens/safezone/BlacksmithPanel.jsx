@@ -8,7 +8,9 @@ import {
   canCraft,
   createEquipmentInstance,
 } from '../../data/equipment'
-import { resolveCraftOutcome, concentrationGain, rollConcentrationBump } from '../../utils/crafting'
+import { concentrationGain } from '../../utils/crafting'
+import { resolveHybridCraftOutcome } from '../../utils/craftModel'
+import { TEMPLATE_FORGE_RECIPES, getRecipeById, getCombinationByRarity } from '../../data/craftRecipes'
 import CraftingMinigame from '../../components/CraftingMinigame'
 import { Panel } from './Panel'
 
@@ -48,11 +50,16 @@ export default function BlacksmithPanel({ onBack }) {
     useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
     useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
     useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
-    const outcome = resolveCraftOutcome(
-      selectedRarity,
+    // v1.42 batch 6 — chemin de qualité HYBRIDE : la rareté vient de la `rarityTable` de la
+    // combinaison forge_<templateId>__<rarité> (source unifiée), + palier + Concentration.
+    const forgeRecipe = getRecipeById(`forge_${selectedTemplate}`, TEMPLATE_FORGE_RECIPES)
+    const combination = getCombinationByRarity(forgeRecipe, selectedRarity)
+    const outcome = resolveHybridCraftOutcome({
       tier,
-      rollConcentrationBump(hero.concentration),
-    ) // STA03
+      rarityTable: combination?.rarityTable,
+      baseRarity: selectedRarity, // secours si la combinaison n'a pas de table
+      concentration: hero.concentration,
+    }) // STA03 + CRAFT-RARITY01
     if (outcome.success) {
       const item = createEquipmentInstance(selectedTemplate, outcome.rarity)
       addEquipmentToInventory(item)
