@@ -1,7 +1,7 @@
 // ── TECH02 — Save schema versioning ──────────────────────────────────────────
 // Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
 // nécessite une migration. Ajouter la migration correspondante dans `runMigrations`.
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 3
 
 // ── État initial du héros ─────────────────────────────────────────────────────
 // (les migrations sont définies plus bas, après les INITIAL_*)
@@ -52,11 +52,19 @@ export const INITIAL_HERO = {
   activeDebuffs: [], // [{ debuffId, permanent, duration: { type: 'days', remaining } }]
 
   // Équipement porté (null = slot vide)
+  // SLOT01 — 9 slots. weapon = arme principale ; offhand = bouclier / arme secondaire /
+  //   vide ; amulet ; ring1 / ring2. Une arme 2 mains (twoHanded) occupe weapon + offhand
+  //   (l'offhand est verrouillée tant qu'elle est portée). Cf. EQUIP_SLOTS / equipItem.
   equipped: {
     weapon: null,
+    offhand: null,
     helmet: null,
     armor: null,
+    gloves: null,
     boots: null,
+    amulet: null,
+    ring1: null,
+    ring2: null,
   },
 
   // Inventaire

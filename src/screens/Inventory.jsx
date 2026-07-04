@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { SKILLS } from '../data/skills'
 import { RESOURCES, RARITY_COLORS } from '../data/resources'
-import { RARITY_CONFIG } from '../data/equipment'
+import { RARITY_CONFIG, EQUIP_SLOTS } from '../data/equipment'
+import { getActiveSetsSummary } from '../data/sets'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { groupManaStones } from '../utils/manaStones'
 import { getSkillContainer } from '../data/containers'
@@ -242,11 +243,10 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
   // UX03 — pending sell pour confirmation
   const [pendingSell, setPendingSell] = useState(null) // { instanceId, name, rarity, sellPrice }
 
-  // Vérifier si un item est déjà équipé dans son slot
-  const isEquipped = (item) => {
-    const slot = equipped[item.slot]
-    return slot?.instanceId === item.instanceId
-  }
+  // SLOT01 — une pièce peut se loger dans plusieurs slots (bagues → ring1/ring2), donc on
+  // vérifie l'appartenance par instanceId sur l'ensemble des slots portés.
+  const isEquipped = (item) =>
+    Object.values(equipped).some((e) => e?.instanceId === item.instanceId)
 
   // UX03 — décide : confirmation ou sell direct
   const handleSellClick = (item) => {
@@ -263,20 +263,30 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
     setSelected(null)
   }
 
-  if (equipment.length === 0) {
-    return (
-      <p className="inv-empty">
-        No equipment in bag. Craft or buy some from the blacksmith or merchant.
-      </p>
-    )
+  const SLOT_ICONS = {
+    weapon: '⚔',
+    offhand: '🛡',
+    helmet: '🪖',
+    armor: '🥋',
+    gloves: '🧤',
+    boots: '👢',
+    amulet: '📿',
+    ring: '💍',
   }
 
-  const SLOT_ICONS = { weapon: '⚔', helmet: '🪖', armor: '🛡', boots: '👢' }
-
   return (
-    <div className="flex gap-4">
+    <div className="flex flex-col gap-4">
+      {/* SLOT02 — grille des 9 slots équipés (résumé en tête de l'onglet Équipement) */}
+      <EquippedGrid equipped={equipped} slotIcons={SLOT_ICONS} />
+
+      <div className="flex gap-4">
       {/* Liste */}
       <div className="flex-1 flex flex-col gap-2">
+        {equipment.length === 0 && (
+          <p className="inv-empty">
+            No equipment in bag. Craft or buy some from the blacksmith or merchant.
+          </p>
+        )}
         {equipment.map((item, i) => {
           const rc = RARITY_CONFIG[item.rarity]
           const equipped_ = isEquipped(item)
@@ -392,6 +402,7 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
           })()}
         </div>
       )}
+      </div>
 
       {/* UX03 — Confirmation Sell pour les raretés Epic+ */}
       <ConfirmDialog
@@ -408,6 +419,71 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
         onConfirm={confirmSell}
         onCancel={() => setPendingSell(null)}
       />
+    </div>
+  )
+}
+
+// ── SLOT02 — Grille des 9 slots équipés + résumé des sets actifs ────────────────
+function EquippedGrid({ equipped, slotIcons }) {
+  const sets = getActiveSetsSummary(equipped)
+  return (
+    <div className="inv-equipped" data-testid="equipped-grid">
+      <div className="grid grid-cols-4 gap-2">
+        {EQUIP_SLOTS.map((slot) => {
+          const item = equipped?.[slot]
+          const rc = item ? RARITY_CONFIG[item.rarity] : null
+          // icône : les slots ring1/ring2 utilisent l'icône « ring » ; sinon slot homonyme.
+          const iconKey = slot === 'ring1' || slot === 'ring2' ? 'ring' : slot
+          const lockedByTwoHanded = slot === 'offhand' && !item && equipped?.weapon?.twoHanded
+          return (
+            <div
+              key={slot}
+              className="inv-card"
+              data-testid={`eq-slot-${slot}`}
+              style={{ borderLeft: `3px solid ${rc?.color ?? 'var(--parchment-shadow)'}` }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span style={{ fontSize: '1rem' }}>{slotIcons[iconKey] ?? '❔'}</span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    textTransform: 'capitalize',
+                    color: 'var(--ink-soft)',
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  {slot === 'ring1' ? 'ring I' : slot === 'ring2' ? 'ring II' : slot}
+                </span>
+              </div>
+              <p
+                className="inv-name"
+                style={{ color: rc?.color ?? 'var(--ink-soft)', fontSize: 13 }}
+              >
+                {item ? item.name : lockedByTwoHanded ? '— two-handed —' : '— empty —'}
+              </p>
+            </div>
+          )
+        })}
+      </div>
+      {sets.length > 0 && (
+        <div className="inv-setbonus" data-testid="inv-set-bonuses" style={{ marginTop: 8 }}>
+          {sets.map((s) => {
+            const bonusText = Object.entries(s.bonuses)
+              .map(([stat, val]) => `+${val} ${stat}`)
+              .join(' · ')
+            return (
+              <div
+                key={s.id}
+                data-testid={`inv-set-${s.id}`}
+                style={{ fontSize: 12, color: s.active ? 'var(--forest-deep)' : 'var(--ink-soft)' }}
+              >
+                <strong>{s.name}</strong> ({s.count}/{s.total})
+                {s.active && bonusText ? ` — ✦ ${bonusText}` : ''}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

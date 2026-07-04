@@ -1819,11 +1819,21 @@ describe('Migration save — anti-crash inventaire (régression)', () => {
     expect(useGameStore.getState().hero.inventory.equipment).toHaveLength(0)
   })
 
-  it('ajoute hero.equipped avec 4 slots null si absent', () => {
+  it('ajoute hero.equipped avec les 9 slots null si absent (SLOT01)', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(oldSaveWithoutEquipment()))
     useGameStore.getState().loadGame()
     const eq = useGameStore.getState().hero.equipped
-    expect(eq).toEqual({ weapon: null, helmet: null, armor: null, boots: null })
+    expect(eq).toEqual({
+      weapon: null,
+      offhand: null,
+      helmet: null,
+      armor: null,
+      gloves: null,
+      boots: null,
+      amulet: null,
+      ring1: null,
+      ring2: null,
+    })
   })
 
   it('préserve les manaStones existantes', () => {
@@ -1936,12 +1946,12 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
     useGameStore.getState().saveGame()
     const raw = localStorage.getItem('roguelite_save')
     const parsed = JSON.parse(raw)
-    expect(parsed.saveVersion).toBe(2)
+    expect(parsed.saveVersion).toBe(3) // SLOT01 — bump v2 → v3
   })
 
   it('saveVersion est exporté comme constante (cohérence)', async () => {
     const mod = await import('./gameStore')
-    expect(mod.SAVE_VERSION).toBe(2)
+    expect(mod.SAVE_VERSION).toBe(3) // SLOT01
   })
 
   it("loadGame d'une save SANS saveVersion (legacy v1) la migre vers v2", () => {
@@ -1971,11 +1981,17 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
     expect(useGameStore.getState().hero.activeSkills).toEqual([])
     expect(useGameStore.getState().hero.passiveSkills).toEqual([])
     expect(useGameStore.getState().hero.inventory).toBeDefined()
+    // SLOT01 — 9 slots après migration v1 → v3.
     expect(useGameStore.getState().hero.equipped).toEqual({
       weapon: null,
+      offhand: null,
       helmet: null,
       armor: null,
+      gloves: null,
       boots: null,
+      amulet: null,
+      ring1: null,
+      ring2: null,
     })
     expect(useGameStore.getState().world.dayCount).toBe(3) // valeur préservée
   })
@@ -1983,7 +1999,7 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
   it('runMigrations exporté est testable directement', async () => {
     const { runMigrations } = await import('./gameStore')
     const result = runMigrations({ hero: {}, world: {}, meta: {} })
-    expect(result.saveVersion).toBe(2)
+    expect(result.saveVersion).toBe(3) // SLOT01
     expect(result.hero.activeSkills).toEqual([])
     expect(result.world.activeQuests).toEqual([])
   })
@@ -2063,14 +2079,19 @@ describe('X02 — Battery migration anti-régression', () => {
     expectObject('hero.inventory.resources')
   })
 
-  it('hero.equipped absent → 4 slots null', () => {
+  it('hero.equipped absent → 9 slots null (SLOT01)', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.equipped')))
     useGameStore.getState().loadGame()
     expect(useGameStore.getState().hero.equipped).toEqual({
       weapon: null,
+      offhand: null,
       helmet: null,
       armor: null,
+      gloves: null,
       boots: null,
+      amulet: null,
+      ring1: null,
+      ring2: null,
     })
   })
 
