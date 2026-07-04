@@ -112,6 +112,52 @@ describe('MST02 — verrou d’engagement via quête d’initiation', () => {
   })
 })
 
+describe('MST06/MST07 — initiations des nouveaux maîtres', () => {
+  const cases = [
+    { master: 'academy_master', init: 'master_init_vael' },
+    { master: 'court_mage', init: 'master_init_elyndra' },
+    { master: 'pit_master', init: 'master_init_bulgar' },
+  ]
+
+  it.each(cases)('valider $init engage $master et verrouille', ({ master, init }) => {
+    const q = MASTER_QUESTS[init]
+    expect(s().hero.masterId).toBeNull()
+    s().startQuest(q.id)
+    bumpKills(q.objectives[0].monsterId, q.objectives[0].count)
+    expect(s().isQuestComplete(q.id)).toBe(true)
+    s().completeQuest(q.id)
+    expect(s().hero.masterId).toBe(master)
+    // second engagement rejeté (immuable)
+    expect(s().setMaster(master === 'court_mage' ? 'pit_master' : 'court_mage')).toBe(false)
+  })
+
+  it('engagé chez Vael : les quêtes de Bulgar (autre maître) restent verrouillées', () => {
+    s().setMaster('academy_master')
+    expect(s().isMasterQuestLocked(MASTER_QUESTS.master_soul_rend)).toBe(false) // pool de Vael
+    expect(s().isMasterQuestLocked(MASTER_QUESTS.master_pit_reckless)).toBe(true) // pool de Bulgar
+    s().startQuest('master_pit_reckless')
+    expect(s().world.activeQuests).not.toContain('master_pit_reckless')
+  })
+
+  it('les initiations des nouveaux maîtres ne sont jamais verrouillées', () => {
+    for (const { init } of cases) {
+      expect(s().isMasterQuestLocked(MASTER_QUESTS[init])).toBe(false)
+    }
+  })
+
+  it('un skill rerouté (soul_crush) est octroyé en complétant la quête de maître arcane', () => {
+    s().setMaster('academy_master')
+    const q = MASTER_QUESTS.master_soul_rend // reward.skill soul_crush, objectif wing_gust Lv2
+    s().startQuest(q.id)
+    useGameStore.setState((st) => ({
+      hero: { ...st.hero, activeSkills: [{ skillId: 'wing_gust', level: 2, xp: 0 }] },
+    }))
+    expect(s().isQuestComplete(q.id)).toBe(true)
+    s().completeQuest(q.id)
+    expect(s().hero.inventory.manaStones.some((m) => m.skillId === 'soul_crush')).toBe(true)
+  })
+})
+
 describe('MST01 — portée RUN : reset à la transmigration', () => {
   it('applyTransmigration réinitialise masterId à null', () => {
     s().setMaster('sir_aldric')

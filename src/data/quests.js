@@ -60,9 +60,11 @@ export const QUESTS = {
         label: 'Kill Ashwood Wolves',
       },
     ],
+    // MST03 — le skill (counter_strike) est désormais EXCLUSIF au maître martial
+    // (rerouté dans son skillQuestPool). Récompense rééquilibrée : gold rehaussé (60→110)
+    // pour compenser la valeur du skill retiré, sans dépasser un palier boss.
     reward: {
-      skill: { skillId: 'counter_strike', level: 1 },
-      gold: 50,
+      gold: 110,
       reputationTokens: 0,
     },
   },
@@ -74,9 +76,10 @@ export const QUESTS = {
     giverNpc: 'sir_aldric',
     flavorText: '"Strength is earned through trials. Return when you have grown."',
     objectives: [{ id: 'reach_level', type: 'level', targetLevel: 3, label: 'Reach Level 3' }],
+    // MST03 — veterans_resolve reroutée au maître martial (skill exclusif). Récompense
+    // rééquilibrée : gold rehaussé (30→90) pour compenser le passif retiré.
     reward: {
-      skill: { skillId: 'veterans_resolve', level: 1 },
-      gold: 30,
+      gold: 90,
       reputationTokens: 0,
     },
   },
@@ -96,9 +99,10 @@ export const QUESTS = {
         label: 'Kill Marsh Serpents',
       },
     ],
+    // MST03 — cleave reroutée au maître martial (skill exclusif). Récompense rééquilibrée :
+    // gold rehaussé (80→150) pour compenser le skill AoE retiré (quête « hard »).
     reward: {
-      skill: { skillId: 'cleave', level: 1 },
-      gold: 80,
+      gold: 150,
       reputationTokens: 0,
     },
   },
@@ -119,9 +123,11 @@ export const QUESTS = {
         label: 'Slay the Crypt Keeper',
       },
     ],
+    // MST03 — soul_crush (skill de boss, magie pure) reroutée au maître ARCANE (exclusif).
+    // Récompense rééquilibrée EN OR uniquement (200→300) : on respecte REP01 (les contrats
+    // de boss ne donnent pas de tokens de réputation, réservés aux commissions d'élite).
     reward: {
-      skill: { skillId: 'soul_crush', level: 1 },
-      gold: 200,
+      gold: 300,
       reputationTokens: 0,
     },
   },
@@ -142,9 +148,10 @@ export const QUESTS = {
         label: 'Slay the Lord of the Forsaken',
       },
     ],
+    // MST03 — forsaken_curse (skill de boss, contrôle magique) reroutée au maître ARCANE
+    // (exclusif). Récompense rééquilibrée EN OR uniquement (450→620), tokens à 0 (REP01).
     reward: {
-      skill: { skillId: 'forsaken_curse', level: 1 },
-      gold: 450,
+      gold: 620,
       reputationTokens: 0,
     },
   },
@@ -346,7 +353,14 @@ export const QUESTS = {
         label: 'Destroy the Graven Sentinel (elite)',
       },
     ],
-    reward: { gold: 180, reputationTokens: 5, skill: { skillId: 'power_strike', level: 1 } },
+    // MST03 — power_strike reroutée au maître martial (skill exclusif). Récompense rééquilibrée :
+    // équipement rare = l'arme signature de l'élite (graven_edge), cohérent avec les autres
+    // contrats d'élite (nc_thunderhoof/nc_fenrot donnent un équipement rare).
+    reward: {
+      gold: 180,
+      reputationTokens: 5,
+      equipment: { templateId: 'graven_edge', rarity: 'rare' },
+    },
   },
 
   nc_thunderhoof_elite: {

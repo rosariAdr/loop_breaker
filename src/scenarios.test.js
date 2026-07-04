@@ -43,12 +43,15 @@ describe('Scénario 1 — Premier run complet', () => {
     // 5. La quête doit être complétable
     expect(store().isQuestComplete('first_blood')).toBe(true)
 
-    // 6. Claim la quête : récompense en gold, skill, tokens
+    // 6. Claim la quête : gold (MST03 rééquilibré 50→110), 0 token (REP01). MST03 — first_blood
+    //    ne donne plus de skill : counter_strike s'obtient chez le maître martial (couvert par
+    //    masterEngagement/masterReroute). Ici on simule son acquisition pour la suite du run.
     const goldBefore = store().hero.inventory.gold
     const tokensBefore = store().hero.reputationTokens
     store().completeQuest('first_blood')
-    expect(store().hero.inventory.gold).toBe(goldBefore + 50)
+    expect(store().hero.inventory.gold).toBe(goldBefore + 110)
     expect(store().hero.reputationTokens).toBe(tokensBefore) // REP01 : quête non-élite = 0 token
+    store().addSkillToInventory({ skillId: 'counter_strike', level: 1, xp: 0 })
     expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'counter_strike')).toBe(true)
 
     // 7. Équiper le skill récompense
@@ -555,9 +558,10 @@ describe('Scénario 12 — Boss run complet (Crypt Keeper)', () => {
     store().completeQuest('silence_the_crypt')
 
     // Récompenses de quête empilées en plus du loot combat
-    expect(store().hero.inventory.gold).toBe(goldBefore + 200)
-    expect(store().hero.reputationTokens).toBe(0) // REP01 : boss non-élite = 0 token (⚠️ décision boss à confirmer)
-    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(true)
+    // MST03 — soul_crush est désormais exclusif au maître arcane ; la quête donne + d'or (200→300).
+    expect(store().hero.inventory.gold).toBe(goldBefore + 300)
+    expect(store().hero.reputationTokens).toBe(0) // REP01 : boss non-élite = 0 token
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(false)
     // Boss XP substantielle → level up garanti (boss=300 XP, expToNext lv1=100)
     expect(store().hero.level).toBeGreaterThan(1)
   })

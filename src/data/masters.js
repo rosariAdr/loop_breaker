@@ -116,6 +116,44 @@ export const MASTERS = {
     // Quêtes de maître martial (ACA04 existantes ; skills ⊂ MASTER_SKILL_POOLS.martial).
     skillQuestPool: ['master_sharpen_strike', 'master_focus_cleave', 'master_temper_resolve'],
   },
+
+  // MST07 — Archmagister Vael, maître ARCANE d'Ironhaven (recyclé academy_master, MST-G3).
+  // Il conserve le catalogue payant de l'Académie ET devient un maître dont les quêtes
+  // récompensent des skills du pool arcane que la boutique NE vend PAS (soul_crush, etc.).
+  academy_master: {
+    id: 'academy_master',
+    name: 'Archmagister Vael',
+    title: 'Master of the Academy',
+    location: 'ironhaven',
+    focus: 'arcane',
+    initiationQuestId: 'master_init_vael',
+    // skills ⊂ MASTER_SKILL_POOLS.arcane (abyss_howl → wing_gust → soul_crush).
+    skillQuestPool: ['master_arcane_pulse', 'master_soul_rend'],
+  },
+
+  // MST06 — Magister Elyndra, « Ancien mage de la cour royale », maître ARCANE de Millhaven.
+  court_mage: {
+    id: 'court_mage',
+    name: 'Magister Elyndra',
+    title: 'Ancien mage de la cour royale',
+    location: 'millhaven',
+    focus: 'arcane',
+    initiationQuestId: 'master_init_elyndra',
+    // skills ⊂ MASTER_SKILL_POOLS.arcane (plague_maw → abyss_howl → forsaken_curse).
+    skillQuestPool: ['master_court_venom', 'master_court_curse'],
+  },
+
+  // MST07 — Bulgar the Unbroken, maître PHYSIQUE (berserker) d'Ironhaven, distinct de Vael.
+  pit_master: {
+    id: 'pit_master',
+    name: 'Bulgar the Unbroken',
+    title: 'Master of the Iron Pit',
+    location: 'ironhaven',
+    focus: 'berserker',
+    initiationQuestId: 'master_init_bulgar',
+    // skills ⊂ MASTER_SKILL_POOLS.berserker (trample_charge → bone_crush → reckless_blow).
+    skillQuestPool: ['master_pit_frenzy', 'master_pit_reckless'],
+  },
 }
 
 /** Un maître par id (ou null si inconnu). */
@@ -126,4 +164,24 @@ export function getMaster(masterId) {
 /** Le maître dont la quête d'initiation est `questId` (ou null). Sert au verrou MST02. */
 export function getMasterByInitiationQuest(questId) {
   return Object.values(MASTERS).find((m) => m.initiationQuestId === questId) ?? null
+}
+
+/** Les maîtres FIXES d'une localité (itinérants exclus — MST08). Tableau (possiblement vide). */
+export function getMastersAtLocation(locationId) {
+  if (!locationId) return []
+  return Object.values(MASTERS).filter((m) => !m.itinerant && m.location === locationId)
+}
+
+/**
+ * MST04 — Toutes les quêtes de maître (initiation + skillQuestPool) surfaçables à une
+ * localité : celles des maîtres fixes de ce lieu. Renvoie des ids (⊂ MASTER_QUESTS).
+ * Sert à scoper l'UID (Académie) au(x) maître(s) du lieu courant (ex. Ironhaven → Vael,
+ * Bulgar ; PAS Aldric à Greywatch ni Elyndra à Millhaven).
+ */
+export function getMasterQuestIdsAtLocation(locationId) {
+  const ids = []
+  for (const m of getMastersAtLocation(locationId)) {
+    ids.push(m.initiationQuestId, ...(m.skillQuestPool ?? []))
+  }
+  return ids
 }
