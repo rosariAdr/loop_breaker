@@ -310,8 +310,8 @@ _(aucune dépendance externe bloquante)_
 | v1.33x (bugfix) | BUG_v1.33 — Correctifs playthrough (Hero Sheet v2) (1) | passe de bugfix v1.33 (retours 2026-07-03) |
 | v1.34 | Tech / DX / Balance (9) | 🔨 batchs 1-5 mergés dev 2026-07-04 (6/9 : BAL-CSV01, TECH06, QA01, COV-COMBAT01, REFAC03, REFAC02) · reste TECH04, BAL02/03 (playtest) |
 | v1.41 | Donjon (7) | spec 9 salles : voir Archive §v1.4 |
-| v1.42 | Équipement & Craft (37) | 🔨 batchs 1-5 mergés dev 2026-07-04 (20/37 : ressources/tiers/drops + équip/sets/slots + modèle craft KNOWN/MULTI/RARITY/G2/G3 + templates bijoux/gants ; **batch 5** : recettes unifiées `craftRecipes.js` source unique + shims + qualité hybride) · reste (batch 6) rebranchement panneaux + retrait shims + `resolveCraftedRarity` runtime, CRAFT-GRADE/TOOL/LOC/mini-jeux, professions (buildings/NPC), EQDROP/ENCH |
-| v1.43 | Maîtres & mentors (12) | ✅ livré 12/12 (batchs 1-4) mergé dev 2026-07-04 · MST01-09 + décisions G1-3 + maîtres itinérants (MST08) · SKD-ICE01 (skills de glace) + **statut `frozen`** (gel saute-tour) inclus |
+| v1.42 | Équipement & Craft (37) | 🔨 batchs 1-6 mergés dev 2026-07-04 (20/37 : ressources/tiers/drops + équip/sets/slots + craft KNOWN/MULTI/RARITY/G2/G3 + templates bijoux/gants ; **recettes unifiées `craftRecipes.js` source unique, shims retirés, qualité hybride branchée runtime**) · reste CRAFT-GRADE/TOOL01/LOC01 (plomberie prête), professions (buildings/NPC cordonnier/bijoutier/cuisine), CRAFTMG01 (mini-jeux + UI découverte), EQDROP/ENCH |
+| v1.43 | Maîtres & mentors (12) | ✅ livré 12/12 (batchs 1-4) mergé dev 2026-07-04 · MST01-09 + décisions G1-3 + itinérants (MST08) · SKD-ICE01 + statut `frozen` · **board itinérant local** (un-lieu/4j, décision #3, batch 6) · ⚠️ à réconcilier : Aldric `location='greywatch'` vs bâtiment `knight_trainer` à Millhaven (fallback Church en place) |
 | v1.51 | Monde & carte (11) | MONLV01 ⟶ BAL-CSV01 (v1.34) |
 | v1.52 | Divin (5) | DVQ01 ⟶ ALT01 (même épique) |
 | v1.61 | Compagnons (12) | CMP06 ⟶ EVT02 (v1.62) |
