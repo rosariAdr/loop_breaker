@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   calcBaseDamage,
   calcSkillDamage,
@@ -16,6 +16,8 @@ import {
   getEffectiveStats,
   canHeal,
   isStunned,
+  skipsTurn,
+  rollStatusProc,
   getStatSacrifice,
   isEnemyTooStrong,
   getEnemyCount,
@@ -459,6 +461,7 @@ describe('tickStatusEffects — DoT, durées, flags', () => {
   const poison = { id: 'p1', type: 'poison', duration: 2, tickDamage: 5 }
   const burn = { id: 'b1', type: 'burn', duration: 2, tickDamage: 4 }
   const stun = { id: 's1', type: 'stun', duration: 1 }
+  const frozen = { id: 'f1', type: 'frozen', duration: 1 }
 
   it('poison inflige tickDamage et décrémente la durée', () => {
     const { newStats, remainingEffects } = tickStatusEffects({ hp: 100 }, [{ ...poison }])
@@ -482,6 +485,31 @@ describe('tickStatusEffects — DoT, durées, flags', () => {
     const { flags, remainingEffects } = tickStatusEffects({ hp: 100 }, [{ ...stun }])
     expect(flags.skipTurn).toBe(true)
     expect(remainingEffects).toHaveLength(0)
+  })
+
+  // SKD-ICE01/FROZEN — `frozen` réutilise le code path saute-tour de `stun`.
+  it('frozen lève le flag skipTurn (comme stun) et se consomme à durée 1', () => {
+    const { flags, remainingEffects } = tickStatusEffects({ hp: 100 }, [{ ...frozen }])
+    expect(flags.skipTurn).toBe(true)
+    expect(remainingEffects).toHaveLength(0)
+  })
+
+  it('frozen n’inflige aucun dégât (contrôle pur, pas un DoT)', () => {
+    const { newStats } = tickStatusEffects({ hp: 100 }, [{ ...frozen }])
+    expect(newStats.hp).toBe(100)
+  })
+
+  it('frozen décrémente sa durée et expire (pas de chain-lock)', () => {
+    // Durée 2 : 1er tick → reste 1 (skip), 2e tick → expire (l’ennemi peut rejouer).
+    const t1 = tickStatusEffects({ hp: 100 }, [{ ...frozen, duration: 2 }])
+    expect(t1.flags.skipTurn).toBe(true)
+    expect(t1.remainingEffects).toHaveLength(1)
+    expect(t1.remainingEffects[0].duration).toBe(1)
+    const t2 = tickStatusEffects({ hp: 100 }, t1.remainingEffects)
+    expect(t2.flags.skipTurn).toBe(true)
+    expect(t2.remainingEffects).toHaveLength(0) // expiré → plus de saute-tour ensuite
+    const t3 = tickStatusEffects({ hp: 100 }, t2.remainingEffects)
+    expect(t3.flags.skipTurn).toBe(false)
   })
 
   it('poison + burn cumulent leurs dégâts', () => {
@@ -748,8 +776,53 @@ describe('canHeal / isStunned', () => {
     expect(isStunned([{ type: 'stun', duration: 1 }])).toBe(true)
   })
 
-  it('isStunned = false sinon', () => {
+  it('isStunned = false sinon (frozen n’est PAS un stun)', () => {
     expect(isStunned([{ type: 'slow', duration: 2, reduction: 0.5 }])).toBe(false)
+    expect(isStunned([{ type: 'frozen', duration: 1 }])).toBe(false)
     expect(isStunned([])).toBe(false)
+  })
+})
+
+// SKD-ICE01/FROZEN — helper saute-tour partagé (stun OU frozen)
+describe('skipsTurn — contrôle saute-tour partagé stun/frozen', () => {
+  it('true pour stun ET pour frozen (même mécanique)', () => {
+    expect(skipsTurn([{ type: 'stun', duration: 1 }])).toBe(true)
+    expect(skipsTurn([{ type: 'frozen', duration: 1 }])).toBe(true)
+  })
+
+  it('false pour les effets non-contrôlants et la liste vide', () => {
+    expect(skipsTurn([{ type: 'slow', duration: 2, reduction: 0.5 }])).toBe(false)
+    expect(skipsTurn([{ type: 'poison', duration: 2, tickDamage: 5 }])).toBe(false)
+    expect(skipsTurn([])).toBe(false)
+  })
+})
+
+// SKD-ICE01/FROZEN — proc probabiliste d’un statusEffect (frostbite → frozen 35%)
+describe('rollStatusProc — application probabiliste d’un statut', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('garanti (true) quand aucun `chance` n’est défini (rétrocompat)', () => {
+    expect(rollStatusProc({ type: 'stun', duration: 1 })).toBe(true)
+    expect(rollStatusProc({ type: 'poison', duration: 2, tickDamage: 5 })).toBe(true)
+  })
+
+  it('false si le statusEffect est absent', () => {
+    expect(rollStatusProc(null)).toBe(false)
+    expect(rollStatusProc(undefined)).toBe(false)
+  })
+
+  it('proc si rng < chance (frozen 35% : 0.20 < 0.35 → true)', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.2)
+    expect(rollStatusProc({ type: 'frozen', duration: 1, chance: 0.35 })).toBe(true)
+  })
+
+  it('no-proc si rng >= chance (frozen 35% : 0.50 >= 0.35 → false)', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    expect(rollStatusProc({ type: 'frozen', duration: 1, chance: 0.35 })).toBe(false)
+  })
+
+  it('rng injectable (sans toucher Math.random)', () => {
+    expect(rollStatusProc({ type: 'frozen', chance: 0.35 }, () => 0.1)).toBe(true)
+    expect(rollStatusProc({ type: 'frozen', chance: 0.35 }, () => 0.9)).toBe(false)
   })
 })

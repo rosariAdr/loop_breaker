@@ -872,9 +872,10 @@ export const SKILLS = {
 
   // SKD-ICE01 — skills de GLACE (magic_active, élément `ice`, dérivés d'INT comme le feu).
   // Aucun skill `ice` n'existait (Soul Chill est physique) → le pool `glace` (MST08) était
-  // vide. Ces quatre skills débloquent le maître de glace itinérant. Le statut de gel utilise
-  // `slow` (ralentissement `agility`/`spd`), le seul contrôle « figeant » que le moteur de
-  // combat gère nativement (cf. STAT_EFFECT_TARGETS) — pas de nouveau type de statut.
+  // vide. Ces quatre skills débloquent le maître de glace itinérant.
+  // FROZEN — la glace a désormais une vraie identité de contrôle : le statut `frozen`
+  // (skin de `stun`, saute-tour) est appliqué par `frostbite` avec une probabilité (< 100%).
+  // Le `slow` reste disponible pour un ralentissement fiable via d'autres sources.
   ice_shard: {
     id: 'ice_shard',
     name: 'Ice Shard',
@@ -898,14 +899,20 @@ export const SKILLS = {
   frostbite: {
     id: 'frostbite',
     name: 'Frostbite',
+    // SKD-ICE01/FROZEN — frostbite est l'identité de CONTRÔLE de la glace : 35% de
+    // chance de GELER la cible (saute-tour, skin de `stun`) en plus de ses dégâts.
+    // Décision slow-vs-frozen : PAS de `slow` de base (le proc `frozen` la remplace).
+    // Justification : cumuler slow garanti + gel aléatoire surchargerait le skill et
+    // brouillerait son rôle ; les autres skills de glace gardent le créneau slow fiable.
+    // Le 35% (< 100%) évite le chain-freeze (lock permanent d'un ennemi).
     description:
-      'Creeping frost that bites the target and freezes it stiff, slowing it for 2 turns.',
+      'Creeping frost that bites the target and, 35% of the time, freezes it solid for a turn.',
     type: 'active',
     cost: { mana: 16, hp: 0, stat_sacrifice: null },
     cooldown: 3,
     effect: {
       damage: { type: 'ice', multiplier: 1.1 }, // 110% INT
-      statusEffect: { type: 'slow', duration: 2, reduction: 0.5 },
+      statusEffect: { type: 'frozen', duration: 1, chance: 0.35 },
     },
     xpToNext: [20, 50],
     sourceMonster: null,

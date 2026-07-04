@@ -17,6 +17,7 @@ import {
   getEffectiveStats,
   canHeal,
   getStatSacrifice,
+  rollStatusProc,
 } from '../../engine/combat'
 import {
   getMalacharPhase,
@@ -343,11 +344,17 @@ export function useCombat() {
           pushFloatingNumber(enemy.id, dotDmg, 'skill')
           log.forEach((l) => addLog(`${enemy.name}: ${l.text}`, 'skill'))
         }
+        // SKD-ICE01/FROZEN — `frozen` réutilise le saute-tour de `stun` : on retient
+        // le type de contrôle actif pour un log fidèle (« frozen solid » vs « stunned »).
+        const skipType = (enemy.activeEffects ?? []).find((e) =>
+          ['stun', 'frozen'].includes(e.type),
+        )?.type
         return {
           ...enemy,
           currentHp: newStats.hp,
           activeEffects: remainingEffects,
           _skipTurn: flags.skipTurn,
+          _skipType: skipType,
         }
       })
 
@@ -389,9 +396,10 @@ export function useCombat() {
       survivors.forEach((enemy, i) => {
         const isLast = i === survivors.length - 1
         setTimeout(() => {
-          // B05 — stun : l'ennemi saute son tour
+          // B05 / SKD-ICE01 — stun ou frozen : l'ennemi saute son tour (même code path)
           if (enemy._skipTurn) {
-            addLog(`${enemy.name} is stunned and skips its turn!`, 'skill')
+            const reason = enemy._skipType === 'frozen' ? 'is frozen solid' : 'is stunned'
+            addLog(`${enemy.name} ${reason} and skips its turn!`, 'skill')
             if (isLast) setTimeout(goToPlayer, 400)
             return
           }
@@ -613,13 +621,16 @@ export function useCombat() {
         assassinatedRef.current.add(skillTarget.id)
       }
       const statusEffect = template.effect.statusEffect // B05 — peut être absent
+      // SKD-ICE01/FROZEN — proc probabiliste (ex. frostbite → frozen 35%). Un seul
+      // tirage par activation (partagé par toutes les cibles AoE) : évite le chain-lock.
+      const statusProcs = rollStatusProc(statusEffect)
       setTimeout(() => {
         const updatedEnemies = enemies.map((e) => {
           if (isDefeated(e)) return e
           if (!isAoe && e.id !== skillTarget.id) return e
           let updated = { ...e, currentHp: Math.max(0, e.currentHp - dmg) }
-          // B05 — applique le statut aux cibles encore vivantes
-          if (statusEffect && !isDefeated(updated)) {
+          // B05 — applique le statut aux cibles encore vivantes (si le proc a réussi)
+          if (statusEffect && statusProcs && !isDefeated(updated)) {
             const inst = buildStatusEffectInstance(
               statusEffect,
               skill.level,
@@ -637,7 +648,7 @@ export function useCombat() {
           `${template.name} hits ${isAoe ? 'all enemies' : skillTarget.name} for ${dmg} damage!`,
           'skill',
         )
-        if (statusEffect) {
+        if (statusEffect && statusProcs) {
           const meta = STATUS_META[statusEffect.type]
           addLog(
             `${isAoe ? 'Enemies' : skillTarget.name} afflicted: ${meta?.label ?? statusEffect.type}!`,
@@ -685,16 +696,22 @@ export function useCombat() {
       // B05 — skill de pur debuff (sans dégâts), ex. abyss_howl / forsaken_curse
       const debuff = template.effect.statusEffect
       const isAoe = template.effect.aoe
-      const updatedEnemies = enemies.map((e) => {
-        if (isDefeated(e)) return e
-        if (!isAoe && e.id !== skillTarget.id) return e
-        const inst = buildStatusEffectInstance(debuff, skill.level, template.levelBonuses ?? {})
-        return { ...e, activeEffects: applyStatusEffect(e.activeEffects ?? [], inst) }
-      })
+      // SKD-ICE01/FROZEN — proc probabiliste (un seul tirage, partagé par les cibles AoE).
+      const debuffProcs = rollStatusProc(debuff)
+      const updatedEnemies = debuffProcs
+        ? enemies.map((e) => {
+            if (isDefeated(e)) return e
+            if (!isAoe && e.id !== skillTarget.id) return e
+            const inst = buildStatusEffectInstance(debuff, skill.level, template.levelBonuses ?? {})
+            return { ...e, activeEffects: applyStatusEffect(e.activeEffects ?? [], inst) }
+          })
+        : enemies
       setEnemies(updatedEnemies)
       const meta = STATUS_META[debuff.type]
       addLog(
-        `${template.name} — ${isAoe ? 'all enemies' : skillTarget.name} afflicted: ${meta?.label ?? debuff.type}!`,
+        debuffProcs
+          ? `${template.name} — ${isAoe ? 'all enemies' : skillTarget.name} afflicted: ${meta?.label ?? debuff.type}!`
+          : `${template.name} — ${isAoe ? 'the enemies resist' : `${skillTarget.name} resists`} the ${meta?.label ?? debuff.type}!`,
         'skill',
       )
       setHeroSkills((prev) =>
