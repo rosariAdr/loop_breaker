@@ -45,6 +45,29 @@ export const MASTER_QUEST_NPC = {
     location: 'ironhaven',
     sigil: '☠',
   },
+  // MST08 — Maîtres ITINÉRANTS (de passage) : pas de `location` fixe (itinerant: true),
+  // ils apparaissent à une localité au fil du temps (cf. masters.js).
+  flame_wanderer: {
+    id: 'flame_wanderer',
+    name: 'Pyra the Emberwalker',
+    title: 'Wandering Flamecaller',
+    itinerant: true,
+    sigil: '🔥',
+  },
+  frost_wanderer: {
+    id: 'frost_wanderer',
+    name: 'Kaira Froststep',
+    title: 'Wandering Frostweaver',
+    itinerant: true,
+    sigil: '❄',
+  },
+  savage_wanderer: {
+    id: 'savage_wanderer',
+    name: 'Grukk Bloodmane',
+    title: 'Wandering Berserker',
+    itinerant: true,
+    sigil: '🩸',
+  },
 }
 
 export const MASTER_QUESTS = {
@@ -336,5 +359,201 @@ export const MASTER_QUESTS = {
     ],
     // Skill berserker exclusif : le coup sacrificiel.
     reward: { gold: 180, skill: { skillId: 'reckless_blow', level: 1 } },
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MAÎTRE DE FEU ITINÉRANT — Pyra the Emberwalker (de passage) — MST08
+  // ══════════════════════════════════════════════════════════════════════════
+
+  master_init_pyra: {
+    id: 'master_init_pyra',
+    name: 'The Emberwalker’s Spark',
+    description: 'Prove you can carry fire without being consumed, and Pyra will teach you.',
+    giverNpc: 'flame_wanderer',
+    isMasterQuest: true,
+    isInitiation: true,
+    masterId: 'flame_wanderer',
+    flavorText: '"Flame answers only those who do not flinch. Show me you won\'t."',
+    objectives: [
+      {
+        id: 'pyra_prove',
+        type: 'kill',
+        monsterId: 'russet_fox',
+        count: 3,
+        label: 'Slay Russet Foxes',
+      },
+    ],
+    // Skill de feu de départ ⊂ MASTER_SKILL_POOLS.feu.
+    reward: { gold: 90, aura: 5, skill: { skillId: 'ember_burst', level: 1 } },
+  },
+
+  master_ember_kindle: {
+    id: 'master_ember_kindle',
+    name: 'Kindle the Ember',
+    description: 'Pyra wants Ember Burst stoked into a steady, controlled flame.',
+    giverNpc: 'flame_wanderer',
+    isMasterQuest: true,
+    flavorText: '"A spark is nothing. A kept flame is everything. Feed it."',
+    objectives: [
+      {
+        id: 'lvl_ember',
+        type: 'skill_levelup',
+        skillId: 'ember_burst',
+        targetLevel: 2,
+        label: 'Raise Ember Burst to Lv2',
+      },
+    ],
+    // fox_fire ⊂ MASTER_SKILL_POOLS.feu.
+    reward: { gold: 130, concentration: 5, skill: { skillId: 'fox_fire', level: 1 } },
+  },
+
+  master_ember_blaze: {
+    id: 'master_ember_blaze',
+    name: 'Walk the Blaze',
+    description: 'Master Fox Fire, and Pyra will trust you to walk unburned through the blaze.',
+    giverNpc: 'flame_wanderer',
+    isMasterQuest: true,
+    flavorText: '"You have carried the flame. Now become it — and do not look back."',
+    objectives: [
+      {
+        id: 'lvl_fox',
+        type: 'skill_levelup',
+        skillId: 'fox_fire',
+        targetLevel: 2,
+        label: 'Raise Fox Fire to Lv2',
+      },
+    ],
+    reward: { gold: 180 },
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MAÎTRE DE GLACE ITINÉRANT — Kaira Froststep (de passage) — MST08 / SKD-ICE01
+  // ══════════════════════════════════════════════════════════════════════════
+
+  master_init_kaira: {
+    id: 'master_init_kaira',
+    name: 'The Frostweaver’s Vigil',
+    description: 'Endure the cold and slay what stalks the marsh — then Kaira will teach you.',
+    giverNpc: 'frost_wanderer',
+    isMasterQuest: true,
+    isInitiation: true,
+    masterId: 'frost_wanderer',
+    flavorText: '"Ice is patience made sharp. Show me yours, and I will show you mine."',
+    objectives: [
+      {
+        id: 'kaira_prove',
+        type: 'kill',
+        monsterId: 'mire_slime',
+        count: 4,
+        label: 'Slay Mire Slimes',
+      },
+    ],
+    // Skill de glace de départ ⊂ MASTER_SKILL_POOLS.glace (débloqué par SKD-ICE01).
+    reward: { gold: 90, aura: 5, skill: { skillId: 'ice_shard', level: 1 } },
+  },
+
+  master_frost_shard: {
+    id: 'master_frost_shard',
+    name: 'Temper the Shard',
+    description: 'Kaira wants Ice Shard honed into a flawless, killing edge.',
+    giverNpc: 'frost_wanderer',
+    isMasterQuest: true,
+    flavorText: '"A shard that cracks is a shard that failed you. Temper it true."',
+    objectives: [
+      {
+        id: 'lvl_shard',
+        type: 'skill_levelup',
+        skillId: 'ice_shard',
+        targetLevel: 2,
+        label: 'Raise Ice Shard to Lv2',
+      },
+    ],
+    // frostbite ⊂ MASTER_SKILL_POOLS.glace (le gel).
+    reward: { gold: 130, concentration: 5, skill: { skillId: 'frostbite', level: 1 } },
+  },
+
+  master_frost_storm: {
+    id: 'master_frost_storm',
+    name: 'Call the Storm',
+    description: 'Master Frostbite, and Kaira will teach you to summon the killing blizzard.',
+    giverNpc: 'frost_wanderer',
+    isMasterQuest: true,
+    flavorText: '"The frost that bites one is patience. The storm that buries all is mastery."',
+    objectives: [
+      {
+        id: 'lvl_frostbite',
+        type: 'skill_levelup',
+        skillId: 'frostbite',
+        targetLevel: 2,
+        label: 'Raise Frostbite to Lv2',
+      },
+    ],
+    // blizzard ⊂ MASTER_SKILL_POOLS.glace (AoE).
+    reward: { gold: 180, skill: { skillId: 'blizzard', level: 1 } },
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MAÎTRE BERSERKER ITINÉRANT — Grukk Bloodmane (de passage) — MST08
+  // ══════════════════════════════════════════════════════════════════════════
+
+  master_init_grukk: {
+    id: 'master_init_grukk',
+    name: 'Blood on the Snow',
+    description: 'Grukk respects only spilled blood. Hunt the boars and bring him a kill worth telling.',
+    giverNpc: 'savage_wanderer',
+    isMasterQuest: true,
+    isInitiation: true,
+    masterId: 'savage_wanderer',
+    flavorText: '"No stance. No plan. Just teeth. Show me yours."',
+    objectives: [
+      {
+        id: 'grukk_prove',
+        type: 'kill',
+        monsterId: 'tuskmaw_boar',
+        count: 3,
+        label: 'Slay Tuskmaw Boars',
+      },
+    ],
+    // Skill berserker de départ ⊂ MASTER_SKILL_POOLS.berserker.
+    reward: { gold: 90, aura: 5, skill: { skillId: 'savage_bite', level: 1 } },
+  },
+
+  master_savage_maul: {
+    id: 'master_savage_maul',
+    name: 'Tear Deeper',
+    description: 'Grukk wants Savage Bite driven to the bone — again, and harder.',
+    giverNpc: 'savage_wanderer',
+    isMasterQuest: true,
+    flavorText: '"A bite that lets go is a bite wasted. Hold on. Tear deeper."',
+    objectives: [
+      {
+        id: 'lvl_savage',
+        type: 'skill_levelup',
+        skillId: 'savage_bite',
+        targetLevel: 2,
+        label: 'Raise Savage Bite to Lv2',
+      },
+    ],
+    // bramble_slam ⊂ MASTER_SKILL_POOLS.berserker (physique + slow).
+    reward: { gold: 130, concentration: 5, skill: { skillId: 'bramble_slam', level: 1 } },
+  },
+
+  master_savage_thrash: {
+    id: 'master_savage_thrash',
+    name: 'Unchained',
+    description: 'Master Bramble Slam, and Grukk will beat the last of your restraint out of you.',
+    giverNpc: 'savage_wanderer',
+    isMasterQuest: true,
+    flavorText: '"Control is a leash. I am cutting it. Now go wild."',
+    objectives: [
+      {
+        id: 'lvl_bramble',
+        type: 'skill_levelup',
+        skillId: 'bramble_slam',
+        targetLevel: 2,
+        label: 'Raise Bramble Slam to Lv2',
+      },
+    ],
+    reward: { gold: 180 },
   },
 }

@@ -4,6 +4,16 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import SafeZone from './SafeZone'
 import { useGameStore } from '../store/gameStore'
+import { getItinerantMasterForDay, ITINERANT_ROTATION_DAYS, MASTERS } from '../data/masters'
+import { MASTER_QUESTS } from '../data/masterQuests'
+
+// Un dayCount où l'itinérant `masterId` est de passage (rotation sur dayCount).
+const dayForItinerant = (masterId) => {
+  for (let d = 0; d < ITINERANT_ROTATION_DAYS * 12; d++) {
+    if (getItinerantMasterForDay(d).id === masterId) return d
+  }
+  throw new Error(`no day found for ${masterId}`)
+}
 
 const openAcademy = () => {
   render(<SafeZone />)
@@ -55,5 +65,30 @@ describe('MST04 — panneau Académie : état & scoping', () => {
     expect(within(board).queryByText(/No Retreat/)).toBeNull() // pool de Bulgar
     // plus aucune quête verrouillée (le pool de Vael est déverrouillé)
     expect(within(board).queryAllByTestId('quest-locked').length).toBe(0)
+  })
+})
+
+// MST08 — le maître ITINÉRANT de passage surface au board de l'Académie le bon jour.
+describe('MST08 — maître itinérant de passage', () => {
+  const setDay = (dayCount) =>
+    useGameStore.setState((s) => ({ world: { ...s.world, dayCount } }))
+
+  it('affiche l’initiation de l’itinérant de FEU (Pyra) le jour où il est de passage', () => {
+    setDay(dayForItinerant('flame_wanderer'))
+    openAcademy()
+    const board = screen.getByTestId('master-quests')
+    const pyraInit = MASTER_QUESTS[MASTERS.flame_wanderer.initiationQuestId].name
+    expect(within(board).getByText(new RegExp(pyraInit.slice(0, 12)))).toBeTruthy()
+    // l'itinérant d'un AUTRE bloc (glace) n'est pas là ce jour-là
+    const kairaInit = MASTER_QUESTS[MASTERS.frost_wanderer.initiationQuestId].name
+    expect(within(board).queryByText(new RegExp(kairaInit.slice(0, 12)))).toBeNull()
+  })
+
+  it('affiche l’initiation de l’itinérant de GLACE (Kaira) le jour où il est de passage', () => {
+    setDay(dayForItinerant('frost_wanderer'))
+    openAcademy()
+    const board = screen.getByTestId('master-quests')
+    const kairaInit = MASTER_QUESTS[MASTERS.frost_wanderer.initiationQuestId].name
+    expect(within(board).getByText(new RegExp(kairaInit.slice(0, 12)))).toBeTruthy()
   })
 })
