@@ -5,6 +5,7 @@ export const STATUS_META = {
   poison: { icon: '🟢', label: 'Poison' },
   burn: { icon: '🔥', label: 'Burn' },
   stun: { icon: '💫', label: 'Stun' },
+  frozen: { icon: '🧊', label: 'Frozen' }, // SKD-ICE01/FROZEN — skin glace de stun (saute-tour)
   slow: { icon: '🐌', label: 'Slow' },
   defense_break: { icon: '🛡️', label: 'Defense Break' },
   atk_down: { icon: '⬇️', label: 'Attack Down' },

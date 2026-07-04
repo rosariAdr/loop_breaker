@@ -40,13 +40,29 @@ describe('SKD-ICE01 — skills de glace', () => {
     }
   })
 
-  it('couvre les archétypes attendus : mono-cible, DoT/gel (slow), et AoE', () => {
-    // gel : frostbite applique un ralentissement (le seul « figeant » géré par le moteur)
-    expect(SKILLS.frostbite.effect.statusEffect.type).toBe('slow')
+  it('couvre les archétypes attendus : mono-cible, contrôle (gel), et AoE', () => {
+    // SKD-ICE01/FROZEN — contrôle : frostbite GÈLE (saute-tour), plus de `slow` de base
+    const fb = SKILLS.frostbite.effect.statusEffect
+    expect(fb.type).toBe('frozen')
+    expect(fb.type).not.toBe('slow') // décision : le gel remplace le slow, pas de cumul
     // AoE : blizzard frappe tous les ennemis
     expect(SKILLS.blizzard.effect.aoe).toBe(true)
     // mono-cible pur : ice_shard n'est pas AoE
     expect(SKILLS.ice_shard.effect.aoe).toBeUndefined()
+  })
+
+  it('SKD-ICE01/FROZEN — frostbite applique `frozen` à 35% (< 100%, anti chain-lock)', () => {
+    const fb = SKILLS.frostbite.effect.statusEffect
+    expect(fb.type).toBe('frozen')
+    expect(fb.chance).toBe(0.35)
+    expect(fb.chance).toBeLessThan(1) // probabiliste : jamais un lock garanti
+    expect(fb.duration).toBe(1)
+    // le skill garde ses dégâts de glace
+    expect(SKILLS.frostbite.effect.damage.type).toBe('ice')
+  })
+
+  it('SKD-ICE01/FROZEN — blizzard reste dégâts + AoE sans gel (pas de group-freeze)', () => {
+    expect(SKILLS.blizzard.effect.statusEffect).toBeUndefined()
   })
 
   it('la discipline glace est bien typée magic:ice (FOCUS_DAMAGE_CLASS)', () => {

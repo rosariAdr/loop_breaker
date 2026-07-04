@@ -128,9 +128,13 @@ export function getStatSacrifice(template) {
 
 // ── Effets de statut (B05) ───────────────────────────────────────────────────
 // Spec complète : DESIGN.md §B05-SPEC.
-// Catégories : DoT (poison, burn), contrôle (stun), stat (slow, *_down, *_break).
+// Catégories : DoT (poison, burn), contrôle saute-tour (stun, frozen), stat (slow, *_down, *_break).
 
 const DOT_TYPES = ['poison', 'burn']
+// SKD-ICE01/FROZEN — contrôles « saute-tour » : l'entité affligée perd son tour.
+// `frozen` est un skin de `stun` (identité de contrôle « glace ») : même unique
+// code path (flag skipTurn + helper skipsTurn), aucune divergence de comportement.
+const SKIP_TURN_TYPES = ['stun', 'frozen']
 const MAX_ACTIVE_EFFECTS = 2
 
 // Quelles stats chaque effet de catégorie "stat" multiplie par (1 - reduction).
@@ -161,7 +165,8 @@ export function tickStatusEffects(stats, activeEffects = []) {
       log.push({ text: `${label} deals ${dmg} damage!`, type: 'status' })
     }
     if (effect.type === 'burn') flags.noHeal = true
-    if (effect.type === 'stun') flags.skipTurn = true
+    // stun ET frozen partagent le même code path saute-tour (SKD-ICE01/FROZEN).
+    if (SKIP_TURN_TYPES.includes(effect.type)) flags.skipTurn = true
   })
 
   // Décrémente les durées et retire les effets arrivés à expiration.
@@ -227,6 +232,33 @@ export function canHeal(activeEffects = []) {
 /** Vrai si un effet `stun` est présent (la cible saute son tour). */
 export function isStunned(activeEffects = []) {
   return activeEffects.some((e) => e.type === 'stun')
+}
+
+/**
+ * SKD-ICE01/FROZEN — Vrai si un contrôle « saute-tour » est actif (`stun` OU `frozen`).
+ * `frozen` réutilise strictement la mécanique de `stun` : même perte de tour.
+ * @param {{type:string}[]} [activeEffects=[]]
+ * @returns {boolean}
+ * @example skipsTurn([{ type:'frozen', duration:1 }]) // true
+ */
+export function skipsTurn(activeEffects = []) {
+  return activeEffects.some((e) => SKIP_TURN_TYPES.includes(e.type))
+}
+
+/**
+ * SKD-ICE01/FROZEN — Décide si un `statusEffect` de skill s'applique.
+ * Sans champ `chance`, l'effet est garanti (comportement historique inchangé pour
+ * poison/burn/stun/slow…). Avec un `chance` ∈ [0,1] (ex. frostbite → frozen 35%),
+ * l'effet ne proc que si `rng() < chance`, évitant le chain-freeze (lock permanent).
+ * @param {{chance?:number}|null|undefined} statusEffect - Bloc statusEffect du template
+ * @param {() => number} [rng=Math.random] - Générateur injectable (tests)
+ * @returns {boolean} Vrai si l'effet doit être appliqué
+ * @example rollStatusProc({ type:'frozen', chance:0.35 }, () => 0.2) // true
+ */
+export function rollStatusProc(statusEffect, rng = Math.random) {
+  if (!statusEffect) return false
+  if (statusEffect.chance == null) return true
+  return rng() < statusEffect.chance
 }
 
 /**
