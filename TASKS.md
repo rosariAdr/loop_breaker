@@ -308,10 +308,10 @@ _(aucune dépendance externe bloquante)_
 | v1.32 | Skills (drops) (11) | MON01 ✓ ; `skills.js` = 44 skills (élite/SKD déjà codés) |
 | v1.33 | Progression & stats (19) | ✅ implémenté (19/19 ; tests + build OK, 2026-07-03) · recette BEST02 → v1.42 |
 | v1.33x (bugfix) | BUG_v1.33 — Correctifs playthrough (Hero Sheet v2) (1) | passe de bugfix v1.33 (retours 2026-07-03) |
-| v1.34 | Tech / DX / Balance (9) | 🔨 batchs 1-4 mergés dev 2026-07-04 (5/9 : BAL-CSV01, TECH06, QA01, COV-COMBAT01, REFAC03) · reste BAL02/03 (playtest), TECH04, REFAC02 |
+| v1.34 | Tech / DX / Balance (9) | 🔨 batchs 1-5 mergés dev 2026-07-04 (6/9 : BAL-CSV01, TECH06, QA01, COV-COMBAT01, REFAC03, REFAC02) · reste TECH04, BAL02/03 (playtest) |
 | v1.41 | Donjon (7) | spec 9 salles : voir Archive §v1.4 |
-| v1.42 | Équipement & Craft (37) | 🔨 batchs 1-4 mergés dev 2026-07-04 (20/37 : ressources/tiers/drops + équip/sets/slots + modèle craft KNOWN/MULTI/RARITY/G2/G3 + templates bijoux/gants) · reste CRAFT-GRADE/TOOL/LOC/mini-jeux, professions (buildings/NPC), EQDROP/ENCH |
-| v1.43 | Maîtres & mentors (12) | ✅ livré 12/12 (batchs 1-4) mergé dev 2026-07-04 · MST01-09 + décisions G1-3 + maîtres itinérants (MST08) · SKD-ICE01 (skills de glace) inclus |
+| v1.42 | Équipement & Craft (37) | 🔨 batchs 1-5 mergés dev 2026-07-04 (20/37 : ressources/tiers/drops + équip/sets/slots + modèle craft KNOWN/MULTI/RARITY/G2/G3 + templates bijoux/gants ; **batch 5** : recettes unifiées `craftRecipes.js` source unique + shims + qualité hybride) · reste (batch 6) rebranchement panneaux + retrait shims + `resolveCraftedRarity` runtime, CRAFT-GRADE/TOOL/LOC/mini-jeux, professions (buildings/NPC), EQDROP/ENCH |
+| v1.43 | Maîtres & mentors (12) | ✅ livré 12/12 (batchs 1-4) mergé dev 2026-07-04 · MST01-09 + décisions G1-3 + maîtres itinérants (MST08) · SKD-ICE01 (skills de glace) + **statut `frozen`** (gel saute-tour) inclus |
 | v1.51 | Monde & carte (11) | MONLV01 ⟶ BAL-CSV01 (v1.34) |
 | v1.52 | Divin (5) | DVQ01 ⟶ ALT01 (même épique) |
 | v1.61 | Compagnons (12) | CMP06 ⟶ EVT02 (v1.62) |
@@ -439,7 +439,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **QA-BOOKS01 — Les livres `tome_of_*` ne sont vendus/donnés nulle part** · XS · P4 · 🟢 — *remonté par QA01, 2026-07-04.* Les 3 `tome_of_*` ont un `buyPrice` mais n'apparaissent dans **aucun stock de marchand ni récompense de quête** (seulement utilisables via `useBook`) → contenu mort. Les ajouter à un stock marchand / une récompense de quête (ou décider de les retirer). ⟶ QA01, ITM01.
 - [ ] **TECH04 — Performance Canvas 2D — budget 60fps** · S · P3 · 🟢 — Chrome DevTools Performance ; target <8ms/frame ; mémoiser gradients statiques hors du loop.
 - [x] **TECH06 — Feature flags** · M · P3 · 🟢 — `FEATURE_FLAGS` dans `config.js` : activer/désactiver des features sans recompiler. ✅ **Ready (2026-06-20)** : AC = objet `FEATURE_FLAGS` exporté + ≥1 feature gardée par un flag + test.
-- [ ] **REFAC02 — Découpage de `SafeZone.jsx` (1 fichier/panneau)** · M · P5 · 🟢 — *TC 2026-06-08.* Sortir chaque panneau de bâtiment (Inn/Church/Merchant/Alchemy/Blacksmith/MasterSmith/KnightTrainer/Academy) + `NpcOverlay`/`VilBuilding` dans leurs fichiers. Refacto pur, tests verts inchangés. ✅ **Ready (2026-06-20)** : v1.1 livré → plus de conflit. ⚠️ coordonner si UI11 (Church) est en cours sur la même branche.
+- [x] **REFAC02 — Découpage de `SafeZone.jsx` (1 fichier/panneau)** · M · P5 · 🟢 — *TC 2026-06-08.* Sortir chaque panneau de bâtiment (Inn/Church/Merchant/Alchemy/Blacksmith/MasterSmith/KnightTrainer/Academy) + `NpcOverlay`/`VilBuilding` dans leurs fichiers. Refacto pur, tests verts inchangés. ✅ **Ready (2026-06-20)** : v1.1 livré → plus de conflit. ⚠️ coordonner si UI11 (Church) est en cours sur la même branche.
 - [x] **REFAC03 — Découpage de `Combat.jsx` (sous-composants + hook)** · M · P5 · 🟢 — *TC 2026-06-08.* Extraire `EnemyCard`/`HeroCard`/`ActionPanel`/`VictoryPanel`/`FloatingNumbers` + un hook de logique combat. ⚠️ le **plus risqué** (moins de tests sur le rendu). ✅ **Ready (2026-06-20)** : à faire **après COV-COMBAT01** (filet de tests d'abord). Ordonné ainsi dans l'épique.
 
 ### v1.41 — Donjon
