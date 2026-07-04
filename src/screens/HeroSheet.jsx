@@ -2,7 +2,8 @@ import { useGameStore } from '../store/gameStore'
 import { useToastStore } from '../store/toastStore'
 import { SKILLS } from '../data/skills'
 import { DEITIES } from '../data/deities'
-import { RARITY_CONFIG, calcEquippedStatBonuses } from '../data/equipment'
+import { RARITY_CONFIG, calcEquippedStatBonuses, EQUIP_SLOTS as EQUIP_SLOT_KEYS } from '../data/equipment'
+import { getActiveSetsSummary } from '../data/sets'
 import { DEBUFFS } from '../data/debuffs'
 import { TITLES, getTitleStatBuffs } from '../data/titles'
 import { STAT_MILESTONES } from '../data/statMilestones'
@@ -37,7 +38,19 @@ const STAT_TOOLTIPS = {
   Defense: 'Réduit les dégâts subis : dmg = max(1, atk - DEF/2).',
 }
 
-const EQUIP_SLOTS = ['weapon', 'helmet', 'armor', 'boots']
+// SLOT01 — 9 slots portés (ordre d'affichage). Libellés lisibles pour l'UI.
+const EQUIP_SLOTS = EQUIP_SLOT_KEYS
+const SLOT_LABELS = {
+  weapon: 'weapon',
+  offhand: 'offhand',
+  helmet: 'helmet',
+  armor: 'armor',
+  gloves: 'gloves',
+  boots: 'boots',
+  amulet: 'amulet',
+  ring1: 'ring I',
+  ring2: 'ring II',
+}
 const ATTR_DEFS = [
   { key: 'strength', label: 'Strength' },
   { key: 'agility', label: 'Agility' },
@@ -134,9 +147,12 @@ export default function HeroSheet({ onClose }) {
                 {EQUIP_SLOTS.map((slot) => {
                   const item = hero.equipped?.[slot]
                   const rc = item ? RARITY_CONFIG[item.rarity] : null
+                  // SLOT01 — l'offhand est verrouillée quand une arme 2 mains est portée.
+                  const lockedByTwoHanded =
+                    slot === 'offhand' && !item && hero.equipped?.weapon?.twoHanded
                   return (
                     <div className="equip-cell" key={slot}>
-                      <span className="eq-label">{slot}</span>
+                      <span className="eq-label">{SLOT_LABELS[slot] ?? slot}</span>
                       <div
                         className="eq-slot art-slot"
                         style={
@@ -151,12 +167,16 @@ export default function HeroSheet({ onClose }) {
                           </span>
                         ) : (
                           <span className="as-cap" style={{ fontSize: 10 }}>
-                            —
+                            {lockedByTwoHanded ? '🔒' : '—'}
                           </span>
                         )}
                       </div>
                       <span className={`eq-name ${item ? '' : 'empty'}`}>
-                        {item ? item.name : '— empty —'}
+                        {item
+                          ? item.name
+                          : lockedByTwoHanded
+                            ? '— two-handed —'
+                            : '— empty —'}
                         {item && (
                           <button
                             className="hs-unequip"
@@ -171,6 +191,8 @@ export default function HeroSheet({ onClose }) {
                   )
                 })}
               </div>
+              {/* SET-UI01 — bonus de set actifs (pièces 2/3/4… + bonus appliqués) */}
+              <SetBonusPanel equipped={hero.equipped ?? {}} />
             </div>
 
             {/* HS-CURR01 — « Currencies » (Gold / Tokens) ; carte « Run » retirée (info déjà en en-tête) */}
@@ -466,6 +488,62 @@ function VitalBar({ label, cur, max, color, tip, locked = false, display }) {
         <i style={{ width: `${locked ? 100 : pct}%`, background: color }} />
       </span>
       <span className="hvb-val">{locked ? '🔒' : (display ?? `${cur}/${max}`)}</span>
+    </div>
+  )
+}
+
+// SET-UI01 — Panneau des bonus de set actifs : pour chaque set dont ≥1 pièce est portée,
+// affiche le nombre de pièces (x/total) et, si ≥2 pièces, les bonus de stat appliqués.
+function SetBonusPanel({ equipped }) {
+  const sets = getActiveSetsSummary(equipped)
+  if (sets.length === 0) return null
+  return (
+    <div className="hs-setbonus" data-testid="set-bonuses" style={{ marginTop: 10 }}>
+      {sets.map((s) => {
+        const bonusText = Object.entries(s.bonuses)
+          .map(([stat, val]) => `+${val} ${stat}`)
+          .join(' · ')
+        return (
+          <div
+            key={s.id}
+            className="hs-set-row"
+            data-testid={`set-${s.id}`}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              padding: '4px 0',
+              borderTop: '1px dashed var(--parchment-shadow)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <span
+                style={{
+                  fontFamily: 'var(--font-head)',
+                  fontSize: 12,
+                  color: s.active ? 'var(--forest-deep)' : 'var(--ink-soft)',
+                }}
+              >
+                {s.name}
+              </span>
+              <span
+                data-testid={`set-count-${s.id}`}
+                style={{ fontSize: 11, color: 'var(--ink-soft)' }}
+              >
+                {s.count}/{s.total}
+              </span>
+            </div>
+            {s.active && bonusText && (
+              <span
+                data-testid={`set-bonus-${s.id}`}
+                style={{ fontSize: 11, color: 'var(--forest-deep)' }}
+              >
+                ✦ {bonusText}
+              </span>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

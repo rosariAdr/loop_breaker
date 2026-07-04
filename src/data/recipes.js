@@ -1,6 +1,10 @@
 // Z04 / Z06 — Recettes d'artisanat
-// ALCHEMY_RECIPES : 6 potions craftables chez l'alchimiste (sortie = consommable).
-// MASTER_RECIPES  : 5 pièces Rare/Epic craftables chez le maître forgeron.
+// ALCHEMY_RECIPES  : 6 potions craftables chez l'alchimiste (sortie = consommable).
+// MASTER_RECIPES   : 5 pièces Rare/Epic craftables chez le maître forgeron.
+// LEATHER_RECIPES  : DROP-FIX01 — atelier de cuir (pelts → armures/bottes). Sortie = templateId.
+// COOKING_RECIPES  : DROP-FIX01 — cuisine (gibier → rations). Sortie = consommable.
+// ⚠️ LEATHER/COOKING sont la couche DATA (usages des pelts thématiques) ; l'UI/mini-jeux
+//    dédiés arrivent en batch 3 (CRAFT-*). Ces recettes réutilisent templates/consommables.
 
 // Chaque recette d'alchimie produit un consommable (output) depuis des ingrédients.
 export const ALCHEMY_RECIPES = [
@@ -90,5 +94,53 @@ export const MASTER_RECIPES = [
     name: 'Bone Staff (Epic)',
     ingredients: { ancient_bone: 4, wraith_essence: 2, cursed_gem: 1 },
     gold: 350,
+  },
+]
+
+// DROP-FIX01 — Atelier de cuir : transforme les pelts thématiques du petit/gros gibier
+// en pièces de cuir. Forme identique à MASTER_RECIPES (templateId + rarity + ingredients).
+export const LEATHER_RECIPES = [
+  {
+    id: 'leather_hare_armor',
+    templateId: 'leather_armor',
+    rarity: 'common',
+    name: 'Leather Armor (Hare & Fox)',
+    ingredients: { hare_pelt: 3, fox_pelt: 2 },
+    gold: 24,
+  },
+  {
+    id: 'leather_swift_boots',
+    templateId: 'swift_boots',
+    rarity: 'common',
+    name: 'Swift Boots (Fox-lined)',
+    ingredients: { fox_pelt: 2, hare_pelt: 1 },
+    gold: 18,
+  },
+  {
+    id: 'leather_beast_armor',
+    templateId: 'leather_armor',
+    rarity: 'rare',
+    name: 'Beast-Hide Armor',
+    ingredients: { beast_hide: 3, boar_hide: 2 },
+    gold: 90,
+  },
+]
+
+// DROP-FIX01 — Cuisine : transforme le gibier (défenses/pelts) en rations restauratrices.
+// Forme identique à ALCHEMY_RECIPES (output consommable + ingredients).
+export const COOKING_RECIPES = [
+  {
+    id: 'cook_boar_ration',
+    output: 'stamina_ration',
+    name: 'Roast Boar Ration',
+    ingredients: { boar_tusk: 2, hare_pelt: 1 },
+    gold: 10,
+  },
+  {
+    id: 'cook_game_stew',
+    output: 'hp_potion_small',
+    name: 'Wild Game Stew',
+    ingredients: { fox_pelt: 1, hare_pelt: 1 },
+    gold: 8,
   },
 ]

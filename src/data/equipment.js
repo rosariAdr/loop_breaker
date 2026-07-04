@@ -1,8 +1,30 @@
 // Système d'équipement
-// Slots : weapon | helmet | armor | boots
+// SLOT01 — 9 slots portés : weapon | offhand | helmet | armor | gloves | boots | amulet | ring1 | ring2
+// Catégories d'items (item.slot) : weapon | offhand | helmet | armor | gloves | boots | amulet | ring
+//   - une pièce `ring` se loge dans ring1 puis ring2 ;
+//   - une arme `twoHanded` occupe weapon + offhand (l'offhand est bloquée) ;
+//   - `offhand` = bouclier ou arme secondaire (arme 1 main avec slot:'offhand').
 // Rarités : common < rare < epic < legendary < mythic < ex < exx
 
+import { getSetBonus } from './sets'
+
 export const RARITY_TIERS = ['common', 'rare', 'epic', 'legendary', 'mythic', 'ex', 'exx']
+
+// SLOT01 — ordre canonique des 9 slots portés (clés de hero.equipped).
+export const EQUIP_SLOTS = [
+  'weapon',
+  'offhand',
+  'helmet',
+  'armor',
+  'gloves',
+  'boots',
+  'amulet',
+  'ring1',
+  'ring2',
+]
+
+// SLOT01 — les deux slots de bague (une pièce `ring` va dans le premier libre).
+export const RING_SLOTS = ['ring1', 'ring2']
 
 export const RARITY_CONFIG = {
   common: { label: 'Common', color: '#9ca3af', mult: 1.0, sellMult: 1 },
@@ -43,6 +65,7 @@ export const EQUIPMENT_TEMPLATES = {
     description: 'A sturdy iron blade. Favors Strength.',
     statFocus: 'strength',
     baseStats: { strength: 5 },
+    set: 'iron_vanguard', // SET-CONTENT01
     availableAt: ['blacksmith', 'merchant'],
     craftRecipes: {
       common: { ingredients: { rusted_iron: 3 }, gold: 20 },
@@ -62,6 +85,8 @@ export const EQUIPMENT_TEMPLATES = {
     description: 'A staff carved from ancient bones. Favors Intelligence.',
     statFocus: 'intelligence',
     baseStats: { intelligence: 5 },
+    set: 'wraithbound', // SET-CONTENT01
+    twoHanded: true, // SLOT01 — un bâton se manie à 2 mains
     availableAt: ['blacksmith'],
     craftRecipes: {
       common: { ingredients: { bone_fragment: 4, ectoplasm: 1 }, gold: 25 },
@@ -88,7 +113,8 @@ export const EQUIPMENT_TEMPLATES = {
     craftRecipes: {
       common: { ingredients: { serpent_scale: 3, marsh_venom: 1 }, gold: 30 },
       rare: { ingredients: { serpent_scale: 5, marsh_venom: 2, void_fang: 1 }, gold: 120 },
-      epic: { ingredients: { void_fang: 3, marsh_venom: 4, wyvern_talon: 1 }, gold: 400 },
+      // RES03 — verdant_ichor (sève alchimique du hill_slime) enduit la lame de poison.
+      epic: { ingredients: { void_fang: 3, marsh_venom: 4, wyvern_talon: 1, verdant_ichor: 1 }, gold: 400 },
       legendary: { ingredients: { void_fang: 5, wyvern_talon: 3, dark_essence: 2 }, gold: 1200 },
     },
     merchantStock: {},
@@ -119,6 +145,8 @@ export const EQUIPMENT_TEMPLATES = {
     description: "Forged around Thunderhoof's horn. It lands like a charging beast.",
     statFocus: 'strength',
     baseStats: { strength: 7 },
+    set: 'iron_vanguard', // SET-CONTENT01 — arme d'élite (4ᵉ pièce)
+    twoHanded: true, // SLOT01 — le maul se manie à 2 mains
     availableAt: [],
     craftRecipes: {},
   },
@@ -130,6 +158,7 @@ export const EQUIPMENT_TEMPLATES = {
     description: 'A rune-etched shard of the Graven Sentinel. It hums with bound intelligence.',
     statFocus: 'intelligence',
     baseStats: { intelligence: 7 },
+    set: 'wraithbound', // SET-CONTENT01 — arme d'élite (4ᵉ pièce)
     availableAt: [],
     craftRecipes: {},
   },
@@ -141,6 +170,7 @@ export const EQUIPMENT_TEMPLATES = {
     slot: 'helmet',
     description: 'A basic iron helmet. Reduces damage taken.',
     baseStats: { def: 4, maxHp: 15 },
+    set: 'iron_vanguard', // SET-CONTENT01
     availableAt: ['blacksmith', 'merchant'],
     craftRecipes: {
       common: { ingredients: { rusted_iron: 3, bone_fragment: 1 }, gold: 25 },
@@ -161,10 +191,12 @@ export const EQUIPMENT_TEMPLATES = {
     slot: 'helmet',
     description: 'A crown woven from spectral iron. Enhances magical defense.',
     baseStats: { def: 3, maxHp: 20 },
+    set: 'wraithbound', // SET-CONTENT01
     availableAt: ['blacksmith'],
     craftRecipes: {
       common: { ingredients: { ectoplasm: 3, briar_thorn: 2 }, gold: 30 },
-      rare: { ingredients: { spectral_iron: 2, ectoplasm: 3 }, gold: 110 },
+      // RES03 — spectral_residue (résidu du ruin_specter) renforce l'aura spectrale du heaume.
+      rare: { ingredients: { spectral_iron: 2, ectoplasm: 3, spectral_residue: 1 }, gold: 110 },
       epic: { ingredients: { spectral_iron: 4, wraith_essence: 2 }, gold: 350 },
       legendary: {
         ingredients: { spectral_iron: 6, wraith_essence: 3, cursed_gem: 1 },
@@ -182,10 +214,12 @@ export const EQUIPMENT_TEMPLATES = {
     slot: 'armor',
     description: 'Light leather armor. Balanced protection.',
     baseStats: { def: 6, maxHp: 25 },
+    set: 'iron_vanguard', // SET-CONTENT01
     availableAt: ['blacksmith', 'merchant'],
     craftRecipes: {
       common: { ingredients: { wolf_pelt: 3, rusted_iron: 1 }, gold: 30 },
-      rare: { ingredients: { wolf_pelt: 5, serpent_scale: 3 }, gold: 100 },
+      // RES03 — ironhide_plate (plaque de cuir du tuskmaw_boar, prisée des tanneurs) durcit l'armure.
+      rare: { ingredients: { wolf_pelt: 5, serpent_scale: 3, ironhide_plate: 1 }, gold: 100 },
       epic: { ingredients: { shadow_fur: 3, wyvern_scale: 3 }, gold: 320 },
       legendary: { ingredients: { shadow_fur: 5, wyvern_scale: 5, void_crystal: 1 }, gold: 1000 },
     },
@@ -199,6 +233,7 @@ export const EQUIPMENT_TEMPLATES = {
     slot: 'armor',
     description: 'Heavy plate armor forged from ancient bones. Maximum protection.',
     baseStats: { def: 10, maxHp: 20 },
+    set: 'wraithbound', // SET-CONTENT01
     availableAt: ['blacksmith'],
     craftRecipes: {
       common: { ingredients: { bone_fragment: 5, ancient_bone: 1 }, gold: 40 },
@@ -220,11 +255,14 @@ export const EQUIPMENT_TEMPLATES = {
     slot: 'boots',
     description: 'Light boots that increase movement speed and agility.',
     baseStats: { agility: 4, chance: 2 },
+    set: 'iron_vanguard', // SET-CONTENT01 — bottes du set Iron Vanguard
     availableAt: ['blacksmith', 'merchant'],
     craftRecipes: {
       common: { ingredients: { wolf_pelt: 2, wolf_fang: 2 }, gold: 20 },
-      rare: { ingredients: { wolf_pelt: 4, serpent_scale: 2 }, gold: 80 },
-      epic: { ingredients: { shadow_fur: 3, void_fang: 2 }, gold: 260 },
+      // RES03 — wolf_alpha_fang (croc d'alpha, ashwood_wolf) allège et affûte la botte.
+      rare: { ingredients: { wolf_pelt: 4, serpent_scale: 2, wolf_alpha_fang: 1 }, gold: 80 },
+      // RES03 — goblin_warpaint (pigments indélébiles du knoll_goblin) marque la botte de guerre.
+      epic: { ingredients: { shadow_fur: 3, void_fang: 2, goblin_warpaint: 1 }, gold: 260 },
       legendary: { ingredients: { shadow_fur: 5, void_fang: 3, dark_essence: 2 }, gold: 850 },
     },
     merchantStock: { common: true, rare: true },
@@ -237,10 +275,12 @@ export const EQUIPMENT_TEMPLATES = {
     slot: 'boots',
     description: 'Heavy greaves imbued with dark energy. Boosts Chance significantly.',
     baseStats: { agility: 3, chance: 5 },
+    set: 'wraithbound', // SET-CONTENT01 — grèves du set Wraithbound
     availableAt: ['blacksmith'],
     craftRecipes: {
       common: { ingredients: { rusted_iron: 2, rotten_flesh: 3 }, gold: 25 },
-      rare: { ingredients: { cursed_armor_shard: 3, hollow_shard: 2 }, gold: 95 },
+      // RES03 — caustic_core (cœur acide du mire_slime) imprègne les grèves d'une corrosion maudite.
+      rare: { ingredients: { cursed_armor_shard: 3, hollow_shard: 2, caustic_core: 1 }, gold: 95 },
       epic: { ingredients: { cursed_steel: 3, dark_essence: 2 }, gold: 300 },
       legendary: { ingredients: { cursed_steel: 5, dark_essence: 3, warlord_crest: 2 }, gold: 950 },
     },
@@ -304,7 +344,7 @@ export function createEquipmentInstance(templateId, rarity) {
   const template = EQUIPMENT_TEMPLATES[templateId]
   if (!template) return null
 
-  return {
+  const instance = {
     instanceId: `${templateId}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     templateId,
     name: `${RARITY_CONFIG[rarity].label} ${template.name}`,
@@ -315,11 +355,17 @@ export function createEquipmentInstance(templateId, rarity) {
       ((template.craftRecipes[rarity]?.gold ?? 20) * RARITY_CONFIG[rarity].sellMult) / 10,
     ),
   }
+  // SLOT01 / EQP01 — propager les champs de gameplay portés par le template.
+  if (template.set) instance.set = template.set // appartenance à un set (EQP01)
+  if (template.twoHanded) instance.twoHanded = true // arme 2 mains → 2 slots (SLOT01)
+  return instance
 }
 
 /**
- * Additionne tous les bonus de stats de l'équipement porté.
- * Retourne un objet { stat: totalBonus }.
+ * Additionne tous les bonus de stats de l'équipement porté, PLUS les bonus de set actifs
+ * (EQP01). Retourne un objet { stat: totalBonus }. Cette fonction est la couche unique de
+ * bonus d'équipement consommée par le combat et la fiche héros → les bonus de set
+ * s'appliquent partout sans câblage supplémentaire.
  */
 export function calcEquippedStatBonuses(equipped) {
   const bonuses = {}
@@ -329,7 +375,76 @@ export function calcEquippedStatBonuses(equipped) {
       bonuses[stat] = (bonuses[stat] ?? 0) + val
     })
   })
+  // EQP01 — ajouter les bonus de set (% du stat fourni par les pièces du set).
+  const setBonuses = getSetBonus(equipped)
+  for (const [stat, val] of Object.entries(setBonuses)) {
+    bonuses[stat] = (bonuses[stat] ?? 0) + val
+  }
   return bonuses
+}
+
+// ── SLOT01 — Résolution de slot & règles d'armes ──────────────────────────────
+
+/**
+ * Détermine dans quel slot porté ranger une pièce (catégorie `item.slot`).
+ * - ring → première bague libre (ring1 puis ring2) ; si les 2 sont pleines → ring1 (remplacé).
+ * - weapon/offhand/helmet/armor/gloves/boots/amulet → slot homonyme.
+ * @returns {string} clé de hero.equipped, ou null si la catégorie est inconnue.
+ */
+export function resolveEquipSlot(item, equipped = {}) {
+  if (!item) return null
+  if (item.slot === 'ring') {
+    const free = RING_SLOTS.find((s) => !equipped[s])
+    return free ?? RING_SLOTS[0]
+  }
+  return EQUIP_SLOTS.includes(item.slot) ? item.slot : null
+}
+
+/**
+ * Équipe une pièce en respectant les règles d'armes (SLOT01) :
+ *   - arme 2 mains (twoHanded) → occupe weapon + offhand ; l'ancienne arme ET l'ancien
+ *     offhand retournent au sac.
+ *   - équiper un offhand alors qu'une arme 2 mains est portée → l'arme 2 mains part au sac.
+ *   - remplacer une pièce dans un slot occupé → l'ancienne retourne au sac.
+ * Fonction pure : ne mute rien. Retourne le nouvel état `equipped` et la liste des pièces
+ * déplacées vers l'inventaire (`unequipped`).
+ * @returns {{ equipped: object, unequipped: object[] }}
+ */
+export function equipInSlot(item, equipped = {}) {
+  const next = { ...equipped }
+  const unequipped = []
+  const push = (piece) => {
+    if (piece) unequipped.push(piece)
+  }
+
+  const targetSlot = resolveEquipSlot(item, equipped)
+  if (!targetSlot) return { equipped: next, unequipped }
+
+  if (targetSlot === 'weapon') {
+    // Remplacer l'arme principale.
+    push(next.weapon)
+    // Si l'arme portée dans offhand était en fait la 2ᵉ moitié d'une 2 mains, rien à faire :
+    // une 2 mains occupe weapon+offhand et est stockée dans weapon (offhand = miroir vide).
+    if (item.twoHanded) {
+      // Occupe aussi l'offhand : l'ancien offhand part au sac.
+      push(next.offhand)
+      next.offhand = null
+    }
+    next.weapon = item
+  } else if (targetSlot === 'offhand') {
+    // Poser un offhand libère une éventuelle arme 2 mains (qui occupait cet emplacement).
+    if (next.weapon?.twoHanded) {
+      push(next.weapon)
+      next.weapon = null
+    }
+    push(next.offhand)
+    next.offhand = item
+  } else {
+    push(next[targetSlot])
+    next[targetSlot] = item
+  }
+
+  return { equipped: next, unequipped }
 }
 
 /**

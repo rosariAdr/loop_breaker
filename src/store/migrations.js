@@ -38,11 +38,10 @@ function migrateV1ToV2(save) {
     equipment: Array.isArray(inventory.equipment) ? inventory.equipment : [],
     gold: inventory.gold ?? 0,
   }
+  // SLOT01 — repartir des slots par défaut (9 slots) pour qu'une vieille save (4 slots)
+  // reçoive amulet/ring1/ring2/offhand vides sans écraser les pièces déjà portées.
   const migratedEquipped = {
-    weapon: null,
-    helmet: null,
-    armor: null,
-    boots: null,
+    ...INITIAL_HERO.equipped,
     ...(hero.equipped ?? {}),
   }
 
@@ -80,6 +79,20 @@ function migrateV1ToV2(save) {
   }
 
   return { hero: migratedHero, world: migratedWorld, meta: migratedMeta, saveVersion: 2 }
+}
+
+/**
+ * SLOT01 — Migration v2 → v3 : passage de 4 → 9 slots d'équipement.
+ * Ajoute offhand / amulet / ring1 / ring2 (vides) sans toucher aux pièces déjà portées.
+ * Idempotente : rejouée, elle ne réinitialise pas les slots existants.
+ */
+function migrateV2ToV3(save) {
+  const hero = save.hero ?? {}
+  const migratedEquipped = {
+    ...INITIAL_HERO.equipped,
+    ...(hero.equipped ?? {}),
+  }
+  return { ...save, hero: { ...hero, equipped: migratedEquipped }, saveVersion: 3 }
 }
 
 /**
@@ -197,8 +210,9 @@ export function runMigrations(save) {
   const fromVersion = current.saveVersion ?? 1 // pas de saveVersion = v1 (legacy)
 
   if (fromVersion < 2) current = migrateV1ToV2(current)
+  if (fromVersion < 3) current = migrateV2ToV3(current) // SLOT01 — 4 → 9 slots
   // Ajouter les futures migrations ici :
-  // if (fromVersion < 3) current = migrateV2ToV3(current)
+  // if (fromVersion < 4) current = migrateV3ToV4(current)
 
   // Filet final : backfill des champs par défaut manquants, toutes versions confondues.
   return normalizeSave(current)

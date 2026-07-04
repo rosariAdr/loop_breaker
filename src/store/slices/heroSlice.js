@@ -1,6 +1,7 @@
 // REFAC01 — Slice « hero » du store (extrait de gameStore.js, comportement inchangé).
 import { skillBuyPrice, skillSellPrice, skillPremiumBuyPrice } from '../../data/academy'
 import { RESOURCES } from '../../data/resources'
+import { equipInSlot } from '../../data/equipment'
 import { SKILLS, SKILL_MAX_LEVEL, skillXpForLevel } from '../../data/skills'
 import { AURA, countWithinDays } from '../../engine/aura'
 import { VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
@@ -164,15 +165,16 @@ export const createHeroSlice = (set, get) => ({
       const item = state.hero.inventory.equipment.find((e) => e.instanceId === instanceId)
       if (!item) return state
 
-      // Déséquiper l'item actuellement dans ce slot (retour inventaire)
-      const currentEquipped = state.hero.equipped[item.slot]
+      // SLOT01 — résolution de slot + règles d'armes (2 mains, offhand, bagues) via equipInSlot.
+      // Les pièces déplacées (slot occupé, arme 2 mains libérée…) retournent au sac.
+      const { equipped, unequipped } = equipInSlot(item, state.hero.equipped)
       const newInventory = state.hero.inventory.equipment.filter((e) => e.instanceId !== instanceId)
-      if (currentEquipped) newInventory.push(currentEquipped)
+      for (const piece of unequipped) newInventory.push(piece)
 
       return {
         hero: {
           ...state.hero,
-          equipped: { ...state.hero.equipped, [item.slot]: item },
+          equipped,
           inventory: { ...state.hero.inventory, equipment: newInventory },
         },
       }
