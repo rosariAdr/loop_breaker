@@ -88,7 +88,8 @@ export const EQUIPMENT_TEMPLATES = {
     craftRecipes: {
       common: { ingredients: { serpent_scale: 3, marsh_venom: 1 }, gold: 30 },
       rare: { ingredients: { serpent_scale: 5, marsh_venom: 2, void_fang: 1 }, gold: 120 },
-      epic: { ingredients: { void_fang: 3, marsh_venom: 4, wyvern_talon: 1 }, gold: 400 },
+      // RES03 — verdant_ichor (sève alchimique du hill_slime) enduit la lame de poison.
+      epic: { ingredients: { void_fang: 3, marsh_venom: 4, wyvern_talon: 1, verdant_ichor: 1 }, gold: 400 },
       legendary: { ingredients: { void_fang: 5, wyvern_talon: 3, dark_essence: 2 }, gold: 1200 },
     },
     merchantStock: {},
@@ -164,7 +165,8 @@ export const EQUIPMENT_TEMPLATES = {
     availableAt: ['blacksmith'],
     craftRecipes: {
       common: { ingredients: { ectoplasm: 3, briar_thorn: 2 }, gold: 30 },
-      rare: { ingredients: { spectral_iron: 2, ectoplasm: 3 }, gold: 110 },
+      // RES03 — spectral_residue (résidu du ruin_specter) renforce l'aura spectrale du heaume.
+      rare: { ingredients: { spectral_iron: 2, ectoplasm: 3, spectral_residue: 1 }, gold: 110 },
       epic: { ingredients: { spectral_iron: 4, wraith_essence: 2 }, gold: 350 },
       legendary: {
         ingredients: { spectral_iron: 6, wraith_essence: 3, cursed_gem: 1 },
@@ -185,7 +187,8 @@ export const EQUIPMENT_TEMPLATES = {
     availableAt: ['blacksmith', 'merchant'],
     craftRecipes: {
       common: { ingredients: { wolf_pelt: 3, rusted_iron: 1 }, gold: 30 },
-      rare: { ingredients: { wolf_pelt: 5, serpent_scale: 3 }, gold: 100 },
+      // RES03 — ironhide_plate (plaque de cuir du tuskmaw_boar, prisée des tanneurs) durcit l'armure.
+      rare: { ingredients: { wolf_pelt: 5, serpent_scale: 3, ironhide_plate: 1 }, gold: 100 },
       epic: { ingredients: { shadow_fur: 3, wyvern_scale: 3 }, gold: 320 },
       legendary: { ingredients: { shadow_fur: 5, wyvern_scale: 5, void_crystal: 1 }, gold: 1000 },
     },
@@ -223,8 +226,10 @@ export const EQUIPMENT_TEMPLATES = {
     availableAt: ['blacksmith', 'merchant'],
     craftRecipes: {
       common: { ingredients: { wolf_pelt: 2, wolf_fang: 2 }, gold: 20 },
-      rare: { ingredients: { wolf_pelt: 4, serpent_scale: 2 }, gold: 80 },
-      epic: { ingredients: { shadow_fur: 3, void_fang: 2 }, gold: 260 },
+      // RES03 — wolf_alpha_fang (croc d'alpha, ashwood_wolf) allège et affûte la botte.
+      rare: { ingredients: { wolf_pelt: 4, serpent_scale: 2, wolf_alpha_fang: 1 }, gold: 80 },
+      // RES03 — goblin_warpaint (pigments indélébiles du knoll_goblin) marque la botte de guerre.
+      epic: { ingredients: { shadow_fur: 3, void_fang: 2, goblin_warpaint: 1 }, gold: 260 },
       legendary: { ingredients: { shadow_fur: 5, void_fang: 3, dark_essence: 2 }, gold: 850 },
     },
     merchantStock: { common: true, rare: true },
@@ -240,7 +245,8 @@ export const EQUIPMENT_TEMPLATES = {
     availableAt: ['blacksmith'],
     craftRecipes: {
       common: { ingredients: { rusted_iron: 2, rotten_flesh: 3 }, gold: 25 },
-      rare: { ingredients: { cursed_armor_shard: 3, hollow_shard: 2 }, gold: 95 },
+      // RES03 — caustic_core (cœur acide du mire_slime) imprègne les grèves d'une corrosion maudite.
+      rare: { ingredients: { cursed_armor_shard: 3, hollow_shard: 2, caustic_core: 1 }, gold: 95 },
       epic: { ingredients: { cursed_steel: 3, dark_essence: 2 }, gold: 300 },
       legendary: { ingredients: { cursed_steel: 5, dark_essence: 3, warlord_crest: 2 }, gold: 950 },
     },
