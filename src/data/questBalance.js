@@ -35,10 +35,29 @@ export const QUEST_BALANCE = {
   nc_deliver_ruins: { xp: 0, rankPoints: 0 },
   nc_explore_hills: { xp: 0, rankPoints: 0 },
 
-  // ── Maître (Académie) ───────────────────────────────────────────────────
+  // ── Maître — initiations (MST02/MST06/MST07) ────────────────────────────
+  // Porte d'entrée (preuve de valeur) : équilibré comme une quête easy de départ.
+  master_init_aldric: { xp: 40, rankPoints: 1 },
+  master_init_vael: { xp: 40, rankPoints: 1 },
+  master_init_elyndra: { xp: 40, rankPoints: 1 },
+  master_init_bulgar: { xp: 40, rankPoints: 1 },
+
+  // ── Maître martial — Aldric (Greywatch) ─────────────────────────────────
   master_sharpen_strike: { xp: 110, rankPoints: 3 },
   master_focus_cleave: { xp: 110, rankPoints: 3 },
   master_temper_resolve: { xp: 110, rankPoints: 3 },
+
+  // ── Maître arcane — Vael (Ironhaven, Académie) — MST07 ──────────────────
+  master_arcane_pulse: { xp: 110, rankPoints: 3 },
+  master_soul_rend: { xp: 150, rankPoints: 5 },
+
+  // ── Maître arcane — Elyndra (Millhaven) — MST06 ─────────────────────────
+  master_court_venom: { xp: 110, rankPoints: 3 },
+  master_court_curse: { xp: 150, rankPoints: 5 },
+
+  // ── Maître berserker — Bulgar (Ironhaven) — MST07 ───────────────────────
+  master_pit_frenzy: { xp: 110, rankPoints: 3 },
+  master_pit_reckless: { xp: 150, rankPoints: 5 },
 
   // ── Église (actes de dévotion) ──────────────────────────────────────────
   church_thin_the_pack: { xp: 40, rankPoints: 1 },

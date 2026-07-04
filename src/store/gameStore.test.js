@@ -621,10 +621,10 @@ describe('Système de quêtes', () => {
   })
 
   it('completeQuest ajoute la récompense en or', () => {
-    useGameStore.getState().startQuest('first_blood') // reward: 50g
+    useGameStore.getState().startQuest('first_blood') // MST03 — reward rééquilibré : 110g (plus de skill)
     const before = useGameStore.getState().hero.inventory.gold
     useGameStore.getState().completeQuest('first_blood')
-    expect(useGameStore.getState().hero.inventory.gold).toBe(before + 50)
+    expect(useGameStore.getState().hero.inventory.gold).toBe(before + 110)
   })
 
   it("completeQuest ajoute les tokens de réputation (quête d'élite, REP01)", () => {
@@ -634,12 +634,14 @@ describe('Système de quêtes', () => {
     expect(useGameStore.getState().hero.reputationTokens).toBe(before + 5)
   })
 
-  it('completeQuest ajoute le skill de récompense dans manaStones', () => {
-    useGameStore.getState().startQuest('first_blood')
+  it('completeQuest ajoute le skill de récompense dans manaStones (MST03 : via un maître)', () => {
+    // MST03 — les skills sont désormais exclusifs aux maîtres : l'initiation d'Aldric
+    // octroie counter_strike (rerouté de first_blood).
+    useGameStore.getState().startQuest('master_init_aldric')
     useGameStore.setState((state) => ({
       world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
     }))
-    useGameStore.getState().completeQuest('first_blood')
+    useGameStore.getState().completeQuest('master_init_aldric')
     const stones = useGameStore.getState().hero.inventory.manaStones
     expect(stones.some((s) => s.skillId === 'counter_strike')).toBe(true)
   })
@@ -719,9 +721,10 @@ describe('Quêtes Q03 — boss donjon', () => {
     const goldBefore = store().hero.inventory.gold
     const tokensBefore = store().hero.reputationTokens
     store().completeQuest('silence_the_crypt')
-    expect(store().hero.inventory.gold).toBe(goldBefore + 200)
+    // MST03 — plus de skill (soul_crush est désormais exclusif au maître arcane) ; or rehaussé.
+    expect(store().hero.inventory.gold).toBe(goldBefore + 300)
     expect(store().hero.reputationTokens).toBe(tokensBefore + 0) // REP01 : quête boss = 0 token
-    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(true)
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(false)
   })
 
   it('end_the_demon : 0 token de quête (REP01) + 1000 gold pour Malachar', () => {
@@ -734,12 +737,15 @@ describe('Quêtes Q03 — boss donjon', () => {
     expect(store().hero.inventory.gold).toBeGreaterThanOrEqual(1000)
   })
 
-  it('storm_the_citadel drop forsaken_curse', () => {
+  it('storm_the_citadel ne drop plus forsaken_curse (MST03 : exclusif au maître arcane)', () => {
     const store = useGameStore.getState
     store().startQuest('storm_the_citadel')
     store().recordKill('forsaken_citadel_boss')
     store().completeQuest('storm_the_citadel')
-    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'forsaken_curse')).toBe(true)
+    // MST03 — forsaken_curse reroutée au maître arcane ; la quête ne récompense plus de skill.
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'forsaken_curse')).toBe(
+      false,
+    )
   })
 })
 

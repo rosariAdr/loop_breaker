@@ -26,8 +26,10 @@ describe('ACA04 — objectif skill_levelup', () => {
     localStorage.clear()
   })
 
-  it("chaque quête de maître cible un skill_levelup et récompense de l'or", () => {
+  it("chaque quête de maître (hors initiation) cible un skill_levelup et récompense de l'or", () => {
+    // MST02 — les quêtes d'INITIATION ont un objectif d'entrée (kill/level), pas un skill_levelup.
     for (const q of Object.values(MASTER_QUESTS)) {
+      if (q.isInitiation) continue
       expect(q.objectives[0].type).toBe('skill_levelup')
       expect(q.objectives[0].targetLevel).toBeGreaterThanOrEqual(2)
       expect(q.reward.gold).toBeGreaterThan(0)
@@ -50,22 +52,26 @@ describe('ACA04 — objectif skill_levelup', () => {
     expect(store().isQuestComplete(q.id)).toBe(true)
   })
 
-  it('récompense Aura : completeQuest octroie gold + Aura', () => {
-    const q = MASTER_QUESTS.master_sharpen_strike // gold 80 + aura 5
+  // MST03 — reroute : master_sharpen_strike récompense désormais un SKILL martial exclusif
+  // (cleave) en plus de l'or, au lieu d'Aura. On vérifie que le skill atterrit en réserve.
+  it('récompense Skill : completeQuest octroie gold + un skill martial exclusif (MST03)', () => {
+    const q = MASTER_QUESTS.master_sharpen_strike // gold 80 + skill cleave
     const goldBefore = store().hero.inventory.gold
-    const auraBefore = store().hero.aura ?? 0
+    store().setMaster('sir_aldric') // MST02 — engagement requis pour déverrouiller la quête
     store().startQuest(q.id)
     useGameStore.setState((s) => ({
       hero: { ...s.hero, activeSkills: [{ skillId: 'counter_strike', level: 2, xp: 0 }] },
     }))
     store().completeQuest(q.id)
     expect(store().hero.inventory.gold).toBe(goldBefore + 80)
-    expect(store().hero.aura).toBe(auraBefore + 5)
+    expect(q.reward.skill.skillId).toBe('cleave')
+    expect(store().hero.inventory.manaStones.some((m) => m.skillId === 'cleave')).toBe(true)
   })
 
   it('récompense Concentration : completeQuest octroie gold + Concentration', () => {
     const q = MASTER_QUESTS.master_focus_cleave // gold 100 + concentration 5
     const concBefore = store().hero.concentration ?? 0
+    store().setMaster('sir_aldric') // MST02 — engagement requis pour déverrouiller la quête
     store().startQuest(q.id)
     useGameStore.setState((s) => ({
       hero: { ...s.hero, activeSkills: [{ skillId: 'cleave', level: 2, xp: 0 }] },

@@ -10,6 +10,7 @@ import SafeZone from './SafeZone'
 import { useGameStore } from '../store/gameStore'
 import { getActiveChurchQuests, CHURCH_ROTATION_DAYS } from '../data/churchQuests'
 import { MASTER_QUESTS } from '../data/masterQuests'
+import { getMasterQuestIdsAtLocation } from '../data/masters'
 
 // Ironhaven = ville (tous les bâtiments à panneau) ; midi → bâtiments ouverts.
 function enterCity(dayCount = 1) {
@@ -73,8 +74,9 @@ describe('TEST-COV01 — AcademyPanel : Trials of Mastery (ACA04)', () => {
 
     expect(screen.getByText(/Trials of Mastery/)).toBeInTheDocument()
     const trials = screen.getByTestId('master-quests')
-    const firstMaster = Object.values(MASTER_QUESTS)[0]
-    expect(within(trials).getByText(firstMaster.name)).toBeInTheDocument()
+    // MST04 — l'Académie ne montre que les maîtres d'Ironhaven : on vérifie une de leurs quêtes.
+    const localId = getMasterQuestIdsAtLocation('ironhaven')[0]
+    expect(within(trials).getByText(MASTER_QUESTS[localId].name)).toBeInTheDocument()
   })
 })
 

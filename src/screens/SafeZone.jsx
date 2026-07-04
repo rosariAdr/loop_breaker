@@ -7,6 +7,7 @@ import { SKILLS } from '../data/skills'
 import { QUESTS, heroSkillLevels } from '../data/quests'
 import { CHURCH_QUESTS, getAvailableChurchDeeds, CHURCH_ROTATION_DAYS } from '../data/churchQuests'
 import { MASTER_QUESTS } from '../data/masterQuests'
+import { getMaster, getMasterQuestIdsAtLocation } from '../data/masters'
 import { QuestCard } from './QuestBoard'
 import { isBuildingOpen, nextOpenHour } from '../data/buildingHours'
 import { getAcademyCatalog, skillSellPrice, skillPremiumBuyPrice } from '../data/academy'
@@ -1906,6 +1907,7 @@ function AcademyPanel({ onBack }) {
     completeQuest,
     abandonQuest,
     isQuestComplete,
+    isMasterQuestLocked,
   } = useGameStore()
   const catalog = getAcademyCatalog()
   const owned = hero.inventory.manaStones ?? []
@@ -1922,14 +1924,39 @@ function AcademyPanel({ onBack }) {
     padding: '4px 6px',
   }
 
-  // ACA04 — épreuves du maître (quêtes de level-up de skill)
+  // ACA04 / MST04 — épreuves du maître (quêtes de level-up de skill), SCOPÉES à la localité.
   const activeIds = world.activeQuests ?? []
   const completedIds = world.completedQuests ?? []
   const skillLevels = heroSkillLevels(hero)
-  const masterAvailable = Object.values(MASTER_QUESTS).filter(
+
+  // MST04 — état d'engagement + maître(s) du lieu courant (ex. Ironhaven → Vael, Bulgar ;
+  // PAS Aldric à Greywatch ni Elyndra à Millhaven). L'Académie ne montre QUE les quêtes
+  // des maîtres de CETTE ville : l'initiation d'un maître d'ailleurs ne surface pas ici.
+  const engagedMaster = getMaster(hero.masterId)
+  const localMasterQuestIds = getMasterQuestIdsAtLocation(world.currentLocation)
+  const localMasterQuests = localMasterQuestIds.map((id) => MASTER_QUESTS[id]).filter(Boolean)
+
+  // MST04 — visibilité : une fois ENGAGÉ, seules les quêtes du maître engagé (+ ses
+  // initiations) restent visibles ; les quêtes des AUTRES maîtres du lieu disparaissent.
+  // Tant que non engagé, les initiations locales sont visibles (portes d'entrée au choix).
+  const visibleMasterQuests = localMasterQuests.filter((q) => {
+    if (engagedMaster == null) return true // choix libre : tout est proposé
+    if (q.masterId === engagedMaster.id) return true // le maître engagé
+    return (engagedMaster.skillQuestPool ?? []).includes(q.id) // ses quêtes de skill
+  })
+
+  const masterActive = visibleMasterQuests.filter((q) => activeIds.includes(q.id))
+  const masterAvailable = visibleMasterQuests.filter(
     (q) => !activeIds.includes(q.id) && !completedIds.includes(q.id),
   )
-  const masterActive = activeIds.map((id) => MASTER_QUESTS[id]).filter(Boolean)
+
+  // MST04 — raison de verrou (grisé + tooltip) pour une quête de maître non initiée.
+  const masterLockReason = (q) =>
+    isMasterQuestLocked(q)
+      ? engagedMaster == null
+        ? 'Requires initiation with a master'
+        : `Reserved for students of ${engagedMaster.name}`
+      : null
 
   const rowStyle = (accent) => ({
     background: 'rgba(160,110,220,.10)',
@@ -2104,7 +2131,7 @@ function AcademyPanel({ onBack }) {
         </div>
       )}
 
-      {/* ACA04 — Épreuves de maîtrise : monter un skill à un niveau donné */}
+      {/* ACA04 / MST04 — Épreuves de maîtrise : monter un skill à un niveau donné */}
       {(masterAvailable.length > 0 || masterActive.length > 0) && (
         <div
           className="mt-4 flex flex-col gap-2"
@@ -2114,6 +2141,19 @@ function AcademyPanel({ onBack }) {
           <div className="t-label" style={{ marginBottom: 2 }}>
             ✦ Trials of Mastery
           </div>
+          {/* MST04 — état d'engagement : « no master » ou « master = X ». */}
+          <p
+            data-testid="master-state"
+            style={{
+              color: engagedMaster ? 'var(--amber-deep, #c0a060)' : '#7a6a8a',
+              fontSize: '0.72rem',
+              fontFamily: 'Cinzel, serif',
+            }}
+          >
+            {engagedMaster
+              ? `Master: ${engagedMaster.name} · ${engagedMaster.title}`
+              : 'No master — complete an initiation to be taken as a student.'}
+          </p>
           <p style={{ color: 'var(--ink-soft)', fontSize: '0.72rem', fontStyle: 'italic' }}>
             "Bring a technique to the level I name, and I shall reward your discipline."
           </p>
@@ -2136,6 +2176,7 @@ function AcademyPanel({ onBack }) {
               questStatus="available"
               heroLevel={hero.level}
               skillLevels={skillLevels}
+              lockedReason={masterLockReason(q)}
               onAccept={() => startQuest(q.id)}
             />
           ))}

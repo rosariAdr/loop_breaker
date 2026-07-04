@@ -150,6 +150,9 @@ export function normalizeSave(save) {
     combatEntryLog: asArray(sHero.combatEntryLog),
     titles: asArray(sHero.titles),
     skillUseLog: asArray(sHero.skillUseLog),
+    // MST01 — engagement de maître (persisté dans le run). Backfill à null pour les vieilles
+    // saves ; on n'accepte qu'une chaîne (id de maître) ou null pour éviter tout état corrompu.
+    masterId: typeof sHero.masterId === 'string' ? sHero.masterId : null,
   }
 
   // ── World ──
