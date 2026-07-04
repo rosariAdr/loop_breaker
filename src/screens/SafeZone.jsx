@@ -1932,8 +1932,10 @@ function AcademyPanel({ onBack }) {
   // MST04 — état d'engagement + maître(s) du lieu courant (ex. Ironhaven → Vael, Bulgar ;
   // PAS Aldric à Greywatch ni Elyndra à Millhaven). L'Académie ne montre QUE les quêtes
   // des maîtres de CETTE ville : l'initiation d'un maître d'ailleurs ne surface pas ici.
+  // MST08 — inclut aussi le maître ITINÉRANT de passage ce jour-là (rotation sur dayCount) :
+  // en passant world.dayCount, getMasterQuestIdsAtLocation ajoute ses quêtes aux fixes.
   const engagedMaster = getMaster(hero.masterId)
-  const localMasterQuestIds = getMasterQuestIdsAtLocation(world.currentLocation)
+  const localMasterQuestIds = getMasterQuestIdsAtLocation(world.currentLocation, world.dayCount)
   const localMasterQuests = localMasterQuestIds.map((id) => MASTER_QUESTS[id]).filter(Boolean)
 
   // MST04 — visibilité : une fois ENGAGÉ, seules les quêtes du maître engagé (+ ses

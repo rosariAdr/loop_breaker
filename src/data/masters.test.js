@@ -79,13 +79,14 @@ describe('MST09 — pools de skills par discipline', () => {
     expect(MASTER_SKILL_POOLS.feu.length).toBeGreaterThan(0)
   })
 
-  it('glace : tout skill à dégâts est de l’élément `ice` (pool vide tant qu’aucun skill de glace)', () => {
+  it('glace : tout skill à dégâts est de l’élément `ice` (SKD-ICE01 — pool désormais alimenté)', () => {
     for (const id of MASTER_SKILL_POOLS.glace) {
       const dmg = SKILLS[id].effect?.damage?.type
       if (dmg) expect(dmg, `glace/${id}`).toBe('ice')
     }
-    // Documente l'absence actuelle de skills de glace dans skills.js.
-    expect(MASTER_SKILL_POOLS.glace).toEqual([])
+    // SKD-ICE01 — le pool de glace n'est plus vide (débloque le maître de glace MST08).
+    expect(MASTER_SKILL_POOLS.glace.length).toBeGreaterThan(0)
+    expect(MASTER_SKILL_POOLS.glace).toContain('ice_shard')
   })
 
   it('martial : contient bien power_strike et counter_strike (reroutés par MST03)', () => {

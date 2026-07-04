@@ -16,11 +16,10 @@
 //   les skills `divine`/`supreme` s'obtiennent via l'éveil d'une divinité / le Demon Lord,
 //   pas via un maître (cf. ACADEMY_CATALOG qui exclut aussi boss/divins/suprêmes).
 //
-// ⚠️ GLACE : aucun skill d'élément `ice` n'existe encore dans skills.js (Soul Chill est
-//   un skill PHYSIQUE de ralentissement, pas de la glace). Le pool `glace` est donc
-//   volontairement VIDE en attendant des skills de glace dédiés (SKD futur / MST08).
-//   Un maître à focus glace (MST08, itinérant) restera sans récompense-skill tant que
-//   ce pool n'est pas alimenté — à surveiller quand les skills de glace arriveront.
+// ✅ GLACE (SKD-ICE01) : quatre skills d'élément `ice` existent désormais dans skills.js
+//   (ice_shard, frostbite, blizzard, frost_lance ; Soul Chill reste un skill PHYSIQUE, hors
+//   pool). Le pool `glace` est alimenté — le maître de glace itinérant (MST08) peut donc
+//   récompenser des skills de glace.
 
 // Disciplines connues (extensible). Sert de référence partagée (UI, MST01, tests).
 export const MASTER_FOCUSES = ['martial', 'arcane', 'feu', 'glace', 'berserker']
@@ -76,8 +75,13 @@ export const MASTER_SKILL_POOLS = {
     'fox_fire', // 120% INT feu + burn
   ],
 
-  // Glace — VIDE : aucun skill d'élément `ice` n'existe encore (cf. en-tête).
-  glace: [],
+  // Glace — magie de givre : éclat, gel (slow), tempête AoE, lance perforante. (SKD-ICE01)
+  glace: [
+    'ice_shard', // 100% INT glace (mono-cible)
+    'frostbite', // 110% INT glace + slow (gel)
+    'blizzard', // 90% INT glace AoE
+    'frost_lance', // 180% INT glace (gros mono-cible)
+  ],
 }
 
 /** Pool de skills-récompense d'une discipline (tableau d'ids ; [] si inconnue/vide). */
@@ -154,6 +158,48 @@ export const MASTERS = {
     // skills ⊂ MASTER_SKILL_POOLS.berserker (trample_charge → bone_crush → reckless_blow).
     skillQuestPool: ['master_pit_frenzy', 'master_pit_reckless'],
   },
+
+  // ── MST08 — Maîtres ITINÉRANTS (de passage) ─────────────────────────────────
+  // Pas de `location` fixe : `itinerant: true`. Ils APPARAISSENT à une localité au fil
+  // du temps (rotation déterministe sur `dayCount`, cf. getItinerantMasterForDay /
+  // getItinerantMastersAtLocation). Fusionne/étend NPC05 (maître de passage à la Guilde).
+  // Chacun porte une quête d'initiation + un skillQuestPool ⊂ MASTER_SKILL_POOLS[focus].
+
+  // Maître de FEU itinérant — magie de flammes (pool `feu`).
+  flame_wanderer: {
+    id: 'flame_wanderer',
+    name: 'Pyra the Emberwalker',
+    title: 'Wandering Flamecaller',
+    itinerant: true,
+    focus: 'feu',
+    initiationQuestId: 'master_init_pyra',
+    // skills ⊂ MASTER_SKILL_POOLS.feu (ember_burst → fox_fire).
+    skillQuestPool: ['master_ember_kindle', 'master_ember_blaze'],
+  },
+
+  // Maître de GLACE itinérant — magie de givre (pool `glace`, débloqué par SKD-ICE01).
+  frost_wanderer: {
+    id: 'frost_wanderer',
+    name: 'Kaira Froststep',
+    title: 'Wandering Frostweaver',
+    itinerant: true,
+    focus: 'glace',
+    initiationQuestId: 'master_init_kaira',
+    // skills ⊂ MASTER_SKILL_POOLS.glace (ice_shard → frostbite → blizzard).
+    skillQuestPool: ['master_frost_shard', 'master_frost_storm'],
+  },
+
+  // Maître BERSERKER itinérant — furie brute (pool `berserker`), distinct de Bulgar.
+  savage_wanderer: {
+    id: 'savage_wanderer',
+    name: 'Grukk Bloodmane',
+    title: 'Wandering Berserker',
+    itinerant: true,
+    focus: 'berserker',
+    initiationQuestId: 'master_init_grukk',
+    // skills ⊂ MASTER_SKILL_POOLS.berserker (savage_bite → bramble_slam).
+    skillQuestPool: ['master_savage_maul', 'master_savage_thrash'],
+  },
 }
 
 /** Un maître par id (ou null si inconnu). */
@@ -172,16 +218,80 @@ export function getMastersAtLocation(locationId) {
   return Object.values(MASTERS).filter((m) => !m.itinerant && m.location === locationId)
 }
 
+// ── MST08 — Apparition des maîtres ITINÉRANTS (de passage) ────────────────────
+//
+// Un maître itinérant n'a pas de `location` : il APPARAÎT à une localité au fil du temps.
+// Modèle retenu (déterministe, testable, sans alea de render) : UN itinérant « de passage »
+// à la fois, en rotation tous les ITINERANT_ROTATION_DAYS jours (même convention que la
+// rotation de l'église, CHURCH_ROTATION_DAYS). L'itinérant du bloc courant se tient dans
+// TOUTE agglomération (village/ville) — il « voyage » de lieu en lieu. Les spots de chasse
+// et donjons n'accueillent pas de maître de passage (pas de halte).
+//
+// ⚠️ DESIGN FORK (cadence/lieu exacts) : la cadence (3 j) et le fait qu'il soit présent
+// dans toutes les agglos à la fois plutôt qu'une seule tirée au sort sont des choix par
+// défaut, à arbitrer (EVT01 pourrait plus tard le rattacher à un événement/route précis).
+
+/** Maîtres itinérants (ordre de rotation stable = ordre d'insertion dans MASTERS). */
+export const ITINERANT_MASTERS = Object.values(MASTERS).filter((m) => m.itinerant)
+
+/** Cadence de rotation des itinérants (jours). Aligné sur la rotation de l'église. */
+export const ITINERANT_ROTATION_DAYS = 3
+
+// Localités qui accueillent un maître de passage : les agglomérations (village/ville).
+// Codées en dur pour éviter une dépendance croisée vers worldGraph (données pures).
+const ITINERANT_HOST_LOCATIONS = new Set([
+  'greywatch',
+  'millhaven',
+  'ironhaven',
+  'stonehaven',
+  'duskreach',
+  'ashfall_post',
+])
+
+/** Une localité peut-elle accueillir un maître de passage ? (agglomération). */
+export function isItinerantHostLocation(locationId) {
+  return ITINERANT_HOST_LOCATIONS.has(locationId)
+}
+
 /**
- * MST04 — Toutes les quêtes de maître (initiation + skillQuestPool) surfaçables à une
- * localité : celles des maîtres fixes de ce lieu. Renvoie des ids (⊂ MASTER_QUESTS).
- * Sert à scoper l'UID (Académie) au(x) maître(s) du lieu courant (ex. Ironhaven → Vael,
- * Bulgar ; PAS Aldric à Greywatch ni Elyndra à Millhaven).
+ * MST08 — Le maître itinérant « de passage » pour un jour donné (ou null si aucun).
+ * Rotation déterministe : bloc = floor(dayCount / ITINERANT_ROTATION_DAYS), l'itinérant
+ * sélectionné = bloc % nombre d'itinérants. Ex. avec 3 itinérants et une cadence de 3 j :
+ * jours 1-2 → #0, 3-5 → #1, 6-8 → #2, 9-11 → #0, …
  */
-export function getMasterQuestIdsAtLocation(locationId) {
+export function getItinerantMasterForDay(dayCount = 1) {
+  const list = ITINERANT_MASTERS
+  if (list.length === 0) return null
+  const block = Math.floor((dayCount ?? 1) / ITINERANT_ROTATION_DAYS)
+  return list[block % list.length]
+}
+
+/**
+ * MST08 — Maître(s) itinérant(s) actuellement présents à une localité un jour donné.
+ * Tableau (0 ou 1 élément) : l'itinérant du bloc courant s'il s'agit d'une agglomération,
+ * sinon []. Symétrique de getMastersAtLocation (maîtres fixes).
+ */
+export function getItinerantMastersAtLocation(locationId, dayCount = 1) {
+  if (!isItinerantHostLocation(locationId)) return []
+  const m = getItinerantMasterForDay(dayCount)
+  return m ? [m] : []
+}
+
+/**
+ * MST04/MST08 — Toutes les quêtes de maître (initiation + skillQuestPool) surfaçables à une
+ * localité : celles des maîtres FIXES du lieu, PLUS — si `dayCount` est fourni — celles du
+ * maître itinérant de passage ce jour-là (uniquement dans une agglomération). Renvoie des
+ * ids (⊂ MASTER_QUESTS). Sans `dayCount`, comportement inchangé (fixes seuls, rétro-compat).
+ */
+export function getMasterQuestIdsAtLocation(locationId, dayCount = null) {
   const ids = []
   for (const m of getMastersAtLocation(locationId)) {
     ids.push(m.initiationQuestId, ...(m.skillQuestPool ?? []))
+  }
+  if (dayCount != null) {
+    for (const m of getItinerantMastersAtLocation(locationId, dayCount)) {
+      ids.push(m.initiationQuestId, ...(m.skillQuestPool ?? []))
+    }
   }
   return ids
 }

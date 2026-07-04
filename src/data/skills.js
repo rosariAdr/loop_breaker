@@ -870,6 +870,95 @@ export const SKILLS = {
     },
   },
 
+  // SKD-ICE01 — skills de GLACE (magic_active, élément `ice`, dérivés d'INT comme le feu).
+  // Aucun skill `ice` n'existait (Soul Chill est physique) → le pool `glace` (MST08) était
+  // vide. Ces quatre skills débloquent le maître de glace itinérant. Le statut de gel utilise
+  // `slow` (ralentissement `agility`/`spd`), le seul contrôle « figeant » que le moteur de
+  // combat gère nativement (cf. STAT_EFFECT_TARGETS) — pas de nouveau type de statut.
+  ice_shard: {
+    id: 'ice_shard',
+    name: 'Ice Shard',
+    description: 'A jagged spike of ice that pierces the target. Deals 100% INT as ice damage.',
+    type: 'active',
+    cost: { mana: 12, hp: 0, stat_sacrifice: null },
+    cooldown: 2,
+    effect: {
+      damage: { type: 'ice', multiplier: 1.0 }, // 100% INT
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null, // récompense de maître (glace) — pas dans une table de drop
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
+    },
+  },
+
+  frostbite: {
+    id: 'frostbite',
+    name: 'Frostbite',
+    description:
+      'Creeping frost that bites the target and freezes it stiff, slowing it for 2 turns.',
+    type: 'active',
+    cost: { mana: 16, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'ice', multiplier: 1.1 }, // 110% INT
+      statusEffect: { type: 'slow', duration: 2, reduction: 0.5 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null,
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1, durationBonus: 1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, durationBonus: 1 },
+    },
+  },
+
+  blizzard: {
+    id: 'blizzard',
+    name: 'Blizzard',
+    description: 'A howling storm of ice that batters all enemies for 90% INT as ice damage.',
+    type: 'active',
+    cost: { mana: 28, hp: 0, stat_sacrifice: null },
+    cooldown: 4,
+    effect: {
+      damage: { type: 'ice', multiplier: 0.9 }, // 90% INT
+      aoe: true,
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null,
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
+    },
+  },
+
+  frost_lance: {
+    id: 'frost_lance',
+    name: 'Frost Lance',
+    description:
+      'A lance of hardened ice hurled with lethal focus. Deals 180% INT as ice damage.',
+    type: 'active',
+    cost: { mana: 24, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'ice', multiplier: 1.8 }, // 180% INT
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null,
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
+    },
+  },
+
   cheap_shot: {
     id: 'cheap_shot',
     name: 'Cheap Shot',
