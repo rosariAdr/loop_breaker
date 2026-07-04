@@ -2,6 +2,7 @@
 import { CHURCH_QUESTS, churchRotationBlock } from '../../data/churchQuests'
 import { createEquipmentInstance, RARITY_TIERS } from '../../data/equipment'
 import { getMqTutorialHint } from '../../data/hints'
+import { getMaster } from '../../data/masters'
 import {
   getQuestById,
   snapshotForQuest,
@@ -24,6 +25,10 @@ export const createQuestsSlice = (set, get) => ({
       const { activeQuests, completedQuests } = state.world
       if (completedQuests.includes(questId)) return state
       if (activeQuests.includes(questId)) return state
+      // MST02 — refuse d'accepter une quête de maître verrouillée (pas encore initié, ou
+      // quête d'un AUTRE maître que celui engagé). L'initiation reste toujours acceptable.
+      const q0 = getQuestById(questId)
+      if (get().isMasterQuestLocked(q0)) return state
       // FIX-QUESTSNAP01 — fige les compteurs cumulés au moment de l'acceptation.
       const quest = getQuestById(questId)
       const snapshot = quest ? snapshotForQuest(quest, state) : { baseKills: {}, baseCraft: 0 }
@@ -250,6 +255,20 @@ export const createQuestsSlice = (set, get) => ({
     })
     // FIX-QXP01 — octroi de l'XP hors du set (réutilise gainExp : level-up + hint gérés).
     if (xpGain > 0) get().gainExp(xpGain)
+
+    // MST02 — Verrou d'engagement : valider une quête d'INITIATION engage définitivement
+    // le héros auprès du maître (setMaster rejette si déjà engagé → idempotent/immuable).
+    // Fait hors du set principal (comme gainExp) pour réutiliser la logique de setMaster.
+    const doneQuest = getQuestById(questId)
+    if (doneQuest?.isInitiation && doneQuest.masterId) {
+      const engaged = get().setMaster(doneQuest.masterId)
+      if (engaged) {
+        const m = getMaster(doneQuest.masterId)
+        useToastStore
+          .getState()
+          .addToast(`You are now the student of ${m?.name ?? doneQuest.masterId}.`, 'quest')
+      }
+    }
   },
 
   // ── Réputation ───────────────────────────────────────────────────────────

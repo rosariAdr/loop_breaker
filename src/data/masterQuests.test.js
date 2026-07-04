@@ -26,8 +26,10 @@ describe('ACA04 — objectif skill_levelup', () => {
     localStorage.clear()
   })
 
-  it("chaque quête de maître cible un skill_levelup et récompense de l'or", () => {
+  it("chaque quête de maître (hors initiation) cible un skill_levelup et récompense de l'or", () => {
+    // MST02 — les quêtes d'INITIATION ont un objectif d'entrée (kill/level), pas un skill_levelup.
     for (const q of Object.values(MASTER_QUESTS)) {
+      if (q.isInitiation) continue
       expect(q.objectives[0].type).toBe('skill_levelup')
       expect(q.objectives[0].targetLevel).toBeGreaterThanOrEqual(2)
       expect(q.reward.gold).toBeGreaterThan(0)
@@ -54,6 +56,7 @@ describe('ACA04 — objectif skill_levelup', () => {
     const q = MASTER_QUESTS.master_sharpen_strike // gold 80 + aura 5
     const goldBefore = store().hero.inventory.gold
     const auraBefore = store().hero.aura ?? 0
+    store().setMaster('sir_aldric') // MST02 — engagement requis pour déverrouiller la quête
     store().startQuest(q.id)
     useGameStore.setState((s) => ({
       hero: { ...s.hero, activeSkills: [{ skillId: 'counter_strike', level: 2, xp: 0 }] },
@@ -66,6 +69,7 @@ describe('ACA04 — objectif skill_levelup', () => {
   it('récompense Concentration : completeQuest octroie gold + Concentration', () => {
     const q = MASTER_QUESTS.master_focus_cleave // gold 100 + concentration 5
     const concBefore = store().hero.concentration ?? 0
+    store().setMaster('sir_aldric') // MST02 — engagement requis pour déverrouiller la quête
     store().startQuest(q.id)
     useGameStore.setState((s) => ({
       hero: { ...s.hero, activeSkills: [{ skillId: 'cleave', level: 2, xp: 0 }] },

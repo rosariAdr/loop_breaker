@@ -35,6 +35,10 @@ export const QUEST_BALANCE = {
   nc_deliver_ruins: { xp: 0, rankPoints: 0 },
   nc_explore_hills: { xp: 0, rankPoints: 0 },
 
+  // ── Maître — initiation (MST02) ─────────────────────────────────────────
+  // Porte d'entrée (preuve de valeur) : équilibré comme une quête easy de départ.
+  master_init_aldric: { xp: 40, rankPoints: 1 },
+
   // ── Maître (Académie) ───────────────────────────────────────────────────
   master_sharpen_strike: { xp: 110, rankPoints: 3 },
   master_focus_cleave: { xp: 110, rankPoints: 3 },

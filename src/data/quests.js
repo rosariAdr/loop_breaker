@@ -14,8 +14,9 @@ export const QUEST_NPCS = {
   sir_aldric: {
     id: 'sir_aldric',
     name: 'Sir Aldric',
-    title: 'Knight of Millhaven',
-    location: 'greywatch', // QSV2-ADJ-AUDIT01 — relocalisé (quêtes forêt ; futur maître martial MST05)
+    // MST-G2/MST05 — maître martial de Greywatch (titre décidé, chaîne exacte).
+    title: "Membre d'honneur du Royal Knighthood",
+    location: 'greywatch', // QSV2-ADJ-AUDIT01 + MST05 — relocalisé à Greywatch (maître martial)
     sigil: '⚔',
   },
   ironhaven_captain: {

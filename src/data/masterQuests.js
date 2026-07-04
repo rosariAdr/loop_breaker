@@ -16,6 +16,32 @@ export const MASTER_QUEST_NPC = {
 }
 
 export const MASTER_QUESTS = {
+  // ── MST02/MST05 — Quête d'INITIATION (Sir Aldric, maître martial) ────────────
+  // Valider cette quête ENGAGE le héros auprès d'Aldric (setMaster côté store) et
+  // verrouille l'engagement pour tout le run (MST-G1). Choix libre : rien n'oblige à la
+  // prendre — mais tant qu'AUCUNE initiation n'est validée, les quêtes de maître restent
+  // verrouillées. Objectif d'entrée simple (preuve de valeur) cohérent avec Aldric.
+  master_init_aldric: {
+    id: 'master_init_aldric',
+    name: 'The Knight’s Trial',
+    description: 'Prove your resolve to Sir Aldric to be taken as his student.',
+    giverNpc: 'sir_aldric', // Aldric (maître martial de Greywatch, câblé en QUEST_NPCS)
+    isMasterQuest: true,
+    isInitiation: true, // MST02 — sa complétion appelle setMaster(masterId)
+    masterId: 'sir_aldric', // maître engagé quand validée
+    flavorText: '"The Knighthood does not take the untested. Show me your steel."',
+    objectives: [
+      {
+        id: 'init_prove',
+        type: 'kill',
+        monsterId: 'ashwood_wolf',
+        count: 3,
+        label: 'Slay Ashwood Wolves',
+      },
+    ],
+    reward: { gold: 60, aura: 5 },
+  },
+
   master_sharpen_strike: {
     id: 'master_sharpen_strike',
     name: 'Sharpen the Blade',

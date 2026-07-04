@@ -1,5 +1,6 @@
 // REFAC01 — Slice « hero » du store (extrait de gameStore.js, comportement inchangé).
 import { skillBuyPrice, skillSellPrice, skillPremiumBuyPrice } from '../../data/academy'
+import { MASTERS } from '../../data/masters'
 import { RESOURCES } from '../../data/resources'
 import { SKILLS, SKILL_MAX_LEVEL, skillXpForLevel } from '../../data/skills'
 import { AURA, countWithinDays } from '../../engine/aura'
@@ -518,6 +519,30 @@ export const createHeroSlice = (set, get) => ({
   },
 
   clearPendingLevelUp: () => set({ pendingLevelUp: 0 }),
+
+  // ── MST01/MST02 — Engagement auprès d'un maître (mentor) ──────────────────
+  // Pose le maître engagé du run. IMMUABLE une fois posé (MST-G1) : rejette si un maître
+  // est déjà engagé, ou si l'id est inconnu. Réinitialisé à null à la transmigration.
+  // @returns {boolean} true si l'engagement a été posé, false si rejeté.
+  setMaster: (masterId) => {
+    if (get().hero.masterId != null) return false // déjà engagé → immuable
+    if (!MASTERS[masterId]) return false // maître inconnu
+    set((state) => ({ hero: { ...state.hero, masterId } }))
+    return true
+  },
+
+  // MST02 — Les quêtes de maître sont VERROUILLÉES tant qu'aucune initiation n'est validée
+  // (aucun maître engagé). Une fois engagé, seules les quêtes du maître engagé sont ouvertes ;
+  // celles des AUTRES maîtres restent verrouillées. L'initiation elle-même n'est jamais
+  // verrouillée (c'est la porte d'entrée). @returns {boolean} true = verrouillée.
+  isMasterQuestLocked: (quest) => {
+    if (!quest?.isMasterQuest) return false
+    if (quest.isInitiation) return false // les initiations sont toujours accessibles
+    const engaged = get().hero.masterId
+    if (engaged == null) return true // pas encore initié → tout verrouillé
+    // engagé : ouvert seulement si la quête appartient au pool du maître engagé
+    return !(MASTERS[engaged]?.skillQuestPool ?? []).includes(quest.id)
+  },
 
   // ── Nom du héros (CharacterCreation) ─────────────────────────────────────
   renameHero: (name) =>

@@ -40,6 +40,11 @@ export const INITIAL_HERO = {
   activeSkills: [], // [{ skillId, level, xp, currentCooldown }]
   passiveSkills: [], // [{ skillId, level, xp }]
 
+  // MST01 — Maître engagé (mentor). Portée RUN (MST-G1(b)) : null au départ, posé par la
+  // 1ʳᵉ quête d'initiation validée (setMaster), IMMUABLE ensuite. Réinitialisé à null à la
+  // transmigration / nouveau run (comme skills/stats) via le spread de INITIAL_HERO.
+  masterId: null,
+
   // Divinité liée
   deity: null, // id de la divinité (null = sans dieu)
   deityBlessing: null,
