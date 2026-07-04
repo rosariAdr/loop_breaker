@@ -308,10 +308,10 @@ _(aucune dépendance externe bloquante)_
 | v1.32 | Skills (drops) (11) | MON01 ✓ ; `skills.js` = 44 skills (élite/SKD déjà codés) |
 | v1.33 | Progression & stats (19) | ✅ implémenté (19/19 ; tests + build OK, 2026-07-03) · recette BEST02 → v1.42 |
 | v1.33x (bugfix) | BUG_v1.33 — Correctifs playthrough (Hero Sheet v2) (1) | passe de bugfix v1.33 (retours 2026-07-03) |
-| v1.34 | Tech / DX / Balance (9) | 🔨 batchs 1-3 mergés dev 2026-07-04 (4/9 : BAL-CSV01, TECH06, QA01, COV-COMBAT01) · reste BAL02/03 (playtest), TECH04, REFAC02/03 |
+| v1.34 | Tech / DX / Balance (9) | 🔨 batchs 1-4 mergés dev 2026-07-04 (5/9 : BAL-CSV01, TECH06, QA01, COV-COMBAT01, REFAC03) · reste BAL02/03 (playtest), TECH04, REFAC02 |
 | v1.41 | Donjon (7) | spec 9 salles : voir Archive §v1.4 |
-| v1.42 | Équipement & Craft (37) | 🔨 batchs 1-3 mergés dev 2026-07-04 (15/37 : ressources/tiers/drops + équip/sets/slots) · reste CRAFT-*/professions/bijou/EQDROP/ENCH · ordre : RES/TIER → craft → équip/sets/slots |
-| v1.43 | Maîtres & mentors (12) | 🔨 batchs 1-3 mergés dev 2026-07-04 (11/12 : MST01-07, MST09, décisions G1-3) · reste MST08 (itinérants ; glace bloqué → SKD-ICE01) |
+| v1.42 | Équipement & Craft (37) | 🔨 batchs 1-4 mergés dev 2026-07-04 (20/37 : ressources/tiers/drops + équip/sets/slots + modèle craft KNOWN/MULTI/RARITY/G2/G3 + templates bijoux/gants) · reste CRAFT-GRADE/TOOL/LOC/mini-jeux, professions (buildings/NPC), EQDROP/ENCH |
+| v1.43 | Maîtres & mentors (12) | ✅ livré 12/12 (batchs 1-4) mergé dev 2026-07-04 · MST01-09 + décisions G1-3 + maîtres itinérants (MST08) · SKD-ICE01 (skills de glace) inclus |
 | v1.51 | Monde & carte (11) | MONLV01 ⟶ BAL-CSV01 (v1.34) |
 | v1.52 | Divin (5) | DVQ01 ⟶ ALT01 (même épique) |
 | v1.61 | Compagnons (12) | CMP06 ⟶ EVT02 (v1.62) |
@@ -440,7 +440,7 @@ _(aucune dépendance externe bloquante)_
 - [ ] **TECH04 — Performance Canvas 2D — budget 60fps** · S · P3 · 🟢 — Chrome DevTools Performance ; target <8ms/frame ; mémoiser gradients statiques hors du loop.
 - [x] **TECH06 — Feature flags** · M · P3 · 🟢 — `FEATURE_FLAGS` dans `config.js` : activer/désactiver des features sans recompiler. ✅ **Ready (2026-06-20)** : AC = objet `FEATURE_FLAGS` exporté + ≥1 feature gardée par un flag + test.
 - [ ] **REFAC02 — Découpage de `SafeZone.jsx` (1 fichier/panneau)** · M · P5 · 🟢 — *TC 2026-06-08.* Sortir chaque panneau de bâtiment (Inn/Church/Merchant/Alchemy/Blacksmith/MasterSmith/KnightTrainer/Academy) + `NpcOverlay`/`VilBuilding` dans leurs fichiers. Refacto pur, tests verts inchangés. ✅ **Ready (2026-06-20)** : v1.1 livré → plus de conflit. ⚠️ coordonner si UI11 (Church) est en cours sur la même branche.
-- [ ] **REFAC03 — Découpage de `Combat.jsx` (sous-composants + hook)** · M · P5 · 🟢 — *TC 2026-06-08.* Extraire `EnemyCard`/`HeroCard`/`ActionPanel`/`VictoryPanel`/`FloatingNumbers` + un hook de logique combat. ⚠️ le **plus risqué** (moins de tests sur le rendu). ✅ **Ready (2026-06-20)** : à faire **après COV-COMBAT01** (filet de tests d'abord). Ordonné ainsi dans l'épique.
+- [x] **REFAC03 — Découpage de `Combat.jsx` (sous-composants + hook)** · M · P5 · 🟢 — *TC 2026-06-08.* Extraire `EnemyCard`/`HeroCard`/`ActionPanel`/`VictoryPanel`/`FloatingNumbers` + un hook de logique combat. ⚠️ le **plus risqué** (moins de tests sur le rendu). ✅ **Ready (2026-06-20)** : à faire **après COV-COMBAT01** (filet de tests d'abord). Ordonné ainsi dans l'épique.
 
 ### v1.41 — Donjon
 > ⟶ spec 9 salles : voir Archive §v1.4
@@ -466,17 +466,17 @@ _(aucune dépendance externe bloquante)_
 - [x] **RES-TIER01 — Item rare de craft tier-based** · S · P3 · 🟢 — input de recettes, **distinct de l'équipement** : T2 @15%, T3 @7.5% (T1 aucun).
 - [x] **DROP-FIX01 — Réaligner les tables de drop (ressources thématiques, solution B)** · S/M · P3 · 🟢 — créer `hare_pelt`/`boar_tusk`/`fox_pelt`/`beast_hide`, corriger Hare/Boar/Fox/Thunderhoof, skill drop pour Hare+Fox, + **usages** (recettes LEAT/COOK). ✅ **Ready** : séquencé après RES03 (usages). Recoupe QA01.
 - [ ] **CRAFT-GRADE01 — Grades de craft par métier** · M · P3 · 🟢 — progression par profession débloquant ses recettes. *(remplace l'idée de « niveau » global `CRAFT-LVL01`, jamais entré dans TASKS.md.)*
-- [ ] **CRAFT-KNOWN01 — Recettes connues vs à découvrir** · S · P3 · 🟢 — connues = débloquées par grade/livre ; découvrables = assemblage libre.
-- [ ] **CRAFT-MULTI01 — Plusieurs recettes → même objet** · M · P3 · 🟢 — `itemId` cible + N combinaisons valides.
-- [ ] **CRAFT-RARITY01 — Recette → taux de rareté** · S · P3 · 🟢 — chaque combinaison porte sa table de qualité.
+- [x] **CRAFT-KNOWN01 — Recettes connues vs à découvrir** · S · P3 · 🟢 — connues = débloquées par grade/livre ; découvrables = assemblage libre.
+- [x] **CRAFT-MULTI01 — Plusieurs recettes → même objet** · M · P3 · 🟢 — `itemId` cible + N combinaisons valides.
+- [x] **CRAFT-RARITY01 — Recette → taux de rareté** · S · P3 · 🟢 — chaque combinaison porte sa table de qualité.
 - [ ] **CRAFT-TOOL01 — Outils de craft par métier** · M · P3 · 🟢 — équipables, +taux de succès **et** +chance de rareté, spécifiques à la profession.
 - [ ] **CRAFT-LOC01 — Plafond de rareté par lieu** · M · P3 · 🟢 — forgeron **village** (Greywatch/Millhaven) → normal+rare ; **ville** (Ironhaven) → normal→épique ; sup. + recettes via quête. ⟶ PROG02, LEAT01. ⚠️ **conflit Z06** (cf. CRAFT-LOC-G1).
 - [ ] **CRAFT-LOC-G1 — Exception maître forgeron** · S · P3 · 🟢 — ✅ **DÉCIDÉ** : **Z06** (maître forgeron, spawn village) = **exception assumée** au plafond village (CRAFT-LOC01) — sa présence **relève le plafond local** (rare→épique) ; l'axe **grade** reste indépendant. ⟶ CRAFT-LOC01, Z06.
 - [ ] **CRAFT-QUEST01 — Quêtes de craft** · S · P3 · 🟢 — récompensent des outils (et/ou Concentration).
 - [ ] **CRAFTMG01 — Mini-jeux dédiés par métier de craft** · M · P3 · 🟢 — *retour playtest 2026-06-07.* ✅ **DÉCIDÉ** : 1 mini-jeu/métier — forge=frappe rythmée, alchimie=jauge (existant), cuisine=timing/feu, cordonnier=précision, bijou=alignement ; **mapping métier→mini-jeu** ; score → qualité via Concentration (STA03).
 - [ ] **CRAFT-DISC01 — Craft expérimental (découverte)** · M · P3 · 🟢 — assembler librement des ingrédients hors recette connue. ✅ **Ready** : après CRAFT-KNOWN01 ; mécanique = CRAFT-G2.
-- [ ] **CRAFT-G2 — Mécanique de découverte** · S · P3 · 🟢 — ✅ **DÉCIDÉ** : N slots libres ; succès → **recette apprise** ; échec → **perte de 50%** des ingrédients ; indices via livres/grade. ⟶ CRAFT-DISC01, CRAFTMG01.
-- [ ] **CRAFT-G3 — Pondération qualité** · S · P3 · 🟢 — ✅ **DÉCIDÉ** : rareté = base recette × (1 + Concentration/150) × bonus outil, **bornée par le plafond du lieu** (CRAFT-LOC01) ; score mini-jeu = ±1 cran. ⟶ STA03.
+- [x] **CRAFT-G2 — Mécanique de découverte** · S · P3 · 🟢 — ✅ **DÉCIDÉ** : N slots libres ; succès → **recette apprise** ; échec → **perte de 50%** des ingrédients ; indices via livres/grade. ⟶ CRAFT-DISC01, CRAFTMG01.
+- [x] **CRAFT-G3 — Pondération qualité** · S · P3 · 🟢 — ✅ **DÉCIDÉ** : rareté = base recette × (1 + Concentration/150) × bonus outil, **bornée par le plafond du lieu** (CRAFT-LOC01) ; score mini-jeu = ±1 cran. ⟶ STA03.
 - [ ] **LEAT01 — Séparer forge (métal) et cordonnier (cuir)** · M · P3 · 🟢 — *retour playtest 2026-06-07.* **DÉCIDÉ : séparer les équipements métal et cuir.** La **forge** ne traite que le **métal** ; un **cordonnier/maroquinier** traite le **cuir** (bottes, armures légères, gants…). **À cadrer** : tag `material:'metal'|'leather'` sur `EQUIPMENT_TEMPLATES`, répartition des recettes par bâtiment, nouveau bâtiment/NPC cordonnier (BLD_POS/NPCS/BUILDING_INFO). Lien Z07/Z03.
 - [ ] **BIJOU01 — Métier bijoutier** · M · P3 · 🟢 — 5ᵉ profession (bagues/amulettes), alimente les nouveaux slots ; pattern LEAT01.
 - [ ] **BIJOU-BLD01 — Bâtiment + NPC bijoutier** · M · P3 · 🟢 — BLD_POS / NPCS / BUILDING_INFO ; prérequis de BIJOU01.
@@ -504,8 +504,8 @@ _(aucune dépendance externe bloquante)_
 - [x] **MST05 — Sir Aldric → Greywatch, maître martial** · S · P3 · 🟢 — relocaliser `sir_aldric` à **Greywatch** (vient de QSV2-ADJ-AUDIT01) ; **nouveau titre** (MST-G2) ; rôle = **maître martial** (épée/garde), porteur de la **quête d'initiation de départ**. ⟶ QSV2-ADJ-AUDIT01, MST01, MST02, MST-G2.
 - [x] **MST06 — Maître mage à Millhaven** · S · P3 · 🟡 — « Ancien mage de la cour royale » ; focus **arcane** ; PNJ + quête d'initiation + pool de skills. ⟶ MST01, MST09.
 - [x] **MST07 — 2 maîtres à Ironhaven** · S/M · P3 · 🟡 — 2 maîtres en ville (focus à définir) + initiations + pools. **Décision** : l'un = l'**Académie** (`academy_master`/Archmagister Vael, ACA04) recyclé, ou 2 maîtres distincts de l'Académie ? (cf. MST-G3). ⟶ ACA04, MST01, MST09.
-- [ ] **MST08 — Maîtres itinérants (feu / glace / berserker)** · M · P3 · 🟡 — maîtres **de passage** à focus marqué (**magie de feu**, **magie de glace**, **berserker** ; extensible) ; apparition aléatoire (Guilde / route / événement) ; initiation possible si non encore engagé. **Fusionne/étend NPC05.** ⚠️ focus **glace bloqué contenu** tant que SKD-ICE01 n'est pas fait (pool vide). ⟶ NPC05, EVT01, MST01, SKD-ICE01.
-- [ ] **SKD-ICE01 — Créer des skills de glace (élément `ice`)** · S · P3 · 🟢 — *remonté à l'intégration v1.43, 2026-07-04.* Aucun skill d'élément `ice` dans `skills.js` (Soul Chill est physique) → `MASTER_SKILL_POOLS.glace` est vide et un **maître de glace (MST08) ne peut donner aucune récompense de skill**. Créer ≥3 skills magiques de glace (ex. éclat/blizzard/gel + statut Frozen/slow) cohérents avec le typage `magic:ice` (via `getSkillDropType`), puis remplir le pool `glace`. **Prérequis de MST08.** ⟶ MST08, MST09, skills.js, SKD-E1.
+- [x] **MST08 — Maîtres itinérants (feu / glace / berserker)** · M · P3 · 🟡 — maîtres **de passage** à focus marqué (**magie de feu**, **magie de glace**, **berserker** ; extensible) ; apparition aléatoire (Guilde / route / événement) ; initiation possible si non encore engagé. **Fusionne/étend NPC05.** ⚠️ focus **glace bloqué contenu** tant que SKD-ICE01 n'est pas fait (pool vide). ⟶ NPC05, EVT01, MST01, SKD-ICE01.
+- [x] **SKD-ICE01 — Créer des skills de glace (élément `ice`)** · S · P3 · 🟢 — *remonté à l'intégration v1.43, 2026-07-04.* Aucun skill d'élément `ice` dans `skills.js` (Soul Chill est physique) → `MASTER_SKILL_POOLS.glace` est vide et un **maître de glace (MST08) ne peut donner aucune récompense de skill**. Créer ≥3 skills magiques de glace (ex. éclat/blizzard/gel + statut Frozen/slow) cohérents avec le typage `magic:ice` (via `getSkillDropType`), puis remplir le pool `glace`. **Prérequis de MST08.** ⟶ MST08, MST09, skills.js, SKD-E1.
 - [x] **MST09 — Pools de skills par discipline** · M · P3 · 🟡 — table de skills-récompense par focus (martial / arcane / feu / glace / berserker…) puisée dans les 44 skills, cohérence physical/magic (SKD). ⟶ SKD-E1, skills.js.
 - [x] **MST-G1 — Modèle d'engagement (fork central)** · XS · P3 · 🟡 — trancher : **(a)** engagement **forcé** au maître de départ (Aldric) via la 1ʳᵉ quête, ou **(b)** **choix libre** parmi tous les maîtres, la 1ʳᵉ initiation faisant verrou ? + **portée** : lié au **run** (re-choix à chaque transmigration) ou **méta** (à vie) ? Détermine MST01/02/05/08.
 - [x] **MST-G2 — Titre de Sir Aldric** · XS · P3 · 🟡 — choisir : « Chevalier déchu » / « Chevalier retraité » / « Membre d'honneur du Royal Knighthood ». ⟶ MST05.
