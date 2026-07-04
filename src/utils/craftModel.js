@@ -1,11 +1,16 @@
-// v1.42 batch 4 — Logique PURE du craft (CRAFT-G3 pondération qualité, CRAFT-G2 découverte).
+// v1.42 batch 5 — Logique PURE du craft : modèle de qualité HYBRIDE + découverte (CRAFT-G2).
 // Aucune UI, aucun mini-jeu, aucun accès au store : fonctions déterministes et testables.
 //
-// CRAFT-G3 (§ TASKS.md v1.42) — pondération de qualité :
-//   rareté = base × (1 + Concentration/150) × bonus_outil, BORNÉE par le plafond du lieu.
-//   Le plafond (locationCap) est passé en paramètre ; son câblage (SafeZone / CRAFT-LOC01)
-//   est un ticket ultérieur (batch 5). Le score du mini-jeu (±1 cran) reste géré à part
-//   (utils/crafting.js resolveCraftOutcome) — ici on ne modélise que la formule de base.
+// MODÈLE DE QUALITÉ HYBRIDE (décision v1.42 batch 5) — un SEUL chemin de qualité :
+//   1. rareté de BASE = tirage dans la `rarityTable` de la combinaison (CRAFT-RARITY01,
+//      rollBaseRarity) ;
+//   2. BUMPS BORNÉS ±1 : la Concentration (chance = concentration/150, STA03) et le bonus
+//      d'outil ajoutent chacun AU PLUS +1 cran ; le palier du mini-jeu ajoute ses crans ;
+//   3. clamp : jamais sous la base, jamais au-dessus du plafond du lieu (CRAFT-LOC01).
+// Ce modèle remplace l'ancienne formule MULTIPLICATIVE (CRAFT-G3, `craftedRarity` plus bas,
+// conservée pour compat/tests mais NON utilisée comme chemin de qualité). Le cœur de bump
+// est PARTAGÉ avec utils/crafting.js (applyRarityBumps) → resolveCraftOutcome (STA03) et
+// resolveCraftedRarity (hybride) convergent sur la même implémentation.
 //
 // CRAFT-G2 (§ TASKS.md v1.42) — mécanique de découverte :
 //   N slots libres pour assembler des ingrédients ; en cas de SUCCÈS la recette est apprise ;
@@ -13,10 +18,58 @@
 
 import { RARITY_TIERS } from '../data/equipment'
 import { findRecipeByIngredients } from '../data/craftRecipes'
+import { applyRarityBumps, tierRarityBump, rollConcentrationBump } from './crafting'
 
 export const CONCENTRATION_MAX = 150
 
-// ── CRAFT-G3 — pondération de qualité ────────────────────────────────────────────
+// ── Modèle de qualité HYBRIDE (chemin de qualité UNIQUE) ──────────────────────────
+
+/**
+ * Bump borné (0 ou 1) conféré par un outil de craft (CRAFT-TOOL01, câblage batch 6).
+ * Tout outil qui améliore la qualité vaut AU PLUS +1 cran (borné) ; toolBonus ≤ 1 = aucun.
+ * @param {number} toolBonus multiplicateur/indice d'outil (défaut 1 = aucun outil)
+ * @returns {0|1}
+ */
+export function toolRarityBump(toolBonus = 1) {
+  return (toolBonus ?? 1) > 1 ? 1 : 0
+}
+
+/**
+ * CHEMIN DE QUALITÉ HYBRIDE UNIQUE — résout la rareté craftée d'une combinaison.
+ *
+ * base = rollBaseRarity(rarityTable) [ou baseRarity direct si fourni],
+ * puis bumps BORNÉS : palier mini-jeu (tierRarityBump) + Concentration (±1, rollConcentrationBump)
+ * + outil (±1, toolRarityBump), le tout clampé par applyRarityBumps (jamais sous la base,
+ * jamais au-dessus du plafond du lieu).
+ *
+ * @param {object} p
+ * @param {Record<string,number>} [p.rarityTable] table de rareté de la combinaison (CRAFT-RARITY01)
+ * @param {string} [p.baseRarity] rareté de base explicite (prioritaire sur rarityTable si fournie)
+ * @param {string} [p.tier] palier du mini-jeu ('perfect'|'good'|'neutral'|…) — défaut aucun bump
+ * @param {number} [p.concentration=0] Concentration du héros (0..150) → chance d'un bump ±1
+ * @param {number} [p.toolBonus=1] indice d'outil → bump borné ±1
+ * @param {string} [p.locationCapRarity] plafond de rareté du lieu (CRAFT-LOC01)
+ * @param {() => number} [p.rng=Math.random] RNG injecté (roll de base + bump Concentration)
+ * @returns {string|null} rareté craftée, ou null si aucune base tirable
+ */
+export function resolveCraftedRarity({
+  rarityTable,
+  baseRarity,
+  tier,
+  concentration = 0,
+  toolBonus = 1,
+  locationCapRarity,
+  rng = Math.random,
+} = {}) {
+  const base = baseRarity ?? rollBaseRarity(rarityTable, rng)
+  if (base == null) return null
+  const bumps =
+    tierRarityBump(tier) + rollConcentrationBump(concentration, rng) + toolRarityBump(toolBonus)
+  return applyRarityBumps({ baseRarity: base, bumps, locationCapRarity })
+}
+
+// ── CRAFT-G3 (LEGACY, non utilisé comme chemin de qualité) — formule multiplicative ──
+// Conservée pour compat & tests batch 4. Le chemin de qualité RÉEL est resolveCraftedRarity.
 
 /**
  * Multiplicateur de qualité issu de la Concentration et du bonus d'outil.
@@ -43,8 +96,11 @@ function rarityFromRank(rank) {
 }
 
 /**
- * CRAFT-G3 — rareté craftée pondérée par la qualité, bornée par le plafond du lieu.
+ * @deprecated CRAFT-G3 (LEGACY) — formule MULTIPLICATIVE de rareté. N'est PLUS le chemin de
+ * qualité du jeu (remplacée par le modèle hybride resolveCraftedRarity). Conservée pour ne
+ * pas casser les tests batch 4 ; à retirer une fois ces tests migrés (batch 6).
  *
+ * Rareté craftée pondérée par la qualité, bornée par le plafond du lieu.
  * On travaille sur le RANG 1-based de la rareté (common=1) pour que le multiplicateur
  * ait un sens même sur du common (base × mult), puis on arrondit et on clampe :
  *   rankOut = floor( rankBase × (1 + Concentration/150) × toolBonus )
