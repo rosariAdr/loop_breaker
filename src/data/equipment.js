@@ -43,6 +43,10 @@ export const SLOT_STATS = {
   helmet: { primary: ['def'], secondary: ['maxHp'] },
   armor: { primary: ['def', 'maxHp'], secondary: [] },
   boots: { primary: ['agility'], secondary: ['chance'] },
+  // BIJOU01 / LEAT01 — nouveaux slots (SLOT01) : gants (cordonnier), amulette & bague (bijoutier).
+  gloves: { primary: ['agility'], secondary: ['strength'] },
+  amulet: { primary: ['intelligence', 'maxHp'], secondary: [] },
+  ring: { primary: ['chance'], secondary: ['strength', 'intelligence'] },
 }
 
 // Valeurs de base (rarity common) par slot et par stat
@@ -51,6 +55,10 @@ export const BASE_STAT_VALUES = {
   helmet: { def: 4, maxHp: 15 },
   armor: { def: 6, maxHp: 25 },
   boots: { agility: 4, chance: 2 },
+  // BIJOU01 / LEAT01 — valeurs de base des nouveaux slots.
+  gloves: { agility: 3, strength: 2 },
+  amulet: { intelligence: 4, maxHp: 10 },
+  ring: { chance: 3 },
 }
 
 // Templates des pièces d'équipement
@@ -283,6 +291,185 @@ export const EQUIPMENT_TEMPLATES = {
       rare: { ingredients: { cursed_armor_shard: 3, hollow_shard: 2, caustic_core: 1 }, gold: 95 },
       epic: { ingredients: { cursed_steel: 3, dark_essence: 2 }, gold: 300 },
       legendary: { ingredients: { cursed_steel: 5, dark_essence: 3, warlord_crest: 2 }, gold: 950 },
+    },
+    merchantStock: {},
+    merchantBuyPrice: {},
+  },
+
+  // ── GANTS (LEAT01 — cuir, atelier du cordonnier) ─────────────────────────────
+  // Alimentent le slot `gloves` ouvert par SLOT01. Cuir → agility/strength.
+  leather_gloves: {
+    id: 'leather_gloves',
+    name: 'Leather Gloves',
+    slot: 'gloves',
+    material: 'leather', // LEAT01 — traité par le cordonnier (pas la forge)
+    description: 'Supple leather gloves. Improves grip and reflexes.',
+    baseStats: { agility: 3, strength: 2 },
+    set: 'iron_vanguard', // SET-CONTENT01 — étend le set vers 9 pièces (SLOT01)
+    availableAt: ['leatherworker', 'merchant'],
+    craftRecipes: {
+      common: { ingredients: { wolf_pelt: 2, hare_pelt: 2 }, gold: 22 },
+      // RES03 — wolf_alpha_fang (croc d'alpha, ashwood_wolf) renforce la prise du gant.
+      rare: { ingredients: { boar_hide: 3, serpent_scale: 2, wolf_alpha_fang: 1 }, gold: 85 },
+      epic: { ingredients: { beast_hide: 3, wyvern_scale: 2 }, gold: 280 },
+      legendary: { ingredients: { beast_hide: 5, shadow_fur: 3, void_crystal: 1 }, gold: 900 },
+    },
+    merchantStock: { common: true, rare: true },
+    merchantBuyPrice: { common: 44, rare: 170 },
+  },
+
+  spectral_grips: {
+    id: 'spectral_grips',
+    name: 'Spectral Grips',
+    slot: 'gloves',
+    material: 'leather',
+    description: 'Gloves woven with spectral thread. Channel the mind through the fingertips.',
+    baseStats: { intelligence: 3, maxHp: 8 },
+    set: 'wraithbound', // SET-CONTENT01 — étend le set Wraithbound vers 9 pièces
+    availableAt: ['leatherworker'],
+    craftRecipes: {
+      common: { ingredients: { fox_pelt: 2, ectoplasm: 2 }, gold: 28 },
+      // RES03 — spectral_residue (résidu du ruin_specter) tisse l'aura du gant.
+      rare: { ingredients: { boar_hide: 3, ectoplasm: 3, spectral_residue: 1 }, gold: 105 },
+      epic: { ingredients: { shadow_fur: 3, wraith_essence: 2 }, gold: 330 },
+      legendary: { ingredients: { shadow_fur: 5, wraith_essence: 3, cursed_gem: 1 }, gold: 1050 },
+    },
+    merchantStock: {},
+    merchantBuyPrice: {},
+  },
+
+  hunters_grips: {
+    id: 'hunters_grips',
+    name: "Hunter's Grips",
+    slot: 'gloves',
+    material: 'leather',
+    description: 'Fingerless hunting gloves. Steady the hand for a killing blow.',
+    baseStats: { agility: 4, chance: 2 },
+    availableAt: ['leatherworker'],
+    craftRecipes: {
+      common: { ingredients: { hare_pelt: 3, wolf_fang: 2 }, gold: 20 },
+      // RES03 — goblin_warpaint (pigments du knoll_goblin) marque le gant du chasseur.
+      rare: { ingredients: { boar_hide: 2, serpent_scale: 3, goblin_warpaint: 1 }, gold: 82 },
+      epic: { ingredients: { beast_hide: 3, void_fang: 2 }, gold: 270 },
+      legendary: { ingredients: { beast_hide: 5, void_fang: 3, dark_essence: 2 }, gold: 880 },
+    },
+    merchantStock: {},
+    merchantBuyPrice: {},
+  },
+
+  // ── AMULETTES (BIJOU01 — bijoutier) ──────────────────────────────────────────
+  // Alimentent le slot `amulet` ouvert par SLOT01. Bijou → intelligence/maxHp.
+  iron_pendant: {
+    id: 'iron_pendant',
+    name: 'Iron Pendant',
+    slot: 'amulet',
+    material: 'metal', // BIJOU01 — travaillé par le bijoutier
+    description: 'A heavy iron pendant. Steadies the body and the will.',
+    baseStats: { def: 3, maxHp: 12 },
+    set: 'iron_vanguard', // SET-CONTENT01 — 6ᵉ pièce potentielle du set
+    availableAt: ['jeweler', 'merchant'],
+    craftRecipes: {
+      common: { ingredients: { rusted_iron: 3, stone_shard: 2 }, gold: 26 },
+      rare: { ingredients: { cursed_steel: 2, grimstone: 3 }, gold: 100 },
+      epic: { ingredients: { cursed_steel: 3, cursed_gem: 1 }, gold: 320 },
+      legendary: { ingredients: { cursed_steel: 5, cursed_gem: 2, void_crystal: 1 }, gold: 1000 },
+    },
+    merchantStock: { common: true, rare: true },
+    merchantBuyPrice: { common: 52, rare: 200 },
+  },
+
+  wraith_locket: {
+    id: 'wraith_locket',
+    name: 'Wraith Locket',
+    slot: 'amulet',
+    material: 'metal',
+    description: 'A locket holding a sliver of trapped soul. Amplifies the mind.',
+    baseStats: { intelligence: 4, maxHp: 10 },
+    set: 'wraithbound', // SET-CONTENT01 — 6ᵉ pièce potentielle du set
+    availableAt: ['jeweler'],
+    craftRecipes: {
+      common: { ingredients: { ectoplasm: 3, bone_fragment: 2 }, gold: 30 },
+      rare: { ingredients: { spectral_iron: 2, ectoplasm: 3 }, gold: 110 },
+      epic: { ingredients: { spectral_iron: 4, wraith_essence: 2 }, gold: 340 },
+      legendary: { ingredients: { spectral_iron: 6, wraith_essence: 3, cursed_gem: 1 }, gold: 1080 },
+    },
+    merchantStock: {},
+    merchantBuyPrice: {},
+  },
+
+  serpent_charm: {
+    id: 'serpent_charm',
+    name: 'Serpent Charm',
+    slot: 'amulet',
+    material: 'metal',
+    description: 'A fang-shaped charm. Sharpens instinct and fortune.',
+    baseStats: { agility: 3, chance: 3 },
+    availableAt: ['jeweler'],
+    craftRecipes: {
+      common: { ingredients: { serpent_scale: 3, wolf_fang: 2 }, gold: 28 },
+      // RES03 — marsh_venom (venin du marsh_serpent) infuse le charme.
+      rare: { ingredients: { serpent_scale: 4, marsh_venom: 2 }, gold: 108 },
+      epic: { ingredients: { wyvern_scale: 3, wyvern_talon: 1 }, gold: 320 },
+      legendary: { ingredients: { wyvern_talon: 3, dark_essence: 2, void_crystal: 1 }, gold: 1020 },
+    },
+    merchantStock: {},
+    merchantBuyPrice: {},
+  },
+
+  // ── BAGUES (BIJOU01 — bijoutier) ─────────────────────────────────────────────
+  // Catégorie `ring` → se loge dans ring1 puis ring2 (SLOT01). Bijou → chance + stat.
+  iron_band: {
+    id: 'iron_band',
+    name: 'Iron Band',
+    slot: 'ring',
+    material: 'metal',
+    description: 'A plain iron band. Lends a steady, martial edge.',
+    baseStats: { strength: 3, chance: 2 },
+    set: 'iron_vanguard', // SET-CONTENT01 — pièce de bague du set (une seule, slots distincts)
+    availableAt: ['jeweler', 'merchant'],
+    craftRecipes: {
+      common: { ingredients: { rusted_iron: 3, wolf_fang: 1 }, gold: 24 },
+      rare: { ingredients: { cursed_steel: 2, warlord_crest: 1 }, gold: 100 },
+      epic: { ingredients: { cursed_steel: 3, cursed_gem: 1 }, gold: 310 },
+      legendary: { ingredients: { cursed_steel: 5, warlord_crest: 2, void_crystal: 1 }, gold: 980 },
+    },
+    merchantStock: { common: true, rare: true },
+    merchantBuyPrice: { common: 48, rare: 190 },
+  },
+
+  wraith_signet: {
+    id: 'wraith_signet',
+    name: 'Wraith Signet',
+    slot: 'ring',
+    material: 'metal',
+    description: 'A signet ring etched with spectral runes. Feeds the arcane.',
+    baseStats: { intelligence: 3, chance: 2 },
+    set: 'wraithbound', // SET-CONTENT01 — pièce de bague du set
+    availableAt: ['jeweler'],
+    craftRecipes: {
+      common: { ingredients: { ectoplasm: 2, bone_fragment: 2 }, gold: 26 },
+      rare: { ingredients: { spectral_iron: 2, ectoplasm: 2 }, gold: 104 },
+      epic: { ingredients: { spectral_iron: 4, wraith_essence: 2 }, gold: 330 },
+      legendary: { ingredients: { spectral_iron: 6, wraith_essence: 3, void_crystal: 1 }, gold: 1040 },
+    },
+    merchantStock: {},
+    merchantBuyPrice: {},
+  },
+
+  band_of_fortune: {
+    id: 'band_of_fortune',
+    name: 'Band of Fortune',
+    slot: 'ring',
+    material: 'metal',
+    description: 'A lucky band said to tilt fate. Boosts Chance above all.',
+    baseStats: { chance: 5 },
+    availableAt: ['jeweler'],
+    craftRecipes: {
+      common: { ingredients: { stone_shard: 3, wolf_fang: 2 }, gold: 22 },
+      // RES03 — verdant_ichor (sève alchimique du hill_slime) porte-bonheur.
+      rare: { ingredients: { grimstone: 3, verdant_ichor: 1 }, gold: 96 },
+      epic: { ingredients: { cursed_gem: 1, dark_essence: 2 }, gold: 300 },
+      legendary: { ingredients: { cursed_gem: 2, dark_essence: 3, void_crystal: 1 }, gold: 960 },
     },
     merchantStock: {},
     merchantBuyPrice: {},

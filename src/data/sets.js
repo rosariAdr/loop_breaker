@@ -35,11 +35,22 @@ export const SET_BONUS_TIERS = {
 export const SETS = {
   // ── Sets de zone Ashenvale (casque + armure + bottes + arme = 4 slots) ────────
   // Iron Vanguard : orienté défense/force. Arme d'élite alternative = Thunderhoof Maul.
+  // BIJOU01/LEAT01 (v1.42 batch 4) : gants + amulette + bague ajoutés → 7 pièces distinctes
+  // (helmet/armor/boots/weapon + gloves/amulet/ring), extension du set de zone vers les
+  // slots ouverts par SLOT01 (paliers SET_BONUS_TIERS jusqu'à 9).
   iron_vanguard: {
     id: 'iron_vanguard',
     name: 'Iron Vanguard',
     stats: ['def', 'strength'],
-    pieces: ['iron_helm', 'leather_armor', 'swift_boots', 'iron_sword'],
+    pieces: [
+      'iron_helm',
+      'leather_armor',
+      'swift_boots',
+      'iron_sword',
+      'leather_gloves',
+      'iron_pendant',
+      'iron_band',
+    ],
     eliteWeapon: 'thunderhoof_maul', // arme d'élite alternative (même set)
     description: "Forgé pour tenir la ligne. Défense et force s'amplifient.",
   },
@@ -48,7 +59,15 @@ export const SETS = {
     id: 'wraithbound',
     name: 'Wraithbound Regalia',
     stats: ['intelligence', 'maxHp'],
-    pieces: ['wraith_crown', 'bone_plate', 'cursed_greaves', 'bone_staff'],
+    pieces: [
+      'wraith_crown',
+      'bone_plate',
+      'cursed_greaves',
+      'bone_staff',
+      'spectral_grips',
+      'wraith_locket',
+      'wraith_signet',
+    ],
     eliteWeapon: 'graven_edge', // arme d'élite alternative (même set)
     description: "Tissé d'énergie spectrale. Amplifie l'esprit et la vitalité.",
   },
