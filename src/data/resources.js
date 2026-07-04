@@ -183,7 +183,7 @@ export const RESOURCES = {
     sellPrice: 2,
     dropRate: 0.65, // stone_golem (T1) — commun
     sources: ['stone_golem'],
-    uses: ['sell'],
+    uses: ['craft', 'sell'], // BIJOU01 — ingrédient iron_pendant / band_of_fortune (bijoutier)
   },
   earth_crystal: {
     id: 'earth_crystal',
