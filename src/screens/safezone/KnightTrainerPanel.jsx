@@ -4,6 +4,7 @@ import { RESOURCES } from '../../data/resources'
 import { SKILLS } from '../../data/skills'
 import { QUESTS } from '../../data/quests'
 import { Panel, InfoLine } from './Panel'
+import MasterBoard from './MasterBoard'
 
 // ── Sir Aldric — Knight Trainer ───────────────────────────────────────────────
 
@@ -412,6 +413,11 @@ export default function KnightTrainerPanel({ onBack }) {
           </div>
         </div>
       )}
+
+      {/* MST08 / v1.43 (DÉCISION #3) — tableau de maître LOCAL de Millhaven : surface le
+          maître ITINÉRANT de passage les jours où Millhaven l'accueille (gating partagé,
+          cf. MasterBoard.jsx). Rend null hors de ces jours. */}
+      <MasterBoard />
     </Panel>
   )
 }

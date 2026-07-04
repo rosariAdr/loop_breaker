@@ -1,28 +1,19 @@
 import { useState } from 'react'
 import { useGameStore } from '../../store/gameStore'
 import { SKILLS } from '../../data/skills'
-import { heroSkillLevels } from '../../data/quests'
-import { MASTER_QUESTS } from '../../data/masterQuests'
-import { getMaster, getMasterQuestIdsAtLocation } from '../../data/masters'
 import { getAcademyCatalog, skillSellPrice, skillPremiumBuyPrice } from '../../data/academy'
-import { QuestCard } from '../QuestBoard'
 import { Panel } from './Panel'
+import MasterBoard from './MasterBoard'
 
 // ── ACA01/ACA03 — Académie de magie : acheter / revendre des skills ───────────
 export default function AcademyPanel({ onBack }) {
   const {
     hero,
-    world,
     buySkill,
     buySkillAtLevel,
     sellSkill,
     unequipActiveSkill,
     unequipPassiveSkill,
-    startQuest,
-    completeQuest,
-    abandonQuest,
-    isQuestComplete,
-    isMasterQuestLocked,
   } = useGameStore()
   const catalog = getAcademyCatalog()
   const owned = hero.inventory.manaStones ?? []
@@ -38,42 +29,6 @@ export default function AcademyPanel({ onBack }) {
     borderRadius: 6,
     padding: '4px 6px',
   }
-
-  // ACA04 / MST04 — épreuves du maître (quêtes de level-up de skill), SCOPÉES à la localité.
-  const activeIds = world.activeQuests ?? []
-  const completedIds = world.completedQuests ?? []
-  const skillLevels = heroSkillLevels(hero)
-
-  // MST04 — état d'engagement + maître(s) du lieu courant (ex. Ironhaven → Vael, Bulgar ;
-  // PAS Aldric à Greywatch ni Elyndra à Millhaven). L'Académie ne montre QUE les quêtes
-  // des maîtres de CETTE ville : l'initiation d'un maître d'ailleurs ne surface pas ici.
-  // MST08 — inclut aussi le maître ITINÉRANT de passage ce jour-là (rotation sur dayCount) :
-  // en passant world.dayCount, getMasterQuestIdsAtLocation ajoute ses quêtes aux fixes.
-  const engagedMaster = getMaster(hero.masterId)
-  const localMasterQuestIds = getMasterQuestIdsAtLocation(world.currentLocation, world.dayCount)
-  const localMasterQuests = localMasterQuestIds.map((id) => MASTER_QUESTS[id]).filter(Boolean)
-
-  // MST04 — visibilité : une fois ENGAGÉ, seules les quêtes du maître engagé (+ ses
-  // initiations) restent visibles ; les quêtes des AUTRES maîtres du lieu disparaissent.
-  // Tant que non engagé, les initiations locales sont visibles (portes d'entrée au choix).
-  const visibleMasterQuests = localMasterQuests.filter((q) => {
-    if (engagedMaster == null) return true // choix libre : tout est proposé
-    if (q.masterId === engagedMaster.id) return true // le maître engagé
-    return (engagedMaster.skillQuestPool ?? []).includes(q.id) // ses quêtes de skill
-  })
-
-  const masterActive = visibleMasterQuests.filter((q) => activeIds.includes(q.id))
-  const masterAvailable = visibleMasterQuests.filter(
-    (q) => !activeIds.includes(q.id) && !completedIds.includes(q.id),
-  )
-
-  // MST04 — raison de verrou (grisé + tooltip) pour une quête de maître non initiée.
-  const masterLockReason = (q) =>
-    isMasterQuestLocked(q)
-      ? engagedMaster == null
-        ? 'Requires initiation with a master'
-        : `Reserved for students of ${engagedMaster.name}`
-      : null
 
   const rowStyle = (accent) => ({
     background: 'rgba(160,110,220,.10)',
@@ -248,57 +203,9 @@ export default function AcademyPanel({ onBack }) {
         </div>
       )}
 
-      {/* ACA04 / MST04 — Épreuves de maîtrise : monter un skill à un niveau donné */}
-      {(masterAvailable.length > 0 || masterActive.length > 0) && (
-        <div
-          className="mt-4 flex flex-col gap-2"
-          style={{ maxWidth: 560 }}
-          data-testid="master-quests"
-        >
-          <div className="t-label" style={{ marginBottom: 2 }}>
-            ✦ Trials of Mastery
-          </div>
-          {/* MST04 — état d'engagement : « no master » ou « master = X ». */}
-          <p
-            data-testid="master-state"
-            style={{
-              color: engagedMaster ? 'var(--amber-deep, #c0a060)' : '#7a6a8a',
-              fontSize: '0.72rem',
-              fontFamily: 'Cinzel, serif',
-            }}
-          >
-            {engagedMaster
-              ? `Master: ${engagedMaster.name} · ${engagedMaster.title}`
-              : 'No master — complete an initiation to be taken as a student.'}
-          </p>
-          <p style={{ color: 'var(--ink-soft)', fontSize: '0.72rem', fontStyle: 'italic' }}>
-            "Bring a technique to the level I name, and I shall reward your discipline."
-          </p>
-          {masterActive.map((q) => (
-            <QuestCard
-              key={q.id}
-              quest={q}
-              questStatus="active"
-              heroLevel={hero.level}
-              skillLevels={skillLevels}
-              canComplete={isQuestComplete(q.id)}
-              onComplete={() => completeQuest(q.id)}
-              onAbandon={() => abandonQuest(q.id)}
-            />
-          ))}
-          {masterAvailable.map((q) => (
-            <QuestCard
-              key={q.id}
-              quest={q}
-              questStatus="available"
-              heroLevel={hero.level}
-              skillLevels={skillLevels}
-              lockedReason={masterLockReason(q)}
-              onAccept={() => startQuest(q.id)}
-            />
-          ))}
-        </div>
-      )}
+      {/* ACA04 / MST04 / MST08 — Épreuves de maîtrise (maîtres fixes de la ville + itinérant
+          de passage ce jour-là). Board partagé, cf. MasterBoard.jsx. */}
+      <MasterBoard />
     </Panel>
   )
 }

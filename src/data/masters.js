@@ -218,61 +218,100 @@ export function getMastersAtLocation(locationId) {
   return Object.values(MASTERS).filter((m) => !m.itinerant && m.location === locationId)
 }
 
-// ── MST08 — Apparition des maîtres ITINÉRANTS (de passage) ────────────────────
+// ── MST08 / v1.43 (batch 6) — Apparition des maîtres ITINÉRANTS (de passage) ──
 //
 // Un maître itinérant n'a pas de `location` : il APPARAÎT à une localité au fil du temps.
 // Modèle retenu (déterministe, testable, sans alea de render) : UN itinérant « de passage »
 // à la fois, en rotation tous les ITINERANT_ROTATION_DAYS jours (même convention que la
-// rotation de l'église, CHURCH_ROTATION_DAYS). L'itinérant du bloc courant se tient dans
-// TOUTE agglomération (village/ville) — il « voyage » de lieu en lieu. Les spots de chasse
-// et donjons n'accueillent pas de maître de passage (pas de halte).
+// rotation de l'église, CHURCH_ROTATION_DAYS).
 //
-// ⚠️ DESIGN FORK (cadence/lieu exacts) : la cadence (3 j) et le fait qu'il soit présent
-// dans toutes les agglos à la fois plutôt qu'une seule tirée au sort sont des choix par
-// défaut, à arbitrer (EVT01 pourrait plus tard le rattacher à un événement/route précis).
+// DÉCISION #3 (v1.43 batch 6) — l'itinérant du bloc courant se tient dans UNE SEULE
+// agglomération (tirée de façon déterministe par bloc), plus dans toutes à la fois. Le
+// bloc sélectionne À LA FOIS le maître ET son agglomération-hôte, via un « combo » qui
+// énumère TOUTES les paires (maître × agglo) de façon déterministe et sans couplage :
+//   block = floor(dayCount / ITINERANT_ROTATION_DAYS)
+//   combo = block % (nbMaîtres × nbAgglos)                (18 paires : 3 × 6)
+//   maître = ITINERANT_MASTERS[combo % nbMaîtres]         (avance chaque bloc)
+//   hôte   = ITINERANT_HOST_ORDER[floor(combo / nbMaîtres) % nbAgglos]  (avance tous les 3 blocs)
+// Ainsi, sur le cycle complet (ppcm = nbMaîtres × nbAgglos = 18 blocs = 72 jours) chaque
+// paire (maître, agglo) survient EXACTEMENT une fois : toute agglo finit par accueillir chacun
+// des 3 focus (contrairement à un simple `block % nbAgglos` qui figerait 1 focus par agglo).
+// Les spots de chasse et donjons n'accueillent jamais de maître de passage (pas de halte).
+//
+// L'itinérant surface sur le tableau de maître LOCAL de son agglomération-hôte : l'Académie
+// en ville, le maître de village (KnightTrainer) à Millhaven, et — pour les villages sans
+// PNJ-maître dédié — le tableau communautaire de l'Église (cf. panels, réutilise le gating).
 
 /** Maîtres itinérants (ordre de rotation stable = ordre d'insertion dans MASTERS). */
 export const ITINERANT_MASTERS = Object.values(MASTERS).filter((m) => m.itinerant)
 
-/** Cadence de rotation des itinérants (jours). Aligné sur la rotation de l'église. */
-export const ITINERANT_ROTATION_DAYS = 3
+/** Cadence de rotation des itinérants (jours). DÉCISION #3 : 4 jours (bloc de rotation). */
+export const ITINERANT_ROTATION_DAYS = 4
 
-// Localités qui accueillent un maître de passage : les agglomérations (village/ville).
-// Codées en dur pour éviter une dépendance croisée vers worldGraph (données pures).
-const ITINERANT_HOST_LOCATIONS = new Set([
+// Agglomérations qui peuvent accueillir un maître de passage (ORDRE = seed de sélection
+// d'hôte par bloc). Les 6 agglos du monde (2 villes + 4 villages). Codées en dur pour
+// éviter une dépendance croisée vers zones/worldGraph (données pures).
+export const ITINERANT_HOST_ORDER = [
   'greywatch',
   'millhaven',
   'ironhaven',
   'stonehaven',
   'duskreach',
   'ashfall_post',
-])
+]
+const ITINERANT_HOST_LOCATIONS = new Set(ITINERANT_HOST_ORDER)
 
 /** Une localité peut-elle accueillir un maître de passage ? (agglomération). */
 export function isItinerantHostLocation(locationId) {
   return ITINERANT_HOST_LOCATIONS.has(locationId)
 }
 
+/** Bloc de rotation courant : change tous les ITINERANT_ROTATION_DAYS jours (dès dayCount 0). */
+export function itinerantRotationBlock(dayCount = 1) {
+  return Math.floor((dayCount ?? 1) / ITINERANT_ROTATION_DAYS)
+}
+
+/**
+ * Index de « combo » (paire maître × agglo) du bloc courant, ∈ [0, nbMaîtres×nbAgglos).
+ * Énumère déterministe­ment toutes les paires ; base commune de master/host (voir en-tête).
+ */
+function itinerantComboIndex(dayCount = 1) {
+  const nM = ITINERANT_MASTERS.length
+  const nH = ITINERANT_HOST_ORDER.length
+  if (nM === 0 || nH === 0) return 0
+  return itinerantRotationBlock(dayCount) % (nM * nH)
+}
+
 /**
  * MST08 — Le maître itinérant « de passage » pour un jour donné (ou null si aucun).
- * Rotation déterministe : bloc = floor(dayCount / ITINERANT_ROTATION_DAYS), l'itinérant
- * sélectionné = bloc % nombre d'itinérants. Ex. avec 3 itinérants et une cadence de 3 j :
- * jours 1-2 → #0, 3-5 → #1, 6-8 → #2, 9-11 → #0, …
+ * maître = ITINERANT_MASTERS[combo % nbMaîtres] : avance d'un cran chaque bloc.
  */
 export function getItinerantMasterForDay(dayCount = 1) {
   const list = ITINERANT_MASTERS
   if (list.length === 0) return null
-  const block = Math.floor((dayCount ?? 1) / ITINERANT_ROTATION_DAYS)
-  return list[block % list.length]
+  return list[itinerantComboIndex(dayCount) % list.length]
 }
 
 /**
- * MST08 — Maître(s) itinérant(s) actuellement présents à une localité un jour donné.
- * Tableau (0 ou 1 élément) : l'itinérant du bloc courant s'il s'agit d'une agglomération,
- * sinon []. Symétrique de getMastersAtLocation (maîtres fixes).
+ * DÉCISION #3 — L'agglomération-hôte de l'itinérant pour un jour donné (id, ou null si aucune
+ * agglo n'est configurée). hôte = ITINERANT_HOST_ORDER[floor(combo / nbMaîtres) % nbAgglos] :
+ * avance tous les nbMaîtres blocs → toute agglo finit par accueillir chaque focus.
+ */
+export function getItinerantHostForDay(dayCount = 1) {
+  const hosts = ITINERANT_HOST_ORDER
+  const nM = ITINERANT_MASTERS.length
+  if (hosts.length === 0 || nM === 0) return null
+  return hosts[Math.floor(itinerantComboIndex(dayCount) / nM) % hosts.length]
+}
+
+/**
+ * MST08 / DÉCISION #3 — Maître(s) itinérant(s) présents à une localité un jour donné.
+ * Tableau (0 ou 1 élément) : l'itinérant du bloc courant UNIQUEMENT si `locationId` est SON
+ * agglomération-hôte du bloc (plus « partout à la fois »). Symétrique de getMastersAtLocation.
  */
 export function getItinerantMastersAtLocation(locationId, dayCount = 1) {
   if (!isItinerantHostLocation(locationId)) return []
+  if (getItinerantHostForDay(dayCount) !== locationId) return []
   const m = getItinerantMasterForDay(dayCount)
   return m ? [m] : []
 }
