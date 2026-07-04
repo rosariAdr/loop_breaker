@@ -18,18 +18,33 @@ export const createCombatSlice = (set, get) => ({
           [monsterId]: before + 1,
         },
       },
-      // BEST01 — compteur de bestiaire PERSISTANT (méta, cumulé entre runs).
+    }))
+    // QA01 — la propagation (bestiaire, quêtes, burnout, titres, hint) est partagée avec
+    // les kills IDLE : elle NE touche PAS monsterKillCounts (déjà incrémenté par l'appelant).
+    get().propagateKills(monsterId, 1)
+  },
+
+  // QA01 — Propagation d'un ou plusieurs kills vers tous les systèmes en aval, SANS toucher
+  // `world.monsterKillCounts` (l'appelant l'a déjà incrémenté). Appelé par recordKill (combat)
+  // ET par l'idle (processIdleTick + applyOfflineProgress) pour garantir que le bestiaire,
+  // les toasts de quête, le burnout et les titres de zone comptent AUSSI les kills idle.
+  propagateKills: (monsterId, count = 1) => {
+    if (count <= 0) return
+    const before = ((get().world.monsterKillCounts ?? {})[monsterId] || 0) - count
+    // BEST01 — compteur de bestiaire PERSISTANT (méta, cumulé entre runs).
+    set((state) => ({
       meta: {
         ...state.meta,
         bestiaryKills: {
           ...(state.meta.bestiaryKills ?? {}),
-          [monsterId]: ((state.meta.bestiaryKills ?? {})[monsterId] ?? 0) + 1,
+          [monsterId]: ((state.meta.bestiaryKills ?? {})[monsterId] ?? 0) + count,
         },
       },
     }))
     // ONB01/TUT02 — au passage du seuil de maîtrise, tip « idle unlocked » (one-shot ;
     // déduplication + respect du réglage tutoriel gérés par triggerHint).
-    if (before + 1 >= IDLE_MASTERY_KILLS) get().triggerHint('idle_unlock')
+    if (before < IDLE_MASTERY_KILLS && before + count >= IDLE_MASTERY_KILLS)
+      get().triggerHint('idle_unlock')
 
     // QTOAST01 — pop-up de progrès pour les quêtes ACTIVES dont un objectif kill cible ce
     // monstre (combat + idle). Progresse 1..N puis « done » à l'exact ; pas de spam après.

@@ -7,6 +7,7 @@ import { RESOURCES } from '../data/resources'
 import { getStatMilestoneBonuses, milestonesFor, STAT_MILESTONES } from '../data/statMilestones'
 import { bestiaryDropBonus } from '../data/bestiary'
 import { scaleMonsterStats, ZONE_MULTS, ZONE_ORDER } from '../data/zones'
+import { BALANCE } from '../config'
 import {
   checkIgnarethAwakening,
   checkSylvaraAwakening,
@@ -455,7 +456,7 @@ export function applyExpGain(heroStats, currentExp, expToNext, expGain) {
     return {
       levelUp: true,
       newExp: newExp - expToNext,
-      newExpToNext: Math.round(expToNext * 1.5),
+      newExpToNext: Math.round(expToNext * BALANCE.xp_curve_mult),
       statBonuses: {
         maxHp: Math.round(heroStats.maxHp * 0.1),
         maxMana: Math.round(heroStats.maxMana * 0.1),

@@ -1,6 +1,7 @@
 // Définition des zones du monde médiéval fantasy
 
 import { MONSTERS } from './monsters'
+import { BALANCE } from '../config'
 
 export const ZONES = {
   ashenvale: {
@@ -279,19 +280,36 @@ export function getVisibleZones(state = {}) {
   })
 }
 
-// Multiplicateurs de zone pour le scaling de difficulté
+// Multiplicateurs de zone pour le scaling de difficulté.
+// BAL-CSV01 — dérivés de `BALANCE` (getter) : reflètent les overrides CSV appliqués
+// au boot. Les clés BALANCE sont préfixées `zone_mult_<zoneId>`.
+export function getZoneMult(zoneId) {
+  return BALANCE[`zone_mult_${zoneId}`] ?? 1.0
+}
+
+// Vue objet des multiplicateurs de zone (compat : consommé par le combat / les tests).
 export const ZONE_MULTS = {
-  ashenvale: 1.0,
-  blighted_road: 1.8,
-  grimspire: 2.5,
-  dungeon_boss: 3.5,
-  demon_lord: 6.0,
+  get ashenvale() {
+    return getZoneMult('ashenvale')
+  },
+  get blighted_road() {
+    return getZoneMult('blighted_road')
+  },
+  get grimspire() {
+    return getZoneMult('grimspire')
+  },
+  get dungeon_boss() {
+    return getZoneMult('dungeon_boss')
+  },
+  get demon_lord() {
+    return getZoneMult('demon_lord')
+  },
 }
 
 // Calcule les stats d'un monstre selon la zone et le run actuel
 export function scaleMonsterStats(baseStats, zoneId, runCount) {
-  const mult = ZONE_MULTS[zoneId] ?? 1.0
-  const runScale = Math.pow(1.08, Math.min(runCount, 25))
+  const mult = getZoneMult(zoneId)
+  const runScale = Math.pow(BALANCE.run_scaling, Math.min(runCount, BALANCE.run_scaling_cap))
   const scale = mult * runScale
 
   return {
