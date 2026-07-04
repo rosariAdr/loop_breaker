@@ -46,7 +46,10 @@ export const createIdleSlice = (set, get) => ({
     }),
 
   // ── Idle tick ─────────────────────────────────────────────────────────────
-  processIdleTick: () =>
+  processIdleTick: () => {
+    // QA01 — mémorise le monstre effectivement tué ce tick pour propager le kill
+    // (bestiaire/quêtes/burnout/titres) APRÈS le set, comme le fait recordKill en combat.
+    let killedMonsterId = null
     set((state) => {
       if (!state.world.isIdleActive || !state.world.idleTargetMonster) return state
 
@@ -151,6 +154,7 @@ export const createIdleSlice = (set, get) => ({
 
       const xp = monster.expReward ?? 10
       const newKillCount = (state.world.monsterKillCounts[monsterId] || 0) + 1
+      killedMonsterId = monsterId // QA01 — un kill a bien eu lieu ce tick
 
       // Dégâts reçus du monstre
       const monAtk = monster.baseStats.atk ?? monster.baseStats.strength ?? 5
@@ -212,7 +216,10 @@ export const createIdleSlice = (set, get) => ({
           idleLog: [entry, ...state.world.idleLog].slice(0, 10),
         },
       }
-    }),
+    })
+    // QA01 — propage le kill idle (bestiaire, quêtes, burnout, titres) hors du set.
+    if (killedMonsterId) get().propagateKills(killedMonsterId, 1)
+  },
 
   // IDLE-OFF — au retour, créditer les gains accumulés pendant l'absence si l'idle
   // était actif. Calcul en batch (valeurs espérées). nowMs injectable pour les tests.
@@ -249,6 +256,9 @@ export const createIdleSlice = (set, get) => ({
         offlineSummary: { monsterName: monster.name, ...gains },
       },
     }))
+    // QA01 — propage les kills hors-ligne au bestiaire/quêtes/titres (monsterKillCounts déjà
+    // incrémenté au-dessus). Le compteur de bestiaire doit suivre les kills idle offline.
+    if (gains.kills > 0) get().propagateKills(monsterId, gains.kills)
   },
 
   clearOfflineSummary: () => set((s) => ({ meta: { ...s.meta, offlineSummary: null } })),

@@ -8,6 +8,7 @@ import { MASTER_QUESTS, MASTER_QUEST_NPC } from './masterQuests'
 import { MONSTERS } from './monsters'
 import { QUEST_BALANCE } from './questBalance'
 import { getVillageQuestById } from './villageQuests'
+import { BALANCE } from '../config'
 
 // ── NPCs donneurs (Q08) ──────────────────────────────────────────────────────
 export const QUEST_NPCS = {
@@ -602,8 +603,17 @@ export function heroSkillLevels(hero) {
 // éventuel → défaut dérivé de la difficulté (quêtes de village générées). Réduit sur les
 // re-complétions (quêtes répétables). Visites / quêtes « INUTILE » = 0.
 export const QUEST_XP_REPEAT_MULT = 0.25
-const XP_BY_TIER = { easy: 40, medium: 110, hard: 150 }
-const RANK_BY_TIER = { easy: 1, medium: 3, hard: 5 }
+// BAL-CSV01 — barèmes XP/rang par palier, lus en direct depuis `BALANCE` (tunables CSV).
+const XP_BY_TIER = () => ({
+  easy: BALANCE.quest_xp_easy,
+  medium: BALANCE.quest_xp_medium,
+  hard: BALANCE.quest_xp_hard,
+})
+const RANK_BY_TIER = () => ({
+  easy: BALANCE.quest_rank_easy,
+  medium: BALANCE.quest_rank_medium,
+  hard: BALANCE.quest_rank_hard,
+})
 const normTier = (t) => (t === 'mid' ? 'medium' : t)
 const isVisitOnly = (q) =>
   (q?.objectives?.length ?? 0) > 0 && q.objectives.every((o) => o.type === 'visit')
@@ -611,7 +621,8 @@ const isVisitOnly = (q) =>
 export function defaultQuestXp(quest) {
   if (isVisitOnly(quest)) return 0
   const tier = normTier(quest?.difficultyTier)
-  if (tier && XP_BY_TIER[tier] != null) return XP_BY_TIER[tier] // quêtes de village (par tier)
+  const byTier = XP_BY_TIER()
+  if (tier && byTier[tier] != null) return byTier[tier] // quêtes de village (par tier)
   const gold = quest?.reward?.gold ?? 0
   return Math.max(10, Math.round(gold * 0.6))
 }
@@ -622,7 +633,8 @@ export function questXpReward(quest) {
 export function defaultQuestRankPoints(quest) {
   if (isVisitOnly(quest)) return 0
   const tier = normTier(quest?.difficultyTier)
-  if (tier && RANK_BY_TIER[tier] != null) return RANK_BY_TIER[tier]
+  const byTier = RANK_BY_TIER()
+  if (tier && byTier[tier] != null) return byTier[tier]
   return 1
 }
 export function questRankPoints(quest) {
