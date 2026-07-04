@@ -212,6 +212,28 @@ export function getLocationType(world) {
   return 'village'
 }
 
+// Bâtiments FIXES qui hébergent un tableau de maître (surfaçage des Trials of Mastery) :
+// l'Académie (villes) et le KnightTrainer (Sir Aldric, Millhaven).
+const MASTER_BOARD_BUILDINGS = new Set(['academy', 'knight_trainer'])
+
+/**
+ * MST08 / v1.43 — Une agglomération possède-t-elle DÉJÀ un PNJ-maître (Académie/KnightTrainer)
+ * qui surface le tableau de maîtrise ? Sert au repli communautaire de l'Église : dans un
+ * village SANS PNJ-maître (ex. Greywatch/Duskreach/Ashfall Post), le maître itinérant de
+ * passage surface sur le tableau de l'Église ; on l'évite là où un board dédié existe déjà
+ * (Millhaven/villes) pour ne pas doubler l'affichage.
+ */
+export function hasDedicatedMasterBoard(locationId) {
+  for (const zone of Object.values(ZONES)) {
+    if (zone.city?.id === locationId) {
+      return (zone.city.buildings ?? []).some((b) => MASTER_BOARD_BUILDINGS.has(b))
+    }
+    const village = zone.villages?.find((v) => v.id === locationId)
+    if (village) return (village.buildings ?? []).some((b) => MASTER_BOARD_BUILDINGS.has(b))
+  }
+  return false
+}
+
 // Ordre des zones sur la carte (pour la navigation)
 export const ZONE_ORDER = ['ashenvale', 'blighted_road', 'grimspire']
 

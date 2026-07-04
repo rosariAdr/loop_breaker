@@ -4,15 +4,24 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import SafeZone from './SafeZone'
 import { useGameStore } from '../store/gameStore'
-import { getItinerantMasterForDay, ITINERANT_ROTATION_DAYS, MASTERS } from '../data/masters'
+import {
+  getItinerantMasterForDay,
+  getItinerantHostForDay,
+  ITINERANT_ROTATION_DAYS,
+  MASTERS,
+} from '../data/masters'
 import { MASTER_QUESTS } from '../data/masterQuests'
 
-// Un dayCount où l'itinérant `masterId` est de passage (rotation sur dayCount).
-const dayForItinerant = (masterId) => {
-  for (let d = 0; d < ITINERANT_ROTATION_DAYS * 12; d++) {
-    if (getItinerantMasterForDay(d).id === masterId) return d
+// v1.43 (DÉCISION #3) — un dayCount où l'itinérant `masterId` est de passage À IRONHAVEN
+// (l'itinérant surface désormais dans UNE SEULE agglo, son hôte du bloc). On cherche donc un
+// jour où il est l'itinérant du bloc ET où Ironhaven est l'agglo-hôte.
+const dayForItinerantAtIronhaven = (masterId) => {
+  for (let d = 0; d < ITINERANT_ROTATION_DAYS * 6 * 4; d++) {
+    if (getItinerantMasterForDay(d).id === masterId && getItinerantHostForDay(d) === 'ironhaven') {
+      return d
+    }
   }
-  throw new Error(`no day found for ${masterId}`)
+  throw new Error(`no day where ${masterId} hosts at ironhaven`)
 }
 
 const openAcademy = () => {
@@ -68,13 +77,14 @@ describe('MST04 — panneau Académie : état & scoping', () => {
   })
 })
 
-// MST08 — le maître ITINÉRANT de passage surface au board de l'Académie le bon jour.
-describe('MST08 — maître itinérant de passage', () => {
+// MST08 / v1.43 (DÉCISION #3) — l'itinérant de passage surface au board de l'Académie
+// UNIQUEMENT les jours où Ironhaven est son agglo-hôte du bloc (single-location).
+describe('MST08 — maître itinérant de passage (à son agglo-hôte)', () => {
   const setDay = (dayCount) =>
     useGameStore.setState((s) => ({ world: { ...s.world, dayCount } }))
 
-  it('affiche l’initiation de l’itinérant de FEU (Pyra) le jour où il est de passage', () => {
-    setDay(dayForItinerant('flame_wanderer'))
+  it('affiche l’initiation de l’itinérant de FEU (Pyra) le jour où il visite Ironhaven', () => {
+    setDay(dayForItinerantAtIronhaven('flame_wanderer'))
     openAcademy()
     const board = screen.getByTestId('master-quests')
     const pyraInit = MASTER_QUESTS[MASTERS.flame_wanderer.initiationQuestId].name
@@ -84,11 +94,21 @@ describe('MST08 — maître itinérant de passage', () => {
     expect(within(board).queryByText(new RegExp(kairaInit.slice(0, 12)))).toBeNull()
   })
 
-  it('affiche l’initiation de l’itinérant de GLACE (Kaira) le jour où il est de passage', () => {
-    setDay(dayForItinerant('frost_wanderer'))
+  it('affiche l’initiation de l’itinérant de GLACE (Kaira) le jour où il visite Ironhaven', () => {
+    setDay(dayForItinerantAtIronhaven('frost_wanderer'))
     openAcademy()
     const board = screen.getByTestId('master-quests')
     const kairaInit = MASTER_QUESTS[MASTERS.frost_wanderer.initiationQuestId].name
     expect(within(board).getByText(new RegExp(kairaInit.slice(0, 12)))).toBeTruthy()
+  })
+
+  it('n’affiche PAS l’itinérant du bloc à Ironhaven quand une AUTRE agglo est l’hôte', () => {
+    // jour 0 : bloc 0 → combo 0 → maître 0 (Pyra) à l’hôte index 0 (Greywatch), pas Ironhaven
+    setDay(0)
+    openAcademy()
+    // seuls les maîtres FIXES d’Ironhaven (Vael/Bulgar) sont surfacés ; pas d’itinérant
+    const board = screen.getByTestId('master-quests')
+    const pyraInit = MASTER_QUESTS[MASTERS.flame_wanderer.initiationQuestId].name
+    expect(within(board).queryByText(new RegExp(pyraInit.slice(0, 12)))).toBeNull()
   })
 })

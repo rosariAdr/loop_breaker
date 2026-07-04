@@ -1,7 +1,9 @@
 import { useGameStore } from '../../store/gameStore'
 import { CHURCH_QUESTS, getAvailableChurchDeeds, CHURCH_ROTATION_DAYS } from '../../data/churchQuests'
+import { hasDedicatedMasterBoard } from '../../data/zones'
 import { QuestCard } from '../QuestBoard'
 import { Panel, InfoLine } from './Panel'
+import MasterBoard from './MasterBoard'
 
 export default function ChurchPanel({ onBack }) {
   const {
@@ -125,6 +127,12 @@ export default function ChurchPanel({ onBack }) {
               </p>
             )}
       </div>
+
+      {/* MST08 / v1.43 (DÉCISION #3) — repli communautaire : dans un village SANS PNJ-maître
+          dédié (Greywatch/Duskreach/Ashfall Post), le maître ITINÉRANT de passage surface sur
+          le tableau de l'Église les jours où ce village l'accueille. On l'évite là où un board
+          maître dédié existe déjà (Académie en ville, KnightTrainer à Millhaven). */}
+      {!hasDedicatedMasterBoard(world.currentLocation) && <MasterBoard />}
     </Panel>
   )
 }
