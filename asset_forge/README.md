@@ -34,15 +34,41 @@ The background removal is **reused** from `scripts/process_assets.py` (not
 duplicated). If `rembg` is missing/fails, the forge logs a warning, **keeps the
 `with_bg`**, and continues — you can reprocess later (or via erase.bg).
 
+## Backends (image source)
+
+| Backend | Cost | Key | Style references |
+|---|---|---|---|
+| **pollinations** *(default)* | **free** | none | no — the style bible carries coherence |
+| **hf** (Hugging Face FLUX) | **free** | `HF_TOKEN` (free) | no |
+| **gemini** | paid (see Google's pricing page) | `GEMINI_API_KEY` + billing | yes (reference image) |
+
+Pick per run with `--backend pollinations|hf|gemini`, or set a default via the
+`FORGE_BACKEND` env var. **The default is free and keyless — it just works.**
+Gemini image generation needs a **billing-enabled** key (free tier is text-only).
+
+### Per-asset generation params (optional, in the manifest)
+Any entry may override generation: `model` · `width`/`height` (source resolution)
+· `size` (final px) · `seed` · `extra` (extra prompt text appended). Example: the
+3 bosses use `size: 1024`, `width/height: 1536` and an `extra:` with
+"colossal, hulking, low-angle heroic shot…" so they render **bigger and sharper**
+than the 512px surface monsters.
+
 ## Install
 
 ```bash
-python -m venv .venv && .venv\Scripts\activate      # Windows
 pip install -r asset_forge/requirements.txt
-copy asset_forge\.env.example asset_forge\.env       # then paste your GEMINI_API_KEY
 ```
 
-`--dry-run` only needs `pyyaml` + `jinja2` (no key, no rembg).
+Deps by need: `pyyaml`+`jinja2` (prompts, always) · `rembg`+`onnxruntime`
+(background removal → no_bg) · `google-genai`+`python-dotenv` (**gemini backend
+only**). `--dry-run` needs only pyyaml+jinja2.
+
+**Gemini key** (only for `--backend gemini`), on cmd.exe:
+```cmd
+copy asset_forge\.env.example asset_forge\.env
+notepad asset_forge\.env
+```
+Set `GEMINI_API_KEY=...` and save. `.env` is gitignored.
 
 ## Add an asset = add a manifest row
 
@@ -69,15 +95,17 @@ Portraits can use `out:` to land under `public/portraits/<role>/<emotion>.png`.
 Always `--dry-run` first (free — composes & prints prompts, no API call):
 
 ```bash
-python asset_forge/forge.py --dry-run                 # all seed entries
-python asset_forge/forge.py --only mf_ashwood_wolf    # one asset (real)
-python asset_forge/forge.py --zone ashenvale          # one zone
+python asset_forge/forge.py --dry-run                 # compose & print prompts (free, no gen)
+python asset_forge/forge.py --only malachar           # one asset — FREE (pollinations, no key)
+python asset_forge/forge.py --zone thornmarsh         # one zone
 python asset_forge/forge.py --force                   # regenerate existing
 python asset_forge/forge.py --skip-bg-removal         # with_bg only
+python asset_forge/forge.py --backend gemini --only malachar   # paid path (needs key + billing)
 ```
 
-Idempotent: an entry is skipped when both its `with_bg` and `no_bg` already
-exist (unless `--force`).
+Idempotent: an entry is skipped when its **game-ready `no_bg`** already exists
+(unless `--force`) — so you can add new zones/worlds to the manifest and run once;
+it only makes what's missing and never clobbers existing art.
 
 ## Sync vs `--batch`
 

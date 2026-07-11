@@ -24,6 +24,11 @@ derived transparent+resized version (`no_bg`).
 > (Vite-served, committed → shipped by Vercel), NOT a separate `assets/` dir.
 > Use this skill to **extend/regenerate** (add manifest rows, run `--dry-run`),
 > or to rebuild. The authoritative paths are below.
+>
+> **Backends**: default **`pollinations`** (free, keyless); **`hf`** (free, needs
+> `HF_TOKEN` — Hugging Face FLUX); **`gemini`** (paid, style-references, billing).
+> Per-asset `model`/`width`/`height`/`size`/`seed`/`extra` overrides live in the
+> manifest (e.g. bosses at `size:1024`, `width/height:1536`, beefy `extra:` prompt).
 
 ---
 

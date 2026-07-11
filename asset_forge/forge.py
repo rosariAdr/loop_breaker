@@ -19,6 +19,7 @@ Design notes:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from io import BytesIO
@@ -82,23 +83,38 @@ def out_path(entry: dict) -> Path:
     return PUBLIC / folder_for(entry) / f"{entry['id']}.png"
 
 
+def final_size(entry: dict) -> int:
+    """Final square px of the game-ready no_bg — per-entry `size:` overrides the category default."""
+    return int(entry.get("size", SIZES[entry["category"]]))
+
+
 def is_complete(entry: dict, skip_bg: bool) -> bool:
-    if not raw_path(entry).exists():
-        return False
-    return skip_bg or out_path(entry).exists()
+    # "Done" = the game-ready asset exists. The raw with_bg is only a regeneration
+    # source; if it's missing (e.g. committed art with no raw kept), the asset is
+    # still treated as done — so bulk runs only make what's MISSING and never
+    # clobber existing art. Use --force to deliberately regenerate.
+    if skip_bg:
+        return raw_path(entry).exists()
+    return out_path(entry).exists()
 
 
 # ── prompt composition ───────────────────────────────────────────────────────
-def render_prompt(entry: dict) -> str:
+def render_prompt(entry: dict, include_reference: bool = True) -> str:
+    # `include_reference` is False for backends that can't take a reference image
+    # (e.g. pollinations) — the style bible carries coherence instead.
     template = _JINJA.get_template(TEMPLATE_FILE[entry["category"]])
-    return template.render(
+    rendered = template.render(
         style_bible=STYLE_BIBLE,
         subject=entry.get("subject", ""),
         universe=entry.get("universe", ""),
         zone=entry.get("zone", ""),
         palette=entry.get("palette", ""),
-        has_reference=bool(entry.get("reference")),
+        has_reference=include_reference and bool(entry.get("reference")),
     ).strip()
+    extra = str(entry.get("extra", "")).strip()  # per-entry scale/detail emphasis
+    if extra:
+        rendered += "\n" + extra
+    return rendered
 
 
 # ── generation + post-processing ─────────────────────────────────────────────
@@ -126,6 +142,12 @@ def load_reference_image(ref_id: str, by_id: dict[str, dict]) -> Any:
     return Image.open(ref_raw).convert("RGBA")
 
 
+_TRANSIENT = (
+    "429", "500", "502", "503", "504", "RESOURCE_EXHAUSTED", "UNAVAILABLE",
+    "timed out", "timeout", "Connection", "URLError", "reset",
+)
+
+
 def _with_retry(fn, *args, attempts: int = 3, **kwargs):
     delay = 2.0
     for i in range(attempts):
@@ -133,12 +155,76 @@ def _with_retry(fn, *args, attempts: int = 3, **kwargs):
             return fn(*args, **kwargs)
         except Exception as exc:  # noqa: BLE001 — inspect message for transient codes
             msg = str(exc)
-            transient = any(t in msg for t in ("429", "503", "RESOURCE_EXHAUSTED", "UNAVAILABLE"))
+            transient = any(t in msg for t in _TRANSIENT)
             if i == attempts - 1 or not transient:
                 raise
             print(f"  ~ transient error ({msg[:60]}…) — retry in {delay:.0f}s")
             time.sleep(delay)
             delay *= 2
+
+
+# Raw generation size for the keyless backend; rembg then resizes to the category size.
+GEN_SIZE = 1024
+
+
+def generate_pollinations(
+    prompt: str, dst: Path, *, width: int, height: int, model: str, seed: Optional[int]
+) -> bool:
+    """Free, keyless text-to-image via pollinations.ai. No reference image."""
+    import urllib.parse
+    import urllib.request
+
+    q: dict[str, Any] = {"width": width, "height": height, "nologo": "true", "model": model}
+    if seed is not None:
+        q["seed"] = seed
+    url = (
+        "https://image.pollinations.ai/prompt/"
+        + urllib.parse.quote(prompt, safe="")
+        + "?"
+        + urllib.parse.urlencode(q)
+    )
+    req = urllib.request.Request(url, headers={"User-Agent": "loop-breaker-asset-forge"})
+    with urllib.request.urlopen(req, timeout=240) as resp:  # noqa: S310 — fixed https host
+        data = resp.read()
+    if not data or len(data) < 2000:  # too small = an error page, not an image
+        return False
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_bytes(data)
+    return True
+
+
+def generate_hf(
+    prompt: str, dst: Path, *, model: str, token: str, width: int, height: int
+) -> bool:
+    """Free-tier text-to-image via the Hugging Face Inference API (e.g. FLUX.1-schnell).
+
+    Needs HF_TOKEN. `x-wait-for-model` makes HF wait through a cold start instead
+    of returning 503.
+    """
+    import json
+    import urllib.request
+
+    url = "https://api-inference.huggingface.co/models/" + model
+    body = json.dumps(
+        {"inputs": prompt, "parameters": {"width": width, "height": height}}
+    ).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "image/png",
+            "x-wait-for-model": "true",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=300) as resp:  # noqa: S310 — fixed https host
+        data = resp.read()
+    if not data or len(data) < 2000:
+        return False
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_bytes(data)
+    return True
 
 
 def generate_with_bg(client: Any, prompt: str, ref_image: Any, dst: Path) -> bool:
@@ -170,7 +256,7 @@ def post_process(entry: dict, session: Any) -> bool:
     sys.path.insert(0, str(SCRIPTS))
     import process_assets  # reuse, never duplicate
 
-    ok = process_assets.process_image(src, dst, SIZES[entry["category"]], session)
+    ok = process_assets.process_image(src, dst, final_size(entry), session)
     if not ok:
         print(f"  ! background removal failed for {entry['id']} — with_bg preserved")
     return bool(ok)
@@ -202,7 +288,7 @@ def run_sync(args: argparse.Namespace) -> int:
             skipped += 1
             continue
 
-        prompt = render_prompt(entry)
+        prompt = render_prompt(entry, include_reference=(args.backend == "gemini"))
         if args.dry_run:
             print(f"\n=== {eid}  [{entry['category']} · {entry.get('universe')} · {entry.get('zone')}] ===")
             print(f"→ with_bg: {raw_path(entry).relative_to(REPO_ROOT)}")
@@ -213,17 +299,35 @@ def run_sync(args: argparse.Namespace) -> int:
             continue
 
         try:
-            if client is None:
-                from google import genai
+            print(f"  ⚙  {eid} — generating ({args.backend})…", flush=True)
+            w = int(entry.get("width", GEN_SIZE))
+            h = int(entry.get("height", GEN_SIZE))
+            if args.backend == "pollinations":
+                ok = _with_retry(
+                    generate_pollinations, prompt, raw_path(entry),
+                    width=w, height=h, model=entry.get("model", "flux"), seed=entry.get("seed"),
+                )
+            elif args.backend == "hf":
+                token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
+                if not token:
+                    raise RuntimeError("HF_TOKEN not set — put it in asset_forge/.env")
+                ok = _with_retry(
+                    generate_hf, prompt, raw_path(entry),
+                    model=args.hf_model, token=token, width=w, height=h,
+                )
+            else:  # gemini
+                if client is None:
+                    from google import genai
 
-                client = genai.Client()
-            ref_image = (
-                load_reference_image(entry["reference"], by_id) if entry.get("reference") else None
-            )
-            print(f"  ⚙  {eid} — generating…", flush=True)
-            ok = _with_retry(generate_with_bg, client, prompt, ref_image, raw_path(entry))
+                    client = genai.Client()
+                ref_image = (
+                    load_reference_image(entry["reference"], by_id)
+                    if entry.get("reference")
+                    else None
+                )
+                ok = _with_retry(generate_with_bg, client, prompt, ref_image, raw_path(entry))
             if not ok:
-                print(f"  ✗ {eid} — no image in response")
+                print(f"  ✗ {eid} — no image returned")
                 failed += 1
                 continue
             if not args.skip_bg_removal:
@@ -246,6 +350,17 @@ def run_sync(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Asset Forge — prompt-driven asset generation.")
     p.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST, help="manifest.yaml path")
+    p.add_argument(
+        "--backend",
+        choices=["pollinations", "hf", "gemini"],
+        default=os.environ.get("FORGE_BACKEND", "pollinations"),
+        help="image backend: pollinations (free, keyless — default) · hf (free, needs HF_TOKEN) · gemini (paid)",
+    )
+    p.add_argument(
+        "--hf-model",
+        default="black-forest-labs/FLUX.1-schnell",
+        help="Hugging Face model repo id for --backend hf",
+    )
     p.add_argument("--dry-run", action="store_true", help="compose & print prompts, no API call")
     p.add_argument("--only", metavar="ID", help="only this asset id")
     p.add_argument("--zone", metavar="ZONE", help="only assets in this zone")
@@ -255,8 +370,26 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _load_env() -> None:
+    """Load asset_forge/.env into os.environ so genai.Client() finds GEMINI_API_KEY.
+
+    No-op if python-dotenv isn't installed or the file is absent (dry-run needs
+    neither). The key can also be provided directly as an environment variable.
+    """
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+
+
 def main() -> int:
     args = build_parser().parse_args()
+    if args.batch and args.backend != "gemini":
+        print("Note: --batch is a Gemini-only feature; running sync with the free backend.")
+        args.batch = False
+    if not args.dry_run and args.backend in ("gemini", "hf"):
+        _load_env()
     if args.batch:
         from forge_batch import run_batch  # lazy: only when explicitly requested
 
