@@ -1,6 +1,7 @@
-// VQ01-07 / VQ-G — Quêtes de village générées par ADJACENCE (QSV2-ADJ-AUDIT01).
-// Le pool d'un lieu = union des monstres/ressources de ses spots de chasse ADJACENTS
-// (graphe worldGraph). Rotation tous les 3 jours (VQ06). Règles de grooming :
+// VQ01-07 / VQ-G — Quêtes de village générées par la carte (QSV2-ADJ-AUDIT01).
+// Le pool d'un lieu = monstres/ressources de ses spots de chasse POSSÉDÉS (SPOT_OWNER,
+// 1 spot = 1 seul lieu → pools disjoints, QSV2-SPOTOWNER01 / VQ-DEDUP01). Rotation /3 j
+// (VQ06). Règles de grooming :
 //  • VQ-G1 — seules les quêtes d'élite donnent des reputation tokens (communes = gold/ressources).
 //  • VQ-G3 — quêtes d'élite level-gated (requiredLevel = bas du levelRange du spot).
 //  • VQ-G4 — nb actives = base (village 3 / ville 6) + 1 par 5 niveaux, plafond 6 / 12.
@@ -34,6 +35,27 @@ export function adjacentSpots(location) {
   return neighborsOf(location).filter((n) => MONSTERS_BY_SPOT[n])
 }
 
+// QSV2-SPOTOWNER01 — PROPRIÉTAIRE UNIQUE par spot (pools disjoints, résout VQ-DEDUP01).
+// Dérivé de la carte : chaque spot de chasse de surface est attribué à UN seul lieu
+// ADJACENT (worldGraph.EDGES), pour qu'aucun contenu ne soit proposé à deux villages
+// (fin du double-dip). Contestés tranchés : ashenvale_forest (Greywatch|Millhaven) →
+// Greywatch (sinon le village de départ n'a aucune quête) ; thornmarsh
+// (Millhaven|Ironhaven) → Ironhaven (spot fin-de-Map-1 L20-30 → ville finale).
+// Garde-fou : test d'adjacence + de disjonction (QSV2-QSRC-TEST01).
+export const SPOT_OWNER = {
+  ashenvale_forest: 'greywatch',
+  crumbled_ruins: 'millhaven',
+  thornmarsh: 'ironhaven',
+  wildmere_hills: 'ironhaven',
+}
+
+// Spots POSSÉDÉS par un lieu = source du sourcing des quêtes (remplace l'union adjacente).
+export function ownedSpots(location) {
+  return Object.keys(SPOT_OWNER).filter(
+    (spot) => SPOT_OWNER[spot] === location && MONSTERS_BY_SPOT[spot],
+  )
+}
+
 // VQ-G4 — nombre de quêtes actives selon le niveau du héros + le type de lieu.
 export function villageQuestCount(heroLevel = 1, isCity = false) {
   const base = isCity ? 6 : 3
@@ -46,7 +68,8 @@ export function generateVillageQuestPool(location) {
   const giver = VILLAGE_QUEST_GIVERS[location]
   if (!giver) return []
   const pool = []
-  for (const spot of adjacentSpots(location)) {
+  for (const spot of ownedSpots(location)) {
+    // QSV2-SPOTOWNER01 — pools disjoints (1 spot → 1 lieu), plus de doublon inter-village
     const [minLvl] = getSpotLevelRange(spot) ?? [1, 1]
     const difficultyTier = tierOf(minLvl)
     const common = {
