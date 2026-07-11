@@ -17,11 +17,9 @@
 #   raw  (with_bg, source of truth) -> public/<folder>/raw/<id>.png   [gitignored]
 #   game (no_bg, shipped)           -> public/<folder>/<id>.png       [committed]
 #
-# ⚠️ The 16 medieval surface monsters below ALREADY have a committed
-#    public/monsters/<id>.png (no_bg) but NO raw source. `is_complete` needs BOTH,
-#    so a real run WOULD regenerate & overwrite them. If you want to preserve the
-#    current art, only run the assets you actually want to (re)make (e.g. the
-#    3 boss, which have no art yet): `--only malachar`, etc.
+# Idempotent: a run SKIPS any asset whose game-ready public/<folder>/<id>.png
+# already exists, and only makes what's MISSING — so you can add new zones/worlds
+# below and run once without clobbering existing art. Use --force to regenerate.
 
 assets:
   # ══ medieval_fantasy — REAL roster (ids match src/data/monsters.js) ══════════
@@ -149,18 +147,33 @@ assets:
     zone: hollow_crypt
     subject: "The Crypt Keeper, a towering undead crypt-lord in a hooded death-shroud over bone-armor, a crowned skull face with burning eye-sockets, wielding a necrotic staff-scythe"
     palette: "bone white, shroud black, sickly green necrotic glow"
+    size: 1024          # bigger final asset for a boss
+    width: 1536         # sharper source (rembg then resizes to `size`)
+    height: 1536
+    model: flux
+    extra: "colossal, towering, hulking, heavily-muscled, broad-shouldered, massive imposing scale, low-angle heroic shot, fills the frame, intricate detail, sharp focus, high detail"
   - id: forsaken_citadel_boss
     category: monster
     universe: medieval_fantasy
     zone: forsaken_citadel
     subject: "the Lord of the Forsaken, a dread armored sovereign in blackened spiked plate with a tattered royal cape, twin cruel blades and a crowned helm with void-fire eyes"
     palette: "blackened iron, dark royal crimson, void-fire violet"
+    size: 1024
+    width: 1536
+    height: 1536
+    model: flux
+    extra: "colossal, towering, hulking, heavily-muscled, broad-shouldered, massive imposing scale, low-angle heroic shot, fills the frame, intricate detail, sharp focus, high detail"
   - id: malachar
     category: monster
     universe: medieval_fantasy
     zone: grimspire
     subject: "Malachar the Undying, a colossal horned demon-lord in shattered god-killer armor wreathed in dark flame and necrotic energy, eyes of cold violet fire"
     palette: "obsidian black, ember orange, cold violet fire"
+    size: 1024
+    width: 1536
+    height: 1536
+    model: flux
+    extra: "colossal, towering, hulking, heavily-muscled, broad-shouldered, massive imposing scale, low-angle heroic shot, fills the frame, intricate detail, sharp focus, high detail"
 
   # ══ Other universes — illustrative placeholders (POC = medieval only) ═════════
   - id: ws_jade_serpent
