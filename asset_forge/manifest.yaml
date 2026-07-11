@@ -1,0 +1,206 @@
+# Asset Forge manifest — the catalog. Prompts are DATA: add a row, regenerate.
+#
+# Per-entry schema:
+#   id         : unique slug = output filename <id>.png. For real game assets this
+#                MUST equal the game's monster/building id so the file lands where
+#                the loader expects (public/monsters/<id>.png etc.).
+#   category   : monster | building | deity | portrait | deco
+#   universe   : medieval_fantasy | wushu | tower_conquest | post_apocalyptic
+#   zone       : sub-zone / hunting spot (groups style references for coherence)
+#   subject    : concrete description injected into the prompt
+#   palette    : dominant colours (injected into the prompt)
+#   reference  : (optional) id of an already-produced asset whose raw with_bg is
+#                reused as a style reference. FIRST entry of a zone has none (anchor).
+#   out        : (optional) override the published path under public/.
+#
+# Outputs:
+#   raw  (with_bg, source of truth) -> public/<folder>/raw/<id>.png   [gitignored]
+#   game (no_bg, shipped)           -> public/<folder>/<id>.png       [committed]
+#
+# ⚠️ The 16 medieval surface monsters below ALREADY have a committed
+#    public/monsters/<id>.png (no_bg) but NO raw source. `is_complete` needs BOTH,
+#    so a real run WOULD regenerate & overwrite them. If you want to preserve the
+#    current art, only run the assets you actually want to (re)make (e.g. the
+#    3 boss, which have no art yet): `--only malachar`, etc.
+
+assets:
+  # ══ medieval_fantasy — REAL roster (ids match src/data/monsters.js) ══════════
+
+  # ── Ashenvale Forest (Lv 1-8) ──
+  - id: ashwood_wolf
+    category: monster
+    universe: medieval_fantasy
+    zone: ashenvale_forest
+    subject: "an Ashwood Wolf, a sleek silver-grey forest wolf with warm amber eyes in an alert prowl"
+    palette: "mossy greens, autumn browns, warm amber"
+  - id: thicket_hare   # display name "Fire Hare" (SKD02 retheme; id kept)
+    category: monster
+    universe: medieval_fantasy
+    zone: ashenvale_forest
+    subject: "a Fire Hare, a plump woodland hare wreathed in flickering flame, with oversized ears and bright eyes"
+    palette: "ember orange, mossy greens, warm amber"
+    reference: ashwood_wolf
+  - id: tuskmaw_boar
+    category: monster
+    universe: medieval_fantasy
+    zone: ashenvale_forest
+    subject: "a Tuskmaw Boar, a stocky bristly wild boar with curved ivory tusks, head lowered to charge"
+    palette: "mossy greens, autumn browns, warm amber"
+    reference: ashwood_wolf
+  - id: old_oakheart
+    category: monster
+    universe: medieval_fantasy
+    zone: ashenvale_forest
+    subject: "Old Oakheart, an ancient towering oak treant with a gnarled bark face and moss-wreathed branch-limbs, imposing"
+    palette: "deep bark browns, moss green, faint amber glow"
+    reference: ashwood_wolf
+
+  # ── Thornmarsh (Lv 20-30) ──
+  - id: marsh_serpent
+    category: monster
+    universe: medieval_fantasy
+    zone: thornmarsh
+    subject: "a Marsh Serpent, a coiled green-and-gold serpent rising to strike, glistening wet scales, slit golden eyes"
+    palette: "murky swamp greens, dark water, reed browns"
+  - id: briar_wraith
+    category: monster
+    universe: medieval_fantasy
+    zone: thornmarsh
+    subject: "a Briar Wraith, a tattered thorn-wreathed wraith of living briar and grey cloth with a faint hollow face"
+    palette: "murky swamp greens, dark water, reed browns"
+    reference: marsh_serpent
+  - id: mire_slime
+    category: monster
+    universe: medieval_fantasy
+    zone: thornmarsh
+    subject: "a Mire Slime, a translucent murky-green gelatinous blob with swamp debris suspended inside and simple cute eyes"
+    palette: "murky swamp greens, dark water, reed browns"
+    reference: marsh_serpent
+  - id: fenrot_devourer
+    category: monster
+    universe: medieval_fantasy
+    zone: thornmarsh
+    subject: "the Fenrot Devourer, a hulking rotting marsh beast part crocodile part wolf, with an oversized slavering maw"
+    palette: "diseased bog greens, mottled hide, dark water"
+    reference: marsh_serpent
+
+  # ── Crumbled Ruins (Lv 12-22) ──
+  - id: stone_golem
+    category: monster
+    universe: medieval_fantasy
+    zone: crumbled_ruins
+    subject: "a Stone Golem, a chunky humanoid golem of cracked mossy ruin-stones with glowing rune-light in its seams"
+    palette: "weathered grey stone, moss green, rune glow"
+  - id: hollow_knight
+    category: monster
+    universe: medieval_fantasy
+    zone: crumbled_ruins
+    subject: "a Hollow Knight, an empty suit of tarnished armor lit by a faint ghost-light in the helm, holding a notched longsword"
+    palette: "weathered grey stone, tarnished steel, pale ghost-light"
+    reference: stone_golem
+  - id: ruin_specter
+    category: monster
+    universe: medieval_fantasy
+    zone: crumbled_ruins
+    subject: "a Ruin Specter, a wispy translucent pale-blue spectre with a sorrowful elongated face and trailing ethereal tatters"
+    palette: "pale blue glow, melancholic grey, faint moss"
+    reference: stone_golem
+  - id: graven_sentinel
+    category: monster
+    universe: medieval_fantasy
+    zone: crumbled_ruins
+    subject: "a Graven Sentinel, a towering grave-warden in weathered funerary armor with a tomb death-mask helm and a ceremonial greatsword"
+    palette: "weathered stone-grey, cold steel, funerary bronze"
+    reference: stone_golem
+
+  # ── Wildmere Hills (Lv 6-14) ──
+  - id: hill_slime
+    category: monster
+    universe: medieval_fantasy
+    zone: wildmere_hills
+    subject: "a Hill Slime, a rounded mossy-green slime with tufts of grass and tiny wildflowers on its back and cheerful eyes"
+    palette: "grassy greens, wildflower colours, warm sun"
+  - id: russet_fox
+    category: monster
+    universe: medieval_fantasy
+    zone: wildmere_hills
+    subject: "a Russet Fox, a lithe russet-red fox with a bushy white-tipped tail, caught mid-leap, clever eyes"
+    palette: "russet red, grassy greens, warm sun"
+    reference: hill_slime
+  - id: knoll_goblin
+    category: monster
+    universe: medieval_fantasy
+    zone: wildmere_hills
+    subject: "a Knoll Goblin, a scrappy green-skinned goblin in patchwork leather and a dented helmet gripping a jagged shiv"
+    palette: "goblin green, patchwork leather, grassy hills"
+    reference: hill_slime
+  - id: thunderhoof
+    category: monster
+    universe: medieval_fantasy
+    zone: wildmere_hills
+    subject: "Thunderhoof, a massive battle-scarred bison-bull with a storm-grey hide and cracked horns crackling with faint blue lightning"
+    palette: "storm grey, sparking blue, grassy hills"
+    reference: hill_slime
+
+  # ── Bosses (no committed art yet — the real gap) ──
+  - id: hollow_crypt_boss
+    category: monster
+    universe: medieval_fantasy
+    zone: hollow_crypt
+    subject: "The Crypt Keeper, a towering undead crypt-lord in a hooded death-shroud over bone-armor, a crowned skull face with burning eye-sockets, wielding a necrotic staff-scythe"
+    palette: "bone white, shroud black, sickly green necrotic glow"
+  - id: forsaken_citadel_boss
+    category: monster
+    universe: medieval_fantasy
+    zone: forsaken_citadel
+    subject: "the Lord of the Forsaken, a dread armored sovereign in blackened spiked plate with a tattered royal cape, twin cruel blades and a crowned helm with void-fire eyes"
+    palette: "blackened iron, dark royal crimson, void-fire violet"
+  - id: malachar
+    category: monster
+    universe: medieval_fantasy
+    zone: grimspire
+    subject: "Malachar the Undying, a colossal horned demon-lord in shattered god-killer armor wreathed in dark flame and necrotic energy, eyes of cold violet fire"
+    palette: "obsidian black, ember orange, cold violet fire"
+
+  # ══ Other universes — illustrative placeholders (POC = medieval only) ═════════
+  - id: ws_jade_serpent
+    category: monster
+    universe: wushu
+    zone: bamboo_vale
+    subject: "a Jade River Serpent, a sinuous jade-scaled serpent rising to strike amid drifting mist"
+    palette: "jade green, mist grey, soft gold"
+  - id: ws_stone_guardian
+    category: monster
+    universe: wushu
+    zone: bamboo_vale
+    subject: "a Stone Temple Guardian, a moss-covered stone guardian-lion statue come to life"
+    palette: "jade green, mist grey, soft gold"
+    reference: ws_jade_serpent
+
+  - id: tc_clockwork_sentinel
+    category: monster
+    universe: tower_conquest
+    zone: tower_ascent
+    subject: "a Clockwork Sentinel, a brass automaton with glowing gears and arcane-blue seams"
+    palette: "brass, verdigris, arcane blue"
+  - id: tc_architect
+    category: deity
+    universe: tower_conquest
+    zone: tower_apex
+    subject: "The Architect, a towering deity of interlocking gears and radiant light"
+    palette: "brass, white-gold, arcane blue"
+
+  - id: pa_rust_hound
+    category: monster
+    universe: post_apocalyptic
+    zone: ashen_wastes
+    subject: "a Rust Hound, a scavenger hound armored in welded scrap metal with glowing eyes"
+    palette: "rust orange, ash grey, toxic green"
+  - id: pa_scrap_ronin
+    category: portrait
+    universe: post_apocalyptic
+    zone: ashen_wastes
+    subject: "a Wasteland Ronin, a weathered warrior in patchwork scrap armor with a scarred determined face"
+    palette: "rust orange, ash grey, toxic green"
+    reference: pa_rust_hound
+    out: "portraits/scrap_ronin/neutral.png"   # example: adjustable portrait path

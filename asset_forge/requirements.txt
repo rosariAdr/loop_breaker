@@ -1,0 +1,11 @@
+# Asset Forge dependencies.
+# Prompt composition + manifest (needed even for --dry-run):
+pyyaml
+jinja2
+# API + image IO (needed for real generation):
+google-genai
+pillow
+python-dotenv
+# Background removal for the no_bg derivative (reused via scripts/process_assets.py):
+rembg
+onnxruntime

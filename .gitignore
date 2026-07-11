@@ -43,17 +43,24 @@ Thumbs.db
 *.sw?
 *.local
 
-# Claude Code IDE config
-.claude/
+# Claude Code IDE config — ignore local bits, but VERSION the project skills
+.claude/*
+!.claude/skills/
+.claude/settings.local.json
 
 # ── Assets ───────────────────────────────────────────────────────────────────
 # DEPLOY01 : `public/` est désormais COMMITTÉ → les visuels (carte, sprites,
 # monstres, bâtiments, favicon) partent sur Vercel (alpha privée).
 # Exclus : les dossiers `raw/` = sources haute-résolution (backups locaux, ~344 Mo,
 # jamais servis par l'app) + la référence `design/` (local-only).
-public/monsters/raw/
-public/buildings/raw/
+public/*/raw/
 design/
+
+# ── Asset Forge (asset_forge/) ───────────────────────────────────────────────
+# with_bg raw sources live in public/<folder>/raw/ (already ignored above).
+# Runtime batch state + temp JSONL are never committed. (.env covered above.)
+asset_forge/.batch_jobs.json
+asset_forge/*.jsonl
 
 # ── Exports Excel de travail (design / balance) ──────────────────────────────
 # Régénérables depuis les données du jeu ; les valeurs (XP/rang, taux de drop) finiront
