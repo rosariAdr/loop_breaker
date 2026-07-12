@@ -7,7 +7,7 @@ Curated, **adapted** subset of [Claude-Code-Game-Studios](https://github.com/Don
 React 19 + Vite + Zustand 5 + Tailwind 4 + **Vitest** + **JS pur**, data in
 `src/data/*.js`, backlog in `TASKS.md` (PRIO-SYS01), design in `docs/`.
 
-## Installed (6)
+## Installed (7)
 
 | Skill | What it does here | Reads |
 |---|---|---|
@@ -17,6 +17,7 @@ React 19 + Vite + Zustand 5 + Tailwind 4 + **Vitest** + **JS pur**, data in
 | `/playtest-report` | structure playtest notes + route findings | `docs/PLAYTESTS.md` |
 | `/scope-check` | scope-creep guard for an epic/ticket | `TASKS.md` (Plan de release) |
 | `/bug-triage` | classify bugs → `FIX-` tickets (PRIO-SYS01) | `TASKS.md`, `docs/PLAYTESTS.md` |
+| `/ui-ux-audit` | **live-app** heuristic UX audit (browser-driven) → tickets par écran (PRIO-SYS01) ; a11y = garde-fou léger | dev server (browser), `TASKS.md` |
 
 Each `SKILL.md` ends with an adaptation note. Frontmatter `agent:` /
 director-gate / `production/`-scaffolding references from upstream were removed.
@@ -45,6 +46,11 @@ director-gate / `production/`-scaffolding references from upstream were removed.
 ## Adding more later
 
 The full upstream set is worth browsing for one-offs (`security-audit`,
-`perf-profile`, `tech-debt`, `retrospective`, `ux-review`, `quick-design`). To
+`perf-profile`, `tech-debt`, `retrospective`, `quick-design`, `ux-design`). To
 adopt one: copy its `SKILL.md`, strip `agent:`/gate/`production/` references, and
 repoint paths to `src/`, `docs/`, `balance/`, `TASKS.md`. Ask and I'll adapt it.
+
+> **Note** : `ux-review` (upstream) a déjà été adopté — mais **repurposé** en
+> `/ui-ux-audit` (validation de spec doc → audit heuristique de l'app **live**).
+> `ux-design` / `quick-design` restent des candidats pour la **phase maquettes**
+> (épique UXR : un futur skill `brainstorm` d'idéation cadrée).
