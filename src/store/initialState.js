@@ -201,6 +201,10 @@ export const INITIAL_META = {
 
   // Q05 — nombre de crafts réussis (pour les quêtes de craft)
   craftCount: 0,
+  // QOBJ-TYPES01 — compteurs persistés des nouveaux objectifs non-combat :
+  craftCountByKind: {}, // { [kind]: count } — crafts par nature de sortie (consumable/equipment/…)
+  prayCount: 0, // prières effectuées (objectif `pray`)
+  deedsAccepted: 0, // actes de dévotion (church deeds) acceptés (objectif `accept_deed`)
 
   // MQ-ELITETURN01 — nombre de remises par arme d'élite (pilote le +1 rareté).
   eliteTurnins: {}, // { weaponTemplateId: count }

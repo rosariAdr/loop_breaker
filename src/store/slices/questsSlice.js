@@ -32,7 +32,13 @@ export const createQuestsSlice = (set, get) => ({
       // FIX-QUESTSNAP01 — fige les compteurs cumulés au moment de l'acceptation.
       const quest = getQuestById(questId)
       const snapshot = quest ? snapshotForQuest(quest, state) : { baseKills: {}, baseCraft: 0 }
+      // QOBJ-TYPES01 — accepter un acte de dévotion (church deed) incrémente le compteur
+      // persisté `deedsAccepted` (pour l'objectif `accept_deed`, compté en delta).
+      const meta = CHURCH_QUESTS[questId]
+        ? { ...state.meta, deedsAccepted: (state.meta.deedsAccepted ?? 0) + 1 }
+        : state.meta
       return {
+        meta,
         world: {
           ...state.world,
           activeQuests: [...activeQuests, questId],
@@ -57,6 +63,16 @@ export const createQuestsSlice = (set, get) => ({
   isMainQuestAvailable: (id) => {
     const q = getQuestById(id)
     if (!q?.isMainQuest) return false
+    const { activeQuests = [], completedQuests = [] } = get().world
+    if (activeQuests.includes(id) || completedQuests.includes(id)) return false
+    return !q.requires || completedQuests.includes(q.requires)
+  },
+
+  // QONBOARD01 — chaîne d'onboarding (parallèle à MQ) : même gating par `requires` que MQ.
+  // Disponible si le prérequis est complété et qu'elle n'est ni active ni déjà terminée.
+  isOnboardingQuestAvailable: (id) => {
+    const q = getQuestById(id)
+    if (q?.track !== 'onboarding') return false
     const { activeQuests = [], completedQuests = [] } = get().world
     if (activeQuests.includes(id) || completedQuests.includes(id)) return false
     return !q.requires || completedQuests.includes(q.requires)

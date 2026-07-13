@@ -11,7 +11,9 @@ import { Panel } from './Panel'
 // Z06 — Maître forgeron : recettes Rare/Epic via mini-jeu de forge.
 // v1.42 batch 6 — lit la source unifiée directement : recettes `master_*` (profession
 // blacksmith, mono-combinaison à rareté fixe Rare/Epic). Plus de compat shim MASTER_RECIPES.
-const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) => r.id.startsWith('master_'))
+const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) =>
+  r.id.startsWith('master_'),
+)
 
 export default function MasterSmithPanel({ onBack }) {
   const { hero, spendGold, removeResource, addEquipmentToInventory, addHeroDebuff } = useGameStore()
@@ -40,7 +42,7 @@ export default function MasterSmithPanel({ onBack }) {
   const handleComplete = ({ tier }) => {
     setMinigameOpen(false)
     useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
-    useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
+    useGameStore.getState().incrementCraftCount(recipe.outputKind ?? 'equipment') // Q05 / QOBJ-TYPES01 — compteur (+ par kind)
     useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
     // Chemin hybride : rareté depuis la rarityTable de la combinaison (mono-rareté Rare/Epic).
     const outcome = resolveHybridCraftOutcome({

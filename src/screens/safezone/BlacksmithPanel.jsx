@@ -10,7 +10,11 @@ import {
 } from '../../data/equipment'
 import { concentrationGain } from '../../utils/crafting'
 import { resolveHybridCraftOutcome } from '../../utils/craftModel'
-import { TEMPLATE_FORGE_RECIPES, getRecipeById, getCombinationByRarity } from '../../data/craftRecipes'
+import {
+  TEMPLATE_FORGE_RECIPES,
+  getRecipeById,
+  getCombinationByRarity,
+} from '../../data/craftRecipes'
 import CraftingMinigame from '../../components/CraftingMinigame'
 import { Panel } from './Panel'
 
@@ -48,7 +52,7 @@ export default function BlacksmithPanel({ onBack }) {
   const handleMinigameComplete = ({ tier }) => {
     setMinigameOpen(false)
     useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
-    useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
+    useGameStore.getState().incrementCraftCount('equipment') // Q05 / QOBJ-TYPES01 — compteur (+ par kind)
     useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
     // v1.42 batch 6 — chemin de qualité HYBRIDE : la rareté vient de la `rarityTable` de la
     // combinaison forge_<templateId>__<rarité> (source unifiée), + palier + Concentration.

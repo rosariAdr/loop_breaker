@@ -5,6 +5,7 @@ import {
   QUEST_NPC_REGISTRY,
   getQuestById,
   getQuestIssuer,
+  hasEquippedForObjective,
   isPrestigiousQuest,
   questDaysLeft,
   questObjectiveStatus,
@@ -13,6 +14,7 @@ import {
   PRESTIGE_MIN_TOKENS,
 } from '../data/quests'
 import { MAIN_QUESTS } from '../data/mainQuests'
+import { ONBOARDING_QUESTS } from '../data/onboardingQuests'
 import { getActiveVillageQuests } from '../data/villageQuests'
 import { getLocationType } from '../data/zones'
 import { SKILLS } from '../data/skills'
@@ -34,6 +36,7 @@ export default function QuestBoard() {
     completeQuest,
     abandonQuest,
     isMainQuestAvailable,
+    isOnboardingQuestAvailable,
     pruneExpiredQuests,
   } = useGameStore()
   const [pendingAbandon, setPendingAbandon] = useState(null) // questObject
@@ -62,7 +65,11 @@ export default function QuestBoard() {
   // MQ-CHAIN01/B6 — la chaîne principale est postée sur le board de son lieu émetteur
   // (Doyen), gated par le chaînage (isMainQuestAvailable). Surfacer ces quêtes rend
   // la progression (et donc le déblocage des nodes START02) jouable.
-  const allBoardQuests = [...Object.values(QUESTS), ...Object.values(MAIN_QUESTS)]
+  const allBoardQuests = [
+    ...Object.values(QUESTS),
+    ...Object.values(MAIN_QUESTS),
+    ...Object.values(ONBOARDING_QUESTS), // QONBOARD01 — chaîne « Premières fois »
+  ]
   const canTurnInHere = (q) => getQuestIssuer(q) === here || isCity
 
   // VQ06/VQ07 — quêtes de village générées par adjacence (rotation + level-gate VQ-G3/G4).
@@ -76,7 +83,9 @@ export default function QuestBoard() {
       if ((q.mapTier ?? 1) > 1) return false // QSV2-ADJ-AUDIT01 — quêtes Map 2 gelées hors board
       if (getQuestIssuer(q) !== here) return false
       if (activeIds.includes(q.id) || completedIds.includes(q.id)) return false
-      return q.isMainQuest ? isMainQuestAvailable(q.id) : true
+      if (q.isMainQuest) return isMainQuestAvailable(q.id)
+      if (q.track === 'onboarding') return isOnboardingQuestAvailable(q.id) // QONBOARD01 — gate par chaînage
+      return true
     }),
     ...villageActive.filter((q) => !activeIds.includes(q.id) && !completedIds.includes(q.id)),
   ]
@@ -86,7 +95,9 @@ export default function QuestBoard() {
   const completed = resolveIds(completedIds).filter(canTurnInHere)
   // MQUI01 — la chaîne principale a sa propre section en tête du board.
   const mainAvailable = available.filter((q) => q.isMainQuest)
-  const otherAvailable = available.filter((q) => !q.isMainQuest)
+  // QONBOARD01 — la chaîne d'onboarding a sa propre section « Premières fois », distincte des MQ.
+  const onboardingAvailable = available.filter((q) => q.track === 'onboarding')
+  const otherAvailable = available.filter((q) => !q.isMainQuest && q.track !== 'onboarding')
 
   const rank = getRankInfo(hero.rankPoints)
   // une quête prestigieuse ne peut être acceptée qu'à partir du rang Argent
@@ -136,6 +147,21 @@ export default function QuestBoard() {
         {mainAvailable.length > 0 && (
           <Section title="⚔ Main Quest">
             {mainAvailable.map((q) => (
+              <QuestCard
+                key={q.id}
+                quest={q}
+                questStatus="available"
+                heroLevel={hero.level}
+                objectiveStatus={qStatus(q, false)}
+                onAccept={() => acceptGuard(q)}
+              />
+            ))}
+          </Section>
+        )}
+
+        {onboardingAvailable.length > 0 && (
+          <Section title="✨ Premières fois">
+            {onboardingAvailable.map((q) => (
               <QuestCard
                 key={q.id}
                 quest={q}
@@ -285,6 +311,10 @@ export function QuestCard({
   killCounts = {},
   visitedSpots = [],
   craftCount = 0,
+  craftCountByKind = {}, // QOBJ-TYPES01 — crafts par kind (objectif craft + outputKind)
+  prayCount = 0, // QOBJ-TYPES01 — prières (objectif pray)
+  deedsAccepted = 0, // QOBJ-TYPES01 — actes de dévotion acceptés (objectif accept_deed)
+  equipped = {}, // QOBJ-TYPES01 — pièces portées (objectif equip, check d'état)
   skillLevels = {},
   base = {}, // FIX-QUESTSNAP01 — snapshot { baseKills, baseCraft } pour la progression en delta
   objectiveStatus = null, // FIX-QCARD-COLLECT01 — statuts précalculés (source unique questObjectiveStatus)
@@ -298,6 +328,9 @@ export function QuestCard({
 }) {
   const baseKills = base.baseKills ?? {}
   const baseCraft = base.baseCraft ?? 0
+  const baseCraftByKind = base.baseCraftByKind ?? {} // QOBJ-TYPES01
+  const basePray = base.basePray ?? 0 // QOBJ-TYPES01
+  const baseDeeds = base.baseDeeds ?? 0 // QOBJ-TYPES01
   const isCompleted = questStatus === 'completed'
   const isActive = questStatus === 'active'
 
@@ -307,44 +340,56 @@ export function QuestCard({
   const npc = QUEST_NPC_REGISTRY[quest.giverNpc]
 
   // FIX-QCARD-COLLECT01 — source unique : si `objectiveStatus` (issu de questObjectiveStatus)
-  // est fourni, on l'utilise tel quel (gère collect/elite_turnin) ; sinon calcul local
-  // rétro-compatible (kill/craft en delta, cf. FIX-QUESTPROG01).
-  const statuses =
-    objectiveStatus ??
-    (quest.objectives ?? []).map((obj) => {
-      const current =
-        obj.type === 'kill'
-          ? isActive
+  // est fourni, on l'utilise tel quel (gère collect/elite_turnin). Sinon (ex. ChurchPanel), on
+  // retombe sur ce calcul local rétro-compatible. QOBJ-TYPES01 — gère aussi les nouveaux types
+  // pray/accept_deed/equip + craft filtré par kind (kill/craft/pray/accept_deed en delta).
+  const fallbackStatus = (obj) => {
+    switch (obj.type) {
+      case 'kill':
+        return {
+          current: isActive
             ? Math.min(
                 obj.count,
                 Math.max(0, (killCounts[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0)),
               )
-            : 0
-          : obj.type === 'level'
-            ? Math.min(obj.targetLevel, heroLevel ?? 1)
-            : obj.type === 'visit'
-              ? visitedSpots.includes(obj.spotId)
-                ? 1
-                : 0
-              : obj.type === 'craft'
-                ? isActive
-                  ? Math.min(obj.count, Math.max(0, craftCount - baseCraft))
-                  : 0
-                : obj.type === 'skill_levelup'
-                  ? Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0)
-                  : 0
-      const target =
-        obj.type === 'kill'
-          ? obj.count
-          : obj.type === 'level'
-            ? obj.targetLevel
-            : obj.type === 'craft'
-              ? obj.count
-              : obj.type === 'collect'
-                ? obj.count
-                : obj.type === 'skill_levelup'
-                  ? obj.targetLevel
-                  : 1
+            : 0,
+          target: obj.count,
+        }
+      case 'level':
+        return { current: Math.min(obj.targetLevel, heroLevel ?? 1), target: obj.targetLevel }
+      case 'visit':
+        return { current: visitedSpots.includes(obj.spotId) ? 1 : 0, target: 1 }
+      case 'craft': {
+        const done = obj.outputKind
+          ? (craftCountByKind[obj.outputKind] ?? 0) - (baseCraftByKind[obj.outputKind] ?? 0)
+          : craftCount - baseCraft
+        return { current: isActive ? Math.min(obj.count, Math.max(0, done)) : 0, target: obj.count }
+      }
+      case 'pray':
+        return {
+          current: isActive ? Math.min(obj.count, Math.max(0, prayCount - basePray)) : 0,
+          target: obj.count,
+        }
+      case 'accept_deed':
+        return {
+          current: isActive ? Math.min(obj.count, Math.max(0, deedsAccepted - baseDeeds)) : 0,
+          target: obj.count,
+        }
+      case 'equip':
+        return { current: hasEquippedForObjective(equipped, obj) ? 1 : 0, target: 1 }
+      case 'skill_levelup':
+        return {
+          current: Math.min(obj.targetLevel, skillLevels[obj.skillId] ?? 0),
+          target: obj.targetLevel,
+        }
+      default:
+        return { current: 0, target: obj.count ?? 1 }
+    }
+  }
+  const statuses =
+    objectiveStatus ??
+    (quest.objectives ?? []).map((obj) => {
+      const { current, target } = fallbackStatus(obj)
       return { obj, current, target, done: current >= target }
     })
 
