@@ -2,12 +2,14 @@
 import { describe, it, expect } from 'vitest'
 import {
   VILLAGE_QUEST_GIVERS,
+  SPOT_OWNER,
   adjacentSpots,
+  ownedSpots,
   villageQuestCount,
   generateVillageQuestPool,
   getActiveVillageQuests,
 } from './villageQuests'
-import { MONSTERS } from './monsters'
+import { MONSTERS, MONSTERS_BY_SPOT } from './monsters'
 
 const targetSpot = (obj) => {
   if (obj.type === 'visit') return obj.spotId
@@ -82,7 +84,7 @@ describe('VQ01/VQ02/VQ03-05 — génération du pool', () => {
   })
 
   it('Fenrot (élite Map 2) est exclu du pool de village', () => {
-    const pool = generateVillageQuestPool('millhaven') // millhaven adj thornmarsh (Fenrot)
+    const pool = generateVillageQuestPool('ironhaven') // Ironhaven possède thornmarsh (Fenrot)
     expect(pool.some((q) => q.objectives.some((o) => o.monsterId === 'fenrot_devourer'))).toBe(
       false,
     )
@@ -114,5 +116,31 @@ describe('QSV2-MULTIMON01 — quêtes multi-objectifs', () => {
     const multi = all.filter((q) => q.objectives.length >= 2)
     expect(multi.length).toBeGreaterThanOrEqual(3)
     for (const q of multi) expect(q.objectives.every((o) => o.type === 'kill')).toBe(true)
+  })
+})
+
+describe('QSV2-SPOTOWNER01 — propriété unique de spot (pools disjoints)', () => {
+  it('chaque spot de surface a exactement un propriétaire', () => {
+    for (const spot of Object.keys(MONSTERS_BY_SPOT)) {
+      expect(SPOT_OWNER[spot], `owner de ${spot}`).toBeDefined()
+    }
+  })
+  it('le propriétaire d’un spot lui est adjacent (cohérence carte)', () => {
+    for (const [spot, owner] of Object.entries(SPOT_OWNER)) {
+      expect(adjacentSpots(owner).includes(spot), `${owner} adj ${spot}`).toBe(true)
+    }
+  })
+  it('les pools de spots sont disjoints entre lieux', () => {
+    const seen = new Map()
+    for (const loc of Object.keys(VILLAGE_QUEST_GIVERS)) {
+      for (const spot of ownedSpots(loc)) {
+        expect(seen.has(spot), `${spot} possédé par ${seen.get(spot)} ET ${loc}`).toBe(false)
+        seen.set(spot, loc)
+      }
+    }
+  })
+  it('Greywatch (village de départ) possède la forêt → pool non vide', () => {
+    expect(ownedSpots('greywatch')).toEqual(['ashenvale_forest'])
+    expect(generateVillageQuestPool('greywatch').length).toBeGreaterThan(0)
   })
 })
