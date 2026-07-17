@@ -27,6 +27,14 @@ director-gate / `production/`-scaffolding references from upstream were removed.
 | Skill | What it does |
 |---|---|
 | `/asset-forge` | builds the **Asset Forge** — prompt-as-data asset generation (`asset_forge/`, manifest + Gemini/Nano Banana runner, `with_bg`/`no_bg` double storage, sync + Batch API). Reuses `process_assets.py`. Perimeter = `asset_forge/` only; never touches game code. |
+| `/lb-brainstorm` | exploration cadrée de game design (3 tours : questions socratiques → options chiffrées S/M/L → convergence). Produit des options à valider, **jamais du code**. |
+| `/lb-cadrage` | fige une décision en **ADR + tickets + plan** d'implémentation, avant toute ligne de code. Pont entre `/lb-brainstorm` et l'implémentation. |
+| `/lb-grooming` | raffinage du backlog : inventaire, anti-doublon, découpage, repriorisation. Ne modifie **jamais** `TASKS.md` sans décision cochée. |
+
+Les trois skills `lb-*` partagent le protocole **HITL** ([`HITL.md`](HITL.md)) — *Claude propose, Adrian
+dispose*. Chaque proposition (statu quo compris) passe par une feuille de validation Excel générée par
+[`tools/backlog-studio/`](../../tools/backlog-studio/) ; rien ne s'écrit sans décision cochée, et une
+cellule vide vaut « non traitée », jamais accord tacite.
 
 ## Deliberately NOT installed (why)
 
