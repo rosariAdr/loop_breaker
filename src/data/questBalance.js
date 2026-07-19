@@ -66,4 +66,14 @@ export const QUEST_BALANCE = {
   church_calm_marsh: { xp: 150, rankPoints: 5 },
   church_banish_wraiths: { xp: 150, rankPoints: 5 },
   church_purge_slimes: { xp: 150, rankPoints: 5 },
+
+  // ── Onboarding « Premières fois » (QONBOARD01) ──────────────────────────
+  // Chaîne pédagogique : XP faible d'apprentissage, rankPoints 0 (un tutoriel ne fait pas
+  // gagner de prestige d'aventurier ; le rang se mérite sur les vraies commissions).
+  onb_first_edge: { xp: 20, rankPoints: 0 },
+  onb_well_armed: { xp: 15, rankPoints: 0 },
+  onb_cover_up: { xp: 25, rankPoints: 0 },
+  onb_recueillement: { xp: 15, rankPoints: 0 },
+  onb_devotion: { xp: 15, rankPoints: 0 },
+  onb_first_brew: { xp: 20, rankPoints: 0 },
 }

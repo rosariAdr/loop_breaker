@@ -197,6 +197,12 @@ export function normalizeSave(save) {
     divineBonds: asObject(sMeta.divineBonds),
     permanentStatBoosts: asObject(sMeta.permanentStatBoosts),
     demonLordKills: asObject(sMeta.demonLordKills),
+    // QOBJ-TYPES01 — compteurs des nouveaux objectifs (backfill défensif : scalaires via le
+    // spread INITIAL_META ; l'objet craftCountByKind est coercé pour éviter tout accès fautif).
+    craftCountByKind: asObject(sMeta.craftCountByKind),
+    craftCount: typeof sMeta.craftCount === 'number' ? sMeta.craftCount : 0,
+    prayCount: typeof sMeta.prayCount === 'number' ? sMeta.prayCount : 0,
+    deedsAccepted: typeof sMeta.deedsAccepted === 'number' ? sMeta.deedsAccepted : 0,
     // settings imbriqué → fusion explicite pour conserver les sous-clés par défaut
     settings: { ...INITIAL_META.settings, ...asObject(sMeta.settings) },
   }

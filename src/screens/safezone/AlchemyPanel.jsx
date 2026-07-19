@@ -9,7 +9,9 @@ import { Panel } from './Panel'
 // Z04 + CRF02 — Alchimiste : brassage de potions via mini-jeu de dosage.
 // v1.42 batch 6 — lit la source unifiée directement : recettes `alchemy_*` (profession
 // alchimiste, sortie = consommable, mono-combinaison). Plus de compat shim ALCHEMY_RECIPES.
-const ALCHEMY_RECIPES = getRecipesByProfession('alchemist').filter((r) => r.id.startsWith('alchemy_'))
+const ALCHEMY_RECIPES = getRecipesByProfession('alchemist').filter((r) =>
+  r.id.startsWith('alchemy_'),
+)
 
 export default function AlchemyPanel({ onBack }) {
   const { hero, spendGold, removeResource, addConsumable, addHeroDebuff } = useGameStore()
@@ -38,7 +40,7 @@ export default function AlchemyPanel({ onBack }) {
   const handleComplete = ({ tier }) => {
     setMinigameOpen(false)
     useGameStore.getState().spendVigor(3) // STA01 — un craft coûte de la vigueur
-    useGameStore.getState().incrementCraftCount() // Q05 — compteur de crafts
+    useGameStore.getState().incrementCraftCount(recipe.outputKind ?? 'consumable') // Q05 / QOBJ-TYPES01 — compteur (+ par kind)
     useGameStore.getState().gainConcentration(concentrationGain(tier)) // STA03 — gain de Concentration
     const qty = alchemyQuantity(tier)
     if (qty > 0) {

@@ -61,6 +61,8 @@ export const createHeroSlice = (set, get) => ({
           tickCount: rolloverDay ? 0 : newTick,
           dayCount: rolloverDay ? state.world.dayCount + 1 : state.world.dayCount,
         },
+        // QOBJ-TYPES01 — compteur de prières persisté (pour l'objectif `pray`, delta vs snapshot).
+        meta: { ...state.meta, prayCount: (state.meta.prayCount ?? 0) + 1 },
       }
     }),
 

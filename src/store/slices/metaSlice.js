@@ -101,9 +101,20 @@ export const createMetaSlice = (set, get) => ({
       }
     }),
 
-  // Q05 — incrémente le compteur de crafts réussis (pour les quêtes de craft)
-  incrementCraftCount: () => {
-    set((state) => ({ meta: { ...state.meta, craftCount: (state.meta.craftCount ?? 0) + 1 } }))
+  // Q05 — incrémente le compteur de crafts réussis (pour les quêtes de craft).
+  // QOBJ-TYPES01 — `kind` optionnel ('consumable'|'equipment'|…) : incrémente aussi le
+  // compteur par kind `craftCountByKind` (pour les objectifs `craft` filtrés par outputKind).
+  incrementCraftCount: (kind = null) => {
+    set((state) => {
+      const meta = { ...state.meta, craftCount: (state.meta.craftCount ?? 0) + 1 }
+      if (kind) {
+        meta.craftCountByKind = {
+          ...(state.meta.craftCountByKind ?? {}),
+          [kind]: ((state.meta.craftCountByKind ?? {})[kind] ?? 0) + 1,
+        }
+      }
+      return { meta }
+    })
     get().triggerHint('first_craft') // ONB01 — tip au 1er craft
   },
 

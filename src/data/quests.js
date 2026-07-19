@@ -5,6 +5,7 @@
 import { CHURCH_QUESTS, CHURCH_QUEST_NPC } from './churchQuests'
 import { MAIN_QUESTS, MAIN_QUEST_NPC } from './mainQuests'
 import { MASTER_QUESTS, MASTER_QUEST_NPC } from './masterQuests'
+import { ONBOARDING_QUESTS, ONBOARDING_QUEST_NPC } from './onboardingQuests'
 import { MONSTERS } from './monsters'
 import { QUEST_BALANCE } from './questBalance'
 import { getVillageQuestById } from './villageQuests'
@@ -438,6 +439,7 @@ export const QUEST_NPC_REGISTRY = {
   ...CHURCH_QUEST_NPC,
   ...MASTER_QUEST_NPC,
   ...MAIN_QUEST_NPC,
+  ...ONBOARDING_QUEST_NPC, // QONBOARD01 — mentor des recrues (Serjeant Bryn)
 }
 
 /** Résout une quête par id (board, église, maître ou chaîne principale MQ-CHAIN01). */
@@ -447,6 +449,7 @@ export function getQuestById(id) {
     CHURCH_QUESTS[id] ??
     MASTER_QUESTS[id] ??
     MAIN_QUESTS[id] ??
+    ONBOARDING_QUESTS[id] ?? // QONBOARD01 — chaîne d'onboarding « Premières fois »
     getVillageQuestById(id) ?? // VQ — quêtes de village générées par adjacence
     null
   )
@@ -498,18 +501,25 @@ export function getQuestIssuer(quest) {
 export function snapshotForQuest(quest, state) {
   const baseKills = {}
   const baseResources = {}
+  // QOBJ-TYPES01 — baselines par kind de craft (objectifs `craft` filtrés par outputKind).
+  const baseCraftByKind = {}
   for (const obj of quest?.objectives ?? []) {
     if (obj.type === 'kill') {
       baseKills[obj.monsterId] = state.world?.monsterKillCounts?.[obj.monsterId] ?? 0
     } else if (obj.type === 'collect') {
       // VQ-G2 — collecte comptée en delta : on fige la quantité détenue à l'acceptation.
       baseResources[obj.resourceId] = state.hero?.inventory?.resources?.[obj.resourceId] ?? 0
+    } else if (obj.type === 'craft' && obj.outputKind) {
+      baseCraftByKind[obj.outputKind] = state.meta?.craftCountByKind?.[obj.outputKind] ?? 0
     }
   }
   return {
     baseKills,
     baseResources,
     baseCraft: state.meta?.craftCount ?? 0,
+    baseCraftByKind, // QOBJ-TYPES01 — craft filtré par kind (delta vs snapshot)
+    basePray: state.meta?.prayCount ?? 0, // QOBJ-TYPES01 — `pray` en delta (mirror craft)
+    baseDeeds: state.meta?.deedsAccepted ?? 0, // QOBJ-TYPES01 — `accept_deed` en delta
     acceptedDay: state.world?.dayCount ?? 1, // QSV2-TIMED01 — jour d'acceptation
   }
 }
@@ -531,11 +541,14 @@ export function isQuestExpired(quest, world) {
 // level/visit/skill_levelup = seuils d'état). Source unique pour le store ET l'UI.
 export function questObjectiveStatus(quest, state, { accepted = true } = {}) {
   // FIX-QUESTPROG01 / FIX-QCARD-COLLECT01 — avant acceptation (`accepted:false`, carte
-  // « available »), les objectifs en DELTA (kill/craft/collect) affichent 0 : sinon le
-  // board montrerait le cumul du joueur. `accepted` défaut true → comportement du store.
+  // « available »), les objectifs en DELTA (kill/craft/collect/pray/accept_deed) affichent 0 :
+  // sinon le board montrerait le cumul du joueur. `accepted` défaut true → comportement du store.
   const base = state.world?.questProgress?.[quest?.id] ?? {}
   const baseKills = base.baseKills ?? {}
   const baseCraft = base.baseCraft ?? 0
+  const baseCraftByKind = base.baseCraftByKind ?? {}
+  const basePray = base.basePray ?? 0
+  const baseDeeds = base.baseDeeds ?? 0
   const skillLevels = heroSkillLevels(state.hero)
   return (quest?.objectives ?? []).map((obj) => {
     let raw = 0
@@ -557,7 +570,28 @@ export function questObjectiveStatus(quest, state, { accepted = true } = {}) {
       raw = (state.world?.visitedSpots ?? []).includes(obj.spotId) ? 1 : 0
     } else if (obj.type === 'craft') {
       target = obj.count
-      raw = accepted ? Math.max(0, (state.meta?.craftCount ?? 0) - baseCraft) : 0
+      if (obj.outputKind) {
+        // QOBJ-TYPES01 — craft filtré par kind : delta du compteur `craftCountByKind`.
+        const byKind = state.meta?.craftCountByKind ?? {}
+        raw = accepted
+          ? Math.max(0, (byKind[obj.outputKind] ?? 0) - (baseCraftByKind[obj.outputKind] ?? 0))
+          : 0
+      } else {
+        raw = accepted ? Math.max(0, (state.meta?.craftCount ?? 0) - baseCraft) : 0
+      }
+    } else if (obj.type === 'pray') {
+      // QOBJ-TYPES01 — prières effectuées depuis l'acceptation (delta, mirror craft).
+      target = obj.count
+      raw = accepted ? Math.max(0, (state.meta?.prayCount ?? 0) - basePray) : 0
+    } else if (obj.type === 'accept_deed') {
+      // QOBJ-TYPES01 — actes de dévotion (church deeds) acceptés depuis l'acceptation (delta).
+      target = obj.count
+      raw = accepted ? Math.max(0, (state.meta?.deedsAccepted ?? 0) - baseDeeds) : 0
+    } else if (obj.type === 'equip') {
+      // QOBJ-TYPES01 — check d'ÉTAT (comme visit, pas de delta) : une pièce est portée
+      // dans la catégorie/slot demandé (`category`), sinon une arme par défaut.
+      target = 1
+      raw = hasEquippedForObjective(state.hero?.equipped, obj) ? 1 : 0
     } else if (obj.type === 'collect') {
       // VQ-G2 — collecte = ressources gagnées depuis l'acceptation (delta vs snapshot).
       target = obj.count
@@ -595,6 +629,18 @@ export function questObjectiveStatus(quest, state, { accepted = true } = {}) {
 export function isQuestCompleteState(quest, state) {
   if (!quest) return false
   return questObjectiveStatus(quest, state).every((o) => o.done)
+}
+
+/**
+ * QOBJ-TYPES01 — l'objectif `equip` est-il rempli ? Check d'état sur `hero.equipped` :
+ * - `obj.category` fourni → une pièce est portée dans ce slot (`ring` = ring1 OU ring2) ;
+ * - sinon → une arme est portée par défaut (`weapon`).
+ * Source unique, réutilisée par le store (questObjectiveStatus) ET l'UI (QuestCard fallback).
+ */
+export function hasEquippedForObjective(equipped = {}, obj = {}) {
+  const cat = obj?.category ?? 'weapon'
+  if (cat === 'ring') return !!(equipped?.ring1 || equipped?.ring2)
+  return !!equipped?.[cat]
 }
 
 /**
