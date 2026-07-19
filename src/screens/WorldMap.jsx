@@ -145,198 +145,202 @@ export default function WorldMap() {
   }
 
   return (
-    <div className="wm-map fill">
-      {/* Fond : carte illustrée + voile sombre léger */}
-      <div className="wm-bg" />
-      <div className="wm-overlay" />
+    // UI12 — bande cinématique : .wm-band centre une boîte 3:2 stable (.wm-map) dans l'espace
+    // hors panneau ; les coords % (POS) restent relatives à .wm-map → zéro décalage des marqueurs.
+    <div className="wm-band fill" data-testid="wm-band">
+      <div className="wm-map" data-testid="wm-map">
+        {/* Fond : carte illustrée + voile sombre léger */}
+        <div className="wm-bg" />
+        <div className="wm-overlay" />
 
-      {/* Trails (coordonnées % via SVG) — sous les marqueurs */}
-      <svg className="wm-trails">
-        {EDGES.map(([a, b]) =>
-          linePct(a, b, {
-            stroke: 'var(--ink)',
-            strokeWidth: 2.5,
-            strokeDasharray: '2 7',
+        {/* Trails (coordonnées % via SVG) — sous les marqueurs */}
+        <svg className="wm-trails">
+          {EDGES.map(([a, b]) =>
+            linePct(a, b, {
+              stroke: 'var(--ink)',
+              strokeWidth: 2.5,
+              strokeDasharray: '2 7',
+              strokeLinecap: 'round',
+              opacity: 0.5,
+            }),
+          )}
+          {/* Blighted Road : Ironhaven → Grimspire (liseré rouge) */}
+          {linePct('ironhaven', 'grimspire', {
+            stroke: 'var(--danger)',
+            strokeWidth: 3,
+            strokeDasharray: '3 6',
             strokeLinecap: 'round',
-            opacity: 0.5,
-          }),
-        )}
-        {/* Blighted Road : Ironhaven → Grimspire (liseré rouge) */}
-        {linePct('ironhaven', 'grimspire', {
-          stroke: 'var(--danger)',
-          strokeWidth: 3,
-          strokeDasharray: '3 6',
-          strokeLinecap: 'round',
-          opacity: grimspireUnlocked ? 0.4 : 0.8,
-        })}
-      </svg>
+            opacity: grimspireUnlocked ? 0.4 : 0.8,
+          })}
+        </svg>
 
-      {/* Nodes */}
-      {NODES.map((n) => {
-        // WM-LEVEL01 — sous-label « Lv X–Y » sous le nom des spots de chasse
-        const lr = n.kind === 'spot' ? getSpotLevelRange(n.id) : null
-        // START02 — node verrouillé tant que la chaîne principale ne l'a pas ouvert.
-        const nodeLocked = !isNodeUnlocked(n.id, world)
-        return (
+        {/* Nodes */}
+        {NODES.map((n) => {
+          // WM-LEVEL01 — sous-label « Lv X–Y » sous le nom des spots de chasse
+          const lr = n.kind === 'spot' ? getSpotLevelRange(n.id) : null
+          // START02 — node verrouillé tant que la chaîne principale ne l'a pas ouvert.
+          const nodeLocked = !isNodeUnlocked(n.id, world)
+          return (
+            <WmNode
+              key={n.id}
+              {...n}
+              locked={nodeLocked}
+              sub={lr ? `Lv ${lr[0]}–${lr[1]}` : undefined}
+              onClick={() => onNode(n)}
+              onHover={
+                nodeLocked
+                  ? (on) =>
+                      setTip(
+                        on && POS[n.id]
+                          ? {
+                              x: POS[n.id].x,
+                              y: POS[n.id].y - 8,
+                              text: '🔒 Advance the main quest to open this path.',
+                            }
+                          : null,
+                      )
+                  : undefined
+              }
+            />
+          )
+        })}
+
+        {/* START03 — Fog of war : nuage sur chaque node ashenvale non débloqué. */}
+        {NODES.filter((n) => !isNodeUnlocked(n.id, world) && POS[n.id]).map((n) => (
+          <div
+            key={`fog-${n.id}`}
+            className="wm-fog"
+            data-testid={`fog-node-${n.id}`}
+            style={{ left: `${POS[n.id].x}%`, top: `${POS[n.id].y}%` }}
+            aria-hidden="true"
+          >
+            <span>☁</span>
+            <span>☁</span>
+            <span>☁</span>
+          </div>
+        ))}
+
+        {/* Donjon */}
+        {dungeon?.active && (
           <WmNode
-            key={n.id}
-            {...n}
-            locked={nodeLocked}
-            sub={lr ? `Lv ${lr[0]}–${lr[1]}` : undefined}
-            onClick={() => onNode(n)}
-            onHover={
-              nodeLocked
-                ? (on) =>
-                    setTip(
-                      on && POS[n.id]
-                        ? {
-                            x: POS[n.id].x,
-                            y: POS[n.id].y - 8,
-                            text: '🔒 Advance the main quest to open this path.',
-                          }
-                        : null,
-                    )
-                : undefined
+            id="crypt"
+            dungeon
+            name={dungeon.discovered ? 'The Hollow Crypt' : ''}
+            tag={dungeon.discovered ? { text: 'Lv 12–16', color: 'var(--dungeon)' } : null}
+            onClick={onCrypt}
+            onHover={(on) =>
+              setTip(
+                on
+                  ? {
+                      x: POS.crypt.x,
+                      y: POS.crypt.y - 8,
+                      text: 'A mysterious portal hums with dark energy…',
+                    }
+                  : null,
+              )
             }
           />
-        )
-      })}
+        )}
 
-      {/* START03 — Fog of war : nuage sur chaque node ashenvale non débloqué. */}
-      {NODES.filter((n) => !isNodeUnlocked(n.id, world) && POS[n.id]).map((n) => (
-        <div
-          key={`fog-${n.id}`}
-          className="wm-fog"
-          data-testid={`fog-node-${n.id}`}
-          style={{ left: `${POS[n.id].x}%`, top: `${POS[n.id].y}%` }}
-          aria-hidden="true"
-        >
-          <span>☁</span>
-          <span>☁</span>
-          <span>☁</span>
-        </div>
-      ))}
+        {/* PROG01 — Fog of war : nuage sur les zones non débloquées */}
+        {!grimspireUnlocked && (
+          <div
+            className="wm-fog"
+            data-testid="fog-grimspire"
+            style={{ left: `${POS.grimspire.x}%`, top: `${POS.grimspire.y}%` }}
+            aria-hidden="true"
+          >
+            <span>☁</span>
+            <span>☁</span>
+            <span>☁</span>
+          </div>
+        )}
 
-      {/* Donjon */}
-      {dungeon?.active && (
+        {/* Grimspire (locked) — marqueur overlay sur les montagnes */}
         <WmNode
-          id="crypt"
-          dungeon
-          name={dungeon.discovered ? 'The Hollow Crypt' : ''}
-          tag={dungeon.discovered ? { text: 'Lv 12–16', color: 'var(--dungeon)' } : null}
-          onClick={onCrypt}
+          id="grimspire"
+          name="Grimspire"
+          locked={!grimspireUnlocked}
+          glow={grimspireUnlocked ? 'amber' : undefined}
+          tag={{
+            text: grimspireUnlocked ? 'Lv 21–40' : 'Lv 8+ to unlock',
+            color: grimspireUnlocked ? 'var(--ink-soft)' : 'var(--stone)',
+          }}
+          onClick={grimspireUnlocked ? onGrimspire : undefined}
           onHover={(on) =>
+            !grimspireUnlocked &&
             setTip(
               on
                 ? {
-                    x: POS.crypt.x,
-                    y: POS.crypt.y - 8,
-                    text: 'A mysterious portal hums with dark energy…',
+                    x: POS.grimspire.x,
+                    y: POS.grimspire.y - 8,
+                    text: '⚠ Grimspire — Reach Level 8 to unlock',
                   }
                 : null,
             )
           }
         />
-      )}
 
-      {/* PROG01 — Fog of war : nuage sur les zones non débloquées */}
-      {!grimspireUnlocked && (
+        {/* Blighted Road — chip cliquable (QTE) */}
         <div
-          className="wm-fog"
-          data-testid="fog-grimspire"
-          style={{ left: `${POS.grimspire.x}%`, top: `${POS.grimspire.y}%` }}
-          aria-hidden="true"
+          className="wm-blighted"
+          style={{ left: '74%', top: '52%', cursor: blightedUnlocked ? 'pointer' : 'default' }}
+          onClick={() => blightedUnlocked && setQteOpen(true)}
         >
-          <span>☁</span>
-          <span>☁</span>
-          <span>☁</span>
+          <div className="wm-blighted-label">{blightedUnlocked ? '⚔' : '💀'} The Blighted Road</div>
+          <div className="wm-blighted-chip">
+            {blightedUnlocked ? 'Cross the road' : `${totalAshenvaleKills}/10 kills or Lv 3`}
+          </div>
         </div>
-      )}
 
-      {/* Grimspire (locked) — marqueur overlay sur les montagnes */}
-      <WmNode
-        id="grimspire"
-        name="Grimspire"
-        locked={!grimspireUnlocked}
-        glow={grimspireUnlocked ? 'amber' : undefined}
-        tag={{
-          text: grimspireUnlocked ? 'Lv 21–40' : 'Lv 8+ to unlock',
-          color: grimspireUnlocked ? 'var(--ink-soft)' : 'var(--stone)',
-        }}
-        onClick={grimspireUnlocked ? onGrimspire : undefined}
-        onHover={(on) =>
-          !grimspireUnlocked &&
-          setTip(
-            on
-              ? {
-                  x: POS.grimspire.x,
-                  y: POS.grimspire.y - 8,
-                  text: '⚠ Grimspire — Reach Level 8 to unlock',
-                }
-              : null,
-          )
-        }
-      />
+        {/* Héros (légèrement au-dessus du node courant) */}
+        <HeroAvatar
+          x={`${heroPos.x}%`}
+          y={`${heroPos.y - 1.5}%`}
+          name={hero.name}
+          src={HERO_SPRITE}
+          walking={walking}
+        />
 
-      {/* Blighted Road — chip cliquable (QTE) */}
-      <div
-        className="wm-blighted"
-        style={{ left: '74%', top: '52%', cursor: blightedUnlocked ? 'pointer' : 'default' }}
-        onClick={() => blightedUnlocked && setQteOpen(true)}
-      >
-        <div className="wm-blighted-label">{blightedUnlocked ? '⚔' : '💀'} The Blighted Road</div>
-        <div className="wm-blighted-chip">
-          {blightedUnlocked ? 'Cross the road' : `${totalAshenvaleKills}/10 kills or Lv 3`}
+        {/* UX-MAPCLARITY01 — légende des symboles de la carte (cohérente PROG/fog) */}
+        <div className="wm-legend" data-testid="wm-legend">
+          <div className="wl-title">Legend</div>
+          <div className="wl-row">
+            <span className="wl-ico">◉</span> Open — click to enter / travel
+          </div>
+          <div className="wl-row">
+            <span className="wl-ico">🔒</span> Locked — quest, NPC info or level
+          </div>
+          <div className="wl-row">
+            <span className="wl-ico">?</span> Undiscovered dungeon
+          </div>
+          <div className="wl-row">
+            <span className="wl-ico">☁</span> Fog — zone not yet unlocked
+          </div>
+          <div className="wl-row">
+            <span className="wl-ico">Lv</span> Spot level range
+          </div>
         </div>
+
+        {/* Tooltip */}
+        {tip && (
+          <div className="lb-tip" style={{ left: `${tip.x}%`, top: `${tip.y}%` }}>
+            {tip.text}
+          </div>
+        )}
+
+        <QTEBar
+          open={qteOpen}
+          title="⚠ Cross the Blighted Road"
+          hint="Time your dash through the cursed mist. Hit NOW when the cursor is in the green zone."
+          durationMs={1400}
+          zoneStart={42}
+          zoneEnd={58}
+          timeoutMs={5000}
+          onSuccess={onQteSuccess}
+          onFailure={onQteFailure}
+        />
       </div>
-
-      {/* Héros (légèrement au-dessus du node courant) */}
-      <HeroAvatar
-        x={`${heroPos.x}%`}
-        y={`${heroPos.y - 1.5}%`}
-        name={hero.name}
-        src={HERO_SPRITE}
-        walking={walking}
-      />
-
-      {/* UX-MAPCLARITY01 — légende des symboles de la carte (cohérente PROG/fog) */}
-      <div className="wm-legend" data-testid="wm-legend">
-        <div className="wl-title">Legend</div>
-        <div className="wl-row">
-          <span className="wl-ico">◉</span> Open — click to enter / travel
-        </div>
-        <div className="wl-row">
-          <span className="wl-ico">🔒</span> Locked — quest, NPC info or level
-        </div>
-        <div className="wl-row">
-          <span className="wl-ico">?</span> Undiscovered dungeon
-        </div>
-        <div className="wl-row">
-          <span className="wl-ico">☁</span> Fog — zone not yet unlocked
-        </div>
-        <div className="wl-row">
-          <span className="wl-ico">Lv</span> Spot level range
-        </div>
-      </div>
-
-      {/* Tooltip */}
-      {tip && (
-        <div className="lb-tip" style={{ left: `${tip.x}%`, top: `${tip.y}%` }}>
-          {tip.text}
-        </div>
-      )}
-
-      <QTEBar
-        open={qteOpen}
-        title="⚠ Cross the Blighted Road"
-        hint="Time your dash through the cursed mist. Hit NOW when the cursor is in the green zone."
-        durationMs={1400}
-        zoneStart={42}
-        zoneEnd={58}
-        timeoutMs={5000}
-        onSuccess={onQteSuccess}
-        onFailure={onQteFailure}
-      />
     </div>
   )
 }
