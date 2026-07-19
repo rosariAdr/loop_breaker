@@ -4,15 +4,15 @@
 // Seuils progressifs (tunables) : ~350 points pour atteindre Suprême.
 export const RANK_TIERS = [
   { id: 'aluminium', label: 'Aluminium', color: '#b8b8c0', threshold: 0, nextAt: 10 },
-  { id: 'iron', label: 'Fer', color: '#8a8a8a', threshold: 10, nextAt: 25 },
+  { id: 'iron', label: 'Iron', color: '#8a8a8a', threshold: 10, nextAt: 25 },
   { id: 'bronze', label: 'Bronze', color: '#b87333', threshold: 25, nextAt: 45 },
-  { id: 'silver', label: 'Argent', color: '#bbbbbb', threshold: 45, nextAt: 70 },
-  { id: 'orichalcum', label: 'Orichalque', color: '#5fbf9f', threshold: 70, nextAt: 100 },
-  { id: 'gold', label: 'Or', color: '#d4af37', threshold: 100, nextAt: 140 },
-  { id: 'platinum', label: 'Platine', color: '#c0e0e0', threshold: 140, nextAt: 190 },
-  { id: 'emerald', label: 'Émeraude', color: '#50c878', threshold: 190, nextAt: 260 },
-  { id: 'diamond', label: 'Diamant', color: '#80c0ff', threshold: 260, nextAt: 350 },
-  { id: 'supreme', label: 'Suprême', color: '#ff70d0', threshold: 350, nextAt: null },
+  { id: 'silver', label: 'Silver', color: '#bbbbbb', threshold: 45, nextAt: 70 },
+  { id: 'orichalcum', label: 'Orichalcum', color: '#5fbf9f', threshold: 70, nextAt: 100 },
+  { id: 'gold', label: 'Gold', color: '#d4af37', threshold: 100, nextAt: 140 },
+  { id: 'platinum', label: 'Platinum', color: '#c0e0e0', threshold: 140, nextAt: 190 },
+  { id: 'emerald', label: 'Emerald', color: '#50c878', threshold: 190, nextAt: 260 },
+  { id: 'diamond', label: 'Diamond', color: '#80c0ff', threshold: 260, nextAt: 350 },
+  { id: 'supreme', label: 'Supreme', color: '#ff70d0', threshold: 350, nextAt: null },
 ]
 
 // Info de rang pour un total de points cumulés (`rankPoints`).

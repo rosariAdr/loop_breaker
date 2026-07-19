@@ -39,7 +39,7 @@ describe('FIX-QRANK01 — getRankInfo (échelle 10 paliers, rankPoints)', () => 
 
   it('10 points → Fer début de tier', () => {
     const r = getRankInfo(10)
-    expect(r.label).toBe('Fer')
+    expect(r.label).toBe('Iron')
     expect(r.tokensInTier).toBe(0)
   })
 
@@ -51,13 +51,13 @@ describe('FIX-QRANK01 — getRankInfo (échelle 10 paliers, rankPoints)', () => 
   })
 
   it('45 → Argent ; 100 → Or', () => {
-    expect(getRankInfo(45).label).toBe('Argent')
-    expect(getRankInfo(100).label).toBe('Or')
+    expect(getRankInfo(45).label).toBe('Silver')
+    expect(getRankInfo(100).label).toBe('Gold')
   })
 
   it('350 points → Suprême, isMax=true', () => {
     const r = getRankInfo(350)
-    expect(r.label).toBe('Suprême')
+    expect(r.label).toBe('Supreme')
     expect(r.isMax).toBe(true)
     expect(r.pctToNext).toBe(1)
   })
@@ -172,13 +172,13 @@ describe('FIX-QXP01/QRANK01 — chips XP + rang injectés sur le board', () => {
     render(<QuestBoard />)
     const card = screen.getByText('First Blood').closest('div.p-4')
     expect(within(card).getByText('+40 XP')).toBeInTheDocument() // QUEST_BALANCE.first_blood.xp
-    expect(within(card).getByText('+1 rang')).toBeInTheDocument() // QUEST_BALANCE.first_blood.rankPoints
+    expect(within(card).getByText('+1 rank')).toBeInTheDocument() // QUEST_BALANCE.first_blood.rankPoints
   })
 
   it('le rang affiché suit la nouvelle échelle 10 paliers (Aluminium → Fer au départ)', () => {
     render(<QuestBoard />)
     const banner = screen.getByTestId('rank-banner')
     expect(within(banner).getByText('Aluminium')).toBeInTheDocument()
-    expect(within(banner).getByText(/to Fer/)).toBeInTheDocument()
+    expect(within(banner).getByText(/to Iron/)).toBeInTheDocument()
   })
 })

@@ -4,17 +4,17 @@ import { RANK_TIERS, getRankInfo, nextRankLabel } from './ranks'
 describe('nextRankLabel', () => {
   it('returns the next tier label for a mid-ladder tier', () => {
     // gold is idx 5, next is platinum (idx 6)
-    expect(nextRankLabel('gold')).toBe('Platine')
+    expect(nextRankLabel('gold')).toBe('Platinum')
   })
 
   it('returns the next tier label for the first tier', () => {
     // aluminium is idx 0, next is iron (idx 1)
-    expect(nextRankLabel('aluminium')).toBe('Fer')
+    expect(nextRankLabel('aluminium')).toBe('Iron')
   })
 
   it('returns the next tier label for the second-to-last tier', () => {
     // diamond is idx 8, next is supreme (idx 9)
-    expect(nextRankLabel('diamond')).toBe('Suprême')
+    expect(nextRankLabel('diamond')).toBe('Supreme')
   })
 
   it("returns '???' for the top tier id (no next tier)", () => {
@@ -77,7 +77,7 @@ describe('getRankInfo', () => {
   it('points at the exact top threshold → isMax true, no div-by-zero', () => {
     const info = getRankInfo(350)
     expect(info.tier).toBe('supreme')
-    expect(info.label).toBe('Suprême')
+    expect(info.label).toBe('Supreme')
     expect(info.isMax).toBe(true)
     expect(info.pointsNeededInTier).toBe(0)
     // pctToNext is forced to 1 when isMax (avoids 0/0 = NaN)
@@ -101,7 +101,7 @@ describe('getRankInfo', () => {
     // 80 falls in orichalcum (threshold 70, nextAt 100)
     const info = getRankInfo(80)
     expect(info.tier).toBe('orichalcum')
-    expect(info.label).toBe('Orichalque')
+    expect(info.label).toBe('Orichalcum')
     expect(info.isMax).toBe(false)
     expect(info.pointsInTier).toBe(80 - 70) // 10
     expect(info.pointsNeededInTier).toBe(100 - 70) // 30

@@ -26,7 +26,7 @@ export const CODEX_RULES = [
     id: 'reputation',
     icon: '🪙',
     heading: 'Reputation & Ranks',
-    body: "Elite hunts reward reputation tokens — spend them at the Gods' Shop between lives. Your adventurer rank is separate: completing quests earns rank points that climb a 10-tier ladder — Aluminium, Fer, Bronze, Argent, Orichalque, Or, Platine, Émeraude, Diamant, Suprême.",
+    body: "Elite hunts reward reputation tokens — spend them at the Gods' Shop between lives. Your adventurer rank is separate: completing quests earns rank points that climb a 10-tier ladder — Aluminium, Iron, Bronze, Silver, Orichalcum, Gold, Platinum, Emerald, Diamond, Supreme.",
   },
   {
     id: 'divinities',

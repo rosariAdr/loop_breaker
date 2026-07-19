@@ -5,11 +5,11 @@
 export const STAT_MILESTONE_STEP = 35
 
 export const STAT_MILESTONES = {
-  strength: { per: 0.03, effect: 'physDmg', label: '+3% dégâts physiques / palier' },
-  agility: { per: 0.03, effect: 'evasion', label: '+3% vitesse & esquive / palier' },
-  intelligence: { per: 0.03, effect: 'magicDmg', label: '+3% dégâts magiques / palier' },
-  chance: { per: 0.02, effect: 'luck', label: '+2% drop & crit / palier' },
-  def: { per: 0.03, effect: 'reduction', label: '+3% réduction des dégâts / palier' },
+  strength: { per: 0.03, effect: 'physDmg', label: '+3% physical damage / milestone' },
+  agility: { per: 0.03, effect: 'evasion', label: '+3% speed & evasion / milestone' },
+  intelligence: { per: 0.03, effect: 'magicDmg', label: '+3% magic damage / milestone' },
+  chance: { per: 0.02, effect: 'luck', label: '+2% drop & crit / milestone' },
+  def: { per: 0.03, effect: 'reduction', label: '+3% damage reduction / milestone' },
 }
 
 // Nombre de paliers franchis pour une valeur d'attribut donnée.

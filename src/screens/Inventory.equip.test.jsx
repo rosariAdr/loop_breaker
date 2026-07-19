@@ -186,7 +186,7 @@ describe('Inventory — panneau détail : diff & vente', () => {
     // la seule entrée « — empty — » n'existe plus pour helmet ; sélectionne l'item du sac (rare)
     fireEvent.click(screen.getByText(/Rare Iron Helm/))
     // ligne « vs équipé » + au moins un badge diff
-    expect(screen.getByText(/vs équipé/)).toBeTruthy()
+    expect(screen.getByText(/vs equipped/)).toBeTruthy()
     expect(screen.getByTestId('diff-def')).toBeTruthy()
   })
 
