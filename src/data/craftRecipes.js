@@ -192,8 +192,9 @@ export const CRAFT_RECIPES = [
     known: true,
     combinations: [
       {
-        id: 'alchemy_mana_potion_small__bat',
-        ingredients: { bat_wing: 2 },
+        // FIX-CRAFTSRC01 — bat_wing (sources vides) → wolf_fang (droppé ashwood_wolf, early game)
+        id: 'alchemy_mana_potion_small__fang',
+        ingredients: { wolf_fang: 2 },
         gold: 8,
         rarity: 'common',
         rarityTable: { common: 100 },
@@ -243,8 +244,9 @@ export const CRAFT_RECIPES = [
     known: true,
     combinations: [
       {
+        // FIX-CRAFTSRC01 — bat_wing (sources vides) → bone_fragment (droppé knoll_goblin)
         id: 'alchemy_elixir_minor__ecto',
-        ingredients: { ectoplasm: 2, bat_wing: 2 },
+        ingredients: { ectoplasm: 2, bone_fragment: 2 },
         gold: 30,
         rarity: 'common',
         rarityTable: { common: 100 },
@@ -279,8 +281,9 @@ export const CRAFT_RECIPES = [
     known: true,
     combinations: [
       {
+        // FIX-CRAFTSRC01 — void_fang (sources vides) → wolf_alpha_fang (rare T2 ashwood_wolf)
         id: 'master_serpent_dagger__rare',
-        ingredients: { serpent_scale: 5, void_fang: 1 },
+        ingredients: { serpent_scale: 5, wolf_alpha_fang: 1 },
         gold: 120,
         rarity: 'rare',
         rarityTable: { rare: 100 },
@@ -296,8 +299,9 @@ export const CRAFT_RECIPES = [
     known: true,
     combinations: [
       {
+        // FIX-CRAFTSRC01 — troll_blood (sources vides) → verdant_ichor (droppé hill_slime)
         id: 'master_cursed_greaves__rare',
-        ingredients: { grimstone: 4, troll_blood: 2 },
+        ingredients: { grimstone: 4, verdant_ichor: 2 },
         gold: 130,
         rarity: 'rare',
         rarityTable: { rare: 100 },

@@ -119,14 +119,18 @@ export const EQUIPMENT_TEMPLATES = {
     baseStats: { strength: 4, agility: 2 },
     availableAt: ['blacksmith'],
     craftRecipes: {
+      // FIX-CRAFTSRC01 — void_fang (sources vides) → wolf_alpha_fang (rare T2 ashwood_wolf)
       common: { ingredients: { serpent_scale: 3, marsh_venom: 1 }, gold: 30 },
-      rare: { ingredients: { serpent_scale: 5, marsh_venom: 2, void_fang: 1 }, gold: 120 },
+      rare: { ingredients: { serpent_scale: 5, marsh_venom: 2, wolf_alpha_fang: 1 }, gold: 120 },
       // RES03 — verdant_ichor (sève alchimique du hill_slime) enduit la lame de poison.
       epic: {
-        ingredients: { void_fang: 3, marsh_venom: 4, wyvern_talon: 1, verdant_ichor: 1 },
+        ingredients: { wolf_alpha_fang: 3, marsh_venom: 4, wyvern_talon: 1, verdant_ichor: 1 },
         gold: 400,
       },
-      legendary: { ingredients: { void_fang: 5, wyvern_talon: 3, dark_essence: 2 }, gold: 1200 },
+      legendary: {
+        ingredients: { wolf_alpha_fang: 5, wyvern_talon: 3, dark_essence: 2 },
+        gold: 1200,
+      },
     },
     merchantStock: {},
     merchantBuyPrice: {},
@@ -288,8 +292,9 @@ export const EQUIPMENT_TEMPLATES = {
       // RES03 — wolf_alpha_fang (croc d'alpha, ashwood_wolf) allège et affûte la botte.
       rare: { ingredients: { wolf_pelt: 4, serpent_scale: 2, wolf_alpha_fang: 1 }, gold: 80 },
       // RES03 — goblin_warpaint (pigments indélébiles du knoll_goblin) marque la botte de guerre.
-      epic: { ingredients: { shadow_fur: 3, void_fang: 2, goblin_warpaint: 1 }, gold: 260 },
-      legendary: { ingredients: { shadow_fur: 5, void_fang: 3, dark_essence: 2 }, gold: 850 },
+      // FIX-CRAFTSRC01 — void_fang (sources vides) → wolf_alpha_fang
+      epic: { ingredients: { shadow_fur: 3, wolf_alpha_fang: 2, goblin_warpaint: 1 }, gold: 260 },
+      legendary: { ingredients: { shadow_fur: 5, wolf_alpha_fang: 3, dark_essence: 2 }, gold: 850 },
     },
     merchantStock: { common: true, rare: true },
     merchantBuyPrice: { common: 40, rare: 160 },
@@ -368,8 +373,9 @@ export const EQUIPMENT_TEMPLATES = {
       common: { ingredients: { hare_pelt: 3, wolf_fang: 2 }, gold: 20 },
       // RES03 — goblin_warpaint (pigments du knoll_goblin) marque le gant du chasseur.
       rare: { ingredients: { boar_hide: 2, serpent_scale: 3, goblin_warpaint: 1 }, gold: 82 },
-      epic: { ingredients: { beast_hide: 3, void_fang: 2 }, gold: 270 },
-      legendary: { ingredients: { beast_hide: 5, void_fang: 3, dark_essence: 2 }, gold: 880 },
+      // FIX-CRAFTSRC01 — void_fang (sources vides) → wolf_alpha_fang
+      epic: { ingredients: { beast_hide: 3, wolf_alpha_fang: 2 }, gold: 270 },
+      legendary: { ingredients: { beast_hide: 5, wolf_alpha_fang: 3, dark_essence: 2 }, gold: 880 },
     },
     merchantStock: {},
     merchantBuyPrice: {},

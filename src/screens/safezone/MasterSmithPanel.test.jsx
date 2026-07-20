@@ -21,7 +21,8 @@ const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) =>
 const SERPENT = MASTER_RECIPES.find((r) => r.id === 'master_serpent_dagger')
 const SERPENT_COMBO = SERPENT.combinations[0]
 
-// Seed généreux : héros peut forger la Serpent Dagger (5 serpent_scale + 1 void_fang, 120g).
+// Seed généreux : héros peut forger la Serpent Dagger (5 serpent_scale + 1 wolf_alpha_fang,
+// 120g — FIX-CRAFTSRC01 : void_fang remplacé par wolf_alpha_fang, droppable).
 function seedCraftable() {
   useGameStore.getState().resetGame()
   useGameStore.setState((s) => ({
@@ -31,7 +32,7 @@ function seedCraftable() {
       inventory: {
         ...s.hero.inventory,
         gold: 5000,
-        resources: { serpent_scale: 10, void_fang: 3 },
+        resources: { serpent_scale: 10, wolf_alpha_fang: 3 },
         equipment: [],
       },
     },
@@ -108,10 +109,10 @@ describe('MasterSmithPanel — forge (succès)', () => {
     fireEvent.click(screen.getByText(/Forge Serpent Dagger/))
     // mini-jeu affiché
     expect(screen.getByTestId('crafting-minigame')).toBeTruthy()
-    // ressources + or débités (5 serpent_scale, 1 void_fang, 120g)
+    // ressources + or débités (5 serpent_scale, 1 wolf_alpha_fang, 120g)
     const inv = useGameStore.getState().hero.inventory
     expect(inv.resources.serpent_scale).toBe(10 - SERPENT_COMBO.ingredients.serpent_scale)
-    expect(inv.resources.void_fang).toBe(3 - SERPENT_COMBO.ingredients.void_fang)
+    expect(inv.resources.wolf_alpha_fang).toBe(3 - SERPENT_COMBO.ingredients.wolf_alpha_fang)
     expect(inv.gold).toBe(5000 - SERPENT_COMBO.gold)
   })
 
