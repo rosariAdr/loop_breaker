@@ -9,7 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-> Suite v1.2 : **v1.31 → v1.33** (en cours) + refonte technique + déploiement + correctifs de playthrough. Détail ticket par ticket : `TASKS.md` (§Done + « 🗺 Plan de release »).
+> Rien en cours pour la prochaine version — voir « 🗺 Plan de release » dans `TASKS.md`.
+
+---
+
+## [0.2.0] - 2026-07-20
+
+> **Première release taggée** (`master` stable). Boucle cœur validée en jeu ; contenu v1.31→v1.33 + Tech/DX/Balance (v1.34) + Équipement/Craft (v1.42) + Maîtres/mentors (v1.43) + UI critique + passe d'audit de bugs. Détail ticket par ticket : `TASKS.md`.
+
+### Added (v1.42 — Équipement & Craft · v1.43 — Maîtres & mentors)
+- **v1.42** — 9 slots d'équipement (offhand/amulet/2 anneaux), sets & bonus de set, recettes **unifiées** (`craftRecipes.js` = source unique, shims retirés), qualité de craft hybride branchée au runtime, mini-jeux de forge/alchimie, templates bijoux/gants.
+- **v1.43** — Maîtres & mentors (MST01-09) : engagement de maître run-scopé, initiations, quêtes de skill exclusives, maîtres **itinérants** (board local un-lieu/4j), statut `frozen` (SKD-ICE01), tableau « Trials of Mastery » partagé (Académie + Knight Trainer).
+- **Onboarding** — Chaîne « Premières fois » (QONBOARD01 + QOBJ-TYPES01) : objectifs non-combat (`equip`/`pray`/`accept_deed`/`craft`), donneuse Elder Moira, arme de départ `worn_iron_dagger`.
+
+### Added (UI critique — épique URGENT)
+- **UI12** — World Map en **bande cinématique 3:2 stable** (`.wm-band`/`.wm-map`, `aspect-ratio` forcé) : ratio constant à toute taille de fenêtre, marqueurs alignés.
+- **UI11** — Panneau Église **en 1 clic** (split 2 colonnes) : Talk + Pray à gauche, Acts of Devotion + quêtes parchemin + Leave à droite ; HP/MP retiré (redondant topbar).
+
+### Changed (v1.34 — Tech / DX / Balance)
+- **BAL-CSV01** — Équilibrage piloté par `public/balance.csv` (fetch runtime, fallback en dur).
+- **REFAC02/03** — Découpage de `SafeZone.jsx` (1 fichier/panneau) et `Combat.jsx` (sous-composants + hook) ; **COV-COMBAT01** (couverture combat ≥ 85 %), **QA01** (audit intégrité items/compteurs), **TECH06** (feature flags).
+
+### Changed (i18n)
+- **FIX-I18N01** — Tout le contenu joueur passé **100 % en anglais** (onboarding, rangs Aluminium→Supreme, milestones, sets, codex, chips UI) + **garde-fou `i18nGuard.test.js`** (scan anti-accents des champs visibles).
+
+### Fixed (BUG_AUDIT-0717 — passe d'audit 2026-07-17→20)
+- **FIX-QUESTPROG02** — Église : la QuestCard active affichait le cumul de kills (5/5) à l'acceptation → snapshot `base` (delta) sur l'Église + le MasterBoard.
+- **QSV2-DROPDUP01** — Retrait des quêtes legacy doublonnées (`first_blood`↔mq01, `nc_oakheart_elite`↔mq02) + migration save (filtrage des ids de quête inconnus) ; **QSV2-QSRC-TEST01** — test de disjonction/sourcing des pools de village + fix double-dip `collect:ectoplasm`.
+- **FIX-CRAFTSRC01** — Recettes recentrées sur des ingrédients droppables (bat_wing→wolf_fang/bone_fragment, void_fang→wolf_alpha_fang, troll_blood→verdant_ichor) + test « obtainable ».
+- **FIX-DIVSKILL01** — `healing_bloom` (skill divin) retiré du catalogue de l'Académie.
+- **FIX-ALDRIC01** — Réconciliation : Sir Aldric 100 % Greywatch ; le Knight Trainer de Millhaven devient **Dame Roswyn** (PNJ dédié).
+- **FIX-SRCMON01** — 4 `sourceMonster` contradictoires corrigés (stone_skin/venom_bite/spectral_veil → null « académie/orphelin » ; iron_resolve → barrow_wight) + test de réciprocité.
+- **FIX-PLURAL01** — Pluriels de monstres data-driven (`namePlural` : Wolves/Foxes/… + helper `monsterPlural`) → fin des « Ashwood Wolfs ».
+- **FIX-LVLQUEUE01** — Modal Level Up **unique, cumulé et reportable** : allocation de N points, bouton « Do it later » → `hero.pendingStatPoints` attribuables depuis le HeroSheet (migration save).
+- **FIX-HSBARS01** — Hero Sheet : largeurs de barres homogènes par famille + Aura/Concentration rattachées à la grille des attributs.
+- **FIX-ZONELIST01** — Purge des listes `monsters` zone-level mortes (ids fantômes) + garde-fou.
+- **QA-BOOKS01** — Tomes de stats (`tome_of_*`) vendus par le marchand en ville (contenu mort corrigé).
+- **DX-LINTIGNORE01** — ESLint ignore `.claude/**` (worktrees) ; worktree résiduel désenregistré → `npm run lint` vert.
+- **FIX-TOPBAR01** — Investigué : **non reproductible en 16:9** (artefact de ratio), aucun correctif nécessaire.
+
+### Process
+- **TST-UI** — Couverture maintenue (lignes 84.83 %, seuil ≥ 70 %).
+- **TEST-SCEN01** — Gate « recette fonctionnelle 10/10 » (`docs/TEST_SCENARIOS.md`) documentée en sine qua non avant toute PR `dev → master` (CONTRIBUTING §7).
+
+---
+
+> Contenu antérieur (v1.31→v1.33, refonte technique, déploiement) — inclus dans 0.2.0 :
 
 ### Added (v1.31–v1.33 — quêtes, skills, progression)
 - **MQ-CHAIN01** — Chaîne de quête principale : `mainQuests.js` mq01→mq06 (Greywatch → Millhaven → Ironhaven). Nouveau type d'objectif `elite_turnin` (remise de N× l'item rare d'un élite OU son arme signature). Chaque palier `unlocks` des localités/spots.

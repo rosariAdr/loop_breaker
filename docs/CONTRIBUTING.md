@@ -299,10 +299,13 @@ it('migration : ajoute newField avec valeur par défaut si absent', () => {
 ### Pour `dev` → `master` (release)
 
 1. Vérifier que `dev` a une suite de features cohérente (pas un mix incomplet)
-2. Mettre à jour `CHANGELOG.md` : déplacer `[Unreleased]` vers `[v0.X.Y] - YYYY-MM-DD`
-3. Ouvrir la PR `dev` → `master`
-4. Merge classique (préserve l'historique)
-5. Tag : `git tag v0.X.Y && git push --tags`
+2. **🚦 Recette fonctionnelle — GATE SINE QUA NON (TEST-SCEN01)** : dérouler **les 10 scénarios** de `docs/TEST_SCENARIOS.md` (S1→S10) **en jeu réel** (navigateur, pas seulement les tests unitaires) et les **cocher dans la grille** avec **date + hash de commit**. Une PR `dev → master` **n'est ouverte que si la passe est 10/10** (ou les échecs explicitement acceptés/ticketés). C'est le dernier filet avant la release : les tests unitaires ne remplacent pas le déroulé fonctionnel.
+3. Mettre à jour `CHANGELOG.md` : déplacer `[Unreleased]` vers `[v0.X.Y] - YYYY-MM-DD` (en purgeant les sections déjà présentes dans `master`)
+4. Rafraîchir `CONTEXT.md` (§ compteurs) avec les vrais chiffres (`vitest run` pour le nb de tests/fichiers, cf. §5)
+5. Ouvrir la PR `dev` → `master`
+6. Merge classique (préserve l'historique)
+7. Tag : `git tag v0.X.Y && git push --tags`
+8. **Resync `dev`** sur `master` (`git merge --ff-only master` ; check `git log --oneline master..dev` vide — cf. §2)
 
 ---
 
