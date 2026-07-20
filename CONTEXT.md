@@ -14,7 +14,7 @@
 - Loop principal : explorer une zone → combattre des monstres → gagner XP/loot → finir un donjon (boss) → mourir → transmigrer → recommencer plus fort.
 - 4 univers prévus (medieval fantasy, wushu, tower, post-apo Hokuto No Ken). **POC actuel : medieval fantasy uniquement**.
 - Public : joueur PC, sessions de 10-30 min, progression méta entre les runs.
-- **État : jouable de bout en bout** (win condition — tuer le Demon Lord Malachar — implémentée). **v1 / v1.1 / v1.2 clôturées** ; en cours **v1.31 → v1.32 → v1.33** (quêtes / skills-drops / progression). Pré-alpha solo dev.
+- **État : jouable de bout en bout** (win condition — tuer le Demon Lord Malachar — implémentée). **v1 → v1.43 clôturées** (quêtes, skills-drops, progression, Tech/DX/Balance, Équipement & Craft unifié, Maîtres & mentors, UI critique, onboarding) ; **release `0.2.0` (2026-07-20)** = première `master` taggée. Pré-alpha solo dev.
 
 ---
 
@@ -35,11 +35,11 @@ npm run lint          # ESLint check
 
 **Hébergement v1 (DEPLOY01)** : **Vercel + Vercel Authentication** (alpha **privée**). SPA 100 % client-side (pas de backend ; saves `localStorage`). Routing SPA via `vercel.json` (rewrites → `/index.html`). Réglages : preset Vite · build `npm run build` · output `dist`. ✅ **`public/` est committé** (DEPLOY01) → assets servis par Vercel (`raw/` HD exclus). Le **durcissement réel** (backend, autorité serveur, comptes/rôles, anti-triche) est repoussé à une version ultérieure (cf. `SEC02`) — l'alpha privée s'appuie uniquement sur l'auth Vercel.
 
-**État technique (2026-07-03)** :
-- **1268 tests** dans **123 fichiers** — tous verts (`npx vitest run`)
-- Build prod : **~480 KB JS / ~138 KB gzipped** (code-split : chunks Combat/GodsShop/Codex lazy)
-- ESLint : **0 erreur**, quelques warnings intentionnels (`react-hooks/exhaustive-deps` sur des `useEffect` run-once)
-- **Milestones livrés** : v1 (POC), v1.1 (UI parchemin + sprites + QoL), **v1.2 (profondeur : NPC→STA→PROG, quêtes église/maître/contenu, guilde, équip. par lieu, VFX skills, transmigration)**. **DEPLOY01** : repo prêt pour Vercel (alpha privée), `public/` committé. Reste backlog v1.3/v1.4 (donjon) + design.
+**État technique (2026-07-20, release 0.2.0)** :
+- **2044 tests** dans **178 fichiers** — tous verts (`npx vitest run`) ; couverture lignes **84.83 %** (seuil ≥ 70 %). *(NB : un compte antérieur ~3437 était gonflé par un worktree résiduel `.claude/` doublonné — corrigé via DX-LINTIGNORE01.)*
+- Build prod : **~570 KB JS / ~160 KB gzipped** (code-split : chunks Combat/GodsShop/Codex lazy)
+- ESLint : **0 erreur** (`.claude/**` ignoré), quelques warnings intentionnels (`react-hooks/exhaustive-deps` sur des `useEffect` run-once)
+- **Milestones livrés** : v1 (POC), v1.1 (UI parchemin + sprites + QoL), v1.2 (NPC→STA→PROG), **v1.31→1.33 (quêtes / skills-drops / progression)**, **v1.34 (Tech/DX/Balance)**, **v1.42 (Équipement & Craft — recettes unifiées `craftRecipes.js`)**, **v1.43 (Maîtres & mentors + itinérants)**, **UI critique (UI11/UI12)**, **onboarding**. **DEPLOY01** : repo prêt pour Vercel (alpha privée), `public/` committé. Reste backlog v1.41 (donjon), combat ATB (v1.44), design + univers.
 
 ---
 
@@ -148,7 +148,7 @@ racine/
 - **Manque** : ATB (B06, v2), combat à la Pokémon multi-cartes raffiné (U09).
 
 ### Skills
-- 6 actifs max / 4 passifs max. 3 niveaux. Stack des doublons (S03), contenant cosmétique par univers (S06), aperçu skills ennemis (S02). 31 skills dont gluttony (passif suprême).
+- 6 actifs max / 4 passifs max. 3 niveaux. Stack des doublons (S03), contenant cosmétique par univers (S06), aperçu skills ennemis (S02). **50 skills** (dont 6 divins) dont gluttony (passif suprême).
 
 ### Idle
 - 5 kills → idle débloqué. Tick 3s. **I08** : seuil de PV d'auto-stop configurable (20/35/50 %). Toasts (I04). **B12** : combat manuel forcé si monstre trop fort (niveau > hero+5).
@@ -206,20 +206,20 @@ racine/
 | Élément | Quantité | Détails |
 |---|---|---|
 | Zones | 3 | Ashenvale (4 spots) + Blighted Road + Grimspire |
-| Spots de chasse | 6 | + levelRange par spot (utilisé par B12) |
-| Monstres / boss | 29 | dont Crypt Keeper, Lord of the Forsaken, Malachar (+ bossMechanics). **MON01** : bestiaire de surface refondu (4 spots × 4 monstres dont 1 élite) ; 2 en réserve (`reserve: true`, exclus de `MONSTERS_BY_SPOT/_ZONE`, usage futur donjon) |
-| Skills | 44 | dont 4 divins, soul_rend (suprême), reckless_blow (sacrifice), gluttony (passif), + 13 techniques de bestiaire (MON01) |
+| Spots de chasse | 4 (surface) | Ashenvale : ashenvale_forest / thornmarsh / crumbled_ruins / wildmere_hills. Propriété unique par lieu (`SPOT_OWNER`, QSV2-SPOTOWNER01). + levelRange par spot |
+| Monstres / boss | 29 | dont Crypt Keeper, Lord of the Forsaken, Malachar (+ bossMechanics). **MON01** : bestiaire de surface (4 spots × 4 dont 1 élite) ; réserve `reserve:true` exclue de `MONSTERS_BY_SPOT/_ZONE` |
+| Skills | **50** | dont **6 divins**, soul_rend (suprême), reckless_blow (sacrifice), gluttony (passif) + techniques de bestiaire ; `sourceMonster` réconciliés (FIX-SRCMON01) |
 | Divinités actives | 3 | Ignareth / Sylvara / Voltaris |
 | Debuffs passifs | 4 | Burnt Hands / Poisoned / Fatigue / Black Smoke (CRF01) |
-| Recettes | 6 + 5 + ~10 | alchimie (Z04) + maître forgeron (Z06) + forge de base |
-| Consommables | 8 | hp/mana small+medium, stamina_ration, elixir_minor, mana_crystal, antidote_basic |
-| Titres permanents | 3 | first_steps, demon_lord_slayer, malachar_bane |
+| Recettes | **`craftRecipes.js` (source unique)** | 21 recettes autorées + variantes de forge dérivées des templates (`ALL_CRAFT_RECIPES` ≈ 39) ; tous les ingrédients droppables (FIX-CRAFTSRC01) |
+| Consommables | 8 + 3 tomes | hp/mana small+medium, stamina_ration, elixir_minor, mana_crystal, antidote_basic ; tomes de stats vendus en ville (QA-BOOKS01) |
+| Titres permanents | 4 | first_steps, demon_lord_slayer, malachar_bane (+ 1) |
 | Articles boutique | 6 | rank_restore, bonus_skill, bonus_stat, skill_levelup, starter_kit, oracle |
 | Assets liés | 16/16 monstres surface · 5/9 bâtiments | figurines `public/monsters/<id>.png` (+ variantes `_2/_3`), façades `public/buildings/` ; boss/Grimspire + portraits PNJ en emoji/placeholder fallback |
 
 ---
 
-## 6. Tests (1268 total, 123 fichiers)
+## 6. Tests (2044 total, 178 fichiers)
 
 > Aperçu non exhaustif ci-dessous (le nombre de fichiers a beaucoup augmenté avec v1.2/v1.3 : quêtes église/maître/principale, PROG/START, STA, VFX, migrations, slices…).
 
