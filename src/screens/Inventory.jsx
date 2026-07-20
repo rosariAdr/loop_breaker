@@ -280,128 +280,128 @@ function EquipmentTab({ equipment, equipped, selected, setSelected, onEquip, onS
       <EquippedGrid equipped={equipped} slotIcons={SLOT_ICONS} />
 
       <div className="flex gap-4">
-      {/* Liste */}
-      <div className="flex-1 flex flex-col gap-2">
-        {equipment.length === 0 && (
-          <p className="inv-empty">
-            No equipment in bag. Craft or buy some from the blacksmith or merchant.
-          </p>
-        )}
-        {equipment.map((item, i) => {
-          const rc = RARITY_CONFIG[item.rarity]
-          const equipped_ = isEquipped(item)
-          return (
-            <button
-              key={item.instanceId}
-              onClick={() => setSelected(i === selected ? null : i)}
-              className={`inv-li ${selected === i ? 'sel' : ''}`}
-              style={{ borderLeft: `3px solid ${rc.color}` }}
-            >
-              <div className="flex items-center gap-2">
-                <span style={{ fontSize: '1rem' }}>{SLOT_ICONS[item.slot] ?? '?'}</span>
-                <p className="inv-name" style={{ color: rc.color, fontSize: 14, flex: 1 }}>
-                  {item.name}
-                </p>
-                {equipped_ && (
-                  <span
-                    className="inv-tag"
-                    style={{ background: 'rgba(45,82,22,.15)', color: 'var(--forest-deep)' }}
-                  >
-                    equipped
-                  </span>
-                )}
-              </div>
-              <p className="inv-sub">
-                {Object.entries(item.stats)
-                  .map(([s, v]) => `+${v} ${s}`)
-                  .join(' · ')}
-              </p>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Panneau détail */}
-      {selectedItem && (
-        <div className="inv-detail">
-          {(() => {
-            const rc = RARITY_CONFIG[selectedItem.rarity]
-            const alreadyEquipped = isEquipped(selectedItem)
-            const equippedInSlot = equipped[selectedItem.slot]
-            // UX02 — diff vs équipé actuel
-            const showDiff = equippedInSlot && !alreadyEquipped
+        {/* Liste */}
+        <div className="flex-1 flex flex-col gap-2">
+          {equipment.length === 0 && (
+            <p className="inv-empty">
+              No equipment in bag. Craft or buy some from the blacksmith or merchant.
+            </p>
+          )}
+          {equipment.map((item, i) => {
+            const rc = RARITY_CONFIG[item.rarity]
+            const equipped_ = isEquipped(item)
             return (
-              <>
-                <div>
-                  <p className="inv-name" style={{ color: rc.color, fontSize: 16 }}>
-                    {selectedItem.name}
+              <button
+                key={item.instanceId}
+                onClick={() => setSelected(i === selected ? null : i)}
+                className={`inv-li ${selected === i ? 'sel' : ''}`}
+                style={{ borderLeft: `3px solid ${rc.color}` }}
+              >
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '1rem' }}>{SLOT_ICONS[item.slot] ?? '?'}</span>
+                  <p className="inv-name" style={{ color: rc.color, fontSize: 14, flex: 1 }}>
+                    {item.name}
                   </p>
-                  <p className="inv-sub" style={{ textTransform: 'capitalize' }}>
-                    {selectedItem.slot}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {Object.entries(selectedItem.stats).map(([s, v]) => {
-                    const equippedVal = equippedInSlot?.stats?.[s] ?? 0
-                    const diff = v - equippedVal
-                    return (
-                      <div
-                        key={s}
-                        className="flex justify-between items-baseline"
-                        style={{ fontSize: 13 }}
-                      >
-                        <span style={{ color: 'var(--ink-soft)', textTransform: 'capitalize' }}>
-                          {s}
-                        </span>
-                        <span className="flex items-baseline gap-2">
-                          <span style={{ color: 'var(--forest-deep)' }}>+{v}</span>
-                          {showDiff && (
-                            <span
-                              data-testid={`diff-${s}`}
-                              style={{
-                                color:
-                                  diff > 0
-                                    ? 'var(--forest-deep)'
-                                    : diff < 0
-                                      ? 'var(--danger)'
-                                      : 'var(--ink-soft)',
-                                fontSize: 11,
-                                fontFamily: 'var(--font-head)',
-                              }}
-                            >
-                              {diff > 0 ? `↑+${diff}` : diff < 0 ? `↓${diff}` : '—'}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    )
-                  })}
-                  {showDiff && (
-                    <p className="inv-sub" style={{ fontStyle: 'italic', marginTop: 2 }}>
-                      vs équipé : {equippedInSlot.name}
-                    </p>
+                  {equipped_ && (
+                    <span
+                      className="inv-tag"
+                      style={{ background: 'rgba(45,82,22,.15)', color: 'var(--forest-deep)' }}
+                    >
+                      equipped
+                    </span>
                   )}
                 </div>
-                <p className="inv-sub">Sell: {selectedItem.sellPrice}g</p>
-                <button
-                  onClick={() => {
-                    onEquip(selectedItem.instanceId)
-                    setSelected(null)
-                  }}
-                  disabled={alreadyEquipped}
-                  className={`inv-btn ${alreadyEquipped ? '' : 'primary'}`}
-                >
-                  {alreadyEquipped ? 'Already equipped' : 'Equip'}
-                </button>
-                <button onClick={() => handleSellClick(selectedItem)} className="inv-btn sell">
-                  Sell {selectedItem.sellPrice}g
-                  {PROTECTED_RARITIES.has(selectedItem.rarity) ? ' ⚠' : ''}
-                </button>
-              </>
+                <p className="inv-sub">
+                  {Object.entries(item.stats)
+                    .map(([s, v]) => `+${v} ${s}`)
+                    .join(' · ')}
+                </p>
+              </button>
             )
-          })()}
+          })}
         </div>
-      )}
+
+        {/* Panneau détail */}
+        {selectedItem && (
+          <div className="inv-detail">
+            {(() => {
+              const rc = RARITY_CONFIG[selectedItem.rarity]
+              const alreadyEquipped = isEquipped(selectedItem)
+              const equippedInSlot = equipped[selectedItem.slot]
+              // UX02 — diff vs équipé actuel
+              const showDiff = equippedInSlot && !alreadyEquipped
+              return (
+                <>
+                  <div>
+                    <p className="inv-name" style={{ color: rc.color, fontSize: 16 }}>
+                      {selectedItem.name}
+                    </p>
+                    <p className="inv-sub" style={{ textTransform: 'capitalize' }}>
+                      {selectedItem.slot}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {Object.entries(selectedItem.stats).map(([s, v]) => {
+                      const equippedVal = equippedInSlot?.stats?.[s] ?? 0
+                      const diff = v - equippedVal
+                      return (
+                        <div
+                          key={s}
+                          className="flex justify-between items-baseline"
+                          style={{ fontSize: 13 }}
+                        >
+                          <span style={{ color: 'var(--ink-soft)', textTransform: 'capitalize' }}>
+                            {s}
+                          </span>
+                          <span className="flex items-baseline gap-2">
+                            <span style={{ color: 'var(--forest-deep)' }}>+{v}</span>
+                            {showDiff && (
+                              <span
+                                data-testid={`diff-${s}`}
+                                style={{
+                                  color:
+                                    diff > 0
+                                      ? 'var(--forest-deep)'
+                                      : diff < 0
+                                        ? 'var(--danger)'
+                                        : 'var(--ink-soft)',
+                                  fontSize: 11,
+                                  fontFamily: 'var(--font-head)',
+                                }}
+                              >
+                                {diff > 0 ? `↑+${diff}` : diff < 0 ? `↓${diff}` : '—'}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      )
+                    })}
+                    {showDiff && (
+                      <p className="inv-sub" style={{ fontStyle: 'italic', marginTop: 2 }}>
+                        vs equipped: {equippedInSlot.name}
+                      </p>
+                    )}
+                  </div>
+                  <p className="inv-sub">Sell: {selectedItem.sellPrice}g</p>
+                  <button
+                    onClick={() => {
+                      onEquip(selectedItem.instanceId)
+                      setSelected(null)
+                    }}
+                    disabled={alreadyEquipped}
+                    className={`inv-btn ${alreadyEquipped ? '' : 'primary'}`}
+                  >
+                    {alreadyEquipped ? 'Already equipped' : 'Equip'}
+                  </button>
+                  <button onClick={() => handleSellClick(selectedItem)} className="inv-btn sell">
+                    Sell {selectedItem.sellPrice}g
+                    {PROTECTED_RARITIES.has(selectedItem.rarity) ? ' ⚠' : ''}
+                  </button>
+                </>
+              )
+            })()}
+          </div>
+        )}
       </div>
 
       {/* UX03 — Confirmation Sell pour les raretés Epic+ */}

@@ -85,7 +85,7 @@ describe('HSV2-04 — repères de palier /35 sur les attributs', () => {
     render(<HeroSheet />)
     const row = screen.getByText('Strength').closest('.attr-row')
     const tick = within(row).getAllByTestId('stat-milestone')[0]
-    expect(tick.getAttribute('title')).toContain('dégâts physiques')
+    expect(tick.getAttribute('title')).toContain('physical damage')
   })
 })
 

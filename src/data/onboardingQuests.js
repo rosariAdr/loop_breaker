@@ -27,21 +27,20 @@ export const ONBOARDING_QUESTS = {
   // 1 — Premier combat : apprendre à tuer.
   onb_first_edge: {
     id: 'onb_first_edge',
-    name: 'Le premier tranchant',
-    description: "Bryn t'envoie faire tes armes sur les loups de la forêt d'Ashenvale.",
+    name: 'The First Edge',
+    description: 'Bryn sends you to cut your teeth on the wolves of Ashenvale Forest.',
     giverNpc: 'greywatch_mentor',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: null,
-    flavorText:
-      '"Tout aventurier commence par un premier tranchant. Va, et reviens en un seul morceau."',
+    flavorText: '"Every adventurer starts with a first edge. Go — and come back in one piece."',
     objectives: [
       {
         id: 'kill_wolves',
         type: 'kill',
         monsterId: 'ashwood_wolf',
         count: 3,
-        label: 'Tuer 3 Ashwood Wolves',
+        label: 'Kill 3 Ashwood Wolves',
       },
     ],
     reward: {
@@ -54,19 +53,19 @@ export const ONBOARDING_QUESTS = {
   // 2 — S'équiper : apprendre à porter une arme.
   onb_well_armed: {
     id: 'onb_well_armed',
-    name: 'Bien armé',
-    description: 'Une lame au sac ne sert à rien. Équipe ton arme.',
+    name: 'Well Armed',
+    description: 'A blade left in your pack is no blade at all. Equip your weapon.',
     giverNpc: 'greywatch_mentor',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_first_edge',
-    flavorText: '"Une arme, ça se porte, pas ça se contemple. Passe-la à la ceinture."',
+    flavorText: '"A weapon is meant to be worn, not admired. Hang it on your belt."',
     objectives: [
       {
         id: 'equip_weapon',
         type: 'equip',
         category: 'weapon',
-        label: 'Équiper une arme',
+        label: 'Equip a weapon',
       },
     ],
     reward: {
@@ -78,27 +77,27 @@ export const ONBOARDING_QUESTS = {
   // 3 — Se protéger : chasse + collecte, puis récompense armure de tête.
   onb_cover_up: {
     id: 'onb_cover_up',
-    name: 'Se couvrir',
-    description: 'Chasse les lièvres de feu et rapporte leur peau — de quoi te couvrir la tête.',
+    name: 'Cover Up',
+    description: 'Hunt the fire hares and bring back a pelt — enough to cover your head.',
     giverNpc: 'greywatch_mentor',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_well_armed',
-    flavorText: '"Une tête nue au combat, c\'est une tête de moins le lendemain."',
+    flavorText: '"A bare head in battle is one head short by morning."',
     objectives: [
       {
         id: 'kill_hares',
         type: 'kill',
         monsterId: 'thicket_hare',
         count: 5,
-        label: 'Tuer 5 Fire Hares',
+        label: 'Kill 5 Fire Hares',
       },
       {
         id: 'collect_pelt',
         type: 'collect',
         resourceId: 'hare_pelt',
         count: 1,
-        label: 'Récupérer 1 Hare Pelt',
+        label: 'Collect 1 Hare Pelt',
       },
     ],
     reward: {
@@ -111,19 +110,19 @@ export const ONBOARDING_QUESTS = {
   // 4 — Prier : découvrir l'église.
   onb_recueillement: {
     id: 'onb_recueillement',
-    name: 'Recueillement',
-    description: "Passe à l'église et recueille-toi devant les Anciens Dieux.",
+    name: 'A Moment of Prayer',
+    description: 'Stop by the church and bow before the Old Gods.',
     giverNpc: 'greywatch_mentor',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_cover_up',
-    flavorText: '"Le fer garde le corps ; la prière garde le reste. Va t\'agenouiller."',
+    flavorText: '"Iron guards the body; prayer guards the rest. Go kneel."',
     objectives: [
       {
         id: 'pray_once',
         type: 'pray',
         count: 1,
-        label: "Prier à l'église (×1)",
+        label: 'Pray at the church (×1)',
       },
     ],
     reward: {
@@ -135,20 +134,19 @@ export const ONBOARDING_QUESTS = {
   // 5 — Servir : accepter un acte de dévotion.
   onb_devotion: {
     id: 'onb_devotion',
-    name: 'Devoir de dévotion',
-    description: 'Accepte un acte de dévotion auprès de Frère Caelum.',
+    name: 'Duty of Devotion',
+    description: 'Accept an act of devotion from Brother Caelum.',
     giverNpc: 'greywatch_mentor',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_recueillement',
-    flavorText:
-      "\"Prier, c'est bien. Servir, c'est mieux. Prends une œuvre au tableau de l'Église.\"",
+    flavorText: '"Praying is good. Serving is better. Take a deed from the Church board."',
     objectives: [
       {
         id: 'accept_deed',
         type: 'accept_deed',
         count: 1,
-        label: 'Accepter un acte de dévotion (×1)',
+        label: 'Accept an act of devotion (×1)',
       },
     ],
     reward: {
@@ -160,20 +158,21 @@ export const ONBOARDING_QUESTS = {
   // 6 — Brasser : premier craft de consommable.
   onb_first_brew: {
     id: 'onb_first_brew',
-    name: 'Première décoction',
-    description: "À l'atelier d'alchimie, brasse ta première potion.",
+    name: 'First Brew',
+    description: 'At the alchemy workshop, brew your first potion.',
     giverNpc: 'greywatch_mentor',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_devotion',
-    flavorText: '"Un aventurier sans potion, c\'est un aventurier pressé de mourir. Au chaudron !"',
+    flavorText:
+      '"An adventurer without a potion is an adventurer in a hurry to die. To the cauldron!"',
     objectives: [
       {
         id: 'brew_potion',
         type: 'craft',
         count: 1,
         outputKind: 'consumable',
-        label: 'Brasser 1 potion (consommable)',
+        label: 'Brew 1 potion (consumable)',
       },
     ],
     reward: {

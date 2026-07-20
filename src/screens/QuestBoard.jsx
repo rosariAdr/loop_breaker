@@ -160,7 +160,7 @@ export default function QuestBoard() {
         )}
 
         {onboardingAvailable.length > 0 && (
-          <Section title="✨ Premières fois">
+          <Section title="✨ First Steps">
             {onboardingAvailable.map((q) => (
               <QuestCard
                 key={q.id}
@@ -582,7 +582,7 @@ export function QuestCard({
         {/* FIX-QRANK01 — chip points de rang d'aventurier */}
         {questRankPoints(quest) > 0 && (
           <RewardBadge bg="#1a1220" color="#c9a0e0" border="#3a2850">
-            +{questRankPoints(quest)} rang
+            +{questRankPoints(quest)} rank
           </RewardBadge>
         )}
         {quest.reward.gold && (

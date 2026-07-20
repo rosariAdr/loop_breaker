@@ -52,7 +52,7 @@ export const SETS = {
       'iron_band',
     ],
     eliteWeapon: 'thunderhoof_maul', // arme d'élite alternative (même set)
-    description: "Forgé pour tenir la ligne. Défense et force s'amplifient.",
+    description: 'Forged to hold the line. Defense and strength grow as one.',
   },
   // Wraithbound : orienté intelligence/PV. Arme d'élite alternative = Graven Edge.
   wraithbound: {
@@ -69,7 +69,7 @@ export const SETS = {
       'wraith_signet',
     ],
     eliteWeapon: 'graven_edge', // arme d'élite alternative (même set)
-    description: "Tissé d'énergie spectrale. Amplifie l'esprit et la vitalité.",
+    description: 'Woven from spectral energy. Sharpens mind and vitality alike.',
   },
 }
 

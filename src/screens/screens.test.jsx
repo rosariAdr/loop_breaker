@@ -448,7 +448,7 @@ describe('UX02 — Diff comparée équipement', () => {
     render(<Inventory />)
     fireEvent.click(screen.getByText(/Equipment/))
     fireEvent.click(screen.getByText('Steel Sword'))
-    expect(screen.getByText(/vs équipé : Iron Sword/)).toBeInTheDocument()
+    expect(screen.getByText(/vs equipped: Iron Sword/)).toBeInTheDocument()
   })
 
   it("n'affiche PAS de diff quand l'item est l'équipement actuel", () => {
