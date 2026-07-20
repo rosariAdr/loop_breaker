@@ -2,7 +2,11 @@ import { useGameStore } from '../store/gameStore'
 import { useToastStore } from '../store/toastStore'
 import { SKILLS } from '../data/skills'
 import { DEITIES } from '../data/deities'
-import { RARITY_CONFIG, calcEquippedStatBonuses, EQUIP_SLOTS as EQUIP_SLOT_KEYS } from '../data/equipment'
+import {
+  RARITY_CONFIG,
+  calcEquippedStatBonuses,
+  EQUIP_SLOTS as EQUIP_SLOT_KEYS,
+} from '../data/equipment'
 import { getActiveSetsSummary } from '../data/sets'
 import { DEBUFFS } from '../data/debuffs'
 import { TITLES, getTitleStatBuffs } from '../data/titles'
@@ -60,7 +64,8 @@ const ATTR_DEFS = [
 ]
 
 export default function HeroSheet({ onClose }) {
-  const { hero, meta, world, setScreen, unequipItem, setActiveTitle } = useGameStore()
+  const { hero, meta, world, setScreen, unequipItem, setActiveTitle, assignStatPoint } =
+    useGameStore()
   // ACA02 — équiper est libre partout, mais déséquiper un skill se fait UNIQUEMENT à
   // l'Académie de magie. Ailleurs, on donne un feedback clair au lieu de déséquiper.
   const blockSkillUnequip = () =>
@@ -172,11 +177,7 @@ export default function HeroSheet({ onClose }) {
                         )}
                       </div>
                       <span className={`eq-name ${item ? '' : 'empty'}`}>
-                        {item
-                          ? item.name
-                          : lockedByTwoHanded
-                            ? '— two-handed —'
-                            : '— empty —'}
+                        {item ? item.name : lockedByTwoHanded ? '— two-handed —' : '— empty —'}
                         {item && (
                           <button
                             className="hs-unequip"
@@ -275,6 +276,10 @@ export default function HeroSheet({ onClose }) {
                   max={hero.expToNext}
                 />
               </div>
+              {/* FIX-HSBARS01 — les 5 attributs ET Aura/Concentration partagent le gabarit
+                  `.attr-row` dans la même grille : tracks de largeur identique par famille
+                  (valeur + repères en largeur fixe, cf. index.css). Aura/Concentration
+                  verrouillées = barre floutée + 🔒 + « ??? » (HSV2-03 conservé). */}
               <div className="attr-grid">
                 {ATTR_DEFS.map(({ key, label }) => {
                   const base = hero.stats[key] ?? 0
@@ -313,27 +318,80 @@ export default function HeroSheet({ onClose }) {
                     </div>
                   )
                 })}
-              </div>
-              {/* HSV2-03 — Aura & Concentration au bas du bloc attributs (masquées si verrouillées) */}
-              <div className="hs-vitals" style={{ marginTop: 16 }}>
-                <VitalBar
+                {/* HSV2-03 / FIX-HSBARS01 — Aura & Concentration à la suite de DÉF, même gabarit. */}
+                <AttrStatRow
                   label="Aura"
                   tip={STAT_TOOLTIPS.Aura}
-                  color="#c084fc"
                   cur={hero.aura ?? 0}
                   max={20}
+                  color="#c084fc"
                   locked={(hero.aura ?? 0) <= 0}
-                  display={`${hero.aura ?? 0} (+${((hero.aura ?? 0) * 0.5).toFixed(1)}% dmg)`}
+                  display={`${hero.aura ?? 0} (+${((hero.aura ?? 0) * 0.5).toFixed(1)}%)`}
                 />
-                <VitalBar
+                <AttrStatRow
                   label="Concentration"
                   tip={STAT_TOOLTIPS.Concentration}
-                  color="#60a0d0"
                   cur={hero.concentration ?? 0}
                   max={150}
+                  color="#60a0d0"
                   locked={(hero.concentration ?? 0) <= 0}
                 />
               </div>
+
+              {/* FIX-LVLQUEUE01 — points de stat différés (« Do it later » du level-up) :
+                  badge + attribution en 1 clic (+1) par stat. */}
+              {(hero.pendingStatPoints ?? 0) > 0 && (
+                <div
+                  className="hs-pending-points"
+                  data-testid="pending-stat-points"
+                  style={{
+                    marginTop: 14,
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    background: 'rgba(96, 208, 255, 0.08)',
+                    border: '1px solid rgba(96, 208, 255, 0.35)',
+                  }}
+                >
+                  <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-head)',
+                        fontSize: 13,
+                        color: '#3a86a8',
+                      }}
+                    >
+                      ✦ Stat points to assign
+                    </span>
+                    <span
+                      data-testid="pending-points-count"
+                      style={{
+                        fontFamily: 'var(--font-head)',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        color: '#2a6a8a',
+                        background: 'rgba(96, 208, 255, 0.18)',
+                        borderRadius: 10,
+                        padding: '1px 10px',
+                      }}
+                    >
+                      {hero.pendingStatPoints}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {ATTR_DEFS.map(({ key, label }) => (
+                      <button
+                        key={key}
+                        className="pbtn"
+                        data-testid={`assign-point-${key}`}
+                        onClick={() => assignStatPoint(key)}
+                        style={{ fontSize: 12, padding: '4px 10px' }}
+                      >
+                        +1 {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* CRF05 — Debuffs actifs */}
@@ -474,6 +532,31 @@ export default function HeroSheet({ onClose }) {
 // HS-VITALS01 / HS-AURA01 — barre de vitale : libellé + jauge colorée + valeur.
 // `locked` (Aura/Concentration non débloquées) → jauge floutée + 🔒 (pattern S02) ; le
 // libellé reste net avec son tooltip explicatif.
+// FIX-HSBARS01 — stat de type « attribut » (Aura / Concentration) rendue dans la grille des
+// attributs (même gabarit `.attr-row` que STR/AGI/…). Verrouillée : nom « ??? », barre floutée
+// (classe `ar-locked`), valeur 🔒 — sans repères de palier (ces stats n'en ont pas).
+function AttrStatRow({ label, cur, max, color, tip, locked = false, display }) {
+  const pct = max > 0 ? Math.min(100, Math.max(0, (cur / max) * 100)) : 0
+  const nameEl = (
+    <span className="ar-name" style={{ cursor: locked ? 'default' : 'help' }}>
+      {locked ? '???' : label}
+    </span>
+  )
+  return (
+    <div
+      className={`attr-row ${locked ? 'ar-locked' : ''}`}
+      data-testid={`vital-${label.toLowerCase()}`}
+    >
+      {tip && !locked ? <Tooltip content={tip}>{nameEl}</Tooltip> : nameEl}
+      <span className="ar-bar">
+        <i style={{ width: `${locked ? 100 : pct}%`, background: color }} />
+      </span>
+      <span className="ar-ticks" />
+      <span className="ar-val">{locked ? '🔒' : (display ?? cur)}</span>
+    </div>
+  )
+}
+
 function VitalBar({ label, cur, max, color, tip, locked = false, display }) {
   const pct = max > 0 ? Math.min(100, Math.max(0, (cur / max) * 100)) : 0
   // HSV2-03 — verrouillé : nom masqué (« ??? ») + pas de tooltip (masquage complet).
@@ -516,7 +599,9 @@ function SetBonusPanel({ equipped }) {
               borderTop: '1px dashed var(--parchment-shadow)',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
+            >
               <span
                 style={{
                   fontFamily: 'var(--font-head)',

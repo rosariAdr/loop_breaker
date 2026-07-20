@@ -51,13 +51,16 @@ const NPCS = {
     cta: 'Master forge',
     line: "Only the finest work leaves my anvil. Rare materials, rare results — that's the bargain.",
   },
+  // FIX-ALDRIC01 — le knight_trainer de Millhaven est Dame Roswyn (PNJ dédié) ;
+  // Sir Aldric est 100 % Greywatch (donneur de quêtes + maître martial, data canonique).
   knight_trainer: {
-    role: 'aldric',
-    name: 'Sir Aldric',
+    role: null,
+    fallback: '🛡',
+    name: 'Dame Roswyn',
     title: 'Knight Trainer',
     icon: '⚔',
-    cta: 'Train with Aldric',
-    line: "So you'd learn the blade? Steel is patient, lad. Train, and I'll make a hero of you yet.",
+    cta: 'Train with Roswyn',
+    line: "A blade is honest work. Show me your stance, and I'll show you what it's missing.",
   },
   alchemy: {
     role: 'mage',
@@ -113,7 +116,18 @@ function buildingActions(building, npc, isCity = false) {
   return [{ ico: npc.icon, label: npc.cta, kind: 'panel', primary: true }, talk]
 }
 
-export default function NpcOverlay({ building, onClose, onEnter, showPanel, panel, isCity = false }) {
+export default function NpcOverlay({
+  building,
+  onClose,
+  onEnter,
+  showPanel,
+  panel,
+  isCity = false,
+  // UI11 — split B : bouton Talk + contenu additionnel (ex. Pray) rendus SOUS le portrait
+  // (colonne gauche), pour les bâtiments qui s'ouvrent directement en mode panneau.
+  showSideTalk = false,
+  sideContent = null,
+}) {
   const npc = NPCS[building]
   const { sleep, setScreen, waitUntilHour } = useGameStore()
   const [flash, setFlash] = useState(null)
@@ -177,13 +191,24 @@ export default function NpcOverlay({ building, onClose, onEnter, showPanel, pane
           </div>
           <div className="pname">{npc.name}</div>
           <div className="t-label">{npc.title}</div>
+          {/* UI11 — colonne gauche du split B : Talk dédié + extras (ex. section Pray) */}
+          {showSideTalk && (
+            <button
+              className="pbtn"
+              data-testid="side-talk"
+              style={{ marginTop: 10, width: '100%', justifyContent: 'center' }}
+              onClick={() => setTalkDlg(getDialogue(TALK_ID[building]) ?? FALLBACK_DIALOGUE)}
+            >
+              <span className="pbtn-ico">💬</span>Talk
+            </button>
+          )}
+          {sideContent}
         </div>
         <div className="npc-body">
-          {showPanel ? (
-            // IMM02 — panneau fonctionnel rendu DANS la même fenêtre (plus de 2e fenêtre)
-            <div className="npc-panel-host">{panel}</div>
-          ) : talkDlg ? (
-            // NPC04 — conversation (arbre de dialogue) dans la même fenêtre
+          {talkDlg ? (
+            // NPC04 — conversation (arbre de dialogue) dans la même fenêtre.
+            // UI11 — prioritaire sur le panneau : Talk reste accessible depuis le split B,
+            // et sa fermeture revient au panneau (ou à l'intro).
             <div className="npc-panel-host">
               <DialoguePanel
                 dialogue={talkDlg}
@@ -191,6 +216,9 @@ export default function NpcOverlay({ building, onClose, onEnter, showPanel, pane
                 onClose={() => setTalkDlg(null)}
               />
             </div>
+          ) : showPanel ? (
+            // IMM02 — panneau fonctionnel rendu DANS la même fenêtre (plus de 2e fenêtre)
+            <div className="npc-panel-host">{panel}</div>
           ) : (
             <>
               <div className="npc-eyebrow">

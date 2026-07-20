@@ -2,7 +2,7 @@
 
 > **Fichier maître** : étude des assets à produire + **prompts prêts à coller** + reco par asset
 > (🟢 **Gemini** / 🟣 **autre IA** / 🟠 **à sourcer** / ⚪ **ni l'un ni l'autre**).
-> **Chaque asset (§4 à §12) a son propre prompt COMPLET prêt à copier-coller** (style + cadrage + sujet + technique déjà assemblés) — un bloc = un asset. **Ce fichier est la source unique** (pas de doc annexe).
+> **Chaque asset (§4 à §13) a son propre prompt COMPLET prêt à copier-coller** (style + cadrage + sujet + technique déjà assemblés) — un bloc = un asset. **Ce fichier est la source unique** (pas de doc annexe).
 > Rappel : depuis **DEPLOY01 (2026-07)**, `public/` est **committé** (assets servis par Vercel) ; seules les **sources HD** `public/monsters/raw/` + `public/buildings/raw/` restent gitignorées (backups local-only).
 
 ---
@@ -549,9 +549,9 @@ A single circular game-map node medallion — a carved stone-and-bronze seal wit
 
 ---
 
-## 14) Workflow Gemini (rappel)
+## 15) Workflow Gemini (rappel)
 
-1. Copier-coller **le prompt complet de l'asset** (chaque bloc §4-§12 est déjà prêt, rien à assembler).
+1. Copier-coller **le prompt complet de l'asset** (chaque bloc §4-§13 est déjà prêt, rien à assembler).
 2. Générer en **1024²** (ou directement **512²** pour les monstres §4).
 3. **Détourage** : ⚠️ **uniquement props / façades / médaillons** (fond neutre → rembg → PNG transparent). **Monstres §4 : PAS de détourage** — le fond d'ambiance peint fait partie de l'illustration.
 4. Recadrer/redimensionner à la cible, **nommer exactement**, déposer dans le bon dossier `public/…`.
@@ -567,7 +567,7 @@ A single circular game-map node medallion — a carved stone-and-bronze seal wit
 Le style **figurine 3D / résine sur fond gris détourable est abandonné pour les monstres (§4)** au profit d'une **illustration 2D peinte façon carte de bestiaire** (Ghibli × JRPG) : sujet 1:1 sur un petit patch de sol + **fond d'ambiance flou peint**.
 1. **Style** : ✅ *painterly digital art*, plus de « collectible 3D figurine / resin ». *(Reflété §4.)*
 2. **Socle → patch** : ✅ le « display base » de figurine devient un **petit patch de sol thématisé habitat** intégré à la scène. *(Reflété.)*
-3. **Fond** : ✅ **fond d'ambiance peint, PAS de détourage** pour les monstres. Les **props / façades / médaillons** (§6-§7, §12B) restent en **fond neutre détouré**. *(Reflété §3/§14.)*
+3. **Fond** : ✅ **fond d'ambiance peint, PAS de détourage** pour les monstres. Les **props / façades / médaillons** (§6-§7, §12B) restent en **fond neutre détouré**. *(Reflété §3/§15.)*
 4. **Normaux vs élites/boss** : ✅ normaux = ambiance chaleureuse *« joyful, never grimdark »* ; **élites / boss / demon lord = même format mais ambiance sombre / menaçante** (on retire la ligne joyeuse). *(Reflété.)*
 5. **Fin de prompt** : ✅ ajout des lignes **`Render : …`** + **`Format : PNG, 512×512`**, comme sur les captures. *(Reflété.)*
 6. **Doc annexe supprimée** : `public/monsters/README.md` (ancienne direction « figurine sur socle ») est **abandonné** — inutile, jamais créé, et remplacé par ce fichier comme **source unique**.

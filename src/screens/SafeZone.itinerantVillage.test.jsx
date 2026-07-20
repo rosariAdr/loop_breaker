@@ -1,6 +1,6 @@
 // MST08 / v1.43 (DÉCISION #3) — surfaçage du maître ITINÉRANT sur les tableaux de maître
 // LOCAUX des VILLAGES (plus seulement l'Académie des villes) :
-//   • Millhaven : PNJ-maître dédié (KnightTrainer / Sir Aldric) → board dans son panneau.
+//   • Millhaven : bâtiment KnightTrainer (Dame Roswyn — FIX-ALDRIC01) → board dans son panneau.
 //   • Greywatch (village sans PNJ-maître) : repli communautaire sur le tableau de l'Église.
 // L'itinérant ne surface qu'À SON agglo-hôte du bloc (single-location), initiation via
 // l'engagement run-scopé (setMaster) inchangée.
@@ -55,10 +55,10 @@ describe('MST08 / v1.43 — Millhaven (KnightTrainer) surface l’itinérant hô
 
   beforeEach(() => enterVillage('millhaven', day))
 
-  it('le board de Sir Aldric affiche les Trials of Mastery de l’itinérant de passage', () => {
+  it('le board du Knight Trainer affiche les Trials of Mastery de l’itinérant de passage', () => {
     render(<SafeZone />)
-    fireEvent.click(screen.getAllByText(/Sir Aldric/)[0]) // tuile → PNJ
-    fireEvent.click(screen.getByText(/Train with Aldric/)) // entre dans le panneau
+    fireEvent.click(screen.getAllByText(/Knight Trainer/)[0]) // tuile → PNJ (Dame Roswyn)
+    fireEvent.click(screen.getByText(/Train with Roswyn/)) // entre dans le panneau
     const board = screen.getByTestId('master-quests')
     expect(within(board).getByText(hostInitRegex(day))).toBeTruthy()
   })
@@ -72,7 +72,6 @@ describe('MST08 / v1.43 — Greywatch (Église, repli) surface l’itinérant h�
   it('le tableau de l’Église affiche les Trials of Mastery de l’itinérant de passage', () => {
     render(<SafeZone />)
     fireEvent.click(screen.getAllByText(/Church of the Old Gods/)[0]) // tuile → PNJ
-    fireEvent.click(screen.getByText(/Enter the Church/)) // entre dans le panneau
     const board = screen.getByTestId('master-quests')
     expect(within(board).getByText(hostInitRegex(day))).toBeTruthy()
   })
@@ -84,7 +83,6 @@ describe('MST08 / v1.43 — Greywatch (Église, repli) surface l’itinérant h�
     enterVillage('greywatch', d)
     render(<SafeZone />)
     fireEvent.click(screen.getAllByText(/Church of the Old Gods/)[0])
-    fireEvent.click(screen.getByText(/Enter the Church/))
     // le board peut exister (maître FIXE Aldric à Greywatch), mais l'initiation de
     // l'itinérant du bloc n'y apparaît pas (single-location : il est à une autre agglo).
     const itinInit = MASTER_QUESTS[getItinerantMasterForDay(d).initiationQuestId].name
@@ -101,7 +99,6 @@ describe('MST08 / v1.43 — pas de double surfaçage à l’Église quand un boa
     enterVillage('millhaven', day)
     render(<SafeZone />)
     fireEvent.click(screen.getAllByText(/Church of the Old Gods/)[0])
-    fireEvent.click(screen.getByText(/Enter the Church/))
     // le repli Église est désactivé là où un PNJ-maître dédié existe (hasDedicatedMasterBoard)
     expect(screen.queryByTestId('master-quests')).toBeNull()
   })

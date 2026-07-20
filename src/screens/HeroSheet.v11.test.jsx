@@ -28,21 +28,23 @@ describe('HeroSheet — HS-VITALS01 (barres de vitales)', () => {
 })
 
 describe('HeroSheet — HS-AURA01 (aura/concentration floutées + 🔒)', () => {
-  it('verrouillées quand à 0 : toujours visibles, classe hvb-locked + 🔒', () => {
+  // FIX-HSBARS01 — Aura/Concentration migrées de VitalBar (`.hvb-locked`) vers la grille des
+  // attributs (`.attr-row.ar-locked`) ; l'affichage débloqué est raccourci (« (+X.X%) »).
+  it('verrouillées quand à 0 : toujours visibles, classe ar-locked + 🔒', () => {
     render(<HeroSheet />) // reset → aura 0, concentration 0
     const aura = screen.getByTestId('vital-aura')
     expect(aura).toBeInTheDocument()
-    expect(aura.className).toMatch(/hvb-locked/)
+    expect(aura.className).toMatch(/ar-locked/)
     expect(aura.textContent).toContain('🔒')
-    expect(screen.getByTestId('vital-concentration').className).toMatch(/hvb-locked/)
+    expect(screen.getByTestId('vital-concentration').className).toMatch(/ar-locked/)
   })
 
   it('aura débloquée (>0) → plus de verrou, valeur affichée', () => {
     useGameStore.setState((s) => ({ hero: { ...s.hero, aura: 6 } }))
     render(<HeroSheet />)
     const aura = screen.getByTestId('vital-aura')
-    expect(aura.className).not.toMatch(/hvb-locked/)
-    expect(aura.textContent).toMatch(/\+3\.0% dmg/)
+    expect(aura.className).not.toMatch(/ar-locked/)
+    expect(aura.textContent).toMatch(/\+3\.0%/)
   })
 })
 

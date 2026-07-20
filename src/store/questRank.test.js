@@ -13,7 +13,7 @@ beforeEach(() => {
 
 describe('FIX-QRANK01 — points de rang', () => {
   it('questRankPoints : overlay QUEST_BALANCE prioritaire, sinon reward.rankPoints', () => {
-    expect(questRankPoints(getQuestById('first_blood'))).toBe(QUEST_BALANCE.first_blood.rankPoints)
+    expect(questRankPoints(getQuestById('mq01_waking'))).toBe(QUEST_BALANCE.mq01_waking.rankPoints)
     expect(questRankPoints({ id: 'inconnu', reward: { rankPoints: 4 } })).toBe(4)
   })
 
@@ -37,12 +37,12 @@ describe('FIX-QRANK01 — points de rang', () => {
 
   it('compléter une quête (1ère fois) octroie les rankPoints pleins + fait avancer le rang', () => {
     const before = s().hero.rankPoints ?? 0
-    s().startQuest('first_blood')
+    s().startQuest('mq01_waking')
     useGameStore.setState((st) => ({
       world: { ...st.world, monsterKillCounts: { ...st.world.monsterKillCounts, ashwood_wolf: 5 } },
     }))
-    s().completeQuest('first_blood')
-    const gain = questRankPoints(getQuestById('first_blood'))
+    s().completeQuest('mq01_waking')
+    const gain = questRankPoints(getQuestById('mq01_waking'))
     expect(s().hero.rankPoints).toBe(before + gain)
     expect(getRankInfo(s().hero.rankPoints).label).toBe('Aluminium')
   })
@@ -51,13 +51,13 @@ describe('FIX-QRANK01 — points de rang', () => {
     useGameStore.setState((st) => ({
       world: {
         ...st.world,
-        completedQuests: ['nc_oakheart_elite'],
-        activeQuests: ['nc_oakheart_elite'],
+        completedQuests: ['nc_thunderhoof_elite'],
+        activeQuests: ['nc_thunderhoof_elite'],
       },
     }))
     const before = s().hero.rankPoints ?? 0
-    s().completeQuest('nc_oakheart_elite')
-    const expected = Math.round(questRankPoints(getQuestById('nc_oakheart_elite')) * 0.25) // 5 → 1
+    s().completeQuest('nc_thunderhoof_elite')
+    const expected = Math.round(questRankPoints(getQuestById('nc_thunderhoof_elite')) * 0.25) // 5 → 1
     expect(s().hero.rankPoints).toBe(before + expected)
   })
 

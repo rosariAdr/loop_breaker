@@ -47,30 +47,9 @@ export const QUEST_NPCS = {
 
 export const QUESTS = {
   // ── Sir Aldric (existantes) ────────────────────────────────────────────────
-  first_blood: {
-    id: 'first_blood',
-    name: 'First Blood',
-    description: 'Prove your worth by hunting down Ashwood Wolves in the forest.',
-    giverNpc: 'sir_aldric',
-    flavorText: '"The wolves grow bold. Show them what fear looks like."',
-    objectives: [
-      {
-        id: 'kill_wolves',
-        type: 'kill',
-        monsterId: 'ashwood_wolf',
-        count: 5,
-        label: 'Kill Ashwood Wolves',
-      },
-    ],
-    // MST03 — le skill (counter_strike) est désormais EXCLUSIF au maître martial
-    // (rerouté dans son skillQuestPool). Récompense rééquilibrée : gold rehaussé (60→110)
-    // pour compenser la valeur du skill retiré, sans dépasser un palier boss.
-    reward: {
-      gold: 110,
-      reputationTokens: 0,
-    },
-  },
-
+  // QSV2-DROPDUP01 — `first_blood` (5× ashwood_wolf) SUPPRIMÉE : doublon de mq01 au même
+  // village (Greywatch) après re-domiciliation. Les saves qui la référencent encore sont
+  // filtrées à la migration (normalizeSave — ids de quête inconnus retirés).
   proof_of_worth: {
     id: 'proof_of_worth',
     name: 'Proof of Worth',
@@ -253,28 +232,8 @@ export const QUESTS = {
     reward: { gold: 60, reputationTokens: 0, consumables: { hp_potion_small: 2 } },
   },
 
-  nc_oakheart_elite: {
-    id: 'nc_oakheart_elite',
-    name: 'The Old Oak Walks',
-    description: 'Old Oakheart, an ancient elite of the forest, has awoken. Fell it.',
-    giverNpc: 'sir_aldric',
-    flavorText: '"Some say it remembers the first fire. I say it burns like any other."',
-    objectives: [
-      {
-        id: 'kill_oakheart',
-        type: 'kill',
-        monsterId: 'old_oakheart',
-        count: 1,
-        label: 'Slay Old Oakheart (elite)',
-      },
-    ],
-    reward: {
-      gold: 120,
-      reputationTokens: 5,
-      equipment: { templateId: 'leather_armor', rarity: 'rare' },
-    },
-  },
-
+  // QSV2-DROPDUP01 — `nc_oakheart_elite` (Old Oakheart) SUPPRIMÉE : doublon de mq02 au même
+  // village (Greywatch). Cf. filtre de migration dans normalizeSave.
   nc_scout_marsh: {
     id: 'nc_scout_marsh',
     name: 'Eyes on the Marsh',
@@ -439,7 +398,7 @@ export const QUEST_NPC_REGISTRY = {
   ...CHURCH_QUEST_NPC,
   ...MASTER_QUEST_NPC,
   ...MAIN_QUEST_NPC,
-  ...ONBOARDING_QUEST_NPC, // QONBOARD01 — mentor des recrues (Serjeant Bryn)
+  ...ONBOARDING_QUEST_NPC, // QONBOARD01 — vide : donneur = Elder Moira (greywatch_elder, déjà dans QUEST_NPCS)
 }
 
 /** Résout une quête par id (board, église, maître ou chaîne principale MQ-CHAIN01). */

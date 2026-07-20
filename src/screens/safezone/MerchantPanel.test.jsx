@@ -146,3 +146,43 @@ describe('MerchantPanel — onglet équipement', () => {
     expect(screen.queryByText(/Epic Iron Sword/)).toBeNull()
   })
 })
+
+// QA-BOOKS01 — les tomes de stats (tome_of_*) étaient distribués nulle part → contenu mort.
+// Ils sont désormais vendus par le marchand en MAJEURE CITÉ, à la suite des potions.
+describe('QA-BOOKS01 — tomes de stats vendus en ville', () => {
+  const TOMES = ['tome_of_focus', 'tome_of_might', 'tome_of_wisdom']
+
+  it('intégrité : tout consommable `isBook` figure dans le stock du marchand en ville', () => {
+    const booksInGame = Object.values(RESOURCES)
+      .filter((r) => r.isBook)
+      .map((r) => r.id)
+    for (const id of booksInGame) expect(TOMES).toContain(id)
+  })
+
+  it('en VILLE (ironhaven) : les 3 tomes sont proposés dans l’onglet Potions', () => {
+    seedGold(5000, 'ironhaven')
+    render(<MerchantPanel onBack={vi.fn()} />)
+    for (const id of TOMES) {
+      expect(screen.getByTestId(`book-stock-${id}`)).toBeInTheDocument()
+    }
+  })
+
+  it('en VILLAGE : aucun tome proposé (biens savants, ville uniquement)', () => {
+    seedGold(5000, 'greywatch')
+    render(<MerchantPanel onBack={vi.fn()} />)
+    for (const id of TOMES) {
+      expect(screen.queryByTestId(`book-stock-${id}`)).toBeNull()
+    }
+  })
+
+  it('acheter un tome en ville : or débité + livre ajouté aux consommables', () => {
+    const price = RESOURCES.tome_of_focus.buyPrice // 90
+    seedGold(500, 'ironhaven')
+    render(<MerchantPanel onBack={vi.fn()} />)
+    const row = screen.getByTestId('book-stock-tome_of_focus')
+    fireEvent.click(within(row).getByText(new RegExp(`Buy ${price}g`)))
+    const inv = useGameStore.getState().hero.inventory
+    expect(inv.gold).toBe(500 - price)
+    expect(inv.consumables.tome_of_focus).toBe(1)
+  })
+})

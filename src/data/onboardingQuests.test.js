@@ -40,16 +40,16 @@ describe('QONBOARD01 — agrégation & registre', () => {
     }
   })
 
-  it('le mentor (greywatch_mentor) est enregistré dans le registre NPC', () => {
-    expect(ONBOARDING_QUEST_NPC.greywatch_mentor).toBeDefined()
-    expect(QUEST_NPC_REGISTRY.greywatch_mentor).toBeDefined()
-    expect(QUEST_NPC_REGISTRY.greywatch_mentor.location).toBe('greywatch')
+  it('le donneur = Elder Moira (greywatch_elder, déjà dans QUEST_NPCS), pas de PNJ dédié', () => {
+    expect(Object.keys(ONBOARDING_QUEST_NPC)).toHaveLength(0)
+    expect(QUEST_NPC_REGISTRY.greywatch_elder).toBeDefined()
+    expect(QUEST_NPC_REGISTRY.greywatch_elder.location).toBe('greywatch')
   })
 
   it('chaque quête est émise à Greywatch', () => {
     for (const q of Object.values(ONBOARDING_QUESTS)) {
       expect(q.issuedBy).toBe('greywatch')
-      expect(q.giverNpc).toBe('greywatch_mentor')
+      expect(q.giverNpc).toBe('greywatch_elder')
     }
   })
 })
@@ -73,11 +73,11 @@ describe('QONBOARD01 — séquençage de la chaîne', () => {
 
 describe('QONBOARD01 — récompenses (templates réels)', () => {
   it('les équipements récompensés existent comme templates', () => {
-    expect(EQUIPMENT_TEMPLATES.iron_sword).toBeDefined()
-    expect(EQUIPMENT_TEMPLATES.iron_sword.slot).toBe('weapon')
+    expect(EQUIPMENT_TEMPLATES.worn_iron_dagger).toBeDefined()
+    expect(EQUIPMENT_TEMPLATES.worn_iron_dagger.slot).toBe('weapon')
     expect(EQUIPMENT_TEMPLATES.iron_helm).toBeDefined()
     expect(EQUIPMENT_TEMPLATES.iron_helm.slot).toBe('helmet')
-    expect(ONBOARDING_QUESTS.onb_first_edge.reward.equipment.templateId).toBe('iron_sword')
+    expect(ONBOARDING_QUESTS.onb_first_edge.reward.equipment.templateId).toBe('worn_iron_dagger')
     expect(ONBOARDING_QUESTS.onb_cover_up.reward.equipment.templateId).toBe('iron_helm')
   })
 

@@ -24,6 +24,10 @@ export const RARE_DROP_RATE_BY_TIER = { T1: null, T2: 0.15, T3: 0.075 }
 
 export const RESOURCES = {
   // ── Ressources — Ashenvale ────────────────────────────────────────────
+  // FIX-CRAFTSRC01 — bat_wing/void_fang/troll_blood : ORPHELINES (sources vides, plus
+  // AUCUNE recette ne les référence — substituées par wolf_fang/bone_fragment/
+  // wolf_alpha_fang/verdant_ichor). Conservées en réserve pour un futur monstre/vendeur
+  // (même statut que rotting_hide/grave_stone/goblin_trinket, cf. DROP-FIX01).
   bat_wing: {
     id: 'bat_wing',
     name: 'Bat Wing',
@@ -32,9 +36,9 @@ export const RESOURCES = {
     rarity: 'common',
     rarityTier: 'common',
     sellPrice: 2,
-    dropRate: null, // monstre source retiré (MON01) — conservé pour recettes existantes
+    dropRate: null, // monstre source retiré (MON01)
     sources: [],
-    uses: ['craft', 'sell'],
+    uses: ['sell'], // FIX-CRAFTSRC01 — plus aucune recette ne l'utilise
   },
   wolf_fang: {
     id: 'wolf_fang',
@@ -317,9 +321,9 @@ export const RESOURCES = {
     rarity: 'uncommon',
     rarityTier: 'common',
     sellPrice: 14,
-    dropRate: null, // input de craft (recette forgeron) — plus droppé directement (RES02 → grimstone commun)
+    dropRate: null, // ex-input de craft — plus droppé directement (RES02 → grimstone commun)
     sources: [],
-    uses: ['craft'],
+    uses: ['sell'], // FIX-CRAFTSRC01 — orpheline (master_cursed_greaves → verdant_ichor)
   },
   cursed_armor_shard: {
     id: 'cursed_armor_shard',
@@ -365,9 +369,9 @@ export const RESOURCES = {
     rarity: 'rare',
     rarityTier: 'rare',
     sellPrice: 28,
-    dropRate: null, // input de craft (serpent_dagger) — plus droppé directement (RES02 → shadow_fur commun)
+    dropRate: null, // ex-input de craft — plus droppé directement (RES02 → shadow_fur commun)
     sources: [],
-    uses: ['craft'],
+    uses: ['sell'], // FIX-CRAFTSRC01 — orpheline (serpent_dagger & co → wolf_alpha_fang)
   },
   wyvern_scale: {
     id: 'wyvern_scale',

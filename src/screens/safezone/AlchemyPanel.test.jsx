@@ -142,7 +142,7 @@ describe('AlchemyPanel — brassage (craftable)', () => {
 
 describe('AlchemyPanel — recette non craftable & navigation', () => {
   it('le bouton Brew est désactivé quand les ingrédients manquent', () => {
-    // pas de bat_wing → mana potion non craftable
+    // pas de wolf_fang → mana potion non craftable (FIX-CRAFTSRC01 — ex-bat_wing)
     useGameStore.setState((s) => ({
       hero: {
         ...s.hero,

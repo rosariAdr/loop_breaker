@@ -118,15 +118,16 @@ describe('FIX-QRANK01 — RankBanner dans QuestBoard', () => {
 // ── Q02 — Barres de progression objectifs ────────────────────────────────────
 describe('Q02 — Barres de progression objectifs', () => {
   it("rend une progressbar pour chaque objectif d'une quête active", () => {
-    useGameStore.getState().startQuest('first_blood')
+    // QSV2-DROPDUP01 — mq01_waking (5 wolves) remplace first_blood (retirée)
+    useGameStore.getState().startQuest('mq01_waking')
     render(<QuestBoard />)
-    // first_blood a 1 objectif (kill 5 wolves)
+    // mq01_waking a 1 objectif (kill 5 wolves)
     const bars = screen.getAllByTestId('objective-progress')
     expect(bars.length).toBeGreaterThanOrEqual(1)
   })
 
   it('aria-valuenow reflète le killCount', () => {
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('mq01_waking')
     useGameStore.setState((state) => ({
       world: { ...state.world, monsterKillCounts: { ashwood_wolf: 3 } },
     }))
@@ -138,7 +139,7 @@ describe('Q02 — Barres de progression objectifs', () => {
   })
 
   it('aria-valuenow saturé à valuemax si over-kill', () => {
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('mq01_waking')
     useGameStore.setState((state) => ({
       world: { ...state.world, monsterKillCounts: { ashwood_wolf: 99 } },
     }))
@@ -150,14 +151,14 @@ describe('Q02 — Barres de progression objectifs', () => {
 
   it('pas de progressbar pour les quêtes complétées', () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, completedQuests: ['first_blood'], activeQuests: [] },
+      world: { ...state.world, completedQuests: ['nc_thin_the_boars'], activeQuests: [] },
     }))
     render(<QuestBoard />)
     // FIX-QCOMPLETED-COLLAPSE01 — la section « Completed » est repliée par défaut : on la déplie.
     fireEvent.click(screen.getByTestId('collapsible-header'))
     // Les progress bars d'objectif sont sur les quêtes non-complétées seulement.
-    // first_blood est seul dans completed → 0 bars d'objectifs sur sa carte.
-    const completedTitle = screen.getByText(/First Blood/)
+    // nc_thin_the_boars est seule dans completed → 0 bars d'objectifs sur sa carte.
+    const completedTitle = screen.getByText(/Boar Trouble/)
     const card = completedTitle.closest('div.p-4')
     expect(within(card).queryAllByTestId('objective-progress')).toHaveLength(0)
   })
@@ -165,14 +166,14 @@ describe('Q02 — Barres de progression objectifs', () => {
 
 // ── FIX-QXP01 / FIX-QRANK01 — balance injectée, visible sur le board (intégration) ──────────
 describe('FIX-QXP01/QRANK01 — chips XP + rang injectés sur le board', () => {
-  it("une quête autorée affiche l'XP et les points de rang injectés (First Blood → +40 XP / +1 rang)", () => {
+  it("une quête autorée affiche l'XP et les points de rang injectés (The Waking → +40 XP / +1 rang)", () => {
     useGameStore.setState((state) => ({
       world: { ...state.world, currentLocation: 'greywatch', currentNode: 'greywatch' },
     }))
     render(<QuestBoard />)
-    const card = screen.getByText('First Blood').closest('div.p-4')
-    expect(within(card).getByText('+40 XP')).toBeInTheDocument() // QUEST_BALANCE.first_blood.xp
-    expect(within(card).getByText('+1 rank')).toBeInTheDocument() // QUEST_BALANCE.first_blood.rankPoints
+    const card = screen.getByText('The Waking').closest('div.p-4')
+    expect(within(card).getByText('+40 XP')).toBeInTheDocument() // QUEST_BALANCE.mq01_waking.xp
+    expect(within(card).getByText('+1 rank')).toBeInTheDocument() // QUEST_BALANCE.mq01_waking.rankPoints
   })
 
   it('le rang affiché suit la nouvelle échelle 10 paliers (Aluminium → Fer au départ)', () => {

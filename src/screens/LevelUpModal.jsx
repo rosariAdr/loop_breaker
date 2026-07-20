@@ -11,20 +11,33 @@ const STAT_META = {
   def: { label: 'Defense', color: '#6080a0', icon: '🛡️' },
 }
 
+// FIX-LVLQUEUE01 — modal UNIQUE et cumulé : `pendingLevelUp` = nombre de points à répartir
+// (1 par niveau gagné, coalescé sur toutes les rafales d'XP). Le joueur alloue autant de
+// points que de niveaux ; « Do it later » (ou tout reliquat non alloué de « Confirm »)
+// reporte les points dans `hero.pendingStatPoints`, attribuables ensuite depuis le HeroSheet.
 export default function LevelUpModal() {
-  const { hero, pendingLevelUp, clearPendingLevelUp, updateHeroStat } = useGameStore()
-  const [chosen, setChosen] = useState(null)
+  const { hero, pendingLevelUp, commitLevelUp, deferLevelUp } = useGameStore()
+  const [alloc, setAlloc] = useState({})
 
-  const handleConfirm = () => {
-    if (!chosen) return
-    updateHeroStat(chosen, hero.stats[chosen] + 1)
-    clearPendingLevelUp()
+  const assigned = Object.values(alloc).reduce((a, b) => a + b, 0)
+  const remaining = pendingLevelUp - assigned
+
+  const inc = (stat) => {
+    if (remaining <= 0) return
+    setAlloc((a) => ({ ...a, [stat]: (a[stat] ?? 0) + 1 }))
+  }
+  const dec = (stat) => {
+    setAlloc((a) => {
+      if (!(a[stat] > 0)) return a
+      return { ...a, [stat]: a[stat] - 1 }
+    })
   }
 
   return (
     <div
       className="fixed inset-0 flex items-center justify-center z-50"
       style={{ background: 'rgba(0,0,0,0.82)' }}
+      data-testid="levelup-modal"
     >
       <div
         className="w-full max-w-sm mx-4 rounded-xl p-6 flex flex-col gap-5 anim-pop"
@@ -44,7 +57,9 @@ export default function LevelUpModal() {
           </p>
           <p style={{ color: '#3a6a8a', fontSize: '0.82rem', marginTop: '0.3rem' }}>
             You reached level <span style={{ color: '#d4af70' }}>{hero.level}</span>
-            {pendingLevelUp > 1 && ` (+${pendingLevelUp} levels)`}
+            {pendingLevelUp > 1 && (
+              <span data-testid="levelup-levels"> {` (+${pendingLevelUp} levels)`}</span>
+            )}
           </p>
         </div>
 
@@ -71,33 +86,43 @@ export default function LevelUpModal() {
           </div>
         </div>
 
-        {/* Choix du bonus */}
+        {/* Répartition des points de stat (1 par niveau) */}
         <div>
-          <p
-            style={{
-              color: '#6a5a4a',
-              fontSize: '0.75rem',
-              fontFamily: 'Cinzel, serif',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: '0.5rem',
-            }}
-          >
-            Choose a bonus stat (+1)
-          </p>
+          <div className="flex items-center justify-between" style={{ marginBottom: '0.5rem' }}>
+            <p
+              style={{
+                color: '#6a5a4a',
+                fontSize: '0.75rem',
+                fontFamily: 'Cinzel, serif',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              Assign stat points
+            </p>
+            <span
+              data-testid="levelup-remaining"
+              style={{
+                color: remaining > 0 ? '#60d0ff' : '#40a060',
+                fontSize: '0.78rem',
+                fontFamily: 'Cinzel, serif',
+              }}
+            >
+              {remaining} / {pendingLevelUp} left
+            </span>
+          </div>
           <div className="flex flex-col gap-2">
             {STAT_KEYS.map((stat) => {
               const meta = STAT_META[stat]
-              const isChosen = chosen === stat
+              const added = alloc[stat] ?? 0
+              const active = added > 0
               return (
-                <button
+                <div
                   key={stat}
-                  onClick={() => setChosen(stat)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded transition-all"
+                  className="flex items-center justify-between px-3 py-2 rounded"
                   style={{
-                    background: isChosen ? '#0a1820' : '#0a0c10',
-                    border: `1px solid ${isChosen ? meta.color + '80' : '#1a2030'}`,
-                    cursor: 'pointer',
+                    background: active ? '#0a1820' : '#0a0c10',
+                    border: `1px solid ${active ? meta.color + '80' : '#1a2030'}`,
                   }}
                 >
                   <div className="flex items-center gap-2">
@@ -105,38 +130,91 @@ export default function LevelUpModal() {
                     <span
                       style={{
                         fontFamily: 'Cinzel, serif',
-                        color: isChosen ? meta.color : '#6a5a4a',
+                        color: active ? meta.color : '#6a5a4a',
                         fontSize: '0.85rem',
                       }}
                     >
                       {meta.label}
                     </span>
                   </div>
-                  <span style={{ color: isChosen ? meta.color : '#4a4a5a', fontSize: '0.82rem' }}>
-                    {hero.stats[stat]} → <strong>{hero.stats[stat] + 1}</strong>
-                  </span>
-                </button>
+                  <div className="flex items-center gap-2">
+                    <span style={{ color: active ? meta.color : '#4a4a5a', fontSize: '0.8rem' }}>
+                      {hero.stats[stat]}
+                      {added > 0 && (
+                        <>
+                          {' → '}
+                          <strong>{hero.stats[stat] + added}</strong>
+                        </>
+                      )}
+                    </span>
+                    <button
+                      onClick={() => dec(stat)}
+                      disabled={added <= 0}
+                      data-testid={`levelup-minus-${stat}`}
+                      className="w-6 h-6 rounded"
+                      style={{
+                        background: added > 0 ? '#1a2030' : '#0a0c10',
+                        color: added > 0 ? '#c0c0d0' : '#2a2a3a',
+                        border: '1px solid #2a3040',
+                        cursor: added > 0 ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      −
+                    </button>
+                    <button
+                      onClick={() => inc(stat)}
+                      disabled={remaining <= 0}
+                      data-testid={`levelup-plus-${stat}`}
+                      className="w-6 h-6 rounded"
+                      style={{
+                        background: remaining > 0 ? '#081828' : '#0a0c10',
+                        color: remaining > 0 ? '#60d0ff' : '#2a2a3a',
+                        border: `1px solid ${remaining > 0 ? '#2060a0' : '#1a1a2a'}`,
+                        cursor: remaining > 0 ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               )
             })}
           </div>
         </div>
 
-        {/* Confirmer */}
-        <button
-          onClick={handleConfirm}
-          disabled={!chosen}
-          className="w-full py-3 rounded transition-all"
-          style={{
-            fontFamily: 'Cinzel, serif',
-            fontSize: '0.9rem',
-            background: chosen ? '#081828' : '#080808',
-            color: chosen ? '#60d0ff' : '#2a2a3a',
-            border: `1px solid ${chosen ? '#2060a0' : '#1a1a2a'}`,
-            cursor: chosen ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Confirm & Continue
-        </button>
+        {/* Actions : Confirmer (applique + reporte le reliquat) / Reporter tout */}
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => commitLevelUp(alloc)}
+            data-testid="levelup-confirm"
+            className="w-full py-3 rounded transition-all"
+            style={{
+              fontFamily: 'Cinzel, serif',
+              fontSize: '0.9rem',
+              background: '#081828',
+              color: '#60d0ff',
+              border: '1px solid #2060a0',
+              cursor: 'pointer',
+            }}
+          >
+            {remaining > 0 ? `Confirm (${remaining} saved for later)` : 'Confirm & Continue'}
+          </button>
+          <button
+            onClick={() => deferLevelUp()}
+            data-testid="levelup-defer"
+            className="w-full py-2 rounded transition-all"
+            style={{
+              fontFamily: 'Cinzel, serif',
+              fontSize: '0.8rem',
+              background: 'transparent',
+              color: '#6a5a4a',
+              border: '1px solid #1a2030',
+              cursor: 'pointer',
+            }}
+          >
+            Do it later
+          </button>
+        </div>
       </div>
     </div>
   )

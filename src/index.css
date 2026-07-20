@@ -2376,21 +2376,34 @@ html.lb-no-anim *::after {
   height: 100%;
   background: linear-gradient(90deg, var(--amber), var(--gold));
 }
+/* FIX-HSBARS01 — verrouillé (Aura/Concentration non débloquées) : barre floutée, comme les vitales. */
+.attr-row.ar-locked .ar-bar i {
+  filter: blur(3px);
+  opacity: 0.45;
+}
+/* FIX-HSBARS01 — largeur FIXE de la valeur (indépendante du bonus « (+N ») pour que le track
+   `.ar-bar` (flex:1) ait la MÊME largeur sur chaque ligne des 2 colonnes. */
 .attr-row .ar-val {
   font-family: var(--font-head);
   font-weight: 700;
   font-size: 16px;
-  width: 28px;
+  flex: 0 0 62px;
+  width: 62px;
   text-align: right;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
 }
-/* HSV2-04 — repères de palier d'attribut (/35 pts) */
+/* HSV2-04 — repères de palier d'attribut (/35 pts). FIX-HSBARS01 — largeur FIXE (les repères
+   ne rognent plus le track ; au-delà de 3 paliers les points passent à la ligne). */
 .attr-row .ar-ticks {
   display: flex;
   gap: 3px;
   align-items: center;
-  min-width: 34px;
+  flex: 0 0 34px;
+  width: 34px;
+  flex-wrap: wrap;
 }
 .attr-row .ar-tick {
   width: 6px;
@@ -3001,10 +3014,30 @@ button.hs-title-chip:hover {
 }
 
 /* ── WorldMap : carte illustrée + marqueurs discrets ───────────────────────── */
-.wm-map {
+/* UI12 — bande cinématique 3:2 (Option A, décidée 2026-07-06).
+   .wm-band = zone disponible (map-area moins la colonne du panneau, réservée par
+   padding-right) ; container-type:size expose cqw/cqh pour contenir la boîte.
+   .wm-map = boîte 3:2 FORCÉE (aspect-ratio), centrée H+V, bornée par l'espace :
+   height-bound aux résolutions 16:9 de réf (remplit la hauteur, marges bois
+   symétriques via le centrage), width-bound aux fenêtres très étroites.
+   ⚠️ Ne pas toucher : background-size 100% 100% de .wm-bg ni les coords POS (%)
+   — elles restent relatives à .wm-map, donc alignées 1:1 quel que soit l'écran. */
+.wm-band {
   position: absolute;
   inset: 0;
+  padding-right: 302px; /* colonne du panneau (.sidebar 286px + gouttière) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+.wm-map {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  width: min(100cqw, calc(100cqh * 3 / 2));
   overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 /* background-size: 100% 100% (fill) → l'image remplit exactement le conteneur,
    donc les coordonnées % des nodes (mesurées sur l'image) restent alignées 1:1
