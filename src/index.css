@@ -2376,21 +2376,34 @@ html.lb-no-anim *::after {
   height: 100%;
   background: linear-gradient(90deg, var(--amber), var(--gold));
 }
+/* FIX-HSBARS01 — verrouillé (Aura/Concentration non débloquées) : barre floutée, comme les vitales. */
+.attr-row.ar-locked .ar-bar i {
+  filter: blur(3px);
+  opacity: 0.45;
+}
+/* FIX-HSBARS01 — largeur FIXE de la valeur (indépendante du bonus « (+N ») pour que le track
+   `.ar-bar` (flex:1) ait la MÊME largeur sur chaque ligne des 2 colonnes. */
 .attr-row .ar-val {
   font-family: var(--font-head);
   font-weight: 700;
   font-size: 16px;
-  width: 28px;
+  flex: 0 0 62px;
+  width: 62px;
   text-align: right;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
 }
-/* HSV2-04 — repères de palier d'attribut (/35 pts) */
+/* HSV2-04 — repères de palier d'attribut (/35 pts). FIX-HSBARS01 — largeur FIXE (les repères
+   ne rognent plus le track ; au-delà de 3 paliers les points passent à la ligne). */
 .attr-row .ar-ticks {
   display: flex;
   gap: 3px;
   align-items: center;
-  min-width: 34px;
+  flex: 0 0 34px;
+  width: 34px;
+  flex-wrap: wrap;
 }
 .attr-row .ar-tick {
   width: 6px;
