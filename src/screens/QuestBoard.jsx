@@ -321,6 +321,7 @@ export function QuestCard({
   prestige = false,
   daysLeft = null,
   lockedReason = null,
+  parchment = false, // UI11 — carte claire (panneau Église) au lieu du fond sombre du board
   canComplete,
   onAccept,
   onComplete,
@@ -334,8 +335,39 @@ export function QuestCard({
   const isCompleted = questStatus === 'completed'
   const isActive = questStatus === 'active'
 
-  const borderColor = isCompleted ? '#305030' : isActive ? '#3a2818' : '#2a2018'
-  const bgColor = isCompleted ? '#081008' : '#0a0a08'
+  // UI11 — deux palettes : sombre (board, défaut) / parchemin (Église : bg #e8d4a0,
+  // liseré gauche #c89432, texte #2c1a0a — plus de fond noir dans le panneau clair).
+  const pal = parchment
+    ? {
+        bg: isCompleted ? '#ddd2ae' : '#e8d4a0',
+        border: '#c89432',
+        borderLeft: '3px solid #c89432',
+        title: isCompleted ? '#2f6b2f' : '#7a4d10',
+        objLabel: '#2c1a0a',
+        objIcon: (done, started) => (done ? '#3f7d20' : started ? '#8a5a17' : '#8a7a5a'),
+        pillBg: (done, started) => (done ? '#cfe3b8' : started ? '#eadfbc' : '#dccfa8'),
+        pillFg: (done, started) => (done ? '#2f6b1f' : started ? '#7a4d10' : '#6b5a3a'),
+        track: '#cbb98d',
+        claim: { background: '#dff0d0', color: '#2f6b1f', border: '1px solid #9dc27e' },
+        abandon: { background: '#f0dcd0', color: '#8a4a2a', border: '1px solid #c09070' },
+        accept: { background: '#f2e3bd', color: '#7a4d10', border: '1px solid #c89432' },
+        locked: { background: '#dccfa8', color: '#6b5a6a', border: '1px solid #b0a080' },
+      }
+    : {
+        bg: isCompleted ? '#081008' : '#0a0a08',
+        border: isCompleted ? '#305030' : isActive ? '#3a2818' : '#2a2018',
+        borderLeft: null,
+        title: isCompleted ? '#40c080' : '#d4af70',
+        objLabel: '#dcc79a',
+        objIcon: (done, started) => (done ? '#80c040' : started ? '#d4af70' : '#7a6a4a'),
+        pillBg: (done, started) => (done ? '#1e3010' : started ? '#3a2c12' : '#2a2418'),
+        pillFg: (done, started) => (done ? '#8fd257' : started ? '#e6b95e' : '#9a8558'),
+        track: '#1a1410',
+        claim: { background: '#0a2010', color: '#40c080', border: '1px solid #305030' },
+        abandon: { background: '#1a0808', color: '#a06040', border: '1px solid #4a2010' },
+        accept: { background: '#1a1208', color: '#d4af70', border: '1px solid #3a2818' },
+        locked: { background: '#0a0a08', color: '#7a6a8a', border: '1px solid #2a2038' },
+      }
 
   const npc = QUEST_NPC_REGISTRY[quest.giverNpc]
 
@@ -394,13 +426,21 @@ export function QuestCard({
     })
 
   return (
-    <div className="p-4 rounded border" style={{ background: bgColor, borderColor }}>
+    <div
+      className="p-4 rounded border"
+      data-parchment={parchment || undefined}
+      style={{
+        background: pal.bg,
+        borderColor: pal.border,
+        ...(pal.borderLeft ? { borderLeft: pal.borderLeft } : {}),
+      }}
+    >
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex-1">
           <p
             style={{
               fontFamily: 'Cinzel, serif',
-              color: isCompleted ? '#40c080' : '#d4af70',
+              color: pal.title,
               fontSize: '0.9rem',
             }}
           >
@@ -445,13 +485,7 @@ export function QuestCard({
           <button
             onClick={onComplete}
             className="px-3 py-1 rounded text-xs"
-            style={{
-              fontFamily: 'Cinzel, serif',
-              background: '#0a2010',
-              color: '#40c080',
-              border: '1px solid #305030',
-              flexShrink: 0,
-            }}
+            style={{ fontFamily: 'Cinzel, serif', ...pal.claim, flexShrink: 0 }}
           >
             Claim
           </button>
@@ -460,13 +494,7 @@ export function QuestCard({
           <button
             onClick={onAbandon}
             className="px-3 py-1 rounded text-xs"
-            style={{
-              fontFamily: 'Cinzel, serif',
-              background: '#1a0808',
-              color: '#a06040',
-              border: '1px solid #4a2010',
-              flexShrink: 0,
-            }}
+            style={{ fontFamily: 'Cinzel, serif', ...pal.abandon, flexShrink: 0 }}
             title="Abandon this quest"
           >
             Abandon
@@ -476,13 +504,7 @@ export function QuestCard({
           <button
             onClick={onAccept}
             className="px-3 py-1 rounded text-xs"
-            style={{
-              fontFamily: 'Cinzel, serif',
-              background: '#1a1208',
-              color: '#d4af70',
-              border: '1px solid #3a2818',
-              flexShrink: 0,
-            }}
+            style={{ fontFamily: 'Cinzel, serif', ...pal.accept, flexShrink: 0 }}
           >
             Accept
           </button>
@@ -494,9 +516,7 @@ export function QuestCard({
             className="px-3 py-1 rounded text-xs"
             style={{
               fontFamily: 'Cinzel, serif',
-              background: '#0a0a08',
-              color: '#7a6a8a',
-              border: '1px solid #2a2038',
+              ...pal.locked,
               flexShrink: 0,
               whiteSpace: 'nowrap',
             }}
@@ -524,15 +544,15 @@ export function QuestCard({
             // QUI-QOBJ-STYLE01 — libellé lisible (14px/500) + compteur en pastille colorée par état
             // (gris pas commencé → ambre en cours → vert fait). Carte sombre (board).
             const started = current > 0
-            const iconColor = done ? '#80c040' : started ? '#d4af70' : '#7a6a4a'
-            const pillBg = done ? '#1e3010' : started ? '#3a2c12' : '#2a2418'
-            const pillFg = done ? '#8fd257' : started ? '#e6b95e' : '#9a8558'
+            const iconColor = pal.objIcon(done, started)
+            const pillBg = pal.pillBg(done, started)
+            const pillFg = pal.pillFg(done, started)
 
             return (
               <div key={obj.id} className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <span style={{ color: iconColor, fontSize: '0.85rem' }}>{done ? '✓' : '○'}</span>
-                  <span style={{ color: '#dcc79a', fontSize: '0.875rem', fontWeight: 500 }}>
+                  <span style={{ color: pal.objLabel, fontSize: '0.875rem', fontWeight: 500 }}>
                     {obj.label}
                   </span>
                   <span
@@ -558,7 +578,7 @@ export function QuestCard({
                   aria-valuemin={0}
                   aria-valuemax={target}
                   className="rounded overflow-hidden ml-4"
-                  style={{ height: '5px', background: '#1a1410' }}
+                  style={{ height: '5px', background: pal.track }}
                 >
                   <div
                     className="h-full rounded transition-all duration-500"

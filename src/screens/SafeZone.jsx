@@ -9,7 +9,7 @@ import InformantsPanel from '../components/InformantsPanel'
 import { BLD_POS } from './safezone/constants'
 import NpcOverlay from './safezone/NpcOverlay'
 import VilBuilding from './safezone/VilBuilding'
-import ChurchPanel from './safezone/ChurchPanel'
+import ChurchPanel, { ChurchPrayBlock } from './safezone/ChurchPanel'
 import MerchantPanel from './safezone/MerchantPanel'
 import AlchemyPanel from './safezone/AlchemyPanel'
 import BlacksmithPanel from './safezone/BlacksmithPanel'
@@ -57,7 +57,9 @@ export default function SafeZone() {
       return
     }
     setActiveBuilding(id)
-    setShowPanel(false)
+    // UI11 — l'Église s'ouvre DIRECTEMENT en mode panneau (split B, 1 clic, sans intro) ;
+    // les autres bâtiments gardent l'intro PNJ (dialogue + CTA d'entrée).
+    setShowPanel(id === 'church')
   }
   const closeBuilding = () => {
     setActiveBuilding(null)
@@ -201,10 +203,12 @@ export default function SafeZone() {
           showPanel={showPanel}
           onEnter={() => setShowPanel(true)}
           onClose={closeBuilding}
+          showSideTalk={activeBuilding === 'church'}
+          sideContent={activeBuilding === 'church' ? <ChurchPrayBlock /> : null}
           panel={
             showPanel ? (
               activeBuilding === 'church' ? (
-                <ChurchPanel onBack={() => setShowPanel(false)} />
+                <ChurchPanel onLeave={closeBuilding} />
               ) : activeBuilding === 'merchant' ? (
                 <MerchantPanel onBack={() => setShowPanel(false)} zoneId={world.currentZone} />
               ) : activeBuilding === 'alchemy' ? (

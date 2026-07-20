@@ -85,6 +85,7 @@ export default function MasterBoard() {
           questStatus="active"
           heroLevel={hero.level}
           skillLevels={skillLevels}
+          base={world.questProgress?.[q.id] ?? {}} // FIX-QUESTPROG02 — homogénéité (delta, pas cumul)
           canComplete={isQuestComplete(q.id)}
           onComplete={() => completeQuest(q.id)}
           onAbandon={() => abandonQuest(q.id)}
