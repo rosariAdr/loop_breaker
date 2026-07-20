@@ -1,6 +1,6 @@
 // MST08 / v1.43 (DÉCISION #3) — surfaçage du maître ITINÉRANT sur les tableaux de maître
 // LOCAUX des VILLAGES (plus seulement l'Académie des villes) :
-//   • Millhaven : PNJ-maître dédié (KnightTrainer / Sir Aldric) → board dans son panneau.
+//   • Millhaven : bâtiment KnightTrainer (Dame Roswyn — FIX-ALDRIC01) → board dans son panneau.
 //   • Greywatch (village sans PNJ-maître) : repli communautaire sur le tableau de l'Église.
 // L'itinérant ne surface qu'À SON agglo-hôte du bloc (single-location), initiation via
 // l'engagement run-scopé (setMaster) inchangée.
@@ -55,10 +55,10 @@ describe('MST08 / v1.43 — Millhaven (KnightTrainer) surface l’itinérant hô
 
   beforeEach(() => enterVillage('millhaven', day))
 
-  it('le board de Sir Aldric affiche les Trials of Mastery de l’itinérant de passage', () => {
+  it('le board du Knight Trainer affiche les Trials of Mastery de l’itinérant de passage', () => {
     render(<SafeZone />)
-    fireEvent.click(screen.getAllByText(/Sir Aldric/)[0]) // tuile → PNJ
-    fireEvent.click(screen.getByText(/Train with Aldric/)) // entre dans le panneau
+    fireEvent.click(screen.getAllByText(/Knight Trainer/)[0]) // tuile → PNJ (Dame Roswyn)
+    fireEvent.click(screen.getByText(/Train with Roswyn/)) // entre dans le panneau
     const board = screen.getByTestId('master-quests')
     expect(within(board).getByText(hostInitRegex(day))).toBeTruthy()
   })

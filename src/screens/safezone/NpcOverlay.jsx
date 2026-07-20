@@ -51,13 +51,16 @@ const NPCS = {
     cta: 'Master forge',
     line: "Only the finest work leaves my anvil. Rare materials, rare results — that's the bargain.",
   },
+  // FIX-ALDRIC01 — le knight_trainer de Millhaven est Dame Roswyn (PNJ dédié) ;
+  // Sir Aldric est 100 % Greywatch (donneur de quêtes + maître martial, data canonique).
   knight_trainer: {
-    role: 'aldric',
-    name: 'Sir Aldric',
+    role: null,
+    fallback: '🛡',
+    name: 'Dame Roswyn',
     title: 'Knight Trainer',
     icon: '⚔',
-    cta: 'Train with Aldric',
-    line: "So you'd learn the blade? Steel is patient, lad. Train, and I'll make a hero of you yet.",
+    cta: 'Train with Roswyn',
+    line: "A blade is honest work. Show me your stance, and I'll show you what it's missing.",
   },
   alchemy: {
     role: 'mage',

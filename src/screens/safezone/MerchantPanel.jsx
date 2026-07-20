@@ -27,6 +27,12 @@ export default function MerchantPanel({ onBack }) {
     'antidote_basic',
   ]
 
+  // QA-BOOKS01 — les tomes de stats (ITM01) n'étaient distribués NULLE PART. Vendus par le
+  // marchand en MAJEURE CITÉ uniquement (biens savants/rares), à la suite des potions.
+  const locationTypeForBooks = getLocationType(world)
+  const bookStock =
+    locationTypeForBooks === 'city' ? ['tome_of_focus', 'tome_of_might', 'tome_of_wisdom'] : []
+
   // Équipements vendus par le marchand : templates avec merchantStock
   const fullEquipStock = Object.values(EQUIPMENT_TEMPLATES).flatMap((t) =>
     Object.entries(t.merchantStock ?? {})
@@ -94,7 +100,7 @@ export default function MerchantPanel({ onBack }) {
         </div>
 
         {tab === 'potions' &&
-          potionStock.map((id) => {
+          [...potionStock, ...bookStock].map((id) => {
             const res = RESOURCES[id]
             if (!res) return null
             const canAfford = hero.inventory.gold >= res.buyPrice
@@ -102,6 +108,7 @@ export default function MerchantPanel({ onBack }) {
             return (
               <div
                 key={id}
+                data-testid={res.isBook ? `book-stock-${id}` : undefined}
                 className="flex items-center justify-between p-2 rounded"
                 style={{
                   background: 'rgba(201,169,110,.18)',

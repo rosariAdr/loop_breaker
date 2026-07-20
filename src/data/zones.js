@@ -12,20 +12,10 @@ export const ZONES = {
       'Ancient forests shrouded in ash and mist. Ruins of a forgotten civilization hide among the twisted trees.',
     levelRange: [1, 30], // WMAP02 — barème Map 1 (Ashenvale 1-8 → Thornmarsh 20-30)
     zoneMult: 1.0,
-    monsters: [
-      'ashwood_wolf',
-      'rotting_shambler',
-      'gloom_bat',
-      'marsh_serpent',
-      'briar_wraith',
-      'bog_shambler',
-      'stone_golem',
-      'hollow_knight',
-      'ruin_specter',
-      'barrow_wight',
-      'grave_knight',
-      'soul_harvester',
-    ],
+    // FIX-ZONELIST01 — liste `monsters` zone-level RETIRÉE (legacy pré-MON01, aucun
+    // consommateur runtime, contenait 4 ids morts : rotting_shambler/gloom_bat/
+    // bog_shambler/grave_knight). Source de vérité = MONSTERS_BY_ZONE/_SPOT (monsters.js)
+    // + les listes `monsters` des huntingSpots ci-dessous (gardées par zones.deadids.test).
     // ── Spots de chasse (4 zones distinctes) ──────────────────────────
     huntingSpots: [
       {
@@ -86,7 +76,7 @@ export const ZONES = {
         name: 'Millhaven',
         type: 'village',
         mapPos: { x: 16, y: 32 },
-        buildings: ['inn', 'church', 'knight_trainer'], // Sir Aldric est ici
+        buildings: ['inn', 'church', 'knight_trainer'], // FIX-ALDRIC01 — Dame Roswyn (Aldric = Greywatch)
         optionalBuildings: [
           { id: 'merchant', chance: 0.65 },
           { id: 'alchemy', chance: 0.4 },
@@ -117,7 +107,7 @@ export const ZONES = {
     description: 'A cursed path between Ashenvale and Grimspire. Few dare to travel it alone.',
     levelRange: [15, 30],
     zoneMult: 1.8,
-    monsters: ['cursed_warlord', 'bone_colossus'],
+    // FIX-ZONELIST01 — liste zone-level retirée (cf. ashenvale).
     idleAllowed: false, // pas d'idle sur la route
     dungeon: null,
     city: null,
@@ -140,14 +130,7 @@ export const ZONES = {
       'Ancient cursed mountains and fortresses. The air itself feels heavy with dark magic.',
     levelRange: [28, 50], // WMAP02 — barème Map 2 (Veteran's 28-38 → Draconic 36-50)
     zoneMult: 2.5,
-    monsters: [
-      'grimstone_troll',
-      'cursed_sentinel',
-      'abyssal_hound',
-      'wyvern_scout',
-      'plague_monk',
-      'iron_wraith',
-    ],
+    // FIX-ZONELIST01 — liste zone-level retirée (cf. ashenvale).
     // PROG01 — déblocage data-driven (niveau 8 OU 40 kills d'Ashenvale, OU déblocage explicite PROG03)
     unlock: {
       hidden: false,

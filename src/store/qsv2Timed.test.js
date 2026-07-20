@@ -41,9 +41,9 @@ describe('QSV2-TIMED01 — quêtes chronométrées', () => {
   })
 
   it('ne touche pas les quêtes non chronométrées', () => {
-    s().startQuest('first_blood') // pas de deadline
+    s().startQuest('mq01_waking') // pas de deadline
     setDay(50)
     s().pruneExpiredQuests()
-    expect(s().world.activeQuests).toContain('first_blood')
+    expect(s().world.activeQuests).toContain('mq01_waking')
   })
 })

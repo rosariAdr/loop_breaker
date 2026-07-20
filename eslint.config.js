@@ -6,7 +6,9 @@ import prettier from 'eslint-config-prettier/flat'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'design', 'coverage']),
+  // DX-LINTIGNORE01 — `.claude/**` (worktrees temporaires, agents) hors du périmètre lint :
+  // un worktree résiduel sur une branche en retard faisait échouer `npm run lint` sur tout le repo.
+  globalIgnores(['dist', 'design', 'coverage', '.claude/**']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

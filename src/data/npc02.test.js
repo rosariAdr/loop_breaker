@@ -12,8 +12,8 @@ const spotIds = new Set(
 )
 
 describe('NPC02 — 10 nouvelles quêtes de contenu', () => {
-  it('ajoute exactement 10 quêtes nc_*', () => {
-    expect(ncQuests.length).toBe(10)
+  it('ajoute exactement 9 quêtes nc_* (QSV2-DROPDUP01 : nc_oakheart_elite retirée, doublon mq02)', () => {
+    expect(ncQuests.length).toBe(9)
   })
 
   it('le donneur Pell est enregistré', () => {

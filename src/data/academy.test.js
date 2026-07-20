@@ -7,6 +7,7 @@ import {
   getAcademyCatalog,
   ACADEMY_CATALOG,
 } from './academy'
+import { SKILLS } from './skills'
 import { useGameStore } from '../store/gameStore'
 
 const store = () => useGameStore.getState()
@@ -37,6 +38,21 @@ describe('ACA03 — plus-value au niveau', () => {
       expect(e.skill).toBeDefined()
       expect(e.price).toBeGreaterThan(0)
     })
+  })
+})
+
+// FIX-DIVSKILL01 — les skills divins (options de divinité) ne se vendent pas à l'Académie
+// (le catalogue et masters.js excluent les divins de la vente — esprit ADR-006).
+describe('FIX-DIVSKILL01 — aucun skill divin en vente', () => {
+  it("le catalogue Académie n'expose aucun skill container 'divine'", () => {
+    for (const skillId of Object.keys(ACADEMY_CATALOG)) {
+      expect(SKILLS[skillId]?.container, `${skillId} est divin`).not.toBe('divine')
+    }
+  })
+
+  it('healing_bloom (divin, option de Sylvara) est hors catalogue', () => {
+    expect(ACADEMY_CATALOG.healing_bloom).toBeUndefined()
+    expect(skillBuyPrice('healing_bloom')).toBeNull()
   })
 })
 

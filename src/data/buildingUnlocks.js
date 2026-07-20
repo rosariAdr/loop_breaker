@@ -38,7 +38,7 @@ export const BUILDING_UNLOCKS = {
   knight_trainer: {
     default: 'unlocked',
     trigger: 'master_quest',
-    lockedReason: 'Prove yourself to Sir Aldric',
+    lockedReason: 'Prove yourself to Dame Roswyn', // FIX-ALDRIC01
   },
   academy: {
     default: 'unlocked',

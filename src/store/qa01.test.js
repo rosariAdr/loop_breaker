@@ -49,9 +49,9 @@ describe('QA01 — Volet 1 : compteurs de monstres (combat + idle)', () => {
     })
 
     it('fait progresser un objectif de quête `kill` (delta depuis acceptation)', () => {
-      s().startQuest('first_blood') // 5× ashwood_wolf
+      s().startQuest('mq01_waking') // 5× ashwood_wolf (QSV2-DROPDUP01 — ex-first_blood)
       for (let i = 0; i < 5; i++) s().recordKill('ashwood_wolf')
-      expect(s().isQuestComplete('first_blood')).toBe(true)
+      expect(s().isQuestComplete('mq01_waking')).toBe(true)
     })
 
     it('déblocage idle : 5 kills suffisent (seuil de maîtrise)', () => {
@@ -93,10 +93,10 @@ describe('QA01 — Volet 1 : compteurs de monstres (combat + idle)', () => {
     })
 
     it('les kills idle font progresser un objectif de quête `kill`', () => {
-      s().startQuest('first_blood') // 5× ashwood_wolf
+      s().startQuest('mq01_waking') // 5× ashwood_wolf (QSV2-DROPDUP01 — ex-first_blood)
       armIdle('ashwood_wolf')
       for (let i = 0; i < 5; i++) s().processIdleTick()
-      expect(s().isQuestComplete('first_blood')).toBe(true)
+      expect(s().isQuestComplete('mq01_waking')).toBe(true)
     })
 
     it('les kills idle comptent pour le succès totalKills', () => {
@@ -217,7 +217,8 @@ describe('QA01 — Volet 2 : intégrité référentielle des items', () => {
         expect(RESOURCES[id], `${q.id} → consumable ${id}`).toBeDefined()
         expect(RESOURCES[id].isConsumable, `${q.id} → ${id} isConsumable`).toBe(true)
       }
-      if (r.skill) expect(SKILLS[r.skill.skillId], `${q.id} → skill ${r.skill.skillId}`).toBeDefined()
+      if (r.skill)
+        expect(SKILLS[r.skill.skillId], `${q.id} → skill ${r.skill.skillId}`).toBeDefined()
     }
   })
 
@@ -255,11 +256,7 @@ describe('QA01 — Volet 2 : intégrité référentielle des items', () => {
 
   it('livres (ITM01) : effet gain_stat cible une stat réelle du héros', () => {
     s().resetGame()
-    const heroStatKeys = new Set([
-      ...Object.keys(s().hero.stats),
-      'concentration',
-      'aura',
-    ])
+    const heroStatKeys = new Set([...Object.keys(s().hero.stats), 'concentration', 'aura'])
     for (const res of Object.values(RESOURCES)) {
       if (res.effect?.type !== 'gain_stat') continue
       expect(heroStatKeys.has(res.effect.stat), `book ${res.id} → stat ${res.effect.stat}`).toBe(

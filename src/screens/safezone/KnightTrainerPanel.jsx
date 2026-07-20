@@ -2,14 +2,17 @@ import { useState } from 'react'
 import { useGameStore } from '../../store/gameStore'
 import { RESOURCES } from '../../data/resources'
 import { SKILLS } from '../../data/skills'
-import { QUESTS } from '../../data/quests'
 import { Panel, InfoLine } from './Panel'
 import MasterBoard from './MasterBoard'
 
-// ── Sir Aldric — Knight Trainer ───────────────────────────────────────────────
+// ── Dame Roswyn — Knight Trainer de Millhaven ────────────────────────────────
+// FIX-ALDRIC01 (option a) — le bâtiment appartient à un PNJ dédié : Dame Roswyn.
+// Sir Aldric est 100 % Greywatch (donneur de quêtes + maître martial) ; ses quêtes ne
+// sont plus listées ici (elles vivent sur le board de Greywatch) → l'onglet Quêtes a
+// disparu, le panneau garde Techniques + Train + le MasterBoard local (MST08).
 
-// Skills qu'Aldric peut enseigner directement (contre or/ressources)
-const ALDRIC_TRADES = [
+// Skills que Roswyn peut enseigner directement (contre or/ressources)
+const ROSWYN_TRADES = [
   {
     skillId: 'power_strike',
     cost: { gold: 80 },
@@ -28,18 +31,8 @@ const ALDRIC_TRADES = [
 ]
 
 export default function KnightTrainerPanel({ onBack }) {
-  const {
-    hero,
-    world,
-    spendGold,
-    removeResource,
-    addSkillToInventory,
-    startQuest,
-    completeQuest,
-    isQuestComplete,
-    grantAura,
-  } = useGameStore()
-  const [tab, setTab] = useState('quests') // 'quests' | 'trades' | 'train'
+  const { hero, spendGold, removeResource, addSkillToInventory, grantAura } = useGameStore()
+  const [tab, setTab] = useState('trades') // 'trades' | 'train'
   const [msg, setMsg] = useState(null)
 
   // TRA01 — entraînement : le maître guerrier octroie de l'Aura (voie alternative STA02)
@@ -51,10 +44,6 @@ export default function KnightTrainerPanel({ onBack }) {
     grantAura(TRAIN_AURA_GAIN)
     flash(`Trained hard! +${TRAIN_AURA_GAIN} Aura.`, '#c084fc')
   }
-
-  // Garde-fous pour les anciennes sauvegardes avec format incorrect
-  const activeQuests = Array.isArray(world.activeQuests) ? world.activeQuests : []
-  const completedQuests = Array.isArray(world.completedQuests) ? world.completedQuests : []
 
   const flash = (text, color = 'var(--forest-deep)') => {
     setMsg({ text, color })
@@ -84,10 +73,8 @@ export default function KnightTrainerPanel({ onBack }) {
     flash(`Learned: ${SKILLS[skillId]?.name ?? skillId}!`)
   }
 
-  const questIds = Object.keys(QUESTS).filter((qId) => QUESTS[qId].giverNpc === 'sir_aldric')
-
   return (
-    <Panel title="⚔ Sir Aldric — Knight of Millhaven" onBack={onBack}>
+    <Panel title="⚔ Dame Roswyn — Knight Trainer of Millhaven" onBack={onBack}>
       <p
         style={{
           color: 'var(--ink-soft)',
@@ -96,12 +83,12 @@ export default function KnightTrainerPanel({ onBack }) {
           fontStyle: 'italic',
         }}
       >
-        "I have fought for twenty years. Let me spare you the worst of the lessons."
+        "Stance before steel — the road taught me that. Let me spare you its worst lessons."
       </p>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4">
-        {['quests', 'trades', 'train'].map((t) => (
+        {['trades', 'train'].map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -113,7 +100,7 @@ export default function KnightTrainerPanel({ onBack }) {
               border: `1px solid ${tab === t ? 'var(--parchment-shadow)' : 'var(--parchment-shadow)'}`,
             }}
           >
-            {t === 'quests' ? '📜 Quests' : t === 'trades' ? '⚔ Techniques' : '🔥 Train'}
+            {t === 'trades' ? '⚔ Techniques' : '🔥 Train'}
           </button>
         ))}
       </div>
@@ -127,154 +114,12 @@ export default function KnightTrainerPanel({ onBack }) {
         </p>
       )}
 
-      {/* ── Tab Quêtes ── */}
-      {tab === 'quests' && (
-        <div className="flex flex-col gap-3" style={{ maxWidth: '460px' }}>
-          {questIds.map((questId) => {
-            const quest = QUESTS[questId]
-            const isActive = activeQuests.includes(questId)
-            const isDone = completedQuests.includes(questId)
-            const canComplete = isActive && isQuestComplete(questId)
-
-            let statusColor = 'var(--ink-soft)'
-            let statusLabel = 'Not started'
-            if (isDone) {
-              statusColor = 'var(--forest-deep)'
-              statusLabel = 'Completed ✓'
-            } else if (canComplete) {
-              statusColor = 'var(--amber-deep)'
-              statusLabel = 'Ready to claim!'
-            } else if (isActive) {
-              statusColor = '#6a9a4a'
-              statusLabel = 'In progress'
-            }
-
-            return (
-              <div
-                key={questId}
-                className="p-3 rounded"
-                style={{
-                  background: 'rgba(201,169,110,.18)',
-                  border: `1px solid ${isDone ? 'rgba(74,124,47,.16)' : canComplete ? '#4a3a18' : 'var(--parchment-shadow)'}`,
-                  opacity: isDone ? 0.6 : 1,
-                }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <p
-                      style={{
-                        fontFamily: 'Cinzel, serif',
-                        color: isDone ? '#4a5a2a' : 'var(--amber-deep)',
-                        fontSize: '0.88rem',
-                      }}
-                    >
-                      {quest.name}
-                    </p>
-                    <p
-                      style={{
-                        color: 'var(--ink-soft)',
-                        fontSize: '0.75rem',
-                        marginTop: '0.2rem',
-                        fontStyle: 'italic',
-                      }}
-                    >
-                      {quest.flavorText}
-                    </p>
-                    {/* Objectifs */}
-                    <div className="mt-2 flex flex-col gap-0.5">
-                      {quest.objectives.map((obj) => {
-                        let current = 0
-                        let target = 0
-                        if (obj.type === 'kill') {
-                          current = world.monsterKillCounts[obj.monsterId] ?? 0
-                          target = obj.count
-                        } else if (obj.type === 'level') {
-                          current = hero.level
-                          target = obj.targetLevel
-                        }
-                        const done = current >= target
-                        return (
-                          <p
-                            key={obj.id}
-                            style={{
-                              color: done ? 'var(--forest-deep)' : 'var(--ink-soft)',
-                              fontSize: '0.72rem',
-                            }}
-                          >
-                            {done ? '✓' : '○'} {obj.label} ({Math.min(current, target)}/{target})
-                          </p>
-                        )
-                      })}
-                    </div>
-                    {/* Récompense */}
-                    <p
-                      style={{ color: 'var(--ink-soft)', fontSize: '0.7rem', marginTop: '0.4rem' }}
-                    >
-                      Reward:{' '}
-                      {quest.reward.skill &&
-                        `${SKILLS[quest.reward.skill.skillId]?.name ?? quest.reward.skill.skillId}`}
-                      {quest.reward.gold && ` · ${quest.reward.gold}g`}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <p
-                      style={{
-                        color: statusColor,
-                        fontSize: '0.68rem',
-                        fontFamily: 'Cinzel, serif',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {statusLabel}
-                    </p>
-                    {!isActive && !isDone && (
-                      <button
-                        onClick={() => {
-                          startQuest(questId)
-                          flash(`Quest accepted: ${quest.name}`)
-                        }}
-                        className="px-2 py-0.5 rounded text-xs"
-                        style={{
-                          fontFamily: 'Cinzel, serif',
-                          background: 'rgba(74,124,47,.16)',
-                          color: 'var(--forest-deep)',
-                          border: '1px solid rgba(74,124,47,.4)',
-                        }}
-                      >
-                        Accept
-                      </button>
-                    )}
-                    {canComplete && (
-                      <button
-                        onClick={() => {
-                          completeQuest(questId)
-                          flash(`Quest complete! Reward claimed.`)
-                        }}
-                        className="px-2 py-0.5 rounded text-xs"
-                        style={{
-                          fontFamily: 'Cinzel, serif',
-                          background: 'rgba(212,160,23,.18)',
-                          color: 'var(--amber-deep)',
-                          border: '1px solid #4a3a18',
-                        }}
-                      >
-                        Claim
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
       {/* ── Tab Techniques ── */}
       {tab === 'trades' && (
         <div className="flex flex-col gap-2" style={{ maxWidth: '460px' }}>
           <InfoLine label="Gold" value={`${hero.inventory.gold}g`} />
           <div className="mt-2 flex flex-col gap-2">
-            {ALDRIC_TRADES.map((trade) => {
+            {ROSWYN_TRADES.map((trade) => {
               const skill = SKILLS[trade.skillId]
               if (!skill) return null
               const alreadyOwns =

@@ -94,7 +94,9 @@ export const SKILLS = {
       dodgeChance: 0.15,
     },
     xpToNext: [20, 50],
-    sourceMonster: 'briar_wraith',
+    // FIX-SRCMON01 — briar_wraith droppe thorn_lash, pas ce skill : orphelin
+    // (boutique des dieux / futur droppeur), comme reckless_blow.
+    sourceMonster: null,
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
@@ -114,7 +116,9 @@ export const SKILLS = {
       damageReduction: 0.1,
     },
     xpToNext: [20, 50],
-    sourceMonster: 'stone_golem',
+    // FIX-SRCMON01 — version ENSEIGNÉE à l'Académie (cf. ACADEMY_CATALOG) ; jumelle
+    // assumée de `stoneskin` (12 %, droppée par stone_golem — la droppée est meilleure).
+    sourceMonster: null,
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
@@ -135,7 +139,9 @@ export const SKILLS = {
       statusEffect: { type: 'poison', duration: 3, tickDamage: 8 },
     },
     xpToNext: [20, 50],
-    sourceMonster: 'marsh_serpent',
+    // FIX-SRCMON01 — version ENSEIGNÉE à l'Académie (cf. ACADEMY_CATALOG) ; jumelle
+    // assumée de `venom_strike` (droppée par marsh_serpent).
+    sourceMonster: null,
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
@@ -155,7 +161,9 @@ export const SKILLS = {
       defBonus: 0.2,
     },
     xpToNext: [20, 50],
-    sourceMonster: 'hollow_knight',
+    // FIX-SRCMON01 — hollow_knight droppe cursed_cleave ; le vrai droppeur d'iron_resolve
+    // est barrow_wight (monstre de RÉSERVE — re-surfacera avec la Hollow Crypt).
+    sourceMonster: 'barrow_wight',
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
@@ -164,7 +172,7 @@ export const SKILLS = {
     },
   },
 
-  // ── Skills de Sir Aldric (entraîneur de Millhaven) ───────────────────
+  // ── Skills du Knight Trainer (Dame Roswyn, Millhaven — FIX-ALDRIC01) ─────────
 
   power_strike: {
     id: 'power_strike',
@@ -948,8 +956,7 @@ export const SKILLS = {
   frost_lance: {
     id: 'frost_lance',
     name: 'Frost Lance',
-    description:
-      'A lance of hardened ice hurled with lethal focus. Deals 180% INT as ice damage.',
+    description: 'A lance of hardened ice hurled with lethal focus. Deals 180% INT as ice damage.',
     type: 'active',
     cost: { mana: 24, hp: 0, stat_sacrifice: null },
     cooldown: 3,

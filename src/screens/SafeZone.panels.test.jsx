@@ -81,7 +81,7 @@ describe('SafeZone — panneaux de village (knight_trainer / master_smith)', () 
   it('ouvre le panneau du maître d’armes (knight_trainer)', () => {
     render(<SafeZone />)
     fireEvent.click(screen.getAllByText(/Knight Trainer/)[0])
-    fireEvent.click(screen.getByText(/Train with Aldric/))
+    fireEvent.click(screen.getByText(/Train with Roswyn/)) // FIX-ALDRIC01 — Dame Roswyn
     expect(document.querySelector('.npc-panel-host')).not.toBeNull()
   })
 

@@ -570,36 +570,38 @@ describe('saveGame / loadGame', () => {
 })
 
 // ── Quêtes ────────────────────────────────────────────────────────────────────
+// QSV2-DROPDUP01 — fixture kill générique : nc_thin_the_boars (4× tuskmaw_boar, 60g)
+// remplace first_blood (retirée : doublon de mq01 à Greywatch).
 describe('Système de quêtes', () => {
   it('startQuest ajoute la quête aux activeQuests', () => {
-    useGameStore.getState().startQuest('first_blood')
-    expect(useGameStore.getState().world.activeQuests).toContain('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().world.activeQuests).toContain('nc_thin_the_boars')
   })
 
   it('startQuest ignore les doublons', () => {
-    useGameStore.getState().startQuest('first_blood')
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
     expect(useGameStore.getState().world.activeQuests).toHaveLength(1)
   })
 
   it('startQuest ignore les quêtes déjà complétées', () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, completedQuests: ['first_blood'], activeQuests: [] },
+      world: { ...state.world, completedQuests: ['nc_thin_the_boars'], activeQuests: [] },
     }))
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
     expect(useGameStore.getState().world.activeQuests).toHaveLength(0)
   })
 
   it('isQuestComplete retourne false si objectifs non remplis', () => {
-    useGameStore.getState().startQuest('first_blood')
-    expect(useGameStore.getState().isQuestComplete('first_blood')).toBe(false)
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().isQuestComplete('nc_thin_the_boars')).toBe(false)
   })
 
   it('isQuestComplete retourne true si kills suffisants', () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
+      world: { ...state.world, monsterKillCounts: { tuskmaw_boar: 4 } },
     }))
-    expect(useGameStore.getState().isQuestComplete('first_blood')).toBe(true)
+    expect(useGameStore.getState().isQuestComplete('nc_thin_the_boars')).toBe(true)
   })
 
   it('isQuestComplete — quête de niveau', () => {
@@ -610,27 +612,27 @@ describe('Système de quêtes', () => {
   })
 
   it("completeQuest retire la quête des actives et l'ajoute aux complètes", () => {
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
     useGameStore.setState((state) => ({
-      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
+      world: { ...state.world, monsterKillCounts: { tuskmaw_boar: 4 } },
     }))
-    useGameStore.getState().completeQuest('first_blood')
+    useGameStore.getState().completeQuest('nc_thin_the_boars')
     const state = useGameStore.getState()
-    expect(state.world.activeQuests).not.toContain('first_blood')
-    expect(state.world.completedQuests).toContain('first_blood')
+    expect(state.world.activeQuests).not.toContain('nc_thin_the_boars')
+    expect(state.world.completedQuests).toContain('nc_thin_the_boars')
   })
 
   it('completeQuest ajoute la récompense en or', () => {
-    useGameStore.getState().startQuest('first_blood') // MST03 — reward rééquilibré : 110g (plus de skill)
+    useGameStore.getState().startQuest('nc_thin_the_boars') // 60g + 2 potions
     const before = useGameStore.getState().hero.inventory.gold
-    useGameStore.getState().completeQuest('first_blood')
-    expect(useGameStore.getState().hero.inventory.gold).toBe(before + 110)
+    useGameStore.getState().completeQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().hero.inventory.gold).toBe(before + 60)
   })
 
   it("completeQuest ajoute les tokens de réputation (quête d'élite, REP01)", () => {
-    useGameStore.getState().startQuest('nc_oakheart_elite')
+    useGameStore.getState().startQuest('nc_thunderhoof_elite')
     const before = useGameStore.getState().hero.reputationTokens
-    useGameStore.getState().completeQuest('nc_oakheart_elite')
+    useGameStore.getState().completeQuest('nc_thunderhoof_elite')
     expect(useGameStore.getState().hero.reputationTokens).toBe(before + 5)
   })
 
@@ -664,13 +666,13 @@ describe('Système de quêtes', () => {
   it('Q07 — completeQuest pousse un toast type quest', async () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
-    useGameStore.getState().startQuest('first_blood')
-    useGameStore.getState().completeQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    useGameStore.getState().completeQuest('nc_thin_the_boars')
     const toasts = useToastStore.getState().toasts
     expect(toasts.length).toBeGreaterThanOrEqual(1)
     const questToast = toasts.find((t) => t.type === 'quest')
     expect(questToast).toBeDefined()
-    expect(questToast.message).toMatch(/First Blood/)
+    expect(questToast.message).toMatch(/Boar Trouble/)
   })
 
   it('Q07 — le toast inclut les récompenses (gold + tokens + skill)', async () => {
@@ -685,24 +687,24 @@ describe('Système de quêtes', () => {
 
   // UX03 — abandonQuest
   it('abandonQuest retire la quête active sans la marquer complétée', () => {
-    useGameStore.getState().startQuest('first_blood')
-    expect(useGameStore.getState().world.activeQuests).toContain('first_blood')
-    useGameStore.getState().abandonQuest('first_blood')
-    expect(useGameStore.getState().world.activeQuests).not.toContain('first_blood')
-    expect(useGameStore.getState().world.completedQuests).not.toContain('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().world.activeQuests).toContain('nc_thin_the_boars')
+    useGameStore.getState().abandonQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().world.activeQuests).not.toContain('nc_thin_the_boars')
+    expect(useGameStore.getState().world.completedQuests).not.toContain('nc_thin_the_boars')
   })
 
   it('abandonQuest sur une quête non active ne change rien', () => {
     const before = useGameStore.getState().world.activeQuests
-    useGameStore.getState().abandonQuest('first_blood')
+    useGameStore.getState().abandonQuest('nc_thin_the_boars')
     expect(useGameStore.getState().world.activeQuests).toEqual(before)
   })
 
   it('abandonQuest permet de re-accepter la même quête plus tard', () => {
-    useGameStore.getState().startQuest('first_blood')
-    useGameStore.getState().abandonQuest('first_blood')
-    useGameStore.getState().startQuest('first_blood')
-    expect(useGameStore.getState().world.activeQuests).toContain('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    useGameStore.getState().abandonQuest('nc_thin_the_boars')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().world.activeQuests).toContain('nc_thin_the_boars')
   })
 })
 
@@ -770,7 +772,7 @@ describe('Quêtes Q08 — NPCs multiples', () => {
 
   it('accepter plusieurs quêtes de NPCs différents simultanément', () => {
     const store = useGameStore.getState
-    store().startQuest('first_blood') // sir_aldric
+    store().startQuest('nc_thin_the_boars') // sir_aldric
     store().startQuest('silence_the_crypt') // ironhaven_captain
     store().startQuest('bog_purge') // greywatch_elder
     expect(store().world.activeQuests).toHaveLength(3)

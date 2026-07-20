@@ -595,7 +595,7 @@ describe('QuestBoard — affichage quêtes', () => {
       world: { ...s.world, currentLocation: 'greywatch', currentNode: 'greywatch' },
     }))
     render(<QuestBoard />)
-    expect(screen.getByText('First Blood')).toBeInTheDocument()
+    expect(screen.getByText('Boar Trouble')).toBeInTheDocument() // QSV2-DROPDUP01 — ex-First Blood
     // Bog Purge a été re-domicilié à Millhaven (thornmarsh non adjacent à Greywatch)
     expect(screen.queryByText('Bog Purge')).not.toBeInTheDocument()
   })
@@ -608,7 +608,7 @@ describe('QuestBoard — affichage quêtes', () => {
   })
 
   it('section Active apparaît après acceptation', () => {
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
     render(<QuestBoard />)
     expect(screen.getByText(/Active \(1\)/)).toBeInTheDocument()
   })
@@ -624,32 +624,36 @@ describe('QuestBoard — affichage quêtes', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // LevelUpModal : flow complet
 // ─────────────────────────────────────────────────────────────────────────────
+// FIX-LVLQUEUE01 — modal allocateur (N points), plus « Do it later ».
 describe('LevelUpModal — flow', () => {
   beforeEach(() => {
     useGameStore.setState({ pendingLevelUp: 1 })
   })
 
-  it('clic sur une stat la sélectionne', () => {
-    render(<LevelUpModal />)
-    fireEvent.click(screen.getByText('Strength'))
-    // Le bouton Confirm doit devenir actif
-    const confirmBtn = screen.getByText(/Confirm & Continue/)
-    expect(confirmBtn).not.toBeDisabled()
-  })
-
-  it('Confirm sans choix ne fait rien', () => {
-    render(<LevelUpModal />)
-    const confirmBtn = screen.getByText(/Confirm & Continue/)
-    expect(confirmBtn).toBeDisabled()
-  })
-
-  it('Confirm avec choix applique le bonus + clear pendingLevelUp', () => {
+  it('allouer un point à une stat (+) puis Confirm applique le bonus + clear pendingLevelUp', () => {
     const before = useGameStore.getState().hero.stats.strength
     render(<LevelUpModal />)
-    fireEvent.click(screen.getByText('Strength'))
-    fireEvent.click(screen.getByText(/Confirm & Continue/))
+    fireEvent.click(screen.getByTestId('levelup-plus-strength'))
+    fireEvent.click(screen.getByTestId('levelup-confirm'))
     expect(useGameStore.getState().hero.stats.strength).toBe(before + 1)
     expect(useGameStore.getState().pendingLevelUp).toBe(0)
+    expect(useGameStore.getState().hero.pendingStatPoints).toBe(0)
+  })
+
+  it('Confirm sans allouer → le point est reporté dans pendingStatPoints', () => {
+    render(<LevelUpModal />)
+    fireEvent.click(screen.getByTestId('levelup-confirm'))
+    expect(useGameStore.getState().pendingLevelUp).toBe(0)
+    expect(useGameStore.getState().hero.pendingStatPoints).toBe(1)
+  })
+
+  it('« Do it later » reporte tous les points sans rien attribuer', () => {
+    const before = useGameStore.getState().hero.stats.strength
+    render(<LevelUpModal />)
+    fireEvent.click(screen.getByTestId('levelup-defer'))
+    expect(useGameStore.getState().hero.stats.strength).toBe(before)
+    expect(useGameStore.getState().pendingLevelUp).toBe(0)
+    expect(useGameStore.getState().hero.pendingStatPoints).toBe(1)
   })
 })
 

@@ -11,23 +11,24 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('UI-QUESTS — overlay de suivi', () => {
+  // QSV2-DROPDUP01 — fixture : mq01_waking (5× ashwood_wolf) remplace first_blood (retirée).
   it('liste les quêtes actives (nom + objectif)', () => {
     useGameStore.setState((s) => ({
-      world: { ...s.world, activeQuests: ['first_blood'], monsterKillCounts: { ashwood_wolf: 2 } },
+      world: { ...s.world, activeQuests: ['mq01_waking'], monsterKillCounts: { ashwood_wolf: 2 } },
     }))
     render(<QuestsOverlay />)
-    expect(screen.getByText(/First Blood/)).toBeInTheDocument()
+    expect(screen.getByText(/The Waking/)).toBeInTheDocument()
     // progression 2/5 affichée
-    expect(screen.getByText('Kill Ashwood Wolves')).toBeInTheDocument()
+    expect(screen.getByText('Cull the Ashwood Wolves')).toBeInTheDocument()
     expect(screen.getByText('2/5')).toBeInTheDocument()
   })
 
   it('affiche une barre de progression par objectif', () => {
     useGameStore.setState((s) => ({
-      world: { ...s.world, activeQuests: ['first_blood'], monsterKillCounts: { ashwood_wolf: 2 } },
+      world: { ...s.world, activeQuests: ['mq01_waking'], monsterKillCounts: { ashwood_wolf: 2 } },
     }))
     render(<QuestsOverlay />)
-    const bar = screen.getByRole('progressbar', { name: /First Blood|Ashwood/i })
+    const bar = screen.getByRole('progressbar', { name: /The Waking|Ashwood/i })
     expect(bar).toBeInTheDocument()
     expect(bar.getAttribute('aria-valuenow')).toBe('2')
     expect(bar.getAttribute('aria-valuemax')).toBe('5')
@@ -35,7 +36,7 @@ describe('UI-QUESTS — overlay de suivi', () => {
 
   it('quête complétable → badge « Ready to turn in »', () => {
     useGameStore.setState((s) => ({
-      world: { ...s.world, activeQuests: ['first_blood'], monsterKillCounts: { ashwood_wolf: 5 } },
+      world: { ...s.world, activeQuests: ['mq01_waking'], monsterKillCounts: { ashwood_wolf: 5 } },
     }))
     render(<QuestsOverlay />)
     expect(screen.getByText(/Ready to turn in/i)).toBeInTheDocument()

@@ -10,7 +10,8 @@ export const ACADEMY_CATALOG = {
   shield_stance: 130,
   savage_bite: 110,
   venom_bite: 160,
-  healing_bloom: 200,
+  // FIX-DIVSKILL01 — healing_bloom retiré : skill DIVIN (option de Sylvara), le catalogue
+  // exclut les divins de la vente (comme masters.js — esprit ADR-006).
   veterans_resolve: 180, // passif
   stone_skin: 170, // passif
 }
