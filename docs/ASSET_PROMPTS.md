@@ -541,11 +541,195 @@ A single circular game-map node medallion — a carved stone-and-bronze seal wit
 
 ---
 
-## 13) ⚪ ICÔNES UI & OBJETS (PAS d'IA)
+## 13) 🟢 ÉQUIPEMENT — illustrations peintes (ART-EQUIP01, Gemini)
+
+> **Reco : 🟢 Gemini.** Illustrations d'**inventaire / équipement** — 1 image par template de `EQUIPMENT_TEMPLATES` (`src/data/equipment.js`) — dans le **même style prop que §6-§7** : Ghibli × Dragon Quest chaleureux, hand-painted, **objet seul centré**, **fond neutre uni à détourer**. Emplacement : **`public/equipment/<templateId>.png`**, généré **1024²**.
+> ⚠️ **Double usage (CRAFTMG-SHAPE01)** : la version détourée (`no_bg`) servira **aussi de source de silhouette** pour le **mini-jeu de forge** → **silhouette lisible**, objet **bien détaché du fond** (rien qui touche les bords), orientation **¾ ou profil franc**, pas d'effets/particules qui noient le contour.
+
+Chaque bloc est un **prompt complet prêt à copier-coller**. 💡 Cohérence : valide un 1ᵉʳ item (ex. `iron_sword`), puis fournis-le en **image de référence** pour le reste du lot.
+
+### ⚔️ Armes *(slot `weapon` — 7 templates)*
+
+### `iron_sword` — Iron Sword
+```
+A single medieval-fantasy RPG equipment item — a sturdy iron longsword with a clean polished grey blade, a simple steel crossguard, a leather-wrapped grip and a round iron pommel, honest dependable soldier's steel. The weapon alone, centered in a square 1:1 composition, upright at a slight diagonal in clean full profile, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/iron_sword.png
+```
+### `bone_staff` — Bone Staff *(2 mains)*
+```
+A single medieval-fantasy RPG equipment item — a tall two-handed mage's staff carved from ancient yellowed bone, knotted fused vertebrae running along the shaft, topped by a curled bone talon cradling a softly glowing pale-green wisp. The weapon alone, centered in a square 1:1 composition, upright at a slight diagonal in clean full profile, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/bone_staff.png
+```
+### `serpent_dagger` — Serpent Dagger
+```
+A single medieval-fantasy RPG equipment item — a curved serpent dagger with a sinuous wavy blade coated in a thin glistening green venom sheen, a scale-patterned guard and a hilt shaped like a coiled snake. The weapon alone, centered in a square 1:1 composition, at a clean diagonal in full profile, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/serpent_dagger.png
+```
+### `worn_iron_dagger` — Worn Iron Dagger *(arme de départ, QONBOARD01)*
+```
+A single medieval-fantasy RPG equipment item — an old worn iron dagger with a dulled, nicked edge, the blade mottled with dark tarnish, a soft aged patina and faint rust freckles, a scuffed wooden grip with cracked leather wrapping — a humble blade that slept for years in a cupboard, yet still looks like it bites. The weapon alone, centered in a square 1:1 composition, at a clean diagonal in full profile, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/worn_iron_dagger.png
+```
+### `oakheart_branch` — Oakheart Branch *(arme signature MQ)*
+```
+A single medieval-fantasy RPG equipment item — a heavy living oak-branch cudgel torn from an ancient treant, gnarled knotted bark, a raw splintered tear at one end, a few small green leaves still sprouting from it and a faint warm amber glow in the bark cracks. The weapon alone, centered in a square 1:1 composition, upright at a slight diagonal in clean full profile, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/oakheart_branch.png
+```
+### `thunderhoof_maul` — Thunderhoof Maul *(arme signature MQ, 2 mains)*
+```
+A single medieval-fantasy RPG equipment item — a massive two-handed war maul forged around a huge cracked bison horn, dark iron bands and rivets binding the horn head to a long sturdy wooden haft, faint blue lightning crackling along the horn. The weapon alone, centered in a square 1:1 composition, upright at a slight diagonal in clean full profile, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/thunderhoof_maul.png
+```
+### `graven_edge` — Graven Edge *(arme signature MQ)*
+```
+A single medieval-fantasy RPG equipment item — a blade forged from a rune-etched shard of an ancient stone sentinel, a dark grey-green stone-metal edge engraved with softly glowing arcane runes, set into a weathered bronze hilt, humming with quiet bound magic. The weapon alone, centered in a square 1:1 composition, upright at a slight diagonal in clean full profile, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/graven_edge.png
+```
+
+### 🪖 Casques *(slot `helmet` — 2 templates)*
+
+### `iron_helm` — Iron Helm
+```
+A single medieval-fantasy RPG equipment item — a simple sturdy rounded iron helmet with a riveted brow band and a short nose-guard, lightly scuffed from honest service, plain and dependable. The helmet alone, centered in a square 1:1 composition, front 3/4 view, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/iron_helm.png
+```
+### `wraith_crown` — Wraith Crown
+```
+A single medieval-fantasy RPG equipment item — an eerie elegant crown woven from strands of pale spectral iron, its thin points rising like frozen wisps, with a faint ghost-blue glow drifting between them. The crown alone, centered in a square 1:1 composition, front 3/4 view, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/wraith_crown.png
+```
+
+### 🛡 Armures *(slot `armor` — 2 templates)*
+
+### `leather_armor` — Leather Armor
+```
+A single medieval-fantasy RPG equipment item — a light supple leather cuirass with stitched overlapping panels, buckled side straps and a warm well-worn brown finish, practical and comfortable. The armor alone, centered in a square 1:1 composition, front 3/4 view as if on an invisible stand, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/leather_armor.png
+```
+### `bone_plate` — Bone Plate
+```
+A single medieval-fantasy RPG equipment item — a heavy imposing chest plate forged from ancient fused bones, lacquered ivory rib-plates and bone segments layered over a dark leather backing, grim and massive. The armor alone, centered in a square 1:1 composition, front 3/4 view as if on an invisible stand, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/bone_plate.png
+```
+
+### 🥾 Bottes *(slot `boots` — 2 templates)*
+
+### `swift_boots` — Swift Boots
+```
+A single medieval-fantasy RPG equipment item — a pair of light nimble leather boots with soft folded cuffs, thin flexible soles and small side buckles, built for speed. The pair alone, centered in a square 1:1 composition, side by side at a slight 3/4 angle, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/swift_boots.png
+```
+### `cursed_greaves` — Cursed Greaves
+```
+A single medieval-fantasy RPG equipment item — a pair of heavy dark-iron greaves etched with faint purple cursed runes, a thin ominous violet glow seeping along the seams. The pair alone, centered in a square 1:1 composition, side by side at a slight 3/4 angle, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/cursed_greaves.png
+```
+
+### 🧤 Gants *(slot `gloves` — 3 templates)*
+
+### `leather_gloves` — Leather Gloves
+```
+A single medieval-fantasy RPG equipment item — a pair of supple brown leather gloves with reinforced stitched palms and small buckled cuffs, soft and well-oiled. The pair alone, centered in a square 1:1 composition, side by side at a slight 3/4 angle, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/leather_gloves.png
+```
+### `spectral_grips` — Spectral Grips
+```
+A single medieval-fantasy RPG equipment item — a pair of grey-blue cloth-and-leather gloves woven with faintly glowing spectral thread, small wisps of pale ghost-light curling from the fingertips. The pair alone, centered in a square 1:1 composition, side by side at a slight 3/4 angle, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/spectral_grips.png
+```
+### `hunters_grips` — Hunter's Grips
+```
+A single medieval-fantasy RPG equipment item — a pair of rugged fingerless hunting gloves in scuffed leather with laced wrists and worn knuckle padding, trail-beaten and practical. The pair alone, centered in a square 1:1 composition, side by side at a slight 3/4 angle, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/hunters_grips.png
+```
+
+### 📿 Amulettes *(slot `amulet` — 3 templates)*
+
+### `iron_pendant` — Iron Pendant
+```
+A single medieval-fantasy RPG equipment item — a heavy round iron pendant stamped with a simple shield emblem, hanging on a sturdy dark chain, plain, solid and reassuring. The amulet alone, centered in a square 1:1 composition, pendant facing the viewer with the chain draped in a soft loop above it, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/iron_pendant.png
+```
+### `wraith_locket` — Wraith Locket
+```
+A single medieval-fantasy RPG equipment item — a small silvery locket on a fine chain, its lid slightly ajar with a wisp of pale trapped soul-light leaking out, delicate and eerie. The amulet alone, centered in a square 1:1 composition, locket facing the viewer with the chain draped in a soft loop above it, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/wraith_locket.png
+```
+### `serpent_charm` — Serpent Charm
+```
+A single medieval-fantasy RPG equipment item — a necklace charm carved as a curved serpent fang, wrapped in a thin coil of gold shaped like a tiny snake, strung on a simple leather cord. The charm alone, centered in a square 1:1 composition, facing the viewer with the cord draped in a soft loop above it, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/serpent_charm.png
+```
+
+### 💍 Anneaux *(slot `ring` — 3 templates)*
+
+### `iron_band` — Iron Band
+```
+A single medieval-fantasy RPG equipment item — a plain sturdy iron ring with a subtly hammered surface and a squared martial profile, unadorned and dependable. The ring alone, centered large in a square 1:1 composition, at a slight 3/4 tilt so the band reads clearly, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/iron_band.png
+```
+### `wraith_signet` — Wraith Signet
+```
+A single medieval-fantasy RPG equipment item — a dark metal signet ring, its flat face etched with faint glowing spectral runes and a cold ghost-blue shimmer. The ring alone, centered large in a square 1:1 composition, at a slight 3/4 tilt so the band and face read clearly, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/wraith_signet.png
+```
+### `band_of_fortune` — Band of Fortune
+```
+A single medieval-fantasy RPG equipment item — a bright polished gold ring set with a tiny sparkling clover-green gem, catching cheerful little glints of luck. The ring alone, centered large in a square 1:1 composition, at a slight 3/4 tilt so the band reads clearly, with a crisp readable silhouette. Isolated on a flat neutral light background (easy to cut out). No text, no watermark, no UI, no border, no ground scene, no character, no hands.
+Render : painterly digital art, storybook Ghibli-meets-Dragon-Quest style, warm inviting colors, hand-painted look
+Format : PNG, généré 1024², fond neutre à détourer
+Fichier : public/equipment/band_of_fortune.png
+```
+
+---
+
+## 14) ⚪ ICÔNES UI (PAS d'IA)
 
 > **Reco : ⚪ `game-icons.net` (CC BY 3.0)** — set cohérent, recolorable à la palette parchemin (`--ink`, `--gold`, `--amber-deep`). **Pas de génération IA** (vectoriel, cohérence d'un set).
 - **UI** : remplacer les emoji `⚔ 🛡 🪙 🌙 🛏 🍺 ⛪ 🎪 🔒 ☀ ⚡ ✦ 📖 🎒 📜`.
-- **Objets/équipement** : armes (épée/hache/dague/bâton), armures (casque/plastron/bottes), potions, **mana stones**, ressources. (Optionnel 🟣 IA si on veut un rendu peint plutôt que des icônes plates.)
+- **Objets restants** : potions, **mana stones**, ressources → icônes plates. *(Les **objets d'équipement** — armes, armures, bottes, gants, bijoux — sont passés au **§13** : illustrations peintes Gemini, ART-EQUIP01.)*
 
 ---
 
