@@ -36,7 +36,6 @@ describe('TEST-COV01 — ChurchPanel reflète la rotation CHQ01', () => {
     enterCity(dayCount)
     render(<SafeZone />)
     fireEvent.click(screen.getAllByText('Church of the Old Gods')[0]) // tuile → PNJ
-    fireEvent.click(screen.getByText(/Enter the Church/)) // entre dans le panneau
     return screen.getByTestId('church-quests')
   }
 
