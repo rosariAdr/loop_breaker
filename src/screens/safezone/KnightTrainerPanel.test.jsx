@@ -1,16 +1,16 @@
-// TEST-COV — couverture fonctionnelle de KnightTrainerPanel (Sir Aldric).
-// Rend le panneau avec un vrai store (seed hero/world), exerce les 3 onglets
-// (📜 Quests / ⚔ Techniques / 🔥 Train), les branches d'achat de skill (succès /
-// or insuffisant / ressource insuffisante / déjà connu), l'entraînement d'Aura,
-// l'acceptation + le claim d'une quête, et la surface du MasterBoard local à
-// Millhaven (Elyndra / court_mage). onBack = vi.fn().
+// TEST-COV — couverture fonctionnelle de KnightTrainerPanel (Dame Roswyn, Millhaven).
+// FIX-ALDRIC01 — l'onglet Quêtes a disparu (les quêtes d'Aldric vivent au board de
+// Greywatch) : le panneau exerce les 2 onglets (⚔ Techniques / 🔥 Train), les branches
+// d'achat de skill (succès / or insuffisant / ressource insuffisante / déjà connu),
+// l'entraînement d'Aura, et la surface du MasterBoard local à Millhaven (Elyndra).
+// onBack = vi.fn(). Régressions Aldric/Roswyn : cf. aldric01.test.jsx.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import KnightTrainerPanel from './KnightTrainerPanel'
 import { useGameStore } from '../../store/gameStore'
 import { MASTER_QUESTS } from '../../data/masterQuests'
 
-// Seed de base : héros riche, monde à Greywatch (le lieu FIXE d'Aldric), midi.
+// Seed de base : héros riche, monde à Millhaven (le lieu du bâtiment de Roswyn), midi.
 // `overrides.world` / `overrides.hero` fusionnent à plat ; `overrides.inventory`
 // fusionne dans hero.inventory (or par défaut 5000). `overrides.level` posé après.
 function seed(overrides = {}) {
@@ -19,7 +19,7 @@ function seed(overrides = {}) {
     world: {
       ...s.world,
       currentZone: 'ashenvale',
-      currentLocation: 'greywatch',
+      currentLocation: 'millhaven',
       tickCount: 12,
       dayCount: 1,
       ...(overrides.world ?? {}),
@@ -43,13 +43,12 @@ afterEach(() => {
 })
 
 describe('KnightTrainerPanel — rendu & onglets', () => {
-  it('rend le titre, la citation et démarre sur l’onglet Quêtes', () => {
+  it('rend le titre, la citation et démarre sur l’onglet Techniques (FIX-ALDRIC01)', () => {
     render(<KnightTrainerPanel onBack={() => {}} />)
-    expect(screen.getByText(/Sir Aldric — Knight of Millhaven/)).toBeInTheDocument()
-    expect(screen.getByText(/I have fought for twenty years/)).toBeInTheDocument()
-    // Les quêtes d'Aldric (giverNpc sir_aldric) sont listées par défaut.
-    expect(screen.getByText('Boar Trouble')).toBeInTheDocument() // QSV2-DROPDUP01 — ex-First Blood
-    expect(screen.getByText('Proof of Worth')).toBeInTheDocument()
+    expect(screen.getByText(/Dame Roswyn — Knight Trainer of Millhaven/)).toBeInTheDocument()
+    expect(screen.getByText(/Stance before steel/)).toBeInTheDocument()
+    // L'onglet par défaut = Techniques (l'onglet Quêtes a disparu — cf. aldric01.test.jsx).
+    expect(screen.getByText('Power Strike')).toBeInTheDocument()
   })
 
   it('onBack est câblé sur le bouton ← Back', () => {
@@ -59,7 +58,7 @@ describe('KnightTrainerPanel — rendu & onglets', () => {
     expect(onBack).toHaveBeenCalledTimes(1)
   })
 
-  it('bascule vers l’onglet Techniques et affiche les trades d’Aldric', () => {
+  it('bascule vers l’onglet Techniques et affiche les trades de Roswyn', () => {
     // Lieu sans board maître → l'onglet Techniques est la seule source de ces noms.
     seed({ world: { currentLocation: 'ashenvale_forest' } })
     render(<KnightTrainerPanel onBack={() => {}} />)
@@ -79,37 +78,8 @@ describe('KnightTrainerPanel — rendu & onglets', () => {
   })
 })
 
-describe('KnightTrainerPanel — onglet Quêtes (accept / claim)', () => {
-  it('accepte une quête non démarrée (startQuest + flash)', () => {
-    render(<KnightTrainerPanel onBack={() => {}} />)
-    const accepts = screen.getAllByText('Accept')
-    fireEvent.click(accepts[0])
-    // La quête est passée active dans le store.
-    expect(useGameStore.getState().world.activeQuests.length).toBeGreaterThan(0)
-    expect(screen.getByText(/Quest accepted:/)).toBeInTheDocument()
-  })
-
-  it('affiche « In progress » quand une quête est active mais non complétable', () => {
-    seed({ world: { activeQuests: ['nc_thin_the_boars'] } }) // QSV2-DROPDUP01 — ex-first_blood
-    render(<KnightTrainerPanel onBack={() => {}} />)
-    expect(screen.getByText('In progress')).toBeInTheDocument()
-  })
-
-  it('affiche « Completed ✓ » pour une quête déjà terminée', () => {
-    seed({ world: { completedQuests: ['nc_thin_the_boars'] } })
-    render(<KnightTrainerPanel onBack={() => {}} />)
-    expect(screen.getByText('Completed ✓')).toBeInTheDocument()
-  })
-
-  it('permet de réclamer une quête prête (proof_of_worth au niveau 3)', () => {
-    seed({ world: { activeQuests: ['proof_of_worth'] }, level: 3 })
-    render(<KnightTrainerPanel onBack={() => {}} />)
-    expect(screen.getByText('Ready to claim!')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('Claim'))
-    expect(useGameStore.getState().world.completedQuests).toContain('proof_of_worth')
-    expect(screen.getByText(/Quest complete!/)).toBeInTheDocument()
-  })
-})
+// FIX-ALDRIC01 — l'onglet Quêtes (accept/claim des quêtes sir_aldric) a été retiré :
+// ces quêtes sont émises et rendues au BOARD de Greywatch (cf. aldric01.test.jsx).
 
 describe('KnightTrainerPanel — onglet Techniques (achat de skill)', () => {
   // Le bouton d'achat d'un trade = le <button> de sa carte (repéré par nom de skill).

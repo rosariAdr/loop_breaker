@@ -164,7 +164,7 @@ export const SKILLS = {
     },
   },
 
-  // ── Skills de Sir Aldric (entraîneur de Millhaven) ───────────────────
+  // ── Skills du Knight Trainer (Dame Roswyn, Millhaven — FIX-ALDRIC01) ─────────
 
   power_strike: {
     id: 'power_strike',
@@ -948,8 +948,7 @@ export const SKILLS = {
   frost_lance: {
     id: 'frost_lance',
     name: 'Frost Lance',
-    description:
-      'A lance of hardened ice hurled with lethal focus. Deals 180% INT as ice damage.',
+    description: 'A lance of hardened ice hurled with lethal focus. Deals 180% INT as ice damage.',
     type: 'active',
     cost: { mana: 24, hp: 0, stat_sacrifice: null },
     cooldown: 3,

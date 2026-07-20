@@ -121,7 +121,7 @@ export default function SafeZone() {
     alchemy: { icon: '⚗️', name: 'Alchemy Workshop', color: '#8060c0' },
     blacksmith: { icon: '🔨', name: "Blacksmith's Forge", color: '#808080' },
     master_smith: { icon: '🛠', name: 'Master Smith', color: '#c0a060' }, // Z06
-    knight_trainer: { icon: '⚔', name: 'Sir Aldric — Knight Trainer', color: '#c08040' },
+    knight_trainer: { icon: '⚔', name: 'Dame Roswyn — Knight Trainer', color: '#c08040' }, // FIX-ALDRIC01
     academy: { icon: '📜', name: 'Academy of Magic', color: '#8060c0' }, // ACA01
     guild: { icon: '⚜', name: "Adventurers' Guild", color: '#c084fc' }, // GLD01
   }

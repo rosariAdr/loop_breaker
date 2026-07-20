@@ -151,6 +151,9 @@ Object.assign(DIALOGUES, {
       },
     },
   },
+  // FIX-ALDRIC01 — arbre conservé en RÉSERVE pour Aldric (maître martial de Greywatch) :
+  // plus câblé à aucun bâtiment (le knight_trainer de Millhaven parle via knight_roswyn) ;
+  // à re-brancher quand Aldric aura une surface de dialogue à Greywatch (MST05).
   knight_aldric: {
     startId: 'g',
     nodes: {
@@ -163,6 +166,23 @@ Object.assign(DIALOGUES, {
       },
       l: {
         text: 'Footwork. A sword arm is worthless if your feet betray you. Master the ground before you ever master the edge.',
+        options: [{ label: '(Back)', nextId: 'g' }],
+      },
+    },
+  },
+  // FIX-ALDRIC01 — Dame Roswyn, Knight Trainer de Millhaven (PNJ dédié, option a).
+  knight_roswyn: {
+    startId: 'g',
+    nodes: {
+      g: {
+        text: "Millhaven doesn't keep a garrison — it keeps me. Pick up a blade and I'll see what you're worth.",
+        options: [
+          { label: 'Who trained you?', nextId: 't' },
+          { label: 'Farewell.', nextId: null },
+        ],
+      },
+      t: {
+        text: "The road did. Twenty years of escort runs through the ruins — every scar a lesson. You'll get yours cheaper, if you listen.",
         options: [{ label: '(Back)', nextId: 'g' }],
       },
     },
@@ -211,7 +231,7 @@ export const BUILDING_DIALOGUE_ID = {
   blacksmith: 'blacksmith_bram',
   guild: 'guild_master',
   master_smith: 'master_hollis',
-  knight_trainer: 'knight_aldric',
+  knight_trainer: 'knight_roswyn', // FIX-ALDRIC01 — Dame Roswyn (Millhaven)
   alchemy: 'alchemist_vesna',
   academy: 'academy_oren',
 }

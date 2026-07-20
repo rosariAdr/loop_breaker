@@ -86,7 +86,7 @@ export const ZONES = {
         name: 'Millhaven',
         type: 'village',
         mapPos: { x: 16, y: 32 },
-        buildings: ['inn', 'church', 'knight_trainer'], // Sir Aldric est ici
+        buildings: ['inn', 'church', 'knight_trainer'], // FIX-ALDRIC01 — Dame Roswyn (Aldric = Greywatch)
         optionalBuildings: [
           { id: 'merchant', chance: 0.65 },
           { id: 'alchemy', chance: 0.4 },
