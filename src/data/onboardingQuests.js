@@ -12,24 +12,17 @@
 // QOBJ-TYPES01 — utilise les nouveaux types d'objectifs non-combat : `equip`, `pray`,
 // `accept_deed`, `craft` filtré par `outputKind`.
 
-// PNJ donneur dédié (mentor des recrues à Greywatch). Réutilise le lieu de départ.
-export const ONBOARDING_QUEST_NPC = {
-  greywatch_mentor: {
-    id: 'greywatch_mentor',
-    name: 'Serjeant Bryn',
-    title: 'Veteran of the Greywatch Watch',
-    location: 'greywatch',
-    sigil: '🎓',
-  },
-}
+// Donneur des quêtes d'onboarding = Elder Moira (greywatch_elder), déjà définie dans
+// QUEST_NPCS (quests.js). Pas de PNJ dédié : la chaîne se distingue par track:'onboarding'.
+export const ONBOARDING_QUEST_NPC = {}
 
 export const ONBOARDING_QUESTS = {
   // 1 — Premier combat : apprendre à tuer.
   onb_first_edge: {
     id: 'onb_first_edge',
     name: 'The First Edge',
-    description: 'Bryn sends you to cut your teeth on the wolves of Ashenvale Forest.',
-    giverNpc: 'greywatch_mentor',
+    description: 'Elder Moira sends you to cut your teeth on the wolves of Ashenvale Forest.',
+    giverNpc: 'greywatch_elder',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: null,
@@ -46,7 +39,7 @@ export const ONBOARDING_QUESTS = {
     reward: {
       gold: 20,
       reputationTokens: 0,
-      equipment: { templateId: 'iron_sword', rarity: 'common' }, // arme de départ (épée basique)
+      equipment: { templateId: 'worn_iron_dagger', rarity: 'common' }, // arme de départ (vieille dague en fer)
     },
   },
 
@@ -55,7 +48,7 @@ export const ONBOARDING_QUESTS = {
     id: 'onb_well_armed',
     name: 'Well Armed',
     description: 'A blade left in your pack is no blade at all. Equip your weapon.',
-    giverNpc: 'greywatch_mentor',
+    giverNpc: 'greywatch_elder',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_first_edge',
@@ -79,7 +72,7 @@ export const ONBOARDING_QUESTS = {
     id: 'onb_cover_up',
     name: 'Cover Up',
     description: 'Hunt the fire hares and bring back a pelt — enough to cover your head.',
-    giverNpc: 'greywatch_mentor',
+    giverNpc: 'greywatch_elder',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_well_armed',
@@ -112,7 +105,7 @@ export const ONBOARDING_QUESTS = {
     id: 'onb_recueillement',
     name: 'A Moment of Prayer',
     description: 'Stop by the church and bow before the Old Gods.',
-    giverNpc: 'greywatch_mentor',
+    giverNpc: 'greywatch_elder',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_cover_up',
@@ -136,7 +129,7 @@ export const ONBOARDING_QUESTS = {
     id: 'onb_devotion',
     name: 'Duty of Devotion',
     description: 'Accept an act of devotion from Brother Caelum.',
-    giverNpc: 'greywatch_mentor',
+    giverNpc: 'greywatch_elder',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_recueillement',
@@ -160,7 +153,7 @@ export const ONBOARDING_QUESTS = {
     id: 'onb_first_brew',
     name: 'First Brew',
     description: 'At the alchemy workshop, brew your first potion.',
-    giverNpc: 'greywatch_mentor',
+    giverNpc: 'greywatch_elder',
     issuedBy: 'greywatch',
     track: 'onboarding',
     requires: 'onb_devotion',

@@ -439,7 +439,7 @@ export const QUEST_NPC_REGISTRY = {
   ...CHURCH_QUEST_NPC,
   ...MASTER_QUEST_NPC,
   ...MAIN_QUEST_NPC,
-  ...ONBOARDING_QUEST_NPC, // QONBOARD01 — mentor des recrues (Serjeant Bryn)
+  ...ONBOARDING_QUEST_NPC, // QONBOARD01 — vide : donneur = Elder Moira (greywatch_elder, déjà dans QUEST_NPCS)
 }
 
 /** Résout une quête par id (board, église, maître ou chaîne principale MQ-CHAIN01). */

@@ -54,11 +54,11 @@ describe('QONBOARD01 — récompenses acheminées', () => {
     localStorage.clear()
   })
 
-  it("onb_first_edge octroie l'épée de départ (iron_sword)", () => {
+  it("onb_first_edge octroie l'arme de départ (worn_iron_dagger)", () => {
     s().startQuest('onb_first_edge')
     s().completeQuest('onb_first_edge')
-    const hasSword = s().hero.inventory.equipment.some((e) => e.templateId === 'iron_sword')
-    expect(hasSword).toBe(true)
+    const hasDagger = s().hero.inventory.equipment.some((e) => e.templateId === 'worn_iron_dagger')
+    expect(hasDagger).toBe(true)
   })
 
   it('onb_first_brew octroie 2 potions de soin', () => {
