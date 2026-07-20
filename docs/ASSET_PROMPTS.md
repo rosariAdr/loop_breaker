@@ -9,31 +9,42 @@
 
 ## 1) État actuel (ce qui existe déjà)
 
-| Asset | En place | Manquant / à refaire |
+> **État vérifié sur `dev` le 2026-07-19** (assets committés dans `public/`).
+
+| Asset | En place | Reste à générer *(🟢 Gemini sauf mention)* |
 |---|---|---|
-| **Héros** (sprites carte/combat) | idle (18f) + walking (24f) + dying (15f) | ⚠️ placeholder « Necromancer » (rend sinistre) → à remplacer par un chibi héroïque |
-| **Monstres** (illustrations combat) | 5 (dont 2 supprimés par MON01 : rotting_shambler, gloom_bat) | **~24** valides (post-MON01) dont 2 boss + Malachar |
-| **Portraits PNJ** (dialogue, pixel 128² × 6 émotions) | 5 (aldric, smith, marta, merchant, mage) | prêtre, chef de village, **3 divinités** |
-| **Carte monde** | `eldenmoor.png` ✅ | — |
-| **Façades bâtiments** | ❌ (emoji/slot) | inn, merchant, blacksmith, alchemy, church (+ guild/academy v1.2) |
-| **Déco village** | ❌ | puits, poules, tonneaux, panneau, étal… |
-| **Fonds d'arène combat** | dégradés CSS | optionnel : illustration par spot |
-| **Character-select** | ❌ | 8 classes (C03) |
-| **Icônes UI / objets** | emoji | set SVG cohérent |
+| **Monstres** — illustration §4 | **17 / 29** (style peint) | **12** : `barrow_wight`, `soul_harvester`, `cursed_warlord`, `bone_colossus`, **Grimspire (6)**, `hollow_crypt_boss`, `forsaken_citadel_boss` |
+| **Façades bâtiments** — §6 | **7 / 9** | **2** : `guild`, `academy` |
+| **PNJ village en vignette** — §7 | ❌ | **3** : `well_elder_m`, `well_elder_f`, `aldric_tree` |
+| **Divinités** (DivineCall) — §8 | ❌ | **3** : `ignareth`, `sylvara`, `voltaris` |
+| **Character-select** — §10 | ❌ | **8** classes |
+| **Carte + médaillons donjon** — §12 | ❌ | **5** : `crypt_map` + `room_combat/rest/treasure/boss` |
+| **Déco props** — §7 | ❌ | **5** *(option)* : `barrels`, `hens`, `market_stall`, `lantern_post`, `hay_cart` — (`well`/`signpost` remplacés par les vignettes) |
+| **Fonds d'arène combat** — §11 | dégradés CSS | **6** *(option, polish)* |
+| **Portraits PNJ** (pixel 128² × 6 émotions) — §9 | **5** (aldric, smith, marta, merchant, mage) | prêtre + doyen → 🟠 **à sourcer (CraftPix), pas Gemini** |
+| **Héros** (sprites idle/walk/dying) — §5 | placeholder en place | 🟠 **à sourcer**, pas Gemini |
+| **Carte monde** | `map/eldenmoor.png` ✅ | — |
+| **Icônes UI / objets** — §13 | emoji | ⚪ **game-icons.net**, pas Gemini |
 
 ---
 
 ## 2) Priorisation globale
 
-| Prio | Lot | Reco |
-|---|---|---|
-| **P0** | Monstres **Ashenvale Forest** (4) + **héros héroïque** | 🟢 Gemini / 🟠 source |
-| **P1** | Monstres Thornmarsh + Crumbled Ruins + Wildmere Hills (12) + **3 boss** (Crypt Keeper, Lord of the Forsaken, **Malachar**) | 🟢 Gemini |
-| **P1** | Façades des 5 bâtiments + puits | 🟢 Gemini |
-| **P2** | Monstres Grimspire (6) + Blighted Road (2) + réserve (2) | 🟢 Gemini |
-| **P2** | 3 divinités (DivineCall) + déco village | 🟢 Gemini |
-| **P3** | Character-select (8), fonds d'arène, portraits prêtre/chef | 🟢 Gemini / 🟠 source |
-| **P3** | Icônes UI & objets | ⚪ game-icons.net (CC BY) |
+> Priorisation du **reste à produire** (le déjà-fait est retiré). Chaque lot pointe vers le § qui contient les **prompts complets** prêts à coller.
+
+| Prio | Lot **restant** 🟢 Gemini | Nb | Prompts |
+|---|---|---|---|
+| **P1** | Monstres manquants : Réserve (2) · Blighted Road (2) · **Grimspire (6)** · 2 boss (Crypt Keeper, Lord of the Forsaken) | 12 | §4 |
+| **P1** | Façades `guild` + `academy` | 2 | §6 |
+| **P2** | Vignettes village : puits+doyen, puits+doyenne, Aldric | 3 | §7 |
+| **P2** | 3 divinités (DivineCall) | 3 | §8 |
+| **P3** | Character-select (8 classes) | 8 | §10 |
+| **P3** | Carte de donjon + 4 médaillons de salle | 5 | §12 |
+| **P4** *(option)* | Déco props (5) + fonds d'arène (6) | 11 | §7 / §11 |
+| **hors Gemini** | Héros (pack), portraits prêtre/doyen (pack), icônes UI | — | §5 / §9 / §13 |
+
+> **Total 🟢 Gemini prioritaire (P1→P3) = 33 assets** · +11 optionnels (P4).
+> ⏳ **Grimspire** : les 6 prompts sont prêts en variante **« chaleureux assombri »** ; la décision « bascule menaçante » est reportée → si tu génères maintenant, ce sera la version actuelle.
 
 ---
 
@@ -559,7 +570,7 @@ Le style **figurine 3D / résine sur fond gris détourable est abandonné pour l
 3. **Fond** : ✅ **fond d'ambiance peint, PAS de détourage** pour les monstres. Les **props / façades / médaillons** (§6-§7, §12B) restent en **fond neutre détouré**. *(Reflété §3/§14.)*
 4. **Normaux vs élites/boss** : ✅ normaux = ambiance chaleureuse *« joyful, never grimdark »* ; **élites / boss / demon lord = même format mais ambiance sombre / menaçante** (on retire la ligne joyeuse). *(Reflété.)*
 5. **Fin de prompt** : ✅ ajout des lignes **`Render : …`** + **`Format : PNG, 512×512`**, comme sur les captures. *(Reflété.)*
-6. **Doc annexe supprimée** : `public/monsters/README.md` (ancienne direction « figurine sur socle ») est **abandonné** — inutile, non committé (`public/` gitignoré), et remplacé par ce fichier comme **source unique**.
+6. **Doc annexe supprimée** : `public/monsters/README.md` (ancienne direction « figurine sur socle ») est **abandonné** — inutile, jamais créé, et remplacé par ce fichier comme **source unique**.
 
 ### 2026-06-07 (historique — partiellement remplacé par la révision ci-dessus)
 4. **Tiers Grimspire** : ⏳ les 6 communs Grimspire restent en **ambiance chaleureuse assombrie** (opener « darker volcanic cast » du §4). Si tu les veux franchement **menaçants** (comme les élites), dis-le et je bascule les 6.
