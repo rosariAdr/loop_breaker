@@ -48,7 +48,7 @@ describe('KnightTrainerPanel — rendu & onglets', () => {
     expect(screen.getByText(/Sir Aldric — Knight of Millhaven/)).toBeInTheDocument()
     expect(screen.getByText(/I have fought for twenty years/)).toBeInTheDocument()
     // Les quêtes d'Aldric (giverNpc sir_aldric) sont listées par défaut.
-    expect(screen.getByText('First Blood')).toBeInTheDocument()
+    expect(screen.getByText('Boar Trouble')).toBeInTheDocument() // QSV2-DROPDUP01 — ex-First Blood
     expect(screen.getByText('Proof of Worth')).toBeInTheDocument()
   })
 
@@ -90,13 +90,13 @@ describe('KnightTrainerPanel — onglet Quêtes (accept / claim)', () => {
   })
 
   it('affiche « In progress » quand une quête est active mais non complétable', () => {
-    seed({ world: { activeQuests: ['first_blood'] } })
+    seed({ world: { activeQuests: ['nc_thin_the_boars'] } }) // QSV2-DROPDUP01 — ex-first_blood
     render(<KnightTrainerPanel onBack={() => {}} />)
     expect(screen.getByText('In progress')).toBeInTheDocument()
   })
 
   it('affiche « Completed ✓ » pour une quête déjà terminée', () => {
-    seed({ world: { completedQuests: ['first_blood'] } })
+    seed({ world: { completedQuests: ['nc_thin_the_boars'] } })
     render(<KnightTrainerPanel onBack={() => {}} />)
     expect(screen.getByText('Completed ✓')).toBeInTheDocument()
   })

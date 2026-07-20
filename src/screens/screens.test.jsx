@@ -595,7 +595,7 @@ describe('QuestBoard — affichage quêtes', () => {
       world: { ...s.world, currentLocation: 'greywatch', currentNode: 'greywatch' },
     }))
     render(<QuestBoard />)
-    expect(screen.getByText('First Blood')).toBeInTheDocument()
+    expect(screen.getByText('Boar Trouble')).toBeInTheDocument() // QSV2-DROPDUP01 — ex-First Blood
     // Bog Purge a été re-domicilié à Millhaven (thornmarsh non adjacent à Greywatch)
     expect(screen.queryByText('Bog Purge')).not.toBeInTheDocument()
   })
@@ -608,7 +608,7 @@ describe('QuestBoard — affichage quêtes', () => {
   })
 
   it('section Active apparaît après acceptation', () => {
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
     render(<QuestBoard />)
     expect(screen.getByText(/Active \(1\)/)).toBeInTheDocument()
   })

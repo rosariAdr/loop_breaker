@@ -15,11 +15,11 @@ describe('GLD — classification prestige & pools', () => {
   it('une quête de boss / forts tokens est prestigieuse', () => {
     expect(isPrestigiousQuest(QUESTS.silence_the_crypt)).toBe(true) // boss
     expect(isPrestigiousQuest(QUESTS.end_the_demon)).toBe(true) // demon lord + 10 tokens
-    expect(isPrestigiousQuest(QUESTS.nc_oakheart_elite)).toBe(true) // élite
+    expect(isPrestigiousQuest(QUESTS.nc_thunderhoof_elite)).toBe(true) // élite
   })
 
-  it("une petite quête (first_blood) n'est pas prestigieuse", () => {
-    expect(isPrestigiousQuest(QUESTS.first_blood)).toBe(false)
+  it("une petite quête (nc_thin_the_boars) n'est pas prestigieuse", () => {
+    expect(isPrestigiousQuest(QUESTS.nc_thin_the_boars)).toBe(false)
   })
 
   it('le pool village exclut les quêtes prestigieuses, la guilde les garde', () => {
@@ -56,7 +56,7 @@ describe('GLD — venue rendu du QuestBoard', () => {
     expect(screen.getByText('Village Notice Board')).toBeInTheDocument()
     expect(screen.getByText('Bog Purge')).toBeInTheDocument()
     expect(screen.queryByText('Silence the Crypt')).not.toBeInTheDocument()
-    expect(screen.queryByText('First Blood')).not.toBeInTheDocument()
+    expect(screen.queryByText('Boar Trouble')).not.toBeInTheDocument() // quête Greywatch (sir_aldric)
   })
 
   it('VQ07 — quêtes de village générées par adjacence affichées au village', () => {
@@ -90,7 +90,7 @@ describe('GLD — venue rendu du QuestBoard', () => {
     setLocation('ashenvale', ZONES.ashenvale.city.id)
     useGameStore.setState((s) => ({ hero: { ...s.hero, reputationTokens: 0 } }))
     render(<QuestBoard />)
-    // first_blood (non prestigieuse) est acceptable → au moins un bouton Accept existe
+    // une quête non prestigieuse est acceptable → au moins un bouton Accept existe
     const accepts = screen.getAllByText('Accept')
     expect(accepts.length).toBeGreaterThan(0)
   })

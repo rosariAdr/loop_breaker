@@ -59,7 +59,7 @@ describe('ONB01 — triggerHint', () => {
 
 describe('ONB01 — câblage des déclencheurs', () => {
   it('startQuest (1ère acceptation) → first_quest', () => {
-    s().startQuest('first_blood')
+    s().startQuest('nc_thin_the_boars')
     expect(s().meta.seenHints).toContain('first_quest')
   })
 

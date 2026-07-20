@@ -1,6 +1,7 @@
 // REFAC01 — Migrations save (extrait de gameStore.js).
 import { INITIAL_HERO, INITIAL_WORLD, INITIAL_META } from './initialState'
 import { ZONE_ORDER, isNodeUnlocked, START_OPEN_NODES } from '../data/zones'
+import { getQuestById } from '../data/quests'
 
 // ── TECH02 — Migrations save (séquentielles) ─────────────────────────────────
 
@@ -174,6 +175,18 @@ export function normalizeSave(save) {
   if (SPOT_ID_REMAP[world.currentHuntingSpot])
     world.currentHuntingSpot = SPOT_ID_REMAP[world.currentHuntingSpot]
   if (SPOT_ID_REMAP[world.currentNode]) world.currentNode = SPOT_ID_REMAP[world.currentNode]
+
+  // QSV2-DROPDUP01 — filtre des ids de quête INCONNUS (quêtes retirées du jeu, ex.
+  // first_blood / nc_oakheart_elite) pour que le board/l'overlay ne rendent jamais un id
+  // mort (getQuestById → null). Les quêtes de village (vq_*) se régénèrent de façon
+  // déterministe et les quêtes église/maître/MQ/onboarding sont toutes résolues → seules
+  // les références orphelines disparaissent.
+  const knownQuest = (id) => getQuestById(id) != null
+  world.activeQuests = world.activeQuests.filter(knownQuest)
+  world.completedQuests = world.completedQuests.filter(knownQuest)
+  world.questProgress = Object.fromEntries(
+    Object.entries(world.questProgress).filter(([id]) => knownQuest(id)),
+  )
 
   // FIX-START01 — anti-piège : si la save place le héros sur un node VERROUILLÉ
   // (save d'avant le node-locking, ou ancien défaut « ironhaven » devenu inaccessible),

@@ -107,8 +107,10 @@ describe('Q03 — Quêtes boss donjon', () => {
   })
 
   it('récompenses boss > récompenses communes', () => {
-    // first_blood : 50g. silence_the_crypt (boss) > 100g
-    expect(QUESTS.silence_the_crypt.reward.gold).toBeGreaterThan(QUESTS.first_blood.reward.gold)
+    // nc_thin_the_boars : 60g. silence_the_crypt (boss) > 100g
+    expect(QUESTS.silence_the_crypt.reward.gold).toBeGreaterThan(
+      QUESTS.nc_thin_the_boars.reward.gold,
+    )
     expect(QUESTS.end_the_demon.reward.gold).toBeGreaterThanOrEqual(1000)
   })
 
@@ -135,9 +137,9 @@ describe('Q08 / QSV2-ADJ-AUDIT01 — quêtes secondaires re-domiciliées', () =>
 })
 
 describe('Répartition des quêtes par NPC', () => {
-  it('sir_aldric a au moins 3 quêtes de départ', () => {
+  it('sir_aldric a au moins 2 quêtes de départ (QSV2-DROPDUP01 : first_blood/oakheart retirées)', () => {
     const count = Object.values(QUESTS).filter((q) => q.giverNpc === 'sir_aldric').length
-    expect(count).toBeGreaterThanOrEqual(3)
+    expect(count).toBeGreaterThanOrEqual(2)
   })
 
   it('ironhaven_captain a au moins 3 quêtes boss', () => {

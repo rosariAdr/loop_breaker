@@ -90,7 +90,7 @@ describe('MST02 — verrou d’engagement via quête d’initiation', () => {
   })
 
   it('une quête non-maître n’est jamais concernée par le verrou', () => {
-    expect(s().isMasterQuestLocked({ id: 'first_blood' })).toBe(false)
+    expect(s().isMasterQuestLocked({ id: 'nc_thin_the_boars' })).toBe(false)
   })
 
   it('re-valider l’initiation n’écrase pas l’engagement (setMaster idempotent)', () => {

@@ -63,6 +63,17 @@ export function villageQuestCount(heroLevel = 1, isCity = false) {
   return Math.min(base + Math.floor((heroLevel ?? 1) / 5), max)
 }
 
+// QSV2-QSRC-TEST01 — propriétaire unique par RESSOURCE : un drop partagé par des monstres
+// de spots appartenant à 2 lieux (ex. ectoplasm : briar_wraith→thornmarsh/Ironhaven ET
+// ruin_specter→crumbled_ruins/Millhaven) ne génère sa quête de collecte QUE chez le
+// propriétaire du spot de sa PREMIÈRE source (déterministe, dérivé de la carte) — sinon
+// la même cible `collect` existerait à deux villages (double-dip inter-village).
+function resourceOwner(resourceId) {
+  const firstSource = RESOURCES[resourceId]?.sources?.[0]
+  const spot = MONSTERS[firstSource]?.huntingSpot
+  return spot ? (SPOT_OWNER[spot] ?? null) : null
+}
+
 // VQ01 / VQ02 / VQ03-05 — pool de quêtes d'un lieu (déterministe, par adjacence).
 export function generateVillageQuestPool(location) {
   const giver = VILLAGE_QUEST_GIVERS[location]
@@ -109,7 +120,9 @@ export function generateVillageQuestPool(location) {
       // VQ01 — quête collect (drop principal d'un monstre commun)
       if (!isElite) {
         const drop = m.resourceDrops?.[0]
-        if (drop) {
+        // QSV2-QSRC-TEST01 — ressource partagée entre lieux → seule le propriétaire la propose
+        const dropOwner = drop ? resourceOwner(drop.resourceId) : null
+        if (drop && (dropOwner == null || dropOwner === location)) {
           const cc = 5
           pool.push({
             ...common,

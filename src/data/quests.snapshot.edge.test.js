@@ -210,8 +210,8 @@ describe('snapshotForQuest — null / empty objectives (no throw)', () => {
 
 // ── questXpReward / questRankPoints & default helpers ────────────────────────
 describe('questXpReward — QUEST_BALANCE overlay (autored quests)', () => {
-  it('uses the balance XP for a tiered/autored quest (first_blood → 40)', () => {
-    expect(questXpReward({ id: 'first_blood' })).toBe(40)
+  it('uses the balance XP for a tiered/autored quest (mq01_waking → 40)', () => {
+    expect(questXpReward({ id: 'mq01_waking' })).toBe(40)
   })
 
   it('uses the balance XP for a hard boss-ish quest (clear_the_marsh → 150)', () => {
@@ -305,7 +305,7 @@ describe('defaultQuestXp — village difficulty tiers', () => {
 
 describe('questRankPoints — QUEST_BALANCE overlay', () => {
   it('uses the balance rank points for autored quests', () => {
-    expect(questRankPoints({ id: 'first_blood' })).toBe(1)
+    expect(questRankPoints({ id: 'mq01_waking' })).toBe(1)
     expect(questRankPoints({ id: 'silence_the_crypt' })).toBe(3)
     expect(questRankPoints({ id: 'clear_the_marsh' })).toBe(5)
   })
@@ -375,7 +375,7 @@ describe('QUEST_XP_REPEAT_MULT — repeat multiplier applied on re-completion', 
   })
 
   it('a repeat award for a 40-XP quest is 10 (40 * 0.25)', () => {
-    const baseXp = questXpReward({ id: 'first_blood' }) // 40
+    const baseXp = questXpReward({ id: 'mq01_waking' }) // 40
     expect(baseXp * QUEST_XP_REPEAT_MULT).toBe(10)
   })
 })

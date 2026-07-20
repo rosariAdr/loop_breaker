@@ -13,7 +13,7 @@ export const QUEST_BALANCE = {
   mq06_beyond_marsh: { xp: 150, rankPoints: 5 },
 
   // ── Statiques — Sir Aldric / Doyens ─────────────────────────────────────
-  first_blood: { xp: 40, rankPoints: 1 },
+  // QSV2-DROPDUP01 — first_blood retirée (doublon mq01)
   proof_of_worth: { xp: 80, rankPoints: 1 },
   clear_the_marsh: { xp: 150, rankPoints: 5 },
   silence_the_crypt: { xp: 110, rankPoints: 3 },
@@ -24,7 +24,7 @@ export const QUEST_BALANCE = {
 
   // ── Statiques — NPC02 (commissions) ─────────────────────────────────────
   nc_thin_the_boars: { xp: 110, rankPoints: 3 },
-  nc_oakheart_elite: { xp: 150, rankPoints: 5 },
+  // QSV2-DROPDUP01 — nc_oakheart_elite retirée (doublon mq02)
   nc_fenrot_elite: { xp: 150, rankPoints: 5 },
   nc_graven_elite: { xp: 150, rankPoints: 5 },
   nc_thunderhoof_elite: { xp: 150, rankPoints: 5 },
