@@ -154,6 +154,11 @@ export function normalizeSave(save) {
     // MST01 — engagement de maître (persisté dans le run). Backfill à null pour les vieilles
     // saves ; on n'accepte qu'une chaîne (id de maître) ou null pour éviter tout état corrompu.
     masterId: typeof sHero.masterId === 'string' ? sHero.masterId : null,
+    // FIX-LVLQUEUE01 — points de stat différés (« Do it later ») : backfill défensif à 0.
+    pendingStatPoints:
+      typeof sHero.pendingStatPoints === 'number' && sHero.pendingStatPoints >= 0
+        ? sHero.pendingStatPoints
+        : 0,
   }
 
   // ── World ──

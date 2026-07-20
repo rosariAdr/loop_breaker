@@ -524,6 +524,56 @@ export const createHeroSlice = (set, get) => ({
 
   clearPendingLevelUp: () => set({ pendingLevelUp: 0 }),
 
+  // FIX-LVLQUEUE01 — clôture du modal de level-up cumulé. `allocations` = { stat: nb } réparti
+  // par le joueur (somme ≤ pendingLevelUp) ; le reliquat NON attribué est reporté dans
+  // `hero.pendingStatPoints` (assignable plus tard depuis le HeroSheet). Ferme le modal.
+  commitLevelUp: (allocations = {}) =>
+    set((state) => {
+      const pool = state.pendingLevelUp
+      let assigned = 0
+      const stats = { ...state.hero.stats }
+      for (const [stat, n] of Object.entries(allocations)) {
+        const add = Math.max(0, Math.floor(n || 0))
+        if (add > 0 && stat in stats) {
+          stats[stat] = (stats[stat] ?? 0) + add
+          assigned += add
+        }
+      }
+      const deferred = Math.max(0, pool - assigned)
+      return {
+        hero: {
+          ...state.hero,
+          stats,
+          pendingStatPoints: (state.hero.pendingStatPoints ?? 0) + deferred,
+        },
+        pendingLevelUp: 0,
+      }
+    }),
+
+  // FIX-LVLQUEUE01 — « Do it later » : reporte TOUS les points en attente sans rien attribuer.
+  deferLevelUp: () =>
+    set((state) => ({
+      hero: {
+        ...state.hero,
+        pendingStatPoints: (state.hero.pendingStatPoints ?? 0) + state.pendingLevelUp,
+      },
+      pendingLevelUp: 0,
+    })),
+
+  // FIX-LVLQUEUE01 — attribution d'un point de stat différé (depuis le HeroSheet). No-op si
+  // aucun point en attente ou stat inconnue.
+  assignStatPoint: (stat) =>
+    set((state) => {
+      if ((state.hero.pendingStatPoints ?? 0) <= 0 || !(stat in state.hero.stats)) return {}
+      return {
+        hero: {
+          ...state.hero,
+          stats: { ...state.hero.stats, [stat]: (state.hero.stats[stat] ?? 0) + 1 },
+          pendingStatPoints: state.hero.pendingStatPoints - 1,
+        },
+      }
+    }),
+
   // ── MST01/MST02 — Engagement auprès d'un maître (mentor) ──────────────────
   // Pose le maître engagé du run. IMMUABLE une fois posé (MST-G1) : rejette si un maître
   // est déjà engagé, ou si l'id est inconnu. Réinitialisé à null à la transmigration.

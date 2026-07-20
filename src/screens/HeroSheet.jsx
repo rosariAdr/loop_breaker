@@ -64,7 +64,8 @@ const ATTR_DEFS = [
 ]
 
 export default function HeroSheet({ onClose }) {
-  const { hero, meta, world, setScreen, unequipItem, setActiveTitle } = useGameStore()
+  const { hero, meta, world, setScreen, unequipItem, setActiveTitle, assignStatPoint } =
+    useGameStore()
   // ACA02 — équiper est libre partout, mais déséquiper un skill se fait UNIQUEMENT à
   // l'Académie de magie. Ailleurs, on donne un feedback clair au lieu de déséquiper.
   const blockSkillUnequip = () =>
@@ -336,6 +337,61 @@ export default function HeroSheet({ onClose }) {
                   locked={(hero.concentration ?? 0) <= 0}
                 />
               </div>
+
+              {/* FIX-LVLQUEUE01 — points de stat différés (« Do it later » du level-up) :
+                  badge + attribution en 1 clic (+1) par stat. */}
+              {(hero.pendingStatPoints ?? 0) > 0 && (
+                <div
+                  className="hs-pending-points"
+                  data-testid="pending-stat-points"
+                  style={{
+                    marginTop: 14,
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    background: 'rgba(96, 208, 255, 0.08)',
+                    border: '1px solid rgba(96, 208, 255, 0.35)',
+                  }}
+                >
+                  <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-head)',
+                        fontSize: 13,
+                        color: '#3a86a8',
+                      }}
+                    >
+                      ✦ Stat points to assign
+                    </span>
+                    <span
+                      data-testid="pending-points-count"
+                      style={{
+                        fontFamily: 'var(--font-head)',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        color: '#2a6a8a',
+                        background: 'rgba(96, 208, 255, 0.18)',
+                        borderRadius: 10,
+                        padding: '1px 10px',
+                      }}
+                    >
+                      {hero.pendingStatPoints}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {ATTR_DEFS.map(({ key, label }) => (
+                      <button
+                        key={key}
+                        className="pbtn"
+                        data-testid={`assign-point-${key}`}
+                        onClick={() => assignStatPoint(key)}
+                        style={{ fontSize: 12, padding: '4px 10px' }}
+                      >
+                        +1 {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* CRF05 — Debuffs actifs */}
