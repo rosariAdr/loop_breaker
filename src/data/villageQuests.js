@@ -7,7 +7,7 @@
 //  • VQ-G4 — nb actives = base (village 3 / ville 6) + 1 par 5 niveaux, plafond 6 / 12.
 //  • VQ-G2 — progression « collect » comptée en delta après acceptation (snapshot, cf. quests.js).
 //  • VQ-G5 — en ville, le board (Guilde) consomme ce pool avec isCity=true.
-import { MONSTERS, MONSTERS_BY_SPOT } from './monsters'
+import { MONSTERS, MONSTERS_BY_SPOT, monsterPlural } from './monsters'
 import { RESOURCES } from './resources'
 import { neighborsOf } from './worldGraph'
 import { getSpotLevelRange } from './zones'
@@ -100,7 +100,8 @@ export function generateVillageQuestPool(location) {
       pool.push({
         ...common,
         id: `vq_${location}_kill_${monsterId}`,
-        name: isElite ? `Bounty: ${m.name}` : `Cull the ${m.name}s`,
+        // FIX-PLURAL01 — pluriel data-driven (Wolves/Foxes…), plus de naïf `${name}s`
+        name: isElite ? `Bounty: ${m.name}` : `Cull the ${monsterPlural(m)}`,
         description: `Hunt ${isElite ? 'the elite ' : ''}${m.name} in the ${prettySpot(spot)}.`,
         ...(isElite ? { requiredLevel: minLvl } : {}), // VQ-G3
         objectives: [
@@ -109,7 +110,7 @@ export function generateVillageQuestPool(location) {
             type: 'kill',
             monsterId,
             count,
-            label: `Kill ${m.name}${count > 1 ? 's' : ''}`,
+            label: `Kill ${count > 1 ? monsterPlural(m) : m.name}`,
           },
         ],
         reward: {
@@ -159,8 +160,21 @@ export function generateVillageQuestPool(location) {
         description: `Drive back the beasts threatening the ${prettySpot(spot)}.`,
         deadlineDays: 4, // QSV2-TIMED01 — patrouille chronométrée
         objectives: [
-          { id: 'k1', type: 'kill', monsterId: a, count: 3, label: `Kill ${MONSTERS[a].name}s` },
-          { id: 'k2', type: 'kill', monsterId: b, count: 3, label: `Kill ${MONSTERS[b].name}s` },
+          // FIX-PLURAL01 — pluriel data-driven
+          {
+            id: 'k1',
+            type: 'kill',
+            monsterId: a,
+            count: 3,
+            label: `Kill ${monsterPlural(MONSTERS[a])}`,
+          },
+          {
+            id: 'k2',
+            type: 'kill',
+            monsterId: b,
+            count: 3,
+            label: `Kill ${monsterPlural(MONSTERS[b])}`,
+          },
         ],
         reward: { gold: 6 * (minLvl + 2) * 2, reputationTokens: 0 },
       })

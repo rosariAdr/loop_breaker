@@ -16,6 +16,7 @@ export const MONSTERS = {
   ashwood_wolf: {
     id: 'ashwood_wolf',
     name: 'Ashwood Wolf',
+    namePlural: 'Ashwood Wolves', // FIX-PLURAL01 — pluriel irrégulier (défaut = name+'s')
     zone: 'ashenvale',
     huntingSpot: 'ashenvale_forest',
     rank: 'common',
@@ -257,6 +258,7 @@ export const MONSTERS = {
   russet_fox: {
     id: 'russet_fox',
     name: 'Russet Fox',
+    namePlural: 'Russet Foxes', // FIX-PLURAL01
     zone: 'ashenvale',
     huntingSpot: 'wildmere_hills',
     rank: 'common',
@@ -293,6 +295,7 @@ export const MONSTERS = {
   thunderhoof: {
     id: 'thunderhoof',
     name: 'Thunderhoof',
+    namePlural: 'Thunderhooves', // FIX-PLURAL01 — future-proof (élite : rarement pluralisé)
     zone: 'ashenvale',
     huntingSpot: 'wildmere_hills',
     rank: 'elite',
@@ -366,6 +369,7 @@ export const MONSTERS = {
   bone_colossus: {
     id: 'bone_colossus',
     name: 'Bone Colossus',
+    namePlural: 'Bone Colossi', // FIX-PLURAL01 — future-proof
     zone: 'blighted_road',
     rank: 'elite',
     baseStats: { hp: 350, atk: 25, def: 28, spd: 5 },
@@ -600,6 +604,13 @@ export const MONSTERS_BY_SPOT = {
 export const DUNGEON_BOSSES = {
   hollow_crypt: 'hollow_crypt_boss',
   forsaken_citadel: 'forsaken_citadel_boss',
+}
+
+// FIX-PLURAL01 — pluriel d'affichage d'un monstre : `namePlural` (irréguliers : Wolves,
+// Foxes, Thunderhooves, Colossi) sinon pluriel régulier `name + 's'`. À utiliser par TOUT
+// libellé généré (« Cull the X », « Kill X »…) au lieu du naïf `${name}s`.
+export function monsterPlural(monster) {
+  return monster?.namePlural ?? (monster?.name ? `${monster.name}s` : '')
 }
 
 // SKD07 — Table des drops de skill par zone : { zone: [{ monsterId, skillId, class, elite }] }.

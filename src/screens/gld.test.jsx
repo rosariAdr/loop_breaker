@@ -62,8 +62,10 @@ describe('GLD — venue rendu du QuestBoard', () => {
   it('VQ07 — quêtes de village générées par adjacence affichées au village', () => {
     setLocation('ashenvale', 'greywatch')
     render(<QuestBoard />)
-    // Greywatch (adjacent à la forêt) → quête de village générée « Cull the Ashwood Wolfs »
-    expect(screen.getByText(/Cull the Ashwood Wolf/)).toBeInTheDocument()
+    // Greywatch (adjacent à la forêt) → quête de village générée « Cull the Ashwood Wolves »
+    // (FIX-PLURAL01 — pluriel correct ; le nom coïncide avec le label d'objectif de mq01,
+    // d'où getAllByText ≥ 1 au lieu de getByText).
+    expect(screen.getAllByText(/Cull the Ashwood Wolves/).length).toBeGreaterThan(0)
   })
 
   it('MQUI01 — la quête principale a sa propre section en tête (badge ⚔)', () => {
