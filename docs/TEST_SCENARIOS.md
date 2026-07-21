@@ -14,6 +14,70 @@
 2. Dérouler S1 → S10 dans l'ordre (S1 exige une save vierge ; les suivants peuvent s'appuyer sur le debug panel).
 3. Cocher ci-dessous avec la date + commit testé. Toute anomalie → noter + ticket.
 
+### Mise en route
+
+```
+npm run dev -- --host 127.0.0.1     # forcer l'IPv4 : sur ce poste `localhost` résout en ::1
+```
+
+Puis `http://127.0.0.1:5173`. Le **Test harness** s'ouvre au bouton flottant `⚙ DEV` (bas-droite) ou
+`Ctrl+Shift+D` — il n'existe qu'en build de dev (`import.meta.env.DEV`), jamais en prod.
+
+**Pièges de manipulation connus** (cf. sessions précédentes) :
+
+- La **sauvegarde est débouncée (~30 s)** : après une action, attendre avant de fermer l'onglet, sinon
+  le test de persistance (F5) donne un faux négatif.
+- En combat, activer le **Safety net** du harness si le but n'est pas de mourir.
+- Le harness ne dispose PAS de console d'état arbitraire : le store n'est pas exposé sur `window`.
+  Tout passe par les 20 boutons listés ci-dessous — d'où les recettes par scénario.
+
+### Inventaire du Test harness
+
+| Section | Boutons |
+|---|---|
+| **Navigate** | World Map · Village (téléporte à **Millhaven**/ashenvale) · Forest (ashenvale_forest) · Hero Sheet · Inventory · Quest Board |
+| **Triggers** | Start combat (ashwood_wolf) · Divine call (Ignareth) · **Die → PostMortem** · Gods' Shop |
+| **Cheats** | +1000 gold · +50 tokens · +500 XP · Full heal · **Skip day (sleep)** · +1 tick · Set run #10 · +5 all attrs · +50 maxHP/MP · Force Ignareth/Sylvara/Voltaris · Kill Malachar · Give savage_bite · **Give frostbite** · +5 wolf_pelt · +3 hp potions · Unlock all idle · Reset game |
+
+### Repères de données utiles
+
+- **Départ** : run 1, zone `ashenvale`, localité **Greywatch**, `dayCount = 1`, `tickCount = 0/24`.
+- **9 slots** (`EQUIP_SLOTS`) : `weapon, offhand, helmet, armor, gloves, boots, amulet, ring1, ring2`.
+- **Set Iron Vanguard** (def/strength), 7 pièces sur 7 slots distincts :
+  `iron_sword, iron_helm, leather_armor, leather_gloves, swift_boots, iron_pendant, iron_band`
+  (arme d'élite alternative : `thunderhoof_maul`). Set jumeau : **Wraithbound** (int/maxHp), base `bone_staff`.
+- **Paliers de set** : 2 pièces → +5 %, 3 → +13 %, 4 → +20 %, 5 → +27 %, 6 → +34 %, 7 → +41 %.
+- **Skills de glace** : `ice_shard`, `frostbite` (**le seul qui gèle : 35 %, 1 tour**), `blizzard` (AoE), `frost_lance`.
+  Aucun n'est droppé par un monstre — ce sont des récompenses de maître.
+- **Rotation des maîtres itinérants** — 1 maître dans 1 seule agglomération, par blocs de 4 jours :
+
+  | Jours | Maître | Focus | Hôte |
+  |---|---|---|---|
+  | 0–3 | Pyra the Emberwalker | feu | Greywatch |
+  | **4–7** | **Kaira Froststep** | **glace** | **Greywatch** |
+  | 8–11 | Grukk Bloodmane | berserker | Greywatch |
+  | 12–15 | Pyra | feu | Millhaven |
+  | 16–19 | Kaira | glace | Millhaven |
+  | 20–23 | Grukk | berserker | Millhaven |
+  | 24–35 | Pyra / Kaira / Grukk | — | Ironhaven |
+  | 36–47 | Pyra / Kaira / Grukk | — | Stonehaven |
+
+  Cycle complet = 18 blocs = **72 jours**, chaque paire (maître × agglo) exactement une fois.
+
+### Recettes de mise en situation (le plus court chemin par scénario)
+
+| Scénario | Recette harness |
+|---|---|
+| S2 | `+5 wolf_pelt` + `+1000 gold`, farmer `wolf_fang` sur les loups (55 %), puis Village → forge. Recette 100 % « loups Ashenvale » : **Swift Boots common = 2× wolf_pelt + 2× wolf_fang + 20 g**. (Iron Sword common = 3× `rusted_iron`, qui vient du hollow_knight — autre spot.) |
+| S3 | `+1000 gold` ×6 → Greywatch (ville) → marchand/forgeron : acheter les 7 pièces Iron Vanguard ci-dessus (`merchantStock` common/rare/epic en ville) |
+| S4 | `Skip day (sleep)` ×3 depuis le jour 1 → **jour 4, Kaira Froststep à Greywatch** ; puis ×4 encore → jour 8, elle est partie |
+| S5 | `Give frostbite` + `+5 all attrs` + `+50 maxHP/MP` → `Start combat` (raccourci ; le chemin « légitime » passe par S4) |
+| S7 | `+5 all attrs` ×5, `+50 maxHP/MP` ×5, `Full heal` → World Map → Grimspire (⚠️ ne PAS cliquer `Kill Malachar`, qui court-circuite le combat) |
+| S8 | monter 2-3 stats + équiper 1 actif et 1 **passif**, puis `Die → PostMortem` ; `+50 tokens` avant si la boutique doit être testée |
+| S10 | `Unlock all idle` (met 10 kills sur 5 monstres) → lancer l'idle |
+
+> ⚠️ **S1 ne doit utiliser aucun cheat** : c'est le seul scénario qui teste le parcours réel d'un nouveau joueur.
+
 | # | Scénario | Dernier passage | Résultat |
 |---|---|---|---|
 | S1 | Onboarding nouveau joueur | 2026-07-17 (partiel) | ✅ (2 maillons) |
