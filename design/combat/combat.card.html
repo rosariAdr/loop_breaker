@@ -1,0 +1,230 @@
+<!-- @dsCard group="Components" viewport="960x760" name="Combat · arena, turn band, action console" subtitle="CMB-DIR01 direction A — painted arena per zone, elite treatment, permanent stats, costed actions" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../../styles.css" />
+    <link rel="stylesheet" href="./combat.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 22px;
+        background: radial-gradient(ellipse at 50% 30%, #3a2a1c, #1c140d 80%);
+      }
+      .lb-card {
+        background-color: #f2e0b6;
+        border: 1px solid #c9a96e;
+        border-radius: 10px;
+        padding: 22px 24px;
+        box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
+      }
+      .lb-eyebrow {
+        font-family: 'Cinzel', serif;
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #b97a12;
+        margin: 0 0 12px;
+      }
+      .lb-sec { margin-bottom: 24px; }
+      .lb-sec:last-child { margin-bottom: 0; }
+      .lb-note {
+        font-family: 'Crimson Text', Georgia, serif;
+        font-size: 13px;
+        font-style: italic;
+        color: #5c4632;
+        margin: 8px 0 0;
+        max-width: 62ch;
+      }
+      .lb-switch { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+      .lb-switch button {
+        font-family: 'Cinzel', serif;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 6px 12px;
+        border: 1px solid #c9a96e;
+        background: #f6e8c4;
+        color: #3d2b1f;
+        border-radius: 2px;
+        cursor: pointer;
+      }
+      .lb-switch button[aria-pressed='true'] { background: #d4a017; color: #1c140d; }
+      /* Bandeau isolé : hors du plateau, on lui donne son échelle à la main. */
+      .lb-solo { container-type: inline-size; background: #241a12; border-radius: 6px; overflow: hidden; }
+      .lb-solo > .lb-cbt-stage { aspect-ratio: auto; }
+    </style>
+  </head>
+  <body>
+    <div class="lb-card" id="root"></div>
+
+    <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+    <script src="../../_ds_bundle.js"></script>
+
+    <script type="text/babel">
+      const { ArenaBackdrop, Combatant, TurnBand, ActiveCharacter, ActionGrid } =
+        window.LoopBreakerDesignSystem_5441fd
+
+      const ZONES = {
+        ashenvale_forest: {
+          label: 'Ashenvale Forest · Lv 1–8',
+          common: [
+            { name: 'Ashwood Wolf', initial: 'W', hp: 6, maxHp: 8, intent: '⚔ 6–9 · Corwin' },
+            { name: 'Ashwood Wolf', initial: 'W', hp: 8, maxHp: 8, intent: '⚔ 6–9 · Roswyn' },
+            { name: 'Fire Hare', initial: 'H', hp: 3, maxHp: 6, intent: '↯ Ember · burn' },
+          ],
+          elite: { name: 'Old Oakheart', initial: 'O', hp: 22, maxHp: 30, intent: '⚔⚔ 18–26 · all' },
+        },
+        crumbled_ruins: {
+          label: 'Crumbled Ruins · Lv 12–22',
+          common: [
+            { name: 'Stone Golem', initial: 'G', hp: 9, maxHp: 12, intent: '⚔ 14–19 · Roswyn' },
+            { name: 'Hollow Knight', initial: 'K', hp: 6, maxHp: 10, intent: '⛨ Guard · riposte' },
+            { name: 'Ruin Specter', initial: 'S', hp: 4, maxHp: 8, intent: '↯ Drain · mana' },
+          ],
+          elite: { name: 'Graven Sentinel', initial: 'S', hp: 30, maxHp: 38, intent: '⚔⚔ 28–37 · sunder' },
+        },
+        hollow_crypt: {
+          label: 'The Hollow Crypt · dungeon',
+          common: [
+            { name: 'Barrow Wight', initial: 'W', hp: 7, maxHp: 12, intent: '↯ Chill · freeze 20 %' },
+            { name: 'Barrow Wight', initial: 'W', hp: 12, maxHp: 12, intent: '⚔ 16–21 · Corwin' },
+          ],
+          elite: { name: 'The Crypt Keeper', initial: 'C', hp: 40, maxHp: 54, intent: '⚔⚔ 34–48 · raise dead' },
+        },
+      }
+
+      const PARTY = [
+        { name: 'Corwin', initial: 'C', hp: 7, maxHp: 8 },
+        { name: 'Roswyn', initial: 'R', hp: 8, maxHp: 8 },
+        { name: 'Elyndra', initial: 'E', hp: 5, maxHp: 8 },
+      ]
+
+      const VERBS = [
+        { id: 'attack', label: 'Attack', rank: '×1.0' },
+        { id: 'skills', label: 'Skills' },
+        { id: 'items', label: 'Items', rank: '×0.7' },
+        { id: 'guard', label: 'Guard', rank: '×0.7' },
+        { id: 'flee', label: 'Flee' },
+      ]
+
+      const SKILLS = [
+        { name: 'Power Strike', cost: 20, rank: 'slow', description: 'A heavy committed blow. 180 % STR, but the next turn is pushed back.' },
+        { name: 'Cleave', cost: 25, rank: 'slow', description: 'Sweeps every front-line enemy for 90 % STR.' },
+        { name: 'Shield Stance', cost: 15, rank: 'norm', description: 'Defensive posture: −50 % damage taken until the next turn.' },
+        { name: 'Counter Strike', cost: 18, rank: 'norm', description: 'Automatically ripostes the first physical hit received.' },
+        { name: 'Frostbite', cost: 16, rank: 'norm', description: 'Creeping frost that freezes the target 35 % of the time.' },
+        { name: 'Ice Shard', cost: 12, rank: 'fast', description: 'A jagged spike of ice. 100 % INT as ice damage.' },
+        { name: 'Battle Focus', cost: 0, rank: 'fast', description: 'Focus: the next skill is amplified. Costs no mana.' },
+        { name: 'Ember Burst', cost: 14, rank: 'fast', description: 'A spray of embers that sets the target alight over time.' },
+      ]
+
+      function Demo() {
+        const [zone, setZone] = React.useState('ashenvale_forest')
+        const [rank, setRank] = React.useState('common')
+        const [verb, setVerb] = React.useState('skills')
+        const [target, setTarget] = React.useState(0)
+        const [ribbon, setRibbon] = React.useState('Hover a skill to read its effect.')
+
+        const z = ZONES[zone]
+        const foes = rank === 'elite' ? [z.elite] : z.common
+        const queue = []
+        for (let i = 0; queue.length < 7; i++) {
+          queue.push({ ...PARTY[i % PARTY.length] })
+          queue.push({ ...foes[i % foes.length], foe: true })
+        }
+
+        return (
+          <>
+            <div className="lb-sec">
+              <p className="lb-eyebrow">Full screen — direction A « Le rang »</p>
+              <div className="lb-switch">
+                {Object.keys(ZONES).map((k) => (
+                  <button key={k} aria-pressed={k === zone} onClick={() => { setZone(k); setTarget(0) }}>
+                    {k.replace(/_/g, ' ')}
+                  </button>
+                ))}
+                {['common', 'elite'].map((r) => (
+                  <button key={r} aria-pressed={r === rank} onClick={() => { setRank(r); setTarget(0) }}>
+                    {r}
+                  </button>
+                ))}
+              </div>
+
+              <div className="lb-cbt-frame">
+                <div className="lb-cbt-stage">
+                  <TurnBand entries={queue} where={z.label + (rank === 'elite' ? ' · ELITE' : '')} />
+                  <div className="lb-cbt-arena">
+                    <ArenaBackdrop zone={zone} rank={rank} />
+                    <div className="lb-cbt-line">
+                      {PARTY.map((p, i) => (
+                        <Combatant key={i} {...p} side="ally" />
+                      ))}
+                    </div>
+                    <div className="lb-cbt-line">
+                      {foes.map((f, i) => (
+                        <Combatant
+                          key={i}
+                          {...f}
+                          side="foe"
+                          elite={rank === 'elite'}
+                          selected={i === target}
+                          onSelect={() => setTarget(i)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="lb-cbt-console">
+                    <ActiveCharacter
+                      name="Corwin"
+                      role="Wanderer"
+                      initial="C"
+                      hp={92}
+                      maxHp={110}
+                      mp={48}
+                      maxMp={60}
+                      stats={{ STR: 18, AGI: 14, INT: 11, DEF: 9, CRIT: '12 %', SPD: 4 }}
+                    />
+                    <ActionGrid
+                      verbs={VERBS}
+                      activeVerb={verb}
+                      onVerb={setVerb}
+                      skills={verb === 'skills' ? SKILLS : []}
+                      ribbon={ribbon}
+                      onHoverSkill={(s) => setRibbon(s.description)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <p className="lb-note">
+                Stage is exactly 1920 × 1080, scaled by a container query — never recomposed.
+                Backdrops are CSS stand-ins until <code>/arenas/*.png</code> lands (ASSET_PROMPTS §11).
+                Figures are placeholders; sprites are CONT01.
+              </p>
+            </div>
+
+            <div className="lb-sec">
+              <p className="lb-eyebrow">Combatant — sides, elite, targeting</p>
+              <div className="lb-solo">
+                <div className="lb-cbt-stage" style={{ padding: '2em 3em', flexDirection: 'row', gap: '3em', alignItems: 'flex-end' }}>
+                  <Combatant name="Corwin" initial="C" side="ally" hp={7} maxHp={8} />
+                  <Combatant name="Ashwood Wolf" initial="W" side="foe" hp={6} maxHp={8} intent="⚔ 6–9 · Corwin" selected />
+                  <Combatant name="Old Oakheart" initial="O" side="foe" elite hp={22} maxHp={30} intent="⚔⚔ 18–26 · all" />
+                </div>
+              </div>
+              <p className="lb-note">
+                Gold ally, red foe, amber target — no textual side label anywhere. The floor bar keeps an
+                opaque plate and a light rim so it reads on a bright forest and a dark crypt alike.
+              </p>
+            </div>
+          </>
+        )
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<Demo />)
+    </script>
+  </body>
+</html>
