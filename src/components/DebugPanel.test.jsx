@@ -55,6 +55,14 @@ describe('DebugPanel — PROC06', () => {
     expect(useGameStore.getState().hero.reputationTokens).toBeGreaterThanOrEqual(50)
   })
 
+  it("la commande 'Give frostbite' met un skill de glace en inventaire (S5)", () => {
+    render(<DebugPanel />)
+    fireEvent.keyDown(window, { key: 'D', ctrlKey: true, shiftKey: true })
+    fireEvent.click(screen.getByText('Give frostbite'))
+    const stones = useGameStore.getState().hero.inventory.manaStones
+    expect(stones.some((s) => s.skillId === 'frostbite')).toBe(true)
+  })
+
   it("la commande 'Force Ignareth' set la divinité", () => {
     render(<DebugPanel />)
     fireEvent.keyDown(window, { key: 'D', ctrlKey: true, shiftKey: true })
