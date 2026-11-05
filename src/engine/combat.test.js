@@ -705,7 +705,7 @@ describe('B12 — isEnemyTooStrong + getMonsterLevel', () => {
 
 // ── Multi-ennemis (comptage par rang / niveau) ───────────────────────────────
 describe('B03 — getEnemyCount', () => {
-  const common = { rank: 'common' }
+  const common = { id: 'marsh_serpent', rank: 'common' } // niveau 20
   const elite = { rank: 'elite' }
   const boss = { rank: 'boss' }
   const demonLord = { rank: 'demon_lord' }
@@ -718,10 +718,11 @@ describe('B03 — getEnemyCount', () => {
 
   it.each([
     [1, 2],
-    [9, 2],
-    [10, 3],
-    [19, 3],
-    [20, 4],
+    [19, 2],
+    [20, 2],
+    [21, 3],
+    [22, 3],
+    [23, 4],
     [50, 4],
   ])('niveau %i : tous les effectifs de 1 à %i sont possibles', (level, max) => {
     for (let count = 1; count <= max; count++) {
@@ -742,7 +743,7 @@ describe('B03 — generateEnemies', () => {
   it('génère au moins 1 ennemi pour un monstre commun', () => {
     const enemies = generateEnemies('ashwood_wolf', 'ashenvale', 1)
     expect(enemies.length).toBeGreaterThanOrEqual(1)
-    expect(enemies.length).toBeLessThanOrEqual(2) // zone 1
+    expect(enemies.length).toBeLessThanOrEqual(2) // héros de niveau 1 par défaut
   })
 
   it('un boss/élite est toujours seul', () => {

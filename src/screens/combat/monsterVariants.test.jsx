@@ -4,6 +4,7 @@ import { existsSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { generateEnemies } from '../../engine/combat'
 import { MONSTERS } from '../../data/monsters'
+import { getMonsterLevel } from '../../data/zones'
 import { monsterPortraitSrc } from '../../data/monsterPortraits'
 import EnemyCard from './EnemyCard'
 
@@ -47,16 +48,24 @@ describe('portraits des combats multiples', () => {
     expect(container.querySelector('img')).toBeNull()
   })
 
-  it('limite les débutants dans toutes les zones et permet quatre ennemis dans chacune', () => {
+  it('adapte les groupes au niveau de chaque monstre, quelle que soit la zone ou le run', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99)
     for (const zone of ['ashenvale', 'blighted_road', 'grimspire']) {
-      expect(generateEnemies('ashwood_wolf', zone, 1, 1)).toHaveLength(2)
-      expect(generateEnemies('ashwood_wolf', zone, 1, 10)).toHaveLength(3)
-      const enemies = generateEnemies('ashwood_wolf', zone, 1, 20)
-      expect(enemies).toHaveLength(4)
-      expect(enemies.every((enemy) => enemy.portraitSrc === '/monsters/ashwood_wolf.png')).toBe(
-        true,
-      )
+      for (const monsterId of ['ashwood_wolf', 'hill_slime', 'marsh_serpent', 'grimstone_troll']) {
+        const monsterLevel = getMonsterLevel(monsterId)
+        for (const run of [1, 10]) {
+          for (const [gap, max] of [
+            [-1, 2],
+            [0, 2],
+            [1, 3],
+            [2, 3],
+            [3, 4],
+          ]) {
+            const heroLevel = Math.max(1, monsterLevel + gap)
+            expect(generateEnemies(monsterId, zone, run, heroLevel)).toHaveLength(max)
+          }
+        }
+      }
     }
   })
 

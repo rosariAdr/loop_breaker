@@ -6,7 +6,7 @@ import { SKILLS, getLevelBonus } from '../data/skills'
 import { RESOURCES } from '../data/resources'
 import { getStatMilestoneBonuses, milestonesFor, STAT_MILESTONES } from '../data/statMilestones'
 import { bestiaryDropBonus } from '../data/bestiary'
-import { scaleMonsterStats, ZONE_MULTS } from '../data/zones'
+import { getMonsterLevel, scaleMonsterStats, ZONE_MULTS } from '../data/zones'
 import { monsterPortraitSrc } from '../data/monsterPortraits'
 import { BALANCE } from '../config'
 import {
@@ -361,24 +361,25 @@ export function buildEnemy(monsterId, zoneId, runCount) {
 }
 
 /**
- * Nombre d'ennemis selon le rang et le niveau actuel du héros.
+ * Nombre d'ennemis selon le rang et l'écart de niveau héros − monstre.
  * - élite / boss / demon_lord → toujours 1
- * - niveaux 1–9 → 1 à 2 ; 10–19 → 1 à 3 ; 20+ → 1 à 4
- * @param {{rank:string}} monster - Template du monstre
+ * - écart ≤ 0 → 1 à 2 ; 0 < écart < 3 → 1 à 3 ; écart ≥ 3 → 1 à 4
+ * @param {{id:string, rank:string}} monster - Template du monstre
  * @param {number} [heroLevel=1] - Niveau actuel du héros
  * @param {() => number} [rng=Math.random] - Générateur injectable (tests)
  * @returns {number} Nombre d'ennemis (0 si monstre nul)
- * @example getEnemyCount({ rank:'common' }, 20, () => 0.9) // 4
+ * @example getEnemyCount(MONSTERS.ashwood_wolf, 4, () => 0.9) // 4
  */
 export function getEnemyCount(monster, heroLevel = 1, rng = Math.random) {
   if (!monster) return 0
   if (['elite', 'boss', 'demon_lord'].includes(monster.rank)) return 1
-  const max = heroLevel >= 20 ? 4 : heroLevel >= 10 ? 3 : 2
+  const levelGap = heroLevel - getMonsterLevel(monster.id)
+  const max = levelGap <= 0 ? 2 : levelGap < 3 ? 3 : 4
   return 1 + Math.floor(rng() * max) // 1..max
 }
 
 /**
- * Génère 1 à 4 ennemis selon le niveau du héros et le rang.
+ * Génère 1 à 4 ennemis selon l'écart de niveau héros − monstre et le rang.
  * Les boss/élites sont toujours seuls.
  * @param {string} monsterId - Id du monstre
  * @param {string} zoneId - Id de la zone (scaling)
