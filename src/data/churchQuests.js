@@ -7,6 +7,9 @@
 //
 // Standalone (n'importe RIEN de quests.js) → quests.js peut l'importer sans cycle.
 
+import { MONSTERS } from './monsters'
+import { neighborsOf } from './worldGraph'
+
 // NPC donneur (le prêtre déjà présent dans SafeZone : Brother Caelum)
 export const CHURCH_QUEST_NPC = {
   church_caelum: {
@@ -37,7 +40,7 @@ export const CHURCH_QUESTS = {
         label: 'Lay Ruin Specters to rest',
       },
     ],
-    reward: { reputationTokens: 2, consumables: { elixir_minor: 2 } },
+    reward: { reputationTokens: 0, consumables: { elixir_minor: 2 } },
   },
 
   church_calm_marsh: {
@@ -56,7 +59,7 @@ export const CHURCH_QUESTS = {
         label: 'Slay Marsh Serpents',
       },
     ],
-    reward: { reputationTokens: 2, consumables: { hp_potion_medium: 2 } },
+    reward: { reputationTokens: 0, consumables: { hp_potion_medium: 2 } },
   },
 
   church_banish_wraiths: {
@@ -75,7 +78,7 @@ export const CHURCH_QUESTS = {
         label: 'Banish Briar Wraiths',
       },
     ],
-    reward: { reputationTokens: 2, consumables: { antidote_basic: 2, mana_potion_medium: 1 } },
+    reward: { reputationTokens: 0, consumables: { antidote_basic: 2, mana_potion_medium: 1 } },
   },
 
   church_break_knights: {
@@ -94,7 +97,7 @@ export const CHURCH_QUESTS = {
         label: 'Destroy Hollow Knights',
       },
     ],
-    reward: { reputationTokens: 3, consumables: { mana_crystal: 1 } },
+    reward: { reputationTokens: 0, consumables: { mana_crystal: 1 } },
   },
 
   church_thin_the_pack: {
@@ -113,7 +116,7 @@ export const CHURCH_QUESTS = {
         label: 'Cull Ashwood Wolves',
       },
     ],
-    reward: { reputationTokens: 1, consumables: { stamina_ration: 3 } },
+    reward: { reputationTokens: 0, consumables: { stamina_ration: 3 } },
   },
 
   church_purge_slimes: {
@@ -132,7 +135,7 @@ export const CHURCH_QUESTS = {
         label: 'Purge Mire Slimes',
       },
     ],
-    reward: { reputationTokens: 2, consumables: { elixir_minor: 1, hp_potion_medium: 1 } },
+    reward: { reputationTokens: 0, consumables: { elixir_minor: 1, hp_potion_medium: 1 } },
   },
 }
 
@@ -149,12 +152,37 @@ export function churchRotationBlock(dayCount = 1) {
   return Math.floor((dayCount ?? 1) / CHURCH_ROTATION_DAYS)
 }
 
+// CHQ-LOC01 — spot ciblé par une quête d'église (1er objectif kill), null si non géographique.
+function churchQuestSpot(q) {
+  const kill = q?.objectives?.find((o) => o.type === 'kill')
+  return kill ? (MONSTERS[kill.monsterId]?.huntingSpot ?? null) : null
+}
+
 /**
  * Quêtes de l'église actives pour la journée donnée (fenêtre glissante de N quêtes
  * dans le pool, avançant d'un bloc tous les 3 jours). Déterministe (pas d'alea).
+ *
+ * CHQ-LOC01 — si `location` est fourni, le pool est d'abord filtré aux quêtes ciblant
+ * un spot ADJACENT au lieu courant (graphe worldGraph). Sans `location` : pool complet
+ * (rétro-compat).
  */
-export function getActiveChurchQuests(dayCount = 1, count = CHURCH_ACTIVE_COUNT) {
-  const pool = Object.values(CHURCH_QUESTS)
+export function getActiveChurchQuests(dayCount = 1, count = CHURCH_ACTIVE_COUNT, location = null) {
+  const all = Object.values(CHURCH_QUESTS)
+  let pool = all
+  if (location) {
+    const adj = new Set(neighborsOf(location))
+    const filtered = all.filter((q) => {
+      const spot = churchQuestSpot(q)
+      return spot == null || adj.has(spot)
+    })
+    // CHQ-LOC02 (FIX-CHURCH-DRY01) — ne pas affamer un lieu à faible adjacence (ex. Greywatch =
+    // 1 seul spot voisin → 1 deed) : si le filtre local donne moins de deeds que `count`, on
+    // complète avec le reste du pool pour que la rotation propose toujours de nouveaux actes.
+    pool =
+      filtered.length >= count
+        ? filtered
+        : [...filtered, ...all.filter((q) => !filtered.includes(q))]
+  }
   if (pool.length === 0) return []
   const n = Math.min(count, pool.length)
   const start = (churchRotationBlock(dayCount) * n) % pool.length
@@ -163,4 +191,20 @@ export function getActiveChurchQuests(dayCount = 1, count = CHURCH_ACTIVE_COUNT)
     out.push(pool[(start + i) % pool.length])
   }
   return out
+}
+
+// FIX-CHURCH-DRY01 — actes de dévotion DISPONIBLES (répétables par bloc de rotation) : on exclut
+// ceux déjà acceptés (activeQuests) et ceux déjà accomplis DANS LE BLOC COURANT
+// (churchDeeds[id] === bloc). Un acte accompli redevient proposable au bloc de rotation suivant
+// → l'église ne s'assèche plus après un cycle.
+export function getAvailableChurchDeeds({
+  dayCount = 1,
+  location = null,
+  activeQuests = [],
+  churchDeeds = {},
+} = {}) {
+  const block = churchRotationBlock(dayCount)
+  return getActiveChurchQuests(dayCount, CHURCH_ACTIVE_COUNT, location).filter(
+    (q) => !activeQuests.includes(q.id) && (churchDeeds[q.id] ?? -1) !== block,
+  )
 }

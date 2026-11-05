@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
+import { IDLE_MASTERY_KILLS } from '../store/slices/idleSlice'
 import { ZONES } from '../data/zones'
 import { MONSTERS, MONSTERS_BY_ZONE, MONSTERS_BY_SPOT } from '../data/monsters'
 import { RESOURCES, RARITY_COLORS } from '../data/resources'
@@ -8,8 +9,9 @@ import { generateEnemies } from '../engine/combat'
 import { ParchmentFrame } from '../components/parchment'
 import ConfirmDialog from '../components/ConfirmDialog'
 
-// S02 — seuil de kills pour révéler le skill droppable d'un monstre
-const SKILL_REVEAL_THRESHOLD = 5
+// S02 — seuil de kills pour révéler le skill droppable d'un monstre.
+// IDLE-MASTERY01 — aligné sur le seuil de maîtrise idle (même « 5× »).
+const SKILL_REVEAL_THRESHOLD = IDLE_MASTERY_KILLS
 
 export default function ZoneView() {
   const { world, setScreen, recordVisit } = useGameStore()
@@ -146,7 +148,7 @@ function MonsterRow({ monsterId, showStats = false }) {
   if (!monster) return null
 
   const killCount = world.monsterKillCounts[monsterId] || 0
-  const idleUnlocked = killCount >= 5
+  const idleUnlocked = killCount >= IDLE_MASTERY_KILLS
   const isIdleActive = world.idleToggles[monsterId] || false
   const isElite = monster.rank === 'elite'
 
@@ -181,7 +183,7 @@ function MonsterRow({ monsterId, showStats = false }) {
         <div className="kbar">
           <i
             style={{
-              width: `${Math.min(100, (killCount / 5) * 100)}%`,
+              width: `${Math.min(100, (killCount / IDLE_MASTERY_KILLS) * 100)}%`,
               background: idleUnlocked ? 'var(--safe-green)' : 'var(--gold)',
             }}
           />
@@ -190,7 +192,7 @@ function MonsterRow({ monsterId, showStats = false }) {
           className="kbar-label"
           style={{ color: idleUnlocked ? 'var(--forest-deep)' : 'var(--ink-soft)' }}
         >
-          {idleUnlocked ? '✓ Idle unlocked' : `${killCount}/5 kills`}
+          {idleUnlocked ? '✓ Idle unlocked' : `${killCount}/${IDLE_MASTERY_KILLS} kills`}
         </span>
       </div>
 

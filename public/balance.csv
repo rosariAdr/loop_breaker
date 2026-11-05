@@ -1,0 +1,24 @@
+# BAL-CSV01 — Constantes d'équilibrage pilotées au runtime (live-linked).
+# Format : key,value (une paire par ligne). Lignes vides + `#` ignorées.
+# Édité ce fichier change l'équilibrage SANS rebuild (Vercel sert `public/` tel quel).
+# Les valeurs ci-dessous reprennent les défauts en dur (src/config.js BALANCE_DEFAULTS)
+# → tant qu'elles sont inchangées, le comportement est identique au code.
+key,value
+# ── Courbe d'XP ──────────────────────────────────────────────────────────────
+xp_curve_mult,1.5
+# ── Scaling monstres par run ─────────────────────────────────────────────────
+run_scaling,1.08
+run_scaling_cap,25
+# ── XP / rang des quêtes générées (par palier de difficulté) ─────────────────
+quest_xp_easy,40
+quest_xp_medium,110
+quest_xp_hard,150
+quest_rank_easy,1
+quest_rank_medium,3
+quest_rank_hard,5
+# ── Multiplicateurs de zone (difficulté) ─────────────────────────────────────
+zone_mult_ashenvale,1.0
+zone_mult_blighted_road,1.8
+zone_mult_grimspire,2.5
+zone_mult_dungeon_boss,3.5
+zone_mult_demon_lord,6.0

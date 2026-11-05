@@ -3,16 +3,22 @@
 // Rewards: { skill: { skillId, level }, gold, reputationTokens, consumables, ... }
 
 import { CHURCH_QUESTS, CHURCH_QUEST_NPC } from './churchQuests'
+import { MAIN_QUESTS, MAIN_QUEST_NPC } from './mainQuests'
 import { MASTER_QUESTS, MASTER_QUEST_NPC } from './masterQuests'
+import { ONBOARDING_QUESTS, ONBOARDING_QUEST_NPC } from './onboardingQuests'
 import { MONSTERS } from './monsters'
+import { QUEST_BALANCE } from './questBalance'
+import { getVillageQuestById } from './villageQuests'
+import { BALANCE } from '../config'
 
 // ── NPCs donneurs (Q08) ──────────────────────────────────────────────────────
 export const QUEST_NPCS = {
   sir_aldric: {
     id: 'sir_aldric',
     name: 'Sir Aldric',
-    title: 'Knight of Millhaven',
-    location: 'ironhaven',
+    // MST-G2/MST05 — maître martial de Greywatch (titre décidé, chaîne exacte).
+    title: "Membre d'honneur du Royal Knighthood",
+    location: 'greywatch', // QSV2-ADJ-AUDIT01 + MST05 — relocalisé à Greywatch (maître martial)
     sigil: '⚔',
   },
   ironhaven_captain: {
@@ -41,28 +47,9 @@ export const QUEST_NPCS = {
 
 export const QUESTS = {
   // ── Sir Aldric (existantes) ────────────────────────────────────────────────
-  first_blood: {
-    id: 'first_blood',
-    name: 'First Blood',
-    description: 'Prove your worth by hunting down Ashwood Wolves in the forest.',
-    giverNpc: 'sir_aldric',
-    flavorText: '"The wolves grow bold. Show them what fear looks like."',
-    objectives: [
-      {
-        id: 'kill_wolves',
-        type: 'kill',
-        monsterId: 'ashwood_wolf',
-        count: 5,
-        label: 'Kill Ashwood Wolves',
-      },
-    ],
-    reward: {
-      skill: { skillId: 'counter_strike', level: 1 },
-      gold: 50,
-      reputationTokens: 1,
-    },
-  },
-
+  // QSV2-DROPDUP01 — `first_blood` (5× ashwood_wolf) SUPPRIMÉE : doublon de mq01 au même
+  // village (Greywatch) après re-domiciliation. Les saves qui la référencent encore sont
+  // filtrées à la migration (normalizeSave — ids de quête inconnus retirés).
   proof_of_worth: {
     id: 'proof_of_worth',
     name: 'Proof of Worth',
@@ -70,10 +57,11 @@ export const QUESTS = {
     giverNpc: 'sir_aldric',
     flavorText: '"Strength is earned through trials. Return when you have grown."',
     objectives: [{ id: 'reach_level', type: 'level', targetLevel: 3, label: 'Reach Level 3' }],
+    // MST03 — veterans_resolve reroutée au maître martial (skill exclusif). Récompense
+    // rééquilibrée : gold rehaussé (30→90) pour compenser le passif retiré.
     reward: {
-      skill: { skillId: 'veterans_resolve', level: 1 },
-      gold: 30,
-      reputationTokens: 1,
+      gold: 90,
+      reputationTokens: 0,
     },
   },
 
@@ -81,7 +69,7 @@ export const QUESTS = {
     id: 'clear_the_marsh',
     name: 'Clear the Marsh',
     description: 'Travelers have been disappearing near the Thornmarsh. End the serpent threat.',
-    giverNpc: 'sir_aldric',
+    giverNpc: 'ironhaven_captain', // QSV2-ADJ-AUDIT01 — thornmarsh adjacent à Ironhaven
     flavorText: '"Three merchants lost this week alone. The marsh must be cleansed."',
     objectives: [
       {
@@ -92,10 +80,11 @@ export const QUESTS = {
         label: 'Kill Marsh Serpents',
       },
     ],
+    // MST03 — cleave reroutée au maître martial (skill exclusif). Récompense rééquilibrée :
+    // gold rehaussé (80→150) pour compenser le skill AoE retiré (quête « hard »).
     reward: {
-      skill: { skillId: 'cleave', level: 1 },
-      gold: 80,
-      reputationTokens: 2,
+      gold: 150,
+      reputationTokens: 0,
     },
   },
 
@@ -115,10 +104,12 @@ export const QUESTS = {
         label: 'Slay the Crypt Keeper',
       },
     ],
+    // MST03 — soul_crush (skill de boss, magie pure) reroutée au maître ARCANE (exclusif).
+    // Récompense rééquilibrée EN OR uniquement (200→300) : on respecte REP01 (les contrats
+    // de boss ne donnent pas de tokens de réputation, réservés aux commissions d'élite).
     reward: {
-      skill: { skillId: 'soul_crush', level: 1 },
-      gold: 200,
-      reputationTokens: 3,
+      gold: 300,
+      reputationTokens: 0,
     },
   },
 
@@ -127,6 +118,7 @@ export const QUESTS = {
     name: 'Storm the Citadel',
     description: 'The Lord of the Forsaken rules Grimspire. Break his reign.',
     giverNpc: 'ironhaven_captain',
+    mapTier: 2, // QSV2-ADJ-AUDIT01 — boss Map 2 (gelé hors board tant que Map 2 fermée)
     flavorText: '"No army has taken the Citadel. A lone hero might. Go — prove us wrong."',
     objectives: [
       {
@@ -137,10 +129,11 @@ export const QUESTS = {
         label: 'Slay the Lord of the Forsaken',
       },
     ],
+    // MST03 — forsaken_curse (skill de boss, contrôle magique) reroutée au maître ARCANE
+    // (exclusif). Récompense rééquilibrée EN OR uniquement (450→620), tokens à 0 (REP01).
     reward: {
-      skill: { skillId: 'forsaken_curse', level: 1 },
-      gold: 450,
-      reputationTokens: 5,
+      gold: 620,
+      reputationTokens: 0,
     },
   },
 
@@ -149,6 +142,7 @@ export const QUESTS = {
     name: 'End the Demon',
     description: 'Malachar the Undying cannot die. But perhaps you can.',
     giverNpc: 'ironhaven_captain',
+    mapTier: 2, // QSV2-ADJ-AUDIT01 — Demon Lord Map 2 (gelé hors board)
     flavorText: '"Four champions have tried. None returned. Yet here you stand."',
     objectives: [
       {
@@ -161,7 +155,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 1000,
-      reputationTokens: 10,
+      reputationTokens: 0,
     },
   },
 
@@ -170,7 +164,7 @@ export const QUESTS = {
     id: 'bog_purge',
     name: 'Bog Purge',
     description: 'The Mire Slimes spread rot through the marsh. Cull their numbers.',
-    giverNpc: 'greywatch_elder',
+    giverNpc: 'millhaven_elder', // QSV2-ADJ-AUDIT01 — thornmarsh adjacent à Millhaven
     flavorText: '"My grandson fell last harvest. Do this, and the village remembers you."',
     objectives: [
       // MON01 — re-ciblé depuis bog_shambler (retiré du Thornmarsh) vers mire_slime.
@@ -184,7 +178,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 120,
-      reputationTokens: 2,
+      reputationTokens: 0,
     },
   },
 
@@ -192,7 +186,7 @@ export const QUESTS = {
     id: 'ruins_cleanse',
     name: 'Cleanse the Ruins',
     description: 'Ancient specters haunt the Crumbled Ruins. End their restless watch.',
-    giverNpc: 'greywatch_elder',
+    giverNpc: 'millhaven_elder', // QSV2-ADJ-AUDIT01 — crumbled_ruins adjacent à Millhaven
     flavorText: '"The dead do not rest here. They remember. They hunger."',
     objectives: [
       {
@@ -212,7 +206,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 180,
-      reputationTokens: 3,
+      reputationTokens: 0,
     },
   },
 
@@ -235,41 +229,21 @@ export const QUESTS = {
         label: 'Kill Tuskmaw Boars',
       },
     ],
-    reward: { gold: 60, reputationTokens: 1, consumables: { hp_potion_small: 2 } },
+    reward: { gold: 60, reputationTokens: 0, consumables: { hp_potion_small: 2 } },
   },
 
-  nc_oakheart_elite: {
-    id: 'nc_oakheart_elite',
-    name: 'The Old Oak Walks',
-    description: 'Old Oakheart, an ancient elite of the forest, has awoken. Fell it.',
-    giverNpc: 'sir_aldric',
-    flavorText: '"Some say it remembers the first fire. I say it burns like any other."',
-    objectives: [
-      {
-        id: 'kill_oakheart',
-        type: 'kill',
-        monsterId: 'old_oakheart',
-        count: 1,
-        label: 'Slay Old Oakheart (elite)',
-      },
-    ],
-    reward: {
-      gold: 120,
-      reputationTokens: 2,
-      equipment: { templateId: 'leather_armor', rarity: 'rare' },
-    },
-  },
-
+  // QSV2-DROPDUP01 — `nc_oakheart_elite` (Old Oakheart) SUPPRIMÉE : doublon de mq02 au même
+  // village (Greywatch). Cf. filtre de migration dans normalizeSave.
   nc_scout_marsh: {
     id: 'nc_scout_marsh',
     name: 'Eyes on the Marsh',
     description: 'Scout the Thornmarsh and report what stirs there.',
-    giverNpc: 'greywatch_elder',
+    giverNpc: 'millhaven_elder', // QSV2-ADJ-AUDIT01 — thornmarsh adjacent à Millhaven
     flavorText: '"Walk it, mark it, come back breathing. That\'s all I ask."',
     objectives: [
       { id: 'visit_marsh', type: 'visit', spotId: 'thornmarsh', label: 'Explore the Thornmarsh' },
     ],
-    reward: { gold: 50, reputationTokens: 1, resources: { marsh_venom: 2 } },
+    reward: { gold: 50, reputationTokens: 0, resources: { marsh_venom: 2 } },
   },
 
   nc_deliver_ruins: {
@@ -277,6 +251,7 @@ export const QUESTS = {
     name: 'A Package for the Ruins',
     description: 'Carry a sealed crate to the watch-camp at the Crumbled Ruins.',
     giverNpc: 'merchant_pell',
+    issuedBy: 'millhaven', // QSV2-ADJ-AUDIT01 — livraison émise à Millhaven (ruines adjacentes)
     flavorText: '"Don\'t open it. Don\'t shake it. Just get it there in one piece."',
     objectives: [
       {
@@ -286,7 +261,7 @@ export const QUESTS = {
         label: 'Deliver to the Crumbled Ruins',
       },
     ],
-    reward: { gold: 80, reputationTokens: 1, consumables: { stamina_ration: 2 } },
+    reward: { gold: 80, reputationTokens: 0, consumables: { stamina_ration: 2 } },
   },
 
   nc_forge_offering: {
@@ -296,7 +271,7 @@ export const QUESTS = {
     giverNpc: 'merchant_pell',
     flavorText: '"Make me something I can sell, and I\'ll make it worth your while."',
     objectives: [{ id: 'craft_three', type: 'craft', count: 3, label: 'Craft 3 items' }],
-    reward: { gold: 70, reputationTokens: 1, resources: { rusted_iron: 3 } },
+    reward: { gold: 70, reputationTokens: 0, resources: { rusted_iron: 3 } },
   },
 
   // Argent
@@ -304,6 +279,8 @@ export const QUESTS = {
     id: 'nc_fenrot_elite',
     name: 'The Devourer of Thornmarsh',
     description: 'Fenrot the Devourer, an elite serpent-beast, hunts the marsh. End it.',
+    // B5a — Fenrot est réservé à Map 2 (élite du donjon final) : sorti du pool Map 1.
+    mapTier: 2,
     giverNpc: 'greywatch_elder',
     flavorText: '"It swallowed my brother\'s hound whole. Bring me its fangs."',
     objectives: [
@@ -317,7 +294,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 160,
-      reputationTokens: 2,
+      reputationTokens: 5,
       equipment: { templateId: 'serpent_dagger', rarity: 'rare' },
     },
   },
@@ -326,7 +303,7 @@ export const QUESTS = {
     id: 'nc_graven_elite',
     name: 'The Graven Sentinel',
     description: 'An elite construct guards the inner ruins. Shatter its watch.',
-    giverNpc: 'ironhaven_captain',
+    giverNpc: 'millhaven_elder', // QSV2-ADJ-AUDIT01 — crumbled_ruins adjacent à Millhaven
     flavorText: '"It has stood there a thousand years. Make it kneel."',
     objectives: [
       {
@@ -337,7 +314,14 @@ export const QUESTS = {
         label: 'Destroy the Graven Sentinel (elite)',
       },
     ],
-    reward: { gold: 180, reputationTokens: 3, skill: { skillId: 'power_strike', level: 1 } },
+    // MST03 — power_strike reroutée au maître martial (skill exclusif). Récompense rééquilibrée :
+    // équipement rare = l'arme signature de l'élite (graven_edge), cohérent avec les autres
+    // contrats d'élite (nc_thunderhoof/nc_fenrot donnent un équipement rare).
+    reward: {
+      gold: 180,
+      reputationTokens: 5,
+      equipment: { templateId: 'graven_edge', rarity: 'rare' },
+    },
   },
 
   nc_thunderhoof_elite: {
@@ -357,7 +341,7 @@ export const QUESTS = {
     ],
     reward: {
       gold: 200,
-      reputationTokens: 3,
+      reputationTokens: 5,
       equipment: { templateId: 'iron_helm', rarity: 'rare' },
     },
   },
@@ -367,7 +351,7 @@ export const QUESTS = {
     name: 'Beyond the Treeline',
     description:
       'Chart the Wildmere Hills for the Ironhaven survey — and find the pass to Grimspire.',
-    giverNpc: 'greywatch_elder',
+    giverNpc: 'ironhaven_captain', // QSV2-ADJ-AUDIT01 — wildmere adjacent à Ironhaven (+ unlock Grimspire depuis la cité, pas le village de départ)
     flavorText:
       '"The maps end where the hills begin. Help us draw the rest — and the road beyond."',
     objectives: [
@@ -381,7 +365,7 @@ export const QUESTS = {
     // PROG03 — voie « quête » : terminer cette exploration révèle Grimspire.
     reward: {
       gold: 90,
-      reputationTokens: 2,
+      reputationTokens: 0,
       stat: { name: 'strength', amount: 1 },
       unlockZone: 'grimspire',
     },
@@ -396,7 +380,7 @@ export const QUESTS = {
     objectives: [{ id: 'craft_five', type: 'craft', count: 5, label: 'Craft 5 items' }],
     reward: {
       gold: 150,
-      reputationTokens: 2,
+      reputationTokens: 0,
       equipment: { templateId: 'bone_plate', rarity: 'epic' },
     },
   },
@@ -408,12 +392,26 @@ export const QUESTS = {
 // Résolution DYNAMIQUE (et pas un objet figé) pour rester correct si QUESTS est muté
 // au runtime (cas des tests qui injectent des quêtes temporaires).
 
-// Tous les NPC donneurs (board + église + maîtres), pour l'affichage des cartes de quête.
-export const QUEST_NPC_REGISTRY = { ...QUEST_NPCS, ...CHURCH_QUEST_NPC, ...MASTER_QUEST_NPC }
+// Tous les NPC donneurs (board + église + maîtres + spine), pour l'affichage des cartes.
+export const QUEST_NPC_REGISTRY = {
+  ...QUEST_NPCS,
+  ...CHURCH_QUEST_NPC,
+  ...MASTER_QUEST_NPC,
+  ...MAIN_QUEST_NPC,
+  ...ONBOARDING_QUEST_NPC, // QONBOARD01 — vide : donneur = Elder Moira (greywatch_elder, déjà dans QUEST_NPCS)
+}
 
-/** Résout une quête par id (board, église ou maître). */
+/** Résout une quête par id (board, église, maître ou chaîne principale MQ-CHAIN01). */
 export function getQuestById(id) {
-  return QUESTS[id] ?? CHURCH_QUESTS[id] ?? MASTER_QUESTS[id] ?? null
+  return (
+    QUESTS[id] ??
+    CHURCH_QUESTS[id] ??
+    MASTER_QUESTS[id] ??
+    MAIN_QUESTS[id] ??
+    ONBOARDING_QUESTS[id] ?? // QONBOARD01 — chaîne d'onboarding « Premières fois »
+    getVillageQuestById(id) ?? // VQ — quêtes de village générées par adjacence
+    null
+  )
 }
 
 // ── GLD01/GLD02 — Répartition des quêtes du board par lieu (Guilde ville / auberge village) ──
@@ -440,7 +438,9 @@ export function isPrestigiousQuest(quest) {
  * - 'village'       : uniquement les quêtes standard (pool réduit).
  */
 export function getBoardQuests(venue) {
-  const all = Object.values(QUESTS)
+  // B5a — n'afficher que les quêtes de Map 1 (mapTier 1 par défaut) ; Map 2 (ex. Fenrot)
+  // reste hors pool tant que le contenu Map 2 n'est pas ouvert.
+  const all = Object.values(QUESTS).filter((q) => (q.mapTier ?? 1) <= 1)
   if (venue === 'village') return all.filter((q) => !isPrestigiousQuest(q))
   return all
 }
@@ -459,30 +459,68 @@ export function getQuestIssuer(quest) {
 // instantanément complétable à l'acceptation).
 export function snapshotForQuest(quest, state) {
   const baseKills = {}
+  const baseResources = {}
+  // QOBJ-TYPES01 — baselines par kind de craft (objectifs `craft` filtrés par outputKind).
+  const baseCraftByKind = {}
   for (const obj of quest?.objectives ?? []) {
     if (obj.type === 'kill') {
       baseKills[obj.monsterId] = state.world?.monsterKillCounts?.[obj.monsterId] ?? 0
+    } else if (obj.type === 'collect') {
+      // VQ-G2 — collecte comptée en delta : on fige la quantité détenue à l'acceptation.
+      baseResources[obj.resourceId] = state.hero?.inventory?.resources?.[obj.resourceId] ?? 0
+    } else if (obj.type === 'craft' && obj.outputKind) {
+      baseCraftByKind[obj.outputKind] = state.meta?.craftCountByKind?.[obj.outputKind] ?? 0
     }
   }
-  return { baseKills, baseCraft: state.meta?.craftCount ?? 0 }
+  return {
+    baseKills,
+    baseResources,
+    baseCraft: state.meta?.craftCount ?? 0,
+    baseCraftByKind, // QOBJ-TYPES01 — craft filtré par kind (delta vs snapshot)
+    basePray: state.meta?.prayCount ?? 0, // QOBJ-TYPES01 — `pray` en delta (mirror craft)
+    baseDeeds: state.meta?.deedsAccepted ?? 0, // QOBJ-TYPES01 — `accept_deed` en delta
+    acceptedDay: state.world?.dayCount ?? 1, // QSV2-TIMED01 — jour d'acceptation
+  }
+}
+
+// QSV2-TIMED01 — quêtes chronométrées (`deadlineDays`, trajet inclus car le temps de
+// voyage avance `dayCount`). L'expiration est indépendante des objectifs : si la quête
+// n'a pas été RENDUE avant l'échéance, elle échoue (et retombe dans le pool).
+export function questDaysLeft(quest, world) {
+  if (!quest?.deadlineDays) return null
+  const accepted = world?.questProgress?.[quest.id]?.acceptedDay ?? world?.dayCount ?? 1
+  return quest.deadlineDays - ((world?.dayCount ?? 1) - accepted)
+}
+export function isQuestExpired(quest, world) {
+  const left = questDaysLeft(quest, world)
+  return left != null && left < 0
 }
 
 // Statut par objectif, compté DEPUIS l'acceptation (kill/craft = delta vs snapshot ;
 // level/visit/skill_levelup = seuils d'état). Source unique pour le store ET l'UI.
-export function questObjectiveStatus(quest, state) {
+export function questObjectiveStatus(quest, state, { accepted = true } = {}) {
+  // FIX-QUESTPROG01 / FIX-QCARD-COLLECT01 — avant acceptation (`accepted:false`, carte
+  // « available »), les objectifs en DELTA (kill/craft/collect/pray/accept_deed) affichent 0 :
+  // sinon le board montrerait le cumul du joueur. `accepted` défaut true → comportement du store.
   const base = state.world?.questProgress?.[quest?.id] ?? {}
   const baseKills = base.baseKills ?? {}
   const baseCraft = base.baseCraft ?? 0
+  const baseCraftByKind = base.baseCraftByKind ?? {}
+  const basePray = base.basePray ?? 0
+  const baseDeeds = base.baseDeeds ?? 0
   const skillLevels = heroSkillLevels(state.hero)
   return (quest?.objectives ?? []).map((obj) => {
     let raw = 0
     let target = 1
     if (obj.type === 'kill') {
       target = obj.count
-      raw = Math.max(
-        0,
-        (state.world?.monsterKillCounts?.[obj.monsterId] ?? 0) - (baseKills[obj.monsterId] ?? 0),
-      )
+      raw = accepted
+        ? Math.max(
+            0,
+            (state.world?.monsterKillCounts?.[obj.monsterId] ?? 0) -
+              (baseKills[obj.monsterId] ?? 0),
+          )
+        : 0
     } else if (obj.type === 'level') {
       target = obj.targetLevel
       raw = state.hero?.level ?? 1
@@ -491,10 +529,57 @@ export function questObjectiveStatus(quest, state) {
       raw = (state.world?.visitedSpots ?? []).includes(obj.spotId) ? 1 : 0
     } else if (obj.type === 'craft') {
       target = obj.count
-      raw = Math.max(0, (state.meta?.craftCount ?? 0) - baseCraft)
+      if (obj.outputKind) {
+        // QOBJ-TYPES01 — craft filtré par kind : delta du compteur `craftCountByKind`.
+        const byKind = state.meta?.craftCountByKind ?? {}
+        raw = accepted
+          ? Math.max(0, (byKind[obj.outputKind] ?? 0) - (baseCraftByKind[obj.outputKind] ?? 0))
+          : 0
+      } else {
+        raw = accepted ? Math.max(0, (state.meta?.craftCount ?? 0) - baseCraft) : 0
+      }
+    } else if (obj.type === 'pray') {
+      // QOBJ-TYPES01 — prières effectuées depuis l'acceptation (delta, mirror craft).
+      target = obj.count
+      raw = accepted ? Math.max(0, (state.meta?.prayCount ?? 0) - basePray) : 0
+    } else if (obj.type === 'accept_deed') {
+      // QOBJ-TYPES01 — actes de dévotion (church deeds) acceptés depuis l'acceptation (delta).
+      target = obj.count
+      raw = accepted ? Math.max(0, (state.meta?.deedsAccepted ?? 0) - baseDeeds) : 0
+    } else if (obj.type === 'equip') {
+      // QOBJ-TYPES01 — check d'ÉTAT (comme visit, pas de delta) : une pièce est portée
+      // dans la catégorie/slot demandé (`category`), sinon une arme par défaut.
+      target = 1
+      raw = hasEquippedForObjective(state.hero?.equipped, obj) ? 1 : 0
+    } else if (obj.type === 'collect') {
+      // VQ-G2 — collecte = ressources gagnées depuis l'acceptation (delta vs snapshot).
+      target = obj.count
+      const baseRes = base.baseResources ?? {}
+      raw = accepted
+        ? Math.max(
+            0,
+            (state.hero?.inventory?.resources?.[obj.resourceId] ?? 0) -
+              (baseRes[obj.resourceId] ?? 0),
+          )
+        : 0
     } else if (obj.type === 'skill_levelup') {
       target = obj.targetLevel
       raw = skillLevels[obj.skillId] ?? 0
+    } else if (obj.type === 'elite_turnin') {
+      // MQ-ELITETURN01 — rempli si le héros DÉTIENT count× l'item rare de l'élite,
+      // OU possède déjà son arme signature. Check d'état sur l'inventaire (la
+      // consommation des items + le +1 rareté à la 2ᵉ remise sont gérés en B5b).
+      target = 1
+      const res = state.hero?.inventory?.resources ?? {}
+      const equip = state.hero?.inventory?.equipment ?? []
+      const hasItems = (res[obj.resourceId] ?? 0) >= (obj.count ?? 1)
+      const hasWeapon = equip.some((e) => e.templateId === obj.weaponTemplateId)
+      // MQ-TURNIN-SIG01 — provenance : le resourceId peut tomber ailleurs (earth_crystal,
+      // ancient_bone, cursed_gem ont d'autres sources). La voie « item » exige donc d'avoir
+      // VAINCU l'élite ; la voie « arme signature » prouve déjà la provenance (l'arme ne
+      // vient que de l'élite). [Provenance complète via ressource signature unique = RES02.]
+      const killedElite = (state.world?.monsterKillCounts?.[obj.eliteId] ?? 0) >= 1
+      raw = hasWeapon || (hasItems && killedElite) ? 1 : 0
     }
     return { obj, current: Math.min(raw, target), target, done: raw >= target }
   })
@@ -503,6 +588,18 @@ export function questObjectiveStatus(quest, state) {
 export function isQuestCompleteState(quest, state) {
   if (!quest) return false
   return questObjectiveStatus(quest, state).every((o) => o.done)
+}
+
+/**
+ * QOBJ-TYPES01 — l'objectif `equip` est-il rempli ? Check d'état sur `hero.equipped` :
+ * - `obj.category` fourni → une pièce est portée dans ce slot (`ring` = ring1 OU ring2) ;
+ * - sinon → une arme est portée par défaut (`weapon`).
+ * Source unique, réutilisée par le store (questObjectiveStatus) ET l'UI (QuestCard fallback).
+ */
+export function hasEquippedForObjective(equipped = {}, obj = {}) {
+  const cat = obj?.category ?? 'weapon'
+  if (cat === 'ring') return !!(equipped?.ring1 || equipped?.ring2)
+  return !!equipped?.[cat]
 }
 
 /**
@@ -519,4 +616,51 @@ export function heroSkillLevels(hero) {
     map[s.skillId] = Math.max(map[s.skillId] ?? 0, s.level ?? 1)
   }
   return map
+}
+
+// ── FIX-QXP01 / FIX-QRANK01 — XP de héros & points de rang octroyés par une quête ───────────────
+// Priorité : overlay `QUEST_BALANCE` (quêtes autorées, valeurs Excel) → `reward.xp/rankPoints`
+// éventuel → défaut dérivé de la difficulté (quêtes de village générées). Réduit sur les
+// re-complétions (quêtes répétables). Visites / quêtes « INUTILE » = 0.
+export const QUEST_XP_REPEAT_MULT = 0.25
+// BAL-CSV01 — barèmes XP/rang par palier, lus en direct depuis `BALANCE` (tunables CSV).
+const XP_BY_TIER = () => ({
+  easy: BALANCE.quest_xp_easy,
+  medium: BALANCE.quest_xp_medium,
+  hard: BALANCE.quest_xp_hard,
+})
+const RANK_BY_TIER = () => ({
+  easy: BALANCE.quest_rank_easy,
+  medium: BALANCE.quest_rank_medium,
+  hard: BALANCE.quest_rank_hard,
+})
+const normTier = (t) => (t === 'mid' ? 'medium' : t)
+const isVisitOnly = (q) =>
+  (q?.objectives?.length ?? 0) > 0 && q.objectives.every((o) => o.type === 'visit')
+
+export function defaultQuestXp(quest) {
+  if (isVisitOnly(quest)) return 0
+  const tier = normTier(quest?.difficultyTier)
+  const byTier = XP_BY_TIER()
+  if (tier && byTier[tier] != null) return byTier[tier] // quêtes de village (par tier)
+  const gold = quest?.reward?.gold ?? 0
+  return Math.max(10, Math.round(gold * 0.6))
+}
+export function questXpReward(quest) {
+  return QUEST_BALANCE[quest?.id]?.xp ?? quest?.reward?.xp ?? defaultQuestXp(quest)
+}
+
+export function defaultQuestRankPoints(quest) {
+  if (isVisitOnly(quest)) return 0
+  const tier = normTier(quest?.difficultyTier)
+  const byTier = RANK_BY_TIER()
+  if (tier && byTier[tier] != null) return byTier[tier]
+  return 1
+}
+export function questRankPoints(quest) {
+  return (
+    QUEST_BALANCE[quest?.id]?.rankPoints ??
+    quest?.reward?.rankPoints ??
+    defaultQuestRankPoints(quest)
+  )
 }

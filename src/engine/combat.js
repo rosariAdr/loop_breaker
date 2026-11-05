@@ -4,7 +4,10 @@
 import { MONSTERS } from '../data/monsters'
 import { SKILLS, getLevelBonus } from '../data/skills'
 import { RESOURCES } from '../data/resources'
+import { getStatMilestoneBonuses, milestonesFor, STAT_MILESTONES } from '../data/statMilestones'
+import { bestiaryDropBonus } from '../data/bestiary'
 import { scaleMonsterStats, ZONE_MULTS, ZONE_ORDER } from '../data/zones'
+import { BALANCE } from '../config'
 import {
   checkIgnarethAwakening,
   checkSylvaraAwakening,
@@ -36,14 +39,18 @@ export function calcSkillDamage(skill, heroStats, level = 1) {
   const effect = template.effect
   if (!effect?.damage) return 0
 
-  const baseStat =
-    effect.damage.baseStat === 'intelligence' ? heroStats.intelligence : heroStats.strength
+  const isMagic = effect.damage.baseStat === 'intelligence'
+  const baseStat = isMagic ? heroStats.intelligence : heroStats.strength
 
   let multiplier = effect.damage.multiplier
   // Bonus de niveau : +30% par niveau au-delà de 1
   multiplier += (level - 1) * 0.3
 
-  return Math.max(1, Math.round(baseStat * multiplier))
+  // HS-STATPERK01 — perk de palier (FOR/INT) : +3% dégâts phys/magiques par palier de 35 (0 sous 35).
+  const ms = getStatMilestoneBonuses(heroStats)
+  const perk = 1 + (isMagic ? ms.magicDmg : ms.physDmg)
+
+  return Math.max(1, Math.round(baseStat * multiplier * perk))
 }
 
 // ── Ordre des tours ───────────────────────────────────────────────────────────
@@ -121,9 +128,13 @@ export function getStatSacrifice(template) {
 
 // ── Effets de statut (B05) ───────────────────────────────────────────────────
 // Spec complète : DESIGN.md §B05-SPEC.
-// Catégories : DoT (poison, burn), contrôle (stun), stat (slow, *_down, *_break).
+// Catégories : DoT (poison, burn), contrôle saute-tour (stun, frozen), stat (slow, *_down, *_break).
 
 const DOT_TYPES = ['poison', 'burn']
+// SKD-ICE01/FROZEN — contrôles « saute-tour » : l'entité affligée perd son tour.
+// `frozen` est un skin de `stun` (identité de contrôle « glace ») : même unique
+// code path (flag skipTurn + helper skipsTurn), aucune divergence de comportement.
+const SKIP_TURN_TYPES = ['stun', 'frozen']
 const MAX_ACTIVE_EFFECTS = 2
 
 // Quelles stats chaque effet de catégorie "stat" multiplie par (1 - reduction).
@@ -154,7 +165,8 @@ export function tickStatusEffects(stats, activeEffects = []) {
       log.push({ text: `${label} deals ${dmg} damage!`, type: 'status' })
     }
     if (effect.type === 'burn') flags.noHeal = true
-    if (effect.type === 'stun') flags.skipTurn = true
+    // stun ET frozen partagent le même code path saute-tour (SKD-ICE01/FROZEN).
+    if (SKIP_TURN_TYPES.includes(effect.type)) flags.skipTurn = true
   })
 
   // Décrémente les durées et retire les effets arrivés à expiration.
@@ -223,6 +235,33 @@ export function isStunned(activeEffects = []) {
 }
 
 /**
+ * SKD-ICE01/FROZEN — Vrai si un contrôle « saute-tour » est actif (`stun` OU `frozen`).
+ * `frozen` réutilise strictement la mécanique de `stun` : même perte de tour.
+ * @param {{type:string}[]} [activeEffects=[]]
+ * @returns {boolean}
+ * @example skipsTurn([{ type:'frozen', duration:1 }]) // true
+ */
+export function skipsTurn(activeEffects = []) {
+  return activeEffects.some((e) => SKIP_TURN_TYPES.includes(e.type))
+}
+
+/**
+ * SKD-ICE01/FROZEN — Décide si un `statusEffect` de skill s'applique.
+ * Sans champ `chance`, l'effet est garanti (comportement historique inchangé pour
+ * poison/burn/stun/slow…). Avec un `chance` ∈ [0,1] (ex. frostbite → frozen 35%),
+ * l'effet ne proc que si `rng() < chance`, évitant le chain-freeze (lock permanent).
+ * @param {{chance?:number}|null|undefined} statusEffect - Bloc statusEffect du template
+ * @param {() => number} [rng=Math.random] - Générateur injectable (tests)
+ * @returns {boolean} Vrai si l'effet doit être appliqué
+ * @example rollStatusProc({ type:'frozen', chance:0.35 }, () => 0.2) // true
+ */
+export function rollStatusProc(statusEffect, rng = Math.random) {
+  if (!statusEffect) return false
+  if (statusEffect.chance == null) return true
+  return rng() < statusEffect.chance
+}
+
+/**
  * B12 — Vrai si un ennemi est trop fort pour être affronté en idle :
  * son niveau dépasse celui du héros de plus de `gap`.
  * @param {number} enemyLevel - Niveau de l'ennemi
@@ -246,13 +285,18 @@ export function isEnemyTooStrong(enemyLevel, heroLevel, gap = 5) {
  * @returns {{ skillDrop: string|null, resources: {id:string, qty:number}[], gold:number, exp:number }}
  * @example calcDrops('ashwood_wolf', 10)
  */
-export function calcDrops(monsterId, heroChance = 5) {
+export function calcDrops(monsterId, heroChance = 5, speciesKills = 0) {
   const monster = MONSTERS[monsterId]
   if (!monster) return { skillDrop: null, resources: [] }
 
   // Modificateur de drop lié à la stat Chance du héros
   // Chance = 5 (base) → aucun bonus. Chaque point au-delà de 5 = +0.5%
-  const chanceBonus = Math.max(0, (heroChance - 5) * 0.005)
+  // HS-STATPERK01 — perk CHANCE : +2% drop par palier de 35 (0 sous 35), cumulé au bonus par point.
+  // BEST01 — bonus de drop de bestiaire (+5% à la maîtrise 100 kills de l'espèce).
+  const chanceBonus =
+    Math.max(0, (heroChance - 5) * 0.005) +
+    milestonesFor(heroChance) * STAT_MILESTONES.chance.per +
+    bestiaryDropBonus(speciesKills)
 
   // Skill drop
   let skillDrop = null
@@ -358,7 +402,10 @@ export function generateEnemies(monsterId, zoneId, runCount) {
  */
 export function enemyAI(enemy, heroStats) {
   // POC : toujours attaque basique (TODO B05 — diversifier l'IA avec skills/effets)
-  const dmg = calcBaseDamage(enemy.stats.atk, heroStats.def)
+  const raw = calcBaseDamage(enemy.stats.atk, heroStats.def)
+  // HS-STATPERK01 — perk DÉF : −3% dégâts subis par palier de 35 (0 sous 35).
+  const { reduction } = getStatMilestoneBonuses(heroStats)
+  const dmg = Math.max(1, Math.round(raw * (1 - reduction)))
   return {
     type: 'attack',
     damage: dmg,
@@ -441,7 +488,7 @@ export function applyExpGain(heroStats, currentExp, expToNext, expGain) {
     return {
       levelUp: true,
       newExp: newExp - expToNext,
-      newExpToNext: Math.round(expToNext * 1.5),
+      newExpToNext: Math.round(expToNext * BALANCE.xp_curve_mult),
       statBonuses: {
         maxHp: Math.round(heroStats.maxHp * 0.1),
         maxMana: Math.round(heroStats.maxMana * 0.1),

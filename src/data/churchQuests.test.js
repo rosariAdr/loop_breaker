@@ -8,8 +8,39 @@ import {
   CHURCH_ROTATION_DAYS,
 } from './churchQuests'
 import { useGameStore } from '../store/gameStore'
+import { MONSTERS } from './monsters'
+import { neighborsOf } from './worldGraph'
 
 const store = () => useGameStore.getState()
+
+describe('CHQ-LOC01 — pool d’église filtré par lieu', () => {
+  const spotOf = (q) => {
+    const k = q.objectives.find((o) => o.type === 'kill')
+    return k ? MONSTERS[k.monsterId]?.huntingSpot : null
+  }
+  it('à Greywatch : priorise les deeds adjacents mais garantit un pool minimum (CHQ-LOC02)', () => {
+    const adj = new Set(neighborsOf('greywatch'))
+    // FIX-CHURCH-DRY01 — Greywatch n'a qu'un spot voisin (1 deed local) : le pool est complété
+    // pour atteindre CHURCH_ACTIVE_COUNT (sinon l'église s'assèche après un cycle).
+    const qs = getActiveChurchQuests(1, CHURCH_ACTIVE_COUNT, 'greywatch')
+    expect(qs.length).toBe(CHURCH_ACTIVE_COUNT)
+    // le(s) deed(s) adjacent(s) restent prioritaires : au moins un est proposé.
+    expect(
+      qs.some((q) => {
+        const s = spotOf(q)
+        return s == null || adj.has(s)
+      }),
+    ).toBe(true)
+  })
+  it('Millhaven propose un pool ≥ Greywatch (plus de spots adjacents)', () => {
+    const gw = getActiveChurchQuests(1, 6, 'greywatch').length
+    const mh = getActiveChurchQuests(1, 6, 'millhaven').length
+    expect(mh).toBeGreaterThanOrEqual(gw)
+  })
+  it('sans lieu : pool complet (rétro-compat)', () => {
+    expect(getActiveChurchQuests(1, 6).length).toBe(6)
+  })
+})
 
 describe('CHQ01 — rotation du pool de quêtes', () => {
   it('expose un pool de quêtes (≥ 4)', () => {
@@ -56,8 +87,8 @@ describe('CHQ01 — récompense via completeQuest (tokens + consommables, sans o
     localStorage.clear()
   })
 
-  it("compléter une quête d'église octroie tokens + consommables et PAS d'or", () => {
-    const quest = CHURCH_QUESTS.church_thin_the_pack // 5 ashwood_wolf → 1 token + 3 stamina_ration
+  it("compléter une quête d'église octroie des consommables et PAS d'or (REP01 : 0 token)", () => {
+    const quest = CHURCH_QUESTS.church_thin_the_pack // 5 ashwood_wolf → 3 stamina_ration (0 token depuis REP01)
     const goldBefore = store().hero.inventory.gold
     const tokensBefore = store().hero.reputationTokens
     const rationBefore = store().hero.inventory.consumables.stamina_ration ?? 0
@@ -72,7 +103,7 @@ describe('CHQ01 — récompense via completeQuest (tokens + consommables, sans o
     store().completeQuest(quest.id)
 
     expect(store().hero.inventory.gold).toBe(goldBefore) // jamais d'or
-    expect(store().hero.reputationTokens).toBe(tokensBefore + 1)
+    expect(store().hero.reputationTokens).toBe(tokensBefore) // REP01 : église = 0 token (consommables only)
     expect(store().hero.inventory.consumables.stamina_ration).toBe(rationBefore + 3)
     expect(store().world.completedQuests).toContain(quest.id)
   })

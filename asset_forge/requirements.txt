@@ -1,0 +1,11 @@
+# Asset Forge dependencies.
+# Always (prompt composition + manifest; enough for --dry-run):
+pyyaml
+jinja2
+# Background removal + resize -> no_bg (reused via scripts/process_assets.py):
+rembg
+onnxruntime
+pillow
+# Gemini backend ONLY — the free default 'pollinations' backend needs NONE of these:
+google-genai
+python-dotenv

@@ -67,6 +67,57 @@ export const ACHIEVEMENTS = {
     target: 10,
     reward: { stat: { name: 'def', amount: 2 } },
   },
+
+  // META-ACHIEVE02 — pool élargi (bonus méta façon ACH01).
+  slayer_supreme: {
+    id: 'slayer_supreme',
+    name: 'Slayer Supreme',
+    desc: 'Defeat 1000 monsters.',
+    metric: 'totalKills',
+    target: 1000,
+    reward: { stat: { name: 'strength', amount: 5 } },
+  },
+  demon_lord_hunter: {
+    id: 'demon_lord_hunter',
+    name: 'Demon Lord Hunter',
+    desc: 'Defeat 10 Demon Lords.',
+    metric: 'demonLordKills',
+    target: 10,
+    reward: { stat: { name: 'strength', amount: 8 } },
+  },
+  long_hauler: {
+    id: 'long_hauler',
+    name: 'Long Hauler',
+    desc: 'Survive to day 30.',
+    metric: 'daysSurvived',
+    target: 30,
+    reward: { stat: { name: 'def', amount: 3 } },
+  },
+  quest_legend: {
+    id: 'quest_legend',
+    name: 'Quest Legend',
+    desc: 'Complete 50 quests.',
+    metric: 'questsCompleted',
+    target: 50,
+    reward: { stat: { name: 'chance', amount: 3 } },
+  },
+  set_collector: {
+    id: 'set_collector',
+    name: 'Set Collector',
+    desc: 'Complete a full equipment set.',
+    metric: 'completeSets',
+    target: 1,
+    reward: { stat: { name: 'def', amount: 3 } },
+  },
+}
+
+// META-ACHIEVE02 — nb de sets d'équipement complets (≥3 pièces partageant un `set`).
+function countCompleteSets(equipped = {}) {
+  const counts = {}
+  for (const item of Object.values(equipped)) {
+    if (item?.set) counts[item.set] = (counts[item.set] ?? 0) + 1
+  }
+  return Object.values(counts).filter((n) => n >= 3).length
 }
 
 /** Compteurs courants utilisés par les conditions (dérivés de l'état). */
@@ -84,6 +135,7 @@ export function getAchievementStats(state) {
     runs: state.hero?.runNumber ?? 1,
     demonLordKills: dl,
     deaths: m.totalDeaths ?? 0,
+    completeSets: countCompleteSets(state.hero?.equipped),
   }
 }
 

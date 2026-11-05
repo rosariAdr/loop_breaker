@@ -1,6 +1,8 @@
 // REFAC01 — Slice « hero » du store (extrait de gameStore.js, comportement inchangé).
-import { skillBuyPrice, skillSellPrice } from '../../data/academy'
+import { skillBuyPrice, skillSellPrice, skillPremiumBuyPrice } from '../../data/academy'
+import { MASTERS } from '../../data/masters'
 import { RESOURCES } from '../../data/resources'
+import { equipInSlot } from '../../data/equipment'
 import { SKILLS, SKILL_MAX_LEVEL, skillXpForLevel } from '../../data/skills'
 import { AURA, countWithinDays } from '../../engine/aura'
 import { VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
@@ -59,6 +61,8 @@ export const createHeroSlice = (set, get) => ({
           tickCount: rolloverDay ? 0 : newTick,
           dayCount: rolloverDay ? state.world.dayCount + 1 : state.world.dayCount,
         },
+        // QOBJ-TYPES01 — compteur de prières persisté (pour l'objectif `pray`, delta vs snapshot).
+        meta: { ...state.meta, prayCount: (state.meta.prayCount ?? 0) + 1 },
       }
     }),
 
@@ -164,15 +168,16 @@ export const createHeroSlice = (set, get) => ({
       const item = state.hero.inventory.equipment.find((e) => e.instanceId === instanceId)
       if (!item) return state
 
-      // Déséquiper l'item actuellement dans ce slot (retour inventaire)
-      const currentEquipped = state.hero.equipped[item.slot]
+      // SLOT01 — résolution de slot + règles d'armes (2 mains, offhand, bagues) via equipInSlot.
+      // Les pièces déplacées (slot occupé, arme 2 mains libérée…) retournent au sac.
+      const { equipped, unequipped } = equipInSlot(item, state.hero.equipped)
       const newInventory = state.hero.inventory.equipment.filter((e) => e.instanceId !== instanceId)
-      if (currentEquipped) newInventory.push(currentEquipped)
+      for (const piece of unequipped) newInventory.push(piece)
 
       return {
         hero: {
           ...state.hero,
-          equipped: { ...state.hero.equipped, [item.slot]: item },
+          equipped,
           inventory: { ...state.hero.inventory, equipment: newInventory },
         },
       }
@@ -250,6 +255,31 @@ export const createHeroSlice = (set, get) => ({
     useToastStore
       .getState()
       .addToast(`Learned ${SKILLS[skillId]?.name ?? skillId} · −${price} 🪙`, 'info')
+    return true
+  },
+
+  // ACA06 — achète un skill DÉJÀ MONTÉ (Lv2-5) à prix premium. @returns {boolean} succès
+  buySkillAtLevel: (skillId, level) => {
+    const price = skillPremiumBuyPrice(skillId, level)
+    const { hero } = get()
+    if (price == null || hero.inventory.gold < price) {
+      useToastStore.getState().addToast('Not enough gold.', 'warning')
+      return false
+    }
+    set((state) => ({
+      hero: {
+        ...state.hero,
+        inventory: {
+          ...state.hero.inventory,
+          gold: state.hero.inventory.gold - price,
+          manaStones: [...state.hero.inventory.manaStones, { skillId, level, xp: 0 }],
+        },
+      },
+      unseenLoot: true,
+    }))
+    useToastStore
+      .getState()
+      .addToast(`Learned ${SKILLS[skillId]?.name ?? skillId} (Lv${level}) · −${price} 🪙`, 'info')
     return true
   },
 
@@ -474,7 +504,8 @@ export const createHeroSlice = (set, get) => ({
   },
 
   // ── XP & niveau ──────────────────────────────────────────────────────────
-  gainExp: (amount) =>
+  gainExp: (amount) => {
+    let leveled = false
     set((state) => {
       const { exp, level, expToNext, stats, levelsGained } = applyLevelUps(
         state.hero.exp + amount,
@@ -482,13 +513,90 @@ export const createHeroSlice = (set, get) => ({
         state.hero.expToNext,
         { ...state.hero.stats },
       )
+      leveled = levelsGained > 0
       return {
         hero: { ...state.hero, exp, level, expToNext, stats },
         pendingLevelUp: state.pendingLevelUp + levelsGained,
       }
-    }),
+    })
+    if (leveled) get().triggerHint('first_levelup') // ONB01 — tip au 1er level-up
+  },
 
   clearPendingLevelUp: () => set({ pendingLevelUp: 0 }),
+
+  // FIX-LVLQUEUE01 — clôture du modal de level-up cumulé. `allocations` = { stat: nb } réparti
+  // par le joueur (somme ≤ pendingLevelUp) ; le reliquat NON attribué est reporté dans
+  // `hero.pendingStatPoints` (assignable plus tard depuis le HeroSheet). Ferme le modal.
+  commitLevelUp: (allocations = {}) =>
+    set((state) => {
+      const pool = state.pendingLevelUp
+      let assigned = 0
+      const stats = { ...state.hero.stats }
+      for (const [stat, n] of Object.entries(allocations)) {
+        const add = Math.max(0, Math.floor(n || 0))
+        if (add > 0 && stat in stats) {
+          stats[stat] = (stats[stat] ?? 0) + add
+          assigned += add
+        }
+      }
+      const deferred = Math.max(0, pool - assigned)
+      return {
+        hero: {
+          ...state.hero,
+          stats,
+          pendingStatPoints: (state.hero.pendingStatPoints ?? 0) + deferred,
+        },
+        pendingLevelUp: 0,
+      }
+    }),
+
+  // FIX-LVLQUEUE01 — « Do it later » : reporte TOUS les points en attente sans rien attribuer.
+  deferLevelUp: () =>
+    set((state) => ({
+      hero: {
+        ...state.hero,
+        pendingStatPoints: (state.hero.pendingStatPoints ?? 0) + state.pendingLevelUp,
+      },
+      pendingLevelUp: 0,
+    })),
+
+  // FIX-LVLQUEUE01 — attribution d'un point de stat différé (depuis le HeroSheet). No-op si
+  // aucun point en attente ou stat inconnue.
+  assignStatPoint: (stat) =>
+    set((state) => {
+      if ((state.hero.pendingStatPoints ?? 0) <= 0 || !(stat in state.hero.stats)) return {}
+      return {
+        hero: {
+          ...state.hero,
+          stats: { ...state.hero.stats, [stat]: (state.hero.stats[stat] ?? 0) + 1 },
+          pendingStatPoints: state.hero.pendingStatPoints - 1,
+        },
+      }
+    }),
+
+  // ── MST01/MST02 — Engagement auprès d'un maître (mentor) ──────────────────
+  // Pose le maître engagé du run. IMMUABLE une fois posé (MST-G1) : rejette si un maître
+  // est déjà engagé, ou si l'id est inconnu. Réinitialisé à null à la transmigration.
+  // @returns {boolean} true si l'engagement a été posé, false si rejeté.
+  setMaster: (masterId) => {
+    if (get().hero.masterId != null) return false // déjà engagé → immuable
+    if (!MASTERS[masterId]) return false // maître inconnu
+    set((state) => ({ hero: { ...state.hero, masterId } }))
+    return true
+  },
+
+  // MST02 — Les quêtes de maître sont VERROUILLÉES tant qu'aucune initiation n'est validée
+  // (aucun maître engagé). Une fois engagé, seules les quêtes du maître engagé sont ouvertes ;
+  // celles des AUTRES maîtres restent verrouillées. L'initiation elle-même n'est jamais
+  // verrouillée (c'est la porte d'entrée). @returns {boolean} true = verrouillée.
+  isMasterQuestLocked: (quest) => {
+    if (!quest?.isMasterQuest) return false
+    if (quest.isInitiation) return false // les initiations sont toujours accessibles
+    const engaged = get().hero.masterId
+    if (engaged == null) return true // pas encore initié → tout verrouillé
+    // engagé : ouvert seulement si la quête appartient au pool du maître engagé
+    return !(MASTERS[engaged]?.skillQuestPool ?? []).includes(quest.id)
+  },
 
   // ── Nom du héros (CharacterCreation) ─────────────────────────────────────
   renameHero: (name) =>

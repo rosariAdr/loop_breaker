@@ -22,7 +22,8 @@ beforeEach(() => {
 afterEach(cleanup)
 
 const PANELS = [
-  { building: 'church', name: 'Church of the Old Gods', cta: /Enter the Church/ },
+  // UI11 — l'Église s'ouvre en 1 clic (plus de CTA d'intro)
+  { building: 'church', name: 'Church of the Old Gods', cta: null },
   { building: 'merchant', name: "Merchant's Stall", cta: /Browse the wares/ },
   { building: 'alchemy', name: 'Alchemy Workshop', cta: /Enter the lab/ },
   { building: 'blacksmith', name: "Blacksmith's Forge", cta: /To the forge/ },
@@ -34,7 +35,7 @@ describe('SafeZone — panneaux de bâtiments (smoke, COV80)', () => {
     it(`ouvre et entre dans le panneau « ${building} » sans crash`, () => {
       render(<SafeZone />)
       fireEvent.click(screen.getAllByText(name)[0]) // ouvre le dialogue PNJ
-      fireEvent.click(screen.getByText(cta)) // entre dans le panneau
+      if (cta) fireEvent.click(screen.getByText(cta)) // entre dans le panneau (UI11 : église = direct)
       expect(document.querySelector('.npc-panel-host')).not.toBeNull()
     })
   })
@@ -80,7 +81,7 @@ describe('SafeZone — panneaux de village (knight_trainer / master_smith)', () 
   it('ouvre le panneau du maître d’armes (knight_trainer)', () => {
     render(<SafeZone />)
     fireEvent.click(screen.getAllByText(/Knight Trainer/)[0])
-    fireEvent.click(screen.getByText(/Train with Aldric/))
+    fireEvent.click(screen.getByText(/Train with Roswyn/)) // FIX-ALDRIC01 — Dame Roswyn
     expect(document.querySelector('.npc-panel-host')).not.toBeNull()
   })
 

@@ -148,6 +148,12 @@ function DebugPanelContent({ onClose }) {
     cmd('Give savage_bite', () =>
       get().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 }),
     ),
+    // TEST-SCEN01 — S5 (statut frozen) : les skills de glace ne sont QUE des récompenses
+    // de maître itinérant (sourceMonster: null). Sans ce raccourci, dérouler S5 impose
+    // d'attendre Kaira Froststep (jours 4-7 à Greywatch) puis 2 quêtes de maître.
+    cmd('Give frostbite', () =>
+      get().addSkillToInventory({ skillId: 'frostbite', level: 1, xp: 0 }),
+    ),
     cmd('+5 wolf_pelt', () => get().addResource('wolf_pelt', 5)),
     cmd('+3 hp potions', () => get().addConsumable('hp_potion_medium', 3)),
     cmd('Unlock all idle', () =>

@@ -1,0 +1,326 @@
+{
+  "session": "Grooming 2026-07-19 — audit, release 0.2.0, combat ATB+QTE, épiques validées, multivers",
+  "skill": "lb-grooming",
+  "propositions": [
+    {
+      "ref": "A01",
+      "type": "PLAN",
+      "cible": "TASKS.md — Plan de release",
+      "titre": "Créer l'épique BUG_AUDIT-0717 (correctifs audit & tests fonctionnels 2026-07-17)",
+      "detail": "Nouvelle section d'épique regroupant les FIX- ci-dessous (A02→A10, A13). Ligne dans la table Plan de release en position bugfix, AVANT la release 0.2.0 (les P2 de l'épique font partie du train).",
+      "justification": "Demande du 2026-07-19 : documenter toutes les problématiques relevées en audit dans une épique Bug.",
+      "cout": "-",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A02",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "FIX-I18N01 — Tout le contenu joueur en anglais (purge du français) · M · P2",
+      "detail": "DÉCISION ACTÉE 2026-07-19 : le jeu est 100 % anglais. Fichiers identifiés (grep accents sur champs name/label/desc/dialogue hors tests) : src/data/onboardingQuests.js (36 occurrences — titres « Le premier tranchant »/« Bien armé », dialogues Bryn, objectifs « Tuer 3 Ashwood Wolves », section « Premières fois »), src/data/ranks.js (noms de rangs FR : Fer/Argent/Orichalque/Émeraude/Suprême…), src/data/statMilestones.js, src/data/mainQuests.js, src/screens/combat/useCombat.js, src/screens/WorldMap.jsx, + chip récompense « +N rang » (QuestBoard). Hors scope : commentaires de code FR (convention repo), docs. AC : aucune chaîne FR visible joueur ; test d'intégrité anti-accents sur les champs UI des data ; 0 test cassé.",
+      "justification": "Vu en jeu le 2026-07-17 : quêtes d'onboarding en FR au milieu d'un jeu EN. Bloquant avant d'étendre QONBOARD01 et avant release.",
+      "cout": "M",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A03",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "FIX-PLURAL01 — Pluralisation des noms de monstres dans les quêtes générées · S · P3",
+      "detail": "Cause racine (RCA 2026-07-19) : villageQuests.js lignes 92/101/149-150, pluriel naïf name+'s'. Bugs visibles : « Cull the Ashwood Wolfs » (Greywatch) et « Russet Foxs » (Ironhaven). Fix data-driven : champ optionnel namePlural sur les irréguliers (ashwood_wolf→Wolves, russet_fox→Foxes ; future-proof thunderhoof/bone_colossus) + helper monsterPlural (2 lignes) + 4 call sites. Risque save : nul (ids stables). Hors scope : pluriels des ressources (« Collect Wolf Pelt » = singulier assumé). AC : plus aucun pluriel fautif généré ; micro-test data (pool Greywatch contient « Wolves »).",
+      "justification": "Typo visible en jeu ; fix S bien délimité par la RCA.",
+      "cout": "S",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A04",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "FIX-LVLQUEUE01 — Coalescer la file de modals Level Up · S · P3",
+      "detail": "Cause racine (RCA) : pendingLevelUp est un simple compteur (heroSlice.js:519, App.jsx:205) ; chaque événement XP (victoire de combat, CHAQUE remise de quête) qui fait leveler rouvre un modal après le Confirm précédent → 3 modals d'affilée observés (Lv2 → Lv5 → Lv6). Fix : fenêtre de coalescence — le modal reste ouvert et cumule si pendingLevelUp remonte avant fermeture, et/ou choix de stat ×N pour N niveaux en un seul écran. Hors scope : refonte du LevelUpModal. AC : une rafale combat + 2 turn-ins = 1 seul modal cumulé ; test.",
+      "justification": "Spam de modals constaté en test fonctionnel — friction UX récurrente à chaque grosse session d'XP.",
+      "cout": "S",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A05",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "FIX-CRAFTSRC01 — Ingrédients sans source d'obtention (bat_wing / void_fang / troll_blood) · S · P2",
+      "detail": "3 ingrédients avec sources:[] (droppés par personne, vendus nulle part) rendent incraftables : alchemy_mana_potion_small + alchemy_elixir_minor (bat_wing), master_serpent_dagger + variantes forge serpent_dagger/swift_boots/hunters_grips (void_fang), master_cursed_greaves (troll_blood). Options : (a) ajouter aux drops de monstres thématiques existants ; (b) substituer par des ressources existantes dans les recettes. Note : plus aucune chauve-souris en surface (gloom_bat retiré par MON01) → bat_wing plutôt (b). Hors scope : rééquilibrage des taux. AC : chaque recette du jeu a tous ses ingrédients obtenables ; test d'intégrité (déjà partiellement QA01) étendu au critère « obtainable ».",
+      "justification": "Contenu joueur cassé (recettes affichées mais incraftables) — à trancher avant release.",
+      "cout": "S",
+      "reco": "A DISCUTER"
+    },
+    {
+      "ref": "A06",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "FIX-DIVSKILL01 — healing_bloom (divin) retiré de la vente Académie · XS · P2",
+      "detail": "healing_bloom est container:'divine' (option de Sylvara, deities.js:76) mais figure dans ACADEMY_CATALOG (academy.js:13, 200 or) alors que le commentaire du catalogue et masters.js:16-17 excluent les skills divins de la vente. Fix reco : retrait simple du catalogue. Alternative (coût S) : le remplacer par un heal non-divin à créer pour garder une option de soin achetable. AC : aucun skill container divine dans le catalogue ; test.",
+      "justification": "Contradiction data interne ; brise l'exclusivité divine (ADR-006 esprit).",
+      "cout": "XS",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A07",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "FIX-SRCMON01 — Réconcilier 4 sourceMonster contradictoires + quasi-doublon stone_skin/stoneskin · S · P3",
+      "detail": "skills.js : stone_skin (l.117) revendique stone_golem qui droppe stoneskin (l.1037) — 2 skills quasi homonymes ; venom_bite vs venom_strike (marsh_serpent) ; spectral_veil vs thorn_lash (briar_wraith) ; iron_resolve vs cursed_cleave (hollow_knight — vraie source = barrow_wight en réserve). Fix : trancher chaque paire (fusion ou re-sourcing) + test de réciprocité sourceMonster ↔ skillDrop (les tests skd actuels ne vérifient que l'existence des ids). AC : chaque sourceMonster correspond au vrai drop ; 0 quasi-doublon non assumé.",
+      "justification": "Dette data qui piégera le Codex/bestiaire et les pools de maîtres.",
+      "cout": "S",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A08",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "FIX-ZONELIST01 — Purger ZONES.ashenvale.monsters (liste morte pré-MON01) · XS · P4",
+      "detail": "zones.js:15-28 : 4 ids inexistants (rotting_shambler, gloom_bat, bog_shambler, grave_knight) + 2 reserve ; aucun consommateur runtime (tout passe par MONSTERS_BY_ZONE/_BY_SPOT) mais piège pour du futur code. Fix : supprimer le champ ou le régénérer depuis MONSTERS_BY_ZONE + test qui interdit les ids morts. AC : plus aucun id mort dans zones.js.",
+      "justification": "Champ mort trompeur relevé au scan d'intégrité.",
+      "cout": "XS",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A09",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "FIX-ALDRIC01 — Réconciliation Aldric : Greywatch (data) vs Millhaven (bâtiment/UI) · M · P2",
+      "detail": "État vérifié 2026-07-17 : data canonique = Greywatch (masters.js:117, quests.js, masterQuests.js) MAIS le bâtiment knight_trainer reste à Millhaven (zones.js:89) avec panel « Sir Aldric — Knight of Millhaven » (KnightTrainerPanel.jsx:90), dialogues et buildingUnlocks associés — et le MasterBoard du KnightTrainer de Millhaven affiche en réalité Elyndra. Décision : (a) Aldric 100 % Greywatch → le knight_trainer de Millhaven passe à un nouveau PNJ dédié (reco, cohérent MST05) ; (b) Aldric re-domicilié physiquement à Millhaven. AC : le joueur rencontre Aldric à UN seul endroit, quêtes/engagement/panel cohérents ; tests SafeZone/masters à jour. Réf : note « ⚠️ à réconcilier » de l'épique v1.43.",
+      "justification": "Dette signalée depuis le batch 5, confirmée en scan — incohérence jouable.",
+      "cout": "M",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A10",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "DX-LINTIGNORE01 — ESLint ignore .claude/ + purge du worktree résiduel · XS · P3",
+      "detail": "npm run lint échoue avec 7 erreurs react-refresh provenant de .claude/worktrees/jovial-gagarin-7b4347 (worktree résiduel d'une session cloud). Fix : ignores '.claude/**' dans eslint.config.js + supprimer le worktree (git worktree remove/prune). AC : lint vert sur le repo entier.",
+      "justification": "La checklist de fin de session exige lint OK — actuellement faux-négatif permanent.",
+      "cout": "XS",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A11",
+      "type": "STATU QUO",
+      "cible": "GodsShop.jsx:92-94",
+      "titre": "Compteur tokens du Gods' Shop = snapshot au mount — ne rien faire",
+      "detail": "Le compteur s'initialise en useState au montage (hero.reputationTokens + lastRunSummary) ; un gain de tokens PENDANT la visite n'est pas reflété. Seul le DebugPanel peut produire ce cas — aucun flux joueur réel n'ajoute de tokens dans la boutique. Proposition : statu quo (pas de ticket).",
+      "justification": "Constaté en test via cheat uniquement ; coût/bénéfice défavorable.",
+      "cout": "-",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A12",
+      "type": "REPRIORISATION",
+      "cible": "QSV2-DROPDUP01 + QSV2-QSRC-TEST01",
+      "titre": "Remonter P3 → P2 (rejoignent le train de release 0.2.0)",
+      "detail": "Le doublon First Blood ↔ mq01 a été constaté À L'ÉCRAN le 2026-07-17 (les deux quêtes côte à côte au board de Greywatch, même cible). Les 2 tickets sont décidés (2026-07-11) et 🟢 — les basculer P2 pour les embarquer dans la passe bugfix pré-release.",
+      "justification": "P2 = « nécessaire à la prochaine release » ; le bug est visible dès la 1re minute de jeu d'un nouveau joueur.",
+      "cout": "-",
+      "reco": "OUI"
+    },
+    {
+      "ref": "A13",
+      "type": "NOUVEAU TICKET",
+      "cible": "BUG_AUDIT-0717",
+      "titre": "FIX-TOPBAR01 — Onglets Quests/Hero/Bag/Save rognés hors du fond topbar (investigation) · S · P3",
+      "detail": "Observé 2026-07-17 à un viewport inhabituel (990×438, stage scalé ~0.40) : le fond .topbar mesurait ~991 px design (shrink-to-fit centré) et les onglets .tb-tabs débordaient ~40 px à droite → zone cliquable amputée (clics avalés par lb-stage). À reproduire d'abord en 16:9 standard (1366×768 / 1920×1080) pour qualifier : bug réel de layout (topbar shrink-to-fit vs largeur canvas) ou artefact du ratio extrême. Fix probable : .topbar en largeur pleine du canvas (width:100%) ou min-width sur .tb-tabs. Lié UI10 (16:9), UI12, TST-UI. AC : onglets toujours entièrement dans le fond et cliquables aux 2 résolutions de réf + test de layout.",
+      "justification": "Constaté en test — la nav principale ne doit jamais perdre sa zone de clic.",
+      "cout": "S",
+      "reco": "OUI"
+    },
+    {
+      "ref": "B01",
+      "type": "PLAN",
+      "cible": "TASKS.md — Plan de release",
+      "titre": "Créer l'épique 🚀 RELEASE-0.2.0 (gate de release) juste après v1.35 URGENT",
+      "detail": "Nouvelle épique process en AMONT : REL-CHANGELOG01, REL-CONTEXT01, REL-TAG01, REL-TRAIN01, TEST-SCEN01 (B02→B06) + rattache les P2 bugfix du train (FIX-QUESTPROG02, QSV2-DROPDUP01, QSV2-QSRC-TEST01, FIX-I18N01, FIX-CRAFTSRC01, FIX-DIVSKILL01, FIX-ALDRIC01). Ordre de la table : v1.35 URGENT → RELEASE-0.2.0 → suite inchangée. La release est prononcée quand : URGENT livré + P2 du train verts + checklist technique verte + grille TEST_SCENARIOS 10/10.",
+      "justification": "Demande 2026-07-19 : matérialiser « ce qui manque pour master » en tickets, dans une épique urgence en amont du process.",
+      "cout": "-",
+      "reco": "OUI"
+    },
+    {
+      "ref": "B02",
+      "type": "NOUVEAU TICKET",
+      "cible": "RELEASE-0.2.0",
+      "titre": "REL-CHANGELOG01 — Rattrapage CHANGELOG + coupe [Unreleased] → [0.2.0] · S · P2",
+      "detail": "docs/CHANGELOG.md s'arrête à v1.31-33 (03/07) : documenter v1.34 (batchs 1-6, REFAC02/03, +122 tests), v1.42 (9 slots/sets, craft unifié), v1.43 (maîtres, itinérants, frozen), SPOT_OWNER, outillage. Puis couper [Unreleased] en version datée [0.2.0] — en purgeant les sections déjà présentes dans master (v1.1/v1.2, jamais redécoupées aux merges précédents). AC : CHANGELOG reflète le delta réel master..dev ; version 0.2.0 datée prête pour le tag.",
+      "justification": "Exigence de la checklist + du process de release (CONTRIBUTING §7 étape 2).",
+      "cout": "S",
+      "reco": "OUI"
+    },
+    {
+      "ref": "B03",
+      "type": "NOUVEAU TICKET",
+      "cible": "RELEASE-0.2.0",
+      "titre": "REL-CONTEXT01 — Refresh CONTEXT.md (systèmes + compteurs §5) · S · P2",
+      "detail": "CONTEXT.md daté 2026-07-03 : intégrer craft unifié (craftRecipes.js source unique), statut frozen, découpes REFAC02/03, SPOT_OWNER, maîtres/itinérants, board local. Compteurs §5 réels : 50 skills (6 divins), 4 spots de chasse, 39 recettes, 4 titres, 3415 tests / 301 fichiers, bundle ~149 KB gz. AC : un Claude sans contexte relit le fichier et retrouve l'état exact du jeu.",
+      "justification": "CONTEXT.md est le fichier de reprise : le laisser faux coûte cher à chaque session.",
+      "cout": "S",
+      "reco": "OUI"
+    },
+    {
+      "ref": "B04",
+      "type": "NOUVEAU TICKET",
+      "cible": "RELEASE-0.2.0",
+      "titre": "REL-TAG01 — Bump 0.2.0 + PR dev→master + tag + resync · XS · P2",
+      "detail": "package.json 0.0.0 → 0.2.0 ; PR dev→master (merge classique, historique préservé) ; git tag v0.2.0 + push --tags ; resync dev (git merge --ff-only master) ; vérif git log master..dev vide. Inaugure la règle « master stable taggué » (0 tag à ce jour). Puis actions hors-repo DEPLOY01 : push + import Vercel + Vercel Authentication.",
+      "justification": "Process CONTRIBUTING §7 jamais appliqué jusqu'au bout ; la release 0.2.0 est l'occasion de solder la dette.",
+      "cout": "XS",
+      "reco": "OUI"
+    },
+    {
+      "ref": "B05",
+      "type": "NOUVEAU TICKET",
+      "cible": "RELEASE-0.2.0",
+      "titre": "REL-TRAIN01 — Décision : feat/onboarding_quests dans le train 0.2.0 · XS · P2",
+      "detail": "La branche porte QOBJ-TYPES01 + QONBOARD01 (1 commit propre, rebasé sur dev, testé fonctionnellement en live le 2026-07-17 : chaîne d'onboarding + objectif non-combat OK). Reco : merger dans dev APRÈS FIX-I18N01 (le contenu est en français) → part avec 0.2.0. Alternative : train suivant.",
+      "justification": "Seule branche avec du travail non mergé ; décision explicite à acter pour figer le périmètre du train.",
+      "cout": "XS",
+      "reco": "OUI"
+    },
+    {
+      "ref": "B06",
+      "type": "NOUVEAU TICKET",
+      "cible": "RELEASE-0.2.0 + docs/CONTRIBUTING.md",
+      "titre": "TEST-SCEN01 — Grille de recette fonctionnelle = gate sine qua non · S · P2",
+      "detail": "docs/TEST_SCENARIOS.md créé le 2026-07-19 (10 scénarios S1-S10 avec étapes/attendus + tableau de passes ; S1/S8/S9 partiellement verts le 17/07). Ce ticket : (1) amender CONTRIBUTING §7 — ajout d'une étape « recette fonctionnelle : les 10 scénarios déroulés et cochés (date+commit) avant toute PR dev→master » ; (2) première passe complète 10/10 sur le train 0.2.0 (reste S2-S5, S7, S10 + compléments S1/S6/S8). AC : gate documentée + passe 10/10 archivée.",
+      "justification": "Demande explicite 2026-07-19 : scénarios stockés et exécutés avant master, condition sine qua non.",
+      "cout": "S",
+      "reco": "OUI"
+    },
+    {
+      "ref": "C01",
+      "type": "REPRIORISATION",
+      "cible": "B06 (v2 — Ambition résiduelle)",
+      "titre": "Sortir l'ATB de v2 → nouvelle épique ⚔ COMBAT-ATB « Sablier de Guerre + Frappes du Destin » (découpée en 6+1 tickets)",
+      "detail": "Directions validées 2026-07-19 (ATB + QTE ; cartes et auto-battler écartés). Enrichi par la recherche RPG (2026-07-19) : ATB à TIMELINE VISIBLE type FFX/CTB (bandeau des 5-7 prochains tours — l'AGI se lit : héros lent = 2 portraits ennemis consécutifs), ranks d'action (skill lourd repousse le prochain tour), mode Attente par défaut, tick déterministe simulable en idle. QTE modèle Mario/Sea of Stars : 1 input max par action, jamais sur l'attaque de base, bonus +30-40 %, contenu finissable à 0 % de réussite, fenêtre de timing = stat d'équipement (Shadow Hearts). Découpage incrémental (chaque cran shippable) : CMB-ATB01 moteur jauges+ranks (M) → CMB-ATB02 timeline visible (M) → CMB-QTE01 timing bars skills, réutilise le moteur mini-jeu forge CRAFTMG-ENGINE01 (M) → CMB-INT01 intents chiffrés type Slay the Spire (S) → CMB-BREAK01 bouclier/break solo type Octopath (M) → CMB-FOCUS01 Garde qui banque type Bravely allégé (S/M). v2 différé : cancel de cast (Grandia) + turn bonuses (Trails). Garde-fou : manuel ≈ +25-40 % max vs idle. Position dans la table : à caler (proposition : après RELEASE-0.2.0 et la suite v1.42, avant ou avec v1.52).",
+      "justification": "B06 était un monolithe XL en v2 ; la direction est actée et le découpage la rend incrémentale sans big-bang.",
+      "cout": "L",
+      "reco": "OUI"
+    },
+    {
+      "ref": "C02",
+      "type": "NOUVEAU TICKET",
+      "cible": "COMBAT-ATB",
+      "titre": "PROTO-INT01 — Prototype jetable « Intentions & Ripostes » (+ aperçu timeline) · S · P4",
+      "detail": "Prototype interactif HORS codebase (artifact HTML) : 1 combat factice avec intents chiffrés au-dessus des ennemis + bandeau timeline ATB, cliquable, pour projection avant de trancher CMB-INT01. Décision demandée 2026-07-19 (« pas l'amour fou » sur intentions — à revoir sur prototype). Aucun code de jeu.",
+      "justification": "Trancher sur du visible plutôt que sur du texte ; coût S, zéro risque codebase.",
+      "cout": "S",
+      "reco": "OUI"
+    },
+    {
+      "ref": "D01",
+      "type": "NOUVEAU TICKET",
+      "cible": "Plan de release — nouvelle épique",
+      "titre": "Épique PACT — Pactes de transmigration à double tranchant (4 tickets) · S/M",
+      "detail": "Validée 2026-07-19. Au PostMortem, hériter PLUS (2e stat, équipement, ressources) contre une malédiction d'âme au run suivant (80 % HP max, prix +20 %…). Tickets : PACT01 data pactes (offre+malédiction+poids) · PACT02 UI PostMortem (3e volet) · PACT03 application au run suivant + migration + tests · PACT-G1 décision cumul (1 pacte max ?). Réutilise debuffs CRF01, applyTransmigration. Articulation à acter vs META02 (PACT = payer plus, META02 = acheter plus). Position suggérée : proche v1.52 Divin.",
+      "justification": "Meilleur ratio impact/effort du brainstorm — enrichit le moment identitaire du jeu.",
+      "cout": "M",
+      "reco": "OUI"
+    },
+    {
+      "ref": "D02",
+      "type": "NOUVEAU TICKET",
+      "cible": "Plan de release — nouvelle épique",
+      "titre": "Épique VOW — Vœux divins de run (3 tickets) · S/M",
+      "detail": "Validée 2026-07-19. Serment en début de run (« jamais fuir », « aucun achat », « Malachar avant J15 ») → tenu jusqu'à la mort = prime tokens/faveur ; rompu = léger malus divin. Tickets : VOW01 data vœux + conditions trackées · VOW02 UI serment + suivi sidebar · VOW03 résolution à la mort + tests. Réutilise divineBonds, compteurs existants ; alimente REP-REBAL01 (sources de tokens). Position suggérée : AVEC v1.52 Divin (synergie ALT01/DVQ01, positionner le vœu comme contrainte passive ≠ quête divine).",
+      "justification": "Runs à contrainte diégétisés — variété de runs + économie de tokens.",
+      "cout": "M",
+      "reco": "OUI"
+    },
+    {
+      "ref": "D03",
+      "type": "NOUVEAU TICKET",
+      "cible": "Plan de release — nouvelle épique",
+      "titre": "Épique NEM — Némésis : le monde se souvient de tes morts (3 tickets) · M",
+      "detail": "Validée 2026-07-19. Le monstre qui te tue revient au run suivant en élite nommée (« Vieux-Croc, Tueur de <héros> », +niveaux, aura) ; le tuer rend une part de ce qu'il avait pris + titre « Vengeance ». 1 némésis actif max, généré depuis lastRunSummary.causeOfDeath. Tickets : NEM01 capture cause + génération · NEM02 rendu (badge spot + carte combat nommée) · NEM03 récompenses/titre + expiration (2 runs). Réutilise buildEnemy/élite, scaling, titres M01. Risques : morts hors-combat à gérer ; nommage procédural.",
+      "justification": "La mort crée littéralement du contenu — cœur transmigration.",
+      "cout": "M",
+      "reco": "OUI"
+    },
+    {
+      "ref": "D04",
+      "type": "NOUVEAU TICKET",
+      "cible": "Plan de release — nouvelle épique",
+      "titre": "Épique ECHO — Échos du prédécesseur : ta tombe, ton fantôme (4 tickets) · M/L",
+      "detail": "Validée 2026-07-19. Le lieu de mort porte une tombe au run suivant : se recueillir = petit bonus/objet perdu ; profaner = combattre son ancien héros (stats/skills du run précédent) pour un héritage bonus. Tickets : ECHO01 persistance lieu/loadout de mort · ECHO02 marqueur tombe + recueillement · ECHO03 combat d'Écho (buildEchoEnemy) + récompense · ECHO-G1 fréquence/scaling/drop. Auto-équilibrant (run fort = défi fort). Risques : IA de l'Écho, sprite héros placeholder.",
+      "justification": "Le duel contre soi-même — la plus « signature » pour un jeu de transmigration.",
+      "cout": "L",
+      "reco": "OUI"
+    },
+    {
+      "ref": "D05",
+      "type": "NOUVEAU TICKET",
+      "cible": "Plan de release — nouvelle épique",
+      "titre": "Épique WTHR — Météo par zone (3 tickets) · M",
+      "detail": "Validée 2026-07-19. Tirage quotidien seedé par zone (brume, pluie de cendres, orage) : petits modificateurs lisibles (combat/idle/drops — ex. herbes ↑ sous la pluie). Multiplie le relief perçu des 3 zones à coût contenu nul. Tickets : WTHR01 data + tirage seedé (pattern rotation CHQ01) · WTHR02 effets branchés (statuts B05, tables de drops) · WTHR03 UI (icône zone + carte + tooltip) + tests. Garde-fou : 3-4 météos, 1 effet chacune, lisibilité d'abord. Synergie future PLAN01/cycle nuit DN.",
+      "justification": "Relief du monde sans produire un seul monstre — impact/effort excellent.",
+      "cout": "M",
+      "reco": "OUI"
+    },
+    {
+      "ref": "D06",
+      "type": "NOUVEAU TICKET",
+      "cible": "Plan de release — nouvelle épique",
+      "titre": "Épique SOUL — Reliques liées à l'âme (craft trans-run, 3 tickets) · M",
+      "detail": "Validée 2026-07-19. Lier UNE pièce d'équipement à l'âme (rituel forge+église : matériau rare + tokens + mini-jeu réussi, 1 slot d'âme) → elle traverse la transmigration. Donne au craft v1.42 sa finalité méta. Tickets : SOUL01 flag soulbound + persistance + migration · SOUL02 rituel de liaison (UI + coût) · SOUL-G1 périmètre (1 slot ? arme seulement ? interaction héritage T05). ⚠️ À réconcilier avec META02 (v1.81) : SOUL = voie craft/mérite, META02 = voie boutique — trancher la frontière avant d'ouvrir.",
+      "justification": "Le farm de ressources/craft obtient un horizon au-delà de la mort.",
+      "cout": "M",
+      "reco": "OUI"
+    },
+    {
+      "ref": "D07",
+      "type": "NOUVEAU TICKET",
+      "cible": "Plan de release — nouvelle épique",
+      "titre": "Épique CULT — Le Cercle des Éveillés (faction trans-run, 4 tickets) · L",
+      "detail": "Validée 2026-07-19. Société discrète qui SAIT que tu boucles : dialogues qui traversent les runs, sanctuaire qui monte avec tes morts, services méta (re-roll d'une option du Gods' Shop, indice de condition d'éveil divin — respecte ADR-006 —, contrats spéciaux). Colonne narrative de la boucle. Périmètre v1 CADRÉ : 1 PNJ, 3 services, 5 dialogues. Tickets : CULT01 PNJ + mémoire trans-run · CULT02 3 services · CULT03 progression sanctuaire · CULT-G1 cadrage lore/écriture. Risque principal : coût écriture (solo dev). Position : tardive (proche v1.8x méta).",
+      "justification": "Porte l'onboarding narratif de la transmigration ; validée malgré la taille L.",
+      "cout": "L",
+      "reco": "OUI"
+    },
+    {
+      "ref": "E01",
+      "type": "NOUVEAU TICKET",
+      "cible": "Plan de release — nouvelle épique (après X08)",
+      "titre": "Épique UNIV-WUSHU — Univers 2 : monde wushu (arts martiaux) · L/XL",
+      "detail": "⚠️ À CONFIRMER : la dictée disait « univers rouge » — interprété comme l'univers WUSHU du pitch (4 univers prévus : medieval fantasy ✓, wushu, tour, post-apo HNK). Découpage proposé : UNIV-WU-DESIGN01 doc de design (zones/sectes, bestiaire, skills = techniques internes/externes, « divinités » = ancêtres/immortels, déclinaison des systèmes existants : craft = alchimie taoïste, maîtres = écoles) · UNIV-WU-DATA01 namespace src/data/universes/wushu/ (dépend X08) · UNIV-WU-MAP01 carte + POS · UNIV-WU-ART01 assets Gemini (manifeste asset_forge). La transmigration inter-univers suit X09 (rotation fenêtre glissante). Prérequis : X08 (architecture multi-univers, v1.92).",
+      "justification": "Demande 2026-07-19 : matérialiser les univers suivants en épiques. Le multivers est le pitch fondateur (S06 prévoit déjà les contenants cosmétiques par univers : Manuscripts…).",
+      "cout": "L",
+      "reco": "OUI"
+    },
+    {
+      "ref": "E02",
+      "type": "NOUVEAU TICKET",
+      "cible": "Plan de release — nouvelle épique (après X08)",
+      "titre": "Épique UNIV-TOWER — Univers 3 : la Tour (Tower of God-like) · L/XL",
+      "detail": "Structure VERTICALE : étages = zones (remplace la WorldMap par une coupe de tour), gardiens d'étage = boss de palier, montée = progression spatiale, épreuves d'étage (variante des quêtes). Découpage : UNIV-TW-DESIGN01 doc (étages, gardiens, économie des épreuves, skills « contrats ») · UNIV-TW-DATA01 namespace data · UNIV-TW-MAP01 rendu vertical de la carte (adaptation WorldMap : POS en colonne, EDGES verticaux) · UNIV-TW-ART01 assets. Data chips S06 déjà prévus. Prérequis : X08/X09. Note : le rendu vertical de la carte est le seul vrai chantier moteur — le reste est du contenu namespacé.",
+      "justification": "Demande 2026-07-19 (« Tower of Trials / Tower of God »). Le format vertical renouvelle la boucle sans toucher au moteur de combat.",
+      "cout": "L",
+      "reco": "OUI"
+    },
+    {
+      "ref": "E03",
+      "type": "MODIF TICKET",
+      "cible": "X08 / X09 (v1.92)",
+      "titre": "Noter les épiques UNIV-* comme consommatrices de X08 — et décider si X08 avance",
+      "detail": "X08 (architecture multi-univers) et X09 (rotation) restent en v1.92. Ajouter la mention « prérequis des épiques UNIV-WUSHU / UNIV-TOWER ». Question posée : si un 2e univers est visé avant la fin du plan v1.x, X08 doit-il avancer dans la table (c'est le vrai gate) ? Reco : laisser en v1.92 pour l'instant, re-prioriser quand le contenu Map 1/1.5 sera stabilisé.",
+      "justification": "Cohérence des dépendances après création des épiques UNIV-*.",
+      "cout": "-",
+      "reco": "A DISCUTER"
+    },
+    {
+      "ref": "F01",
+      "type": "MODIF TICKET",
+      "cible": "QOBJ-TYPES01 + QONBOARD01 (v1.71)",
+      "titre": "Marquer [~] partiels : implémentés sur feat/onboarding_quests, testés en live",
+      "detail": "Les 2 tickets sont codés sur la branche (commit 218424f) et validés en test fonctionnel réel le 2026-07-17 (chaîne « Premières fois » + objectif non-combat equip). Restent : FIX-I18N01 (contenu en FR) + merge dev (REL-TRAIN01). Mettre à jour les 2 lignes avec l'état réel.",
+      "justification": "TASKS.md doit refléter l'état réel du code — les tickets sont aujourd'hui affichés « à faire » alors que le travail existe.",
+      "cout": "-",
+      "reco": "OUI"
+    }
+  ]
+}

@@ -10,7 +10,8 @@ export const ACADEMY_CATALOG = {
   shield_stance: 130,
   savage_bite: 110,
   venom_bite: 160,
-  healing_bloom: 200,
+  // FIX-DIVSKILL01 — healing_bloom retiré : skill DIVIN (option de Sylvara), le catalogue
+  // exclut les divins de la vente (comme masters.js — esprit ADR-006).
   veterans_resolve: 180, // passif
   stone_skin: 170, // passif
 }
@@ -34,6 +35,28 @@ export function skillSellPrice(skillId, level = 1) {
   const base = ACADEMY_CATALOG[skillId] ?? DEFAULT_SELL_BASE
   // 60% de la valeur au niveau → revendre un skill monté rapporte plus (plus-value).
   return Math.round(skillValueAtLevel(base, level) * 0.6)
+}
+
+// ACA06 — acheter un skill DÉJÀ MONTÉ (Lv2-5) à prix premium (≈ 3× au Lv2 → 5× au Lv5 du
+// prix de revente de ce niveau) : dissuasif, incite à le monter soi-même. Lv1 = skillBuyPrice.
+export const ACA06_MAX_LEVEL = 5
+export function skillPremiumMultiplier(level) {
+  return Math.min(5, (level ?? 1) + 1) // Lv2→3 · Lv3→4 · Lv4→5 · Lv5→5
+}
+/** Prix premium d'un skill monté (Lv2-5). null si hors catalogue ou niveau hors 2-5. */
+export function skillPremiumBuyPrice(skillId, level) {
+  if (ACADEMY_CATALOG[skillId] == null) return null
+  if (!(level >= 2 && level <= ACA06_MAX_LEVEL)) return null
+  return Math.round(skillSellPrice(skillId, level) * skillPremiumMultiplier(level))
+}
+/** Offres « skill monté » pour l'UI : [{ level, price }] (Lv2..5). */
+export function getAcademyLeveledOffers(skillId) {
+  const out = []
+  for (let lvl = 2; lvl <= ACA06_MAX_LEVEL; lvl++) {
+    const price = skillPremiumBuyPrice(skillId, lvl)
+    if (price != null) out.push({ level: lvl, price })
+  }
+  return out
 }
 
 /** Liste des entrées achetables, enrichies du template SKILLS (pour l'UI). */

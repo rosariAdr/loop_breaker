@@ -1,5 +1,7 @@
 // ── Helpers purs (hors store) ─────────────────────────────────────────────────
 
+import { BALANCE } from '../config'
+
 /**
  * Applique un ou plusieurs level-ups à partir de l'exp courante.
  * Retourne les nouvelles valeurs sans muter l'objet original.
@@ -9,7 +11,7 @@ export function applyLevelUps(exp, level, expToNext, stats) {
   while (exp >= expToNext) {
     exp -= expToNext
     level += 1
-    expToNext = Math.round(expToNext * 1.5)
+    expToNext = Math.round(expToNext * BALANCE.xp_curve_mult)
     const newMaxHp = Math.round(stats.maxHp * 1.1)
     const newMaxMana = Math.round(stats.maxMana * 1.1)
     stats = {

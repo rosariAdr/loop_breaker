@@ -1,7 +1,7 @@
 // ── TECH02 — Save schema versioning ──────────────────────────────────────────
 // Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
 // nécessite une migration. Ajouter la migration correspondante dans `runMigrations`.
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 3
 
 // ── État initial du héros ─────────────────────────────────────────────────────
 // (les migrations sont définies plus bas, après les INITIAL_*)
@@ -40,6 +40,11 @@ export const INITIAL_HERO = {
   activeSkills: [], // [{ skillId, level, xp, currentCooldown }]
   passiveSkills: [], // [{ skillId, level, xp }]
 
+  // MST01 — Maître engagé (mentor). Portée RUN (MST-G1(b)) : null au départ, posé par la
+  // 1ʳᵉ quête d'initiation validée (setMaster), IMMUABLE ensuite. Réinitialisé à null à la
+  // transmigration / nouveau run (comme skills/stats) via le spread de INITIAL_HERO.
+  masterId: null,
+
   // Divinité liée
   deity: null, // id de la divinité (null = sans dieu)
   deityBlessing: null,
@@ -52,11 +57,19 @@ export const INITIAL_HERO = {
   activeDebuffs: [], // [{ debuffId, permanent, duration: { type: 'days', remaining } }]
 
   // Équipement porté (null = slot vide)
+  // SLOT01 — 9 slots. weapon = arme principale ; offhand = bouclier / arme secondaire /
+  //   vide ; amulet ; ring1 / ring2. Une arme 2 mains (twoHanded) occupe weapon + offhand
+  //   (l'offhand est verrouillée tant qu'elle est portée). Cf. EQUIP_SLOTS / equipItem.
   equipped: {
     weapon: null,
+    offhand: null,
     helmet: null,
     armor: null,
+    gloves: null,
     boots: null,
+    amulet: null,
+    ring1: null,
+    ring2: null,
   },
 
   // Inventaire
@@ -77,6 +90,8 @@ export const INITIAL_HERO = {
   deathCount: 0,
   reputationTokens: 0, // jetons gagnés via quêtes
   adventurerRankTokens: 0, // jetons convertis en rang
+  rankPoints: 0, // FIX-QRANK01 — points de rang cumulés (via quêtes) ; échelle 10 paliers (ranks.js)
+  pendingStatPoints: 0, // FIX-LVLQUEUE01 — points de stat gagnés au level-up mais non attribués (« Do it later »)
 
   // Flag : le joueur a-t-il choisi son nom ? (faux = CharacterCreation à afficher)
   heroNamed: false,
@@ -88,9 +103,10 @@ export const INITIAL_HERO = {
 // ── État initial du monde ─────────────────────────────────────────────────────
 export const INITIAL_WORLD = {
   currentZone: 'ashenvale',
-  currentLocation: 'ironhaven', // ville/village où se trouve le héros
+  // START01 — le run démarre au village de départ Greywatch (et non Ironhaven).
+  currentLocation: 'greywatch', // ville/village où se trouve le héros
   currentHuntingSpot: null, // spot de chasse actif (ashenvale_forest | thornmarsh | crumbled_ruins | wildmere_hills)
-  currentNode: 'ironhaven', // TRV01 — position du héros sur la World Map (node)
+  currentNode: 'greywatch', // TRV01 — position du héros sur la World Map (node)
 
   // PROG02 — zones débloquées (déblocage explicite via quête/info ; auto-déblocage
   // par niveau/kills reste géré par isZoneUnlocked). Nouveau run = zone de départ seule.
@@ -135,6 +151,15 @@ export const INITIAL_WORLD = {
   // Villages générés aléatoirement (buildings présents dans chaque village)
   generatedVillages: {}, // { villageId: { buildings: [...] } }
 
+  // BLDUNL01 — bâtiments actuellement VERROUILLÉS (override des défauts data-driven).
+  // Vide par défaut = tout déverrouillé (POC jouable). Le câblage des triggers de
+  // déblocage progressif (BLDUNL02-04) reste à faire avec MQ-CHAIN01 / START03.
+  buildingLocks: [], // [buildingId, ...]
+
+  // B5b/MQ-CHAIN01 — nodes (localités + hunting spots) ouverts par la chaîne
+  // principale. Écrit à la complétion d'un palier MQ ; consommé par le gating/fog (B6).
+  unlockedNodes: [], // [locationId | spotId, ...]
+
   // Demon Lord
   demonLordDefeated: false,
   demonLordResurrectionCounter: 0,
@@ -145,6 +170,12 @@ export const INITIAL_WORLD = {
   // FIX-QUESTSNAP01 — snapshot des compteurs cumulés à l'ACCEPTATION de chaque quête.
   // { [questId]: { baseKills: { [monsterId]: n }, baseCraft: n } } → progression = delta.
   questProgress: {},
+  // FIX-CHURCH-DRY01 — actes de dévotion (église) accomplis, par bloc de rotation :
+  // { [churchQuestId]: blockIndex } → répétabilité (re-proposable au bloc suivant).
+  churchDeeds: {},
+  // BURN01 — journal d'actions (type + jour) pour le burnout de monotonie + état courant.
+  actionLog: [],
+  burnout: null,
 }
 
 // ── État méta (persiste entre les runs) ─────────────────────────────────────
@@ -155,6 +186,8 @@ export const INITIAL_META = {
   // Préparation X08 multi-univers. Pour le POC : un seul univers 'medieval_fantasy'.
   demonLordKills: {},
   titlesEarned: [],
+  activeTitle: null, // TITLE-G1 — id du titre actif (ses statBuffs s'appliquent) ou null
+  bestiaryKills: {}, // BEST01 — kills cumulés par espèce (persistant) → paliers de bestiaire
   totalRepTokensEarned: 0,
 
   // W03 — Flag levé si Malachar killed durant ce run (consommé au PostMortem)
@@ -169,6 +202,13 @@ export const INITIAL_META = {
 
   // Q05 — nombre de crafts réussis (pour les quêtes de craft)
   craftCount: 0,
+  // QOBJ-TYPES01 — compteurs persistés des nouveaux objectifs non-combat :
+  craftCountByKind: {}, // { [kind]: count } — crafts par nature de sortie (consumable/equipment/…)
+  prayCount: 0, // prières effectuées (objectif `pray`)
+  deedsAccepted: 0, // actes de dévotion (church deeds) acceptés (objectif `accept_deed`)
+
+  // MQ-ELITETURN01 — nombre de remises par arme d'élite (pilote le +1 rareté).
+  eliteTurnins: {}, // { weaponTemplateId: count }
 
   // Héritage en attente (rempli à la mort, consommé à la renaissance)
   pendingInheritance: null, // { stat, activeSkill, passiveSkill, bonuses }
@@ -188,7 +228,8 @@ export const INITIAL_META = {
   offlineSummary: null, // { monsterName, kills, gold, xp, resources } — affiché au retour puis effacé
 
   // SET01 — réglages joueur (persistés avec meta)
-  settings: { animations: true },
+  // ONB01 — `tutorials` : tips contextuels one-shot (défaut activé).
+  settings: { animations: true, tutorials: true },
 
   // TAV01 — infos achetées aux informateurs (persistant entre runs)
   knownInfo: [], // [infoId, ...]

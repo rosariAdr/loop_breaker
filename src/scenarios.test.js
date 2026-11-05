@@ -24,9 +24,10 @@ describe('Scénario 1 — Premier run complet', () => {
     expect(store().hero.name).toBe('Kael')
     expect(store().hero.heroNamed).toBe(true)
 
-    // 2. Accepter first_blood au Quest Board
-    store().startQuest('first_blood')
-    expect(store().world.activeQuests).toContain('first_blood')
+    // 2. Accepter la quête principale mq01_waking au Quest Board
+    //    (QSV2-DROPDUP01 — first_blood retirée : elle doublonnait mq01 à Greywatch)
+    store().startQuest('mq01_waking')
+    expect(store().world.activeQuests).toContain('mq01_waking')
 
     // 3. Tuer 5 loups (un combat par loup = gain d'xp, drops, kill count)
     for (let i = 0; i < 5; i++) {
@@ -41,14 +42,17 @@ describe('Scénario 1 — Premier run complet', () => {
     expect(store().hero.level).toBe(1)
 
     // 5. La quête doit être complétable
-    expect(store().isQuestComplete('first_blood')).toBe(true)
+    expect(store().isQuestComplete('mq01_waking')).toBe(true)
 
-    // 6. Claim la quête : récompense en gold, skill, tokens
+    // 6. Claim la quête : gold (mq01 = 60), 0 token (REP01). MST03 — counter_strike
+    //    s'obtient chez le maître martial (couvert par masterEngagement/masterReroute).
+    //    Ici on simule son acquisition pour la suite du run.
     const goldBefore = store().hero.inventory.gold
     const tokensBefore = store().hero.reputationTokens
-    store().completeQuest('first_blood')
-    expect(store().hero.inventory.gold).toBe(goldBefore + 50)
-    expect(store().hero.reputationTokens).toBe(tokensBefore + 1)
+    store().completeQuest('mq01_waking')
+    expect(store().hero.inventory.gold).toBe(goldBefore + 60)
+    expect(store().hero.reputationTokens).toBe(tokensBefore) // REP01 : quête non-élite = 0 token
+    store().addSkillToInventory({ skillId: 'counter_strike', level: 1, xp: 0 })
     expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'counter_strike')).toBe(true)
 
     // 7. Équiper le skill récompense
@@ -150,21 +154,21 @@ describe('Scénario 2 — Idle grinding', () => {
 // Scénario 3 : quêtes en chaîne
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Scénario 3 — Quêtes en chaîne', () => {
-  it('Accept 2 quêtes, compléter first_blood, puis proof_of_worth', () => {
+  it('Accept 2 quêtes, compléter mq01_waking, puis proof_of_worth', () => {
     const store = useGameStore.getState
 
-    store().startQuest('first_blood')
+    store().startQuest('mq01_waking')
     store().startQuest('proof_of_worth')
     expect(store().world.activeQuests).toHaveLength(2)
 
-    // Complete first_blood (5 wolf kills)
+    // Complete mq01_waking (5 wolf kills)
     for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
-    expect(store().isQuestComplete('first_blood')).toBe(true)
+    expect(store().isQuestComplete('mq01_waking')).toBe(true)
     expect(store().isQuestComplete('proof_of_worth')).toBe(false)
 
-    store().completeQuest('first_blood')
-    expect(store().world.completedQuests).toContain('first_blood')
-    expect(store().world.activeQuests).not.toContain('first_blood')
+    store().completeQuest('mq01_waking')
+    expect(store().world.completedQuests).toContain('mq01_waking')
+    expect(store().world.activeQuests).not.toContain('mq01_waking')
     expect(store().world.activeQuests).toContain('proof_of_worth')
 
     // Level 3 pour proof_of_worth
@@ -179,12 +183,12 @@ describe('Scénario 3 — Quêtes en chaîne', () => {
 
   it('Ne peut pas re-accepter une quête complétée', () => {
     const store = useGameStore.getState
-    store().startQuest('first_blood')
+    store().startQuest('mq01_waking')
     for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
-    store().completeQuest('first_blood')
+    store().completeQuest('mq01_waking')
     // Re-tenter
-    store().startQuest('first_blood')
-    expect(store().world.activeQuests).not.toContain('first_blood')
+    store().startQuest('mq01_waking')
+    expect(store().world.activeQuests).not.toContain('mq01_waking')
   })
 })
 
@@ -274,7 +278,7 @@ describe('Scénario 6 — Persistance entre sessions', () => {
     store().gainExp(100)
     store().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })
     store().equipActiveSkill({ skillId: 'savage_bite', level: 1, xp: 0 })
-    store().startQuest('first_blood')
+    store().startQuest('mq01_waking')
     store().recordKill('ashwood_wolf')
     store().saveGame()
 
@@ -294,7 +298,7 @@ describe('Scénario 6 — Persistance entre sessions', () => {
     expect(h.inventory.gold).toBe(320)
     expect(h.level).toBe(2)
     expect(h.activeSkills.some((s) => s.skillId === 'savage_bite')).toBe(true)
-    expect(w.activeQuests).toContain('first_blood')
+    expect(w.activeQuests).toContain('mq01_waking')
     expect(w.monsterKillCounts.ashwood_wolf).toBe(1)
   })
 })
@@ -555,9 +559,10 @@ describe('Scénario 12 — Boss run complet (Crypt Keeper)', () => {
     store().completeQuest('silence_the_crypt')
 
     // Récompenses de quête empilées en plus du loot combat
-    expect(store().hero.inventory.gold).toBe(goldBefore + 200)
-    expect(store().hero.reputationTokens).toBeGreaterThanOrEqual(3)
-    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(true)
+    // MST03 — soul_crush est désormais exclusif au maître arcane ; la quête donne + d'or (200→300).
+    expect(store().hero.inventory.gold).toBe(goldBefore + 300)
+    expect(store().hero.reputationTokens).toBe(0) // REP01 : boss non-élite = 0 token
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(false)
     // Boss XP substantielle → level up garanti (boss=300 XP, expToNext lv1=100)
     expect(store().hero.level).toBeGreaterThan(1)
   })
@@ -570,29 +575,29 @@ describe('Scénario 13 — 3 NPCs en parallèle', () => {
   it('accepter des quêtes de 3 NPCs et toutes les finir', () => {
     const store = useGameStore.getState
 
-    // Accept 3 quêtes d'NPCs différents
-    store().startQuest('first_blood') // sir_aldric
+    // Accept 3 quêtes d'NPCs différents (QSV2-DROPDUP01 — first_blood → nc_thin_the_boars)
+    store().startQuest('nc_thin_the_boars') // sir_aldric
     store().startQuest('bog_purge') // greywatch_elder
     store().startQuest('silence_the_crypt') // ironhaven_captain
     expect(store().world.activeQuests).toHaveLength(3)
 
     // Progresser sur toutes en parallèle
-    for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
+    for (let i = 0; i < 4; i++) store().recordKill('tuskmaw_boar')
     for (let i = 0; i < 4; i++) store().recordKill('mire_slime')
     store().recordKill('hollow_crypt_boss')
 
-    expect(store().isQuestComplete('first_blood')).toBe(true)
+    expect(store().isQuestComplete('nc_thin_the_boars')).toBe(true)
     expect(store().isQuestComplete('bog_purge')).toBe(true)
     expect(store().isQuestComplete('silence_the_crypt')).toBe(true)
 
     // Claim toutes
     const tokensBefore = store().hero.reputationTokens
-    store().completeQuest('first_blood')
+    store().completeQuest('nc_thin_the_boars')
     store().completeQuest('bog_purge')
     store().completeQuest('silence_the_crypt')
 
-    // 1 + 2 + 3 = 6 tokens
-    expect(store().hero.reputationTokens).toBe(tokensBefore + 6)
+    // REP01 : aucune de ces 3 quêtes n'est élite → 0 token
+    expect(store().hero.reputationTokens).toBe(tokensBefore)
     expect(store().world.completedQuests).toHaveLength(3)
     expect(store().world.activeQuests).toHaveLength(0)
   })
@@ -627,60 +632,25 @@ describe('Scénario 14 — Combat complet avec tracking implicite', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // BAL01 — Calibration économie tokens : simulation de runs typiques
 // ─────────────────────────────────────────────────────────────────────────────
-describe('BAL01 — Économie tokens (simulations)', () => {
-  // Coûts cibles (alignés avec CATALOG révisé)
-  const COSTS = {
-    starter_kit: 5,
-    divine_oracle: 8,
-    skill_levelup: 12,
-    rank_restore: 25,
-    bonus_skill: 50,
-    bonus_stat: 50,
-  }
+describe('BAL01 — Économie tokens (simulations REP01)', () => {
+  // REP01 a réécrit la source des tokens : SEULES les quêtes « kill-élite » en
+  // octroient (5 chacune) ; toute autre quête (commune, boss de zone, église) = 0.
+  // ⚠️ La calibration complète coûts/sources/rangs reste à recaler dans REP-REBAL01
+  // (les anciennes cibles « run moyen = 4 tokens » ne valent plus rien).
+  // QSV2-DROPDUP01 — nc_oakheart_elite retirée (doublon mq02) : 3 quêtes kill-élite restantes.
+  const ELITE_QUESTS = [
+    ['nc_fenrot_elite', 'fenrot_devourer'],
+    ['nc_graven_elite', 'graven_sentinel'],
+    ['nc_thunderhoof_elite', 'thunderhoof'],
+  ]
 
-  const cheapest = Math.min(...Object.values(COSTS)) // 5
-
-  it('un run RAPIDE (1 quête sir_aldric + 0 boss) → ≥ 1 token (au moins le starter_kit accessible)', () => {
+  it('quêtes non-élite (communes + boss de zone) → 0 token', () => {
     const store = useGameStore.getState
-    store().startQuest('first_blood')
+    const before = store().hero.reputationTokens
+
+    store().startQuest('mq01_waking')
     for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
-    store().completeQuest('first_blood')
-    // first_blood = 1 token
-    expect(store().hero.reputationTokens).toBeGreaterThanOrEqual(1)
-    // 1 token < starter_kit (5) → on n'achète RIEN. Acceptable pour run flash.
-  })
-
-  it('un run MOYEN (3 quêtes simples) → 4 tokens, peut acheter starter_kit', () => {
-    const store = useGameStore.getState
-    // Sir Aldric : 3 quêtes → 1+1+2 = 4 tokens
-    store().startQuest('first_blood')
-    for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
-    store().completeQuest('first_blood')
-
-    store().startQuest('proof_of_worth')
-    useGameStore.setState((state) => ({ hero: { ...state.hero, level: 3 } }))
-    store().completeQuest('proof_of_worth')
-
-    store().startQuest('clear_the_marsh')
-    for (let i = 0; i < 3; i++) store().recordKill('marsh_serpent')
-    store().completeQuest('clear_the_marsh')
-
-    const tokens = store().hero.reputationTokens
-    expect(tokens).toBe(4)
-    // Cible : run moyen permet 0 article (4 < 5). Borderline → un run "moyen+" achète 1.
-    expect(tokens).toBeGreaterThanOrEqual(cheapest - 1)
-  })
-
-  it('un run EXCELLENT (toutes quêtes communes + 1 boss) → ≥ 7 tokens (≥ 1 article moyen)', () => {
-    const store = useGameStore.getState
-    // 3 sir_aldric (4) + boss Crypt Keeper (3) + bog_purge (2) = 9 tokens
-    store().startQuest('first_blood')
-    for (let i = 0; i < 5; i++) store().recordKill('ashwood_wolf')
-    store().completeQuest('first_blood')
-
-    store().startQuest('proof_of_worth')
-    useGameStore.setState((state) => ({ hero: { ...state.hero, level: 3 } }))
-    store().completeQuest('proof_of_worth')
+    store().completeQuest('mq01_waking')
 
     store().startQuest('clear_the_marsh')
     for (let i = 0; i < 3; i++) store().recordKill('marsh_serpent')
@@ -690,53 +660,28 @@ describe('BAL01 — Économie tokens (simulations)', () => {
     store().recordKill('hollow_crypt_boss')
     store().completeQuest('silence_the_crypt')
 
-    const tokens = store().hero.reputationTokens
-    expect(tokens).toBe(7) // 1+1+2+3 = 7
-    // À 7 tokens : peut acheter starter_kit (5) + un reliquat 2 (insuffisant pour rien d'autre)
-    expect(tokens).toBeGreaterThanOrEqual(COSTS.starter_kit)
-    // Peut PAS acheter rank_restore (25) ni skill_levelup (12)
-    expect(tokens).toBeLessThan(COSTS.skill_levelup)
+    expect(store().hero.reputationTokens).toBe(before) // REP01 : aucune n'est élite
   })
 
-  it('un run LÉGENDAIRE (tout + Malachar) → ≥ 18 tokens (≥ 2-3 articles)', () => {
+  it('chaque quête kill-élite octroie exactement 5 tokens', () => {
     const store = useGameStore.getState
-    // All 8 quêtes + boss Crypt + Malachar = 1+1+2+3+5+10+2+3 = 27 tokens
-    const allQuests = [
-      ['first_blood', 'ashwood_wolf', 5],
-      ['proof_of_worth', null, null], // level quest
-      ['clear_the_marsh', 'marsh_serpent', 3],
-      ['silence_the_crypt', 'hollow_crypt_boss', 1],
-      ['storm_the_citadel', 'forsaken_citadel_boss', 1],
-      ['end_the_demon', 'malachar', 1],
-      ['bog_purge', 'mire_slime', 4],
-      ['ruins_cleanse', null, null], // ce quest a 2 objectives, on les complete tous deux
-    ]
-    for (const [questId, monster, count] of allQuests) {
+    for (const [questId, monster] of ELITE_QUESTS) {
+      const before = store().hero.reputationTokens
       store().startQuest(questId)
-      if (monster) for (let i = 0; i < count; i++) store().recordKill(monster)
+      store().recordKill(monster)
+      store().completeQuest(questId)
+      expect(store().hero.reputationTokens).toBe(before + 5)
     }
-    // proof_of_worth = level 3
-    useGameStore.setState((state) => ({ hero: { ...state.hero, level: 3 } }))
-    // ruins_cleanse a 2 objectives (specter + knight)
-    for (let i = 0; i < 3; i++) store().recordKill('ruin_specter')
-    for (let i = 0; i < 2; i++) store().recordKill('hollow_knight')
+  })
 
-    for (const [questId] of allQuests) {
-      try {
-        store().completeQuest(questId)
-      } catch {
-        /* skip si pas complet */
-      }
+  it('un run « full élites » (3 quêtes élites) → 15 tokens', () => {
+    const store = useGameStore.getState
+    for (const [questId, monster] of ELITE_QUESTS) {
+      store().startQuest(questId)
+      store().recordKill(monster)
+      store().completeQuest(questId)
     }
-    const tokens = store().hero.reputationTokens
-    expect(tokens).toBeGreaterThanOrEqual(18)
-    // Avec 18+ tokens : starter_kit + divine_oracle + skill_levelup + bonus_skill = 75 → trop
-    // Mais starter + oracle + 2x skill_levelup = 5+8+12+12 = 37 → 18 ne couvre PAS
-    // Cible : 18+ tokens couvre 1-2 articles utiles (bonus_stat ou bonus_skill = 50, hors atteinte)
-    // ⇒ ratio cohérent : LÉGENDAIRE achète 2-3 petits articles, pas 1 gros
-    expect(tokens).toBeGreaterThanOrEqual(
-      COSTS.starter_kit + COSTS.divine_oracle + COSTS.skill_levelup,
-    )
+    expect(store().hero.reputationTokens).toBe(15) // 3 × 5
   })
 
   it('BAL01 — vérification que CATALOG utilise bien les coûts révisés', async () => {
@@ -764,7 +709,7 @@ describe('Scénario 12 — Robustesse', () => {
 
   it('completeQuest sans quête active ne change rien', () => {
     const before = useGameStore.getState().hero.inventory.gold
-    useGameStore.getState().completeQuest('first_blood')
+    useGameStore.getState().completeQuest('mq01_waking')
     expect(useGameStore.getState().hero.inventory.gold).toBe(before)
   })
 

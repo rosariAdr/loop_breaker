@@ -1,6 +1,7 @@
 // REFAC01 — Migrations save (extrait de gameStore.js).
 import { INITIAL_HERO, INITIAL_WORLD, INITIAL_META } from './initialState'
-import { ZONE_ORDER } from '../data/zones'
+import { ZONE_ORDER, isNodeUnlocked, START_OPEN_NODES } from '../data/zones'
+import { getQuestById } from '../data/quests'
 
 // ── TECH02 — Migrations save (séquentielles) ─────────────────────────────────
 
@@ -26,7 +27,7 @@ function migrateV1ToV2(save) {
     idleLog: Array.isArray(world.idleLog) ? world.idleLog : [],
     generatedVillages: world.generatedVillages ?? {},
     dungeons: world.dungeons ?? { ...INITIAL_WORLD.dungeons },
-    currentNode: world.currentNode ?? world.currentLocation ?? 'ironhaven', // TRV01
+    currentNode: world.currentNode ?? world.currentLocation ?? START_OPEN_NODES[0], // TRV01 (greywatch = départ)
   }
 
   // ── Hero ──
@@ -38,11 +39,10 @@ function migrateV1ToV2(save) {
     equipment: Array.isArray(inventory.equipment) ? inventory.equipment : [],
     gold: inventory.gold ?? 0,
   }
+  // SLOT01 — repartir des slots par défaut (9 slots) pour qu'une vieille save (4 slots)
+  // reçoive amulet/ring1/ring2/offhand vides sans écraser les pièces déjà portées.
   const migratedEquipped = {
-    weapon: null,
-    helmet: null,
-    armor: null,
-    boots: null,
+    ...INITIAL_HERO.equipped,
     ...(hero.equipped ?? {}),
   }
 
@@ -74,11 +74,26 @@ function migrateV1ToV2(save) {
     ...meta,
     divineBonds: meta.divineBonds ?? {},
     titlesEarned: Array.isArray(meta.titlesEarned) ? meta.titlesEarned : [],
+    activeTitle: meta.activeTitle ?? null,
     permanentStatBoosts: meta.permanentStatBoosts ?? {}, // GLT01
     gluttonyLastUsed: meta.gluttonyLastUsed ?? null, // GLT01
   }
 
   return { hero: migratedHero, world: migratedWorld, meta: migratedMeta, saveVersion: 2 }
+}
+
+/**
+ * SLOT01 — Migration v2 → v3 : passage de 4 → 9 slots d'équipement.
+ * Ajoute offhand / amulet / ring1 / ring2 (vides) sans toucher aux pièces déjà portées.
+ * Idempotente : rejouée, elle ne réinitialise pas les slots existants.
+ */
+function migrateV2ToV3(save) {
+  const hero = save.hero ?? {}
+  const migratedEquipped = {
+    ...INITIAL_HERO.equipped,
+    ...(hero.equipped ?? {}),
+  }
+  return { ...save, hero: { ...hero, equipped: migratedEquipped }, saveVersion: 3 }
 }
 
 /**
@@ -136,6 +151,14 @@ export function normalizeSave(save) {
     combatEntryLog: asArray(sHero.combatEntryLog),
     titles: asArray(sHero.titles),
     skillUseLog: asArray(sHero.skillUseLog),
+    // MST01 — engagement de maître (persisté dans le run). Backfill à null pour les vieilles
+    // saves ; on n'accepte qu'une chaîne (id de maître) ou null pour éviter tout état corrompu.
+    masterId: typeof sHero.masterId === 'string' ? sHero.masterId : null,
+    // FIX-LVLQUEUE01 — points de stat différés (« Do it later ») : backfill défensif à 0.
+    pendingStatPoints:
+      typeof sHero.pendingStatPoints === 'number' && sHero.pendingStatPoints >= 0
+        ? sHero.pendingStatPoints
+        : 0,
   }
 
   // ── World ──
@@ -158,17 +181,46 @@ export function normalizeSave(save) {
     world.currentHuntingSpot = SPOT_ID_REMAP[world.currentHuntingSpot]
   if (SPOT_ID_REMAP[world.currentNode]) world.currentNode = SPOT_ID_REMAP[world.currentNode]
 
+  // QSV2-DROPDUP01 — filtre des ids de quête INCONNUS (quêtes retirées du jeu, ex.
+  // first_blood / nc_oakheart_elite) pour que le board/l'overlay ne rendent jamais un id
+  // mort (getQuestById → null). Les quêtes de village (vq_*) se régénèrent de façon
+  // déterministe et les quêtes église/maître/MQ/onboarding sont toutes résolues → seules
+  // les références orphelines disparaissent.
+  const knownQuest = (id) => getQuestById(id) != null
+  world.activeQuests = world.activeQuests.filter(knownQuest)
+  world.completedQuests = world.completedQuests.filter(knownQuest)
+  world.questProgress = Object.fromEntries(
+    Object.entries(world.questProgress).filter(([id]) => knownQuest(id)),
+  )
+
+  // FIX-START01 — anti-piège : si la save place le héros sur un node VERROUILLÉ
+  // (save d'avant le node-locking, ou ancien défaut « ironhaven » devenu inaccessible),
+  // le ramener au village de départ pour qu'il ne soit jamais bloqué hors des zones jouables.
+  if (!isNodeUnlocked(world.currentNode, world)) {
+    const startNode = START_OPEN_NODES[0] // greywatch
+    world.currentNode = startNode
+    world.currentLocation = startNode
+    world.currentHuntingSpot = null
+  }
+
   // ── Meta ──
   const meta = {
     ...INITIAL_META,
     ...sMeta,
     achievements: asArray(sMeta.achievements),
     titlesEarned: asArray(sMeta.titlesEarned),
+    activeTitle: sMeta.activeTitle ?? null,
     seenHints: asArray(sMeta.seenHints),
     knownInfo: asArray(sMeta.knownInfo),
     divineBonds: asObject(sMeta.divineBonds),
     permanentStatBoosts: asObject(sMeta.permanentStatBoosts),
     demonLordKills: asObject(sMeta.demonLordKills),
+    // QOBJ-TYPES01 — compteurs des nouveaux objectifs (backfill défensif : scalaires via le
+    // spread INITIAL_META ; l'objet craftCountByKind est coercé pour éviter tout accès fautif).
+    craftCountByKind: asObject(sMeta.craftCountByKind),
+    craftCount: typeof sMeta.craftCount === 'number' ? sMeta.craftCount : 0,
+    prayCount: typeof sMeta.prayCount === 'number' ? sMeta.prayCount : 0,
+    deedsAccepted: typeof sMeta.deedsAccepted === 'number' ? sMeta.deedsAccepted : 0,
     // settings imbriqué → fusion explicite pour conserver les sous-clés par défaut
     settings: { ...INITIAL_META.settings, ...asObject(sMeta.settings) },
   }
@@ -185,8 +237,9 @@ export function runMigrations(save) {
   const fromVersion = current.saveVersion ?? 1 // pas de saveVersion = v1 (legacy)
 
   if (fromVersion < 2) current = migrateV1ToV2(current)
+  if (fromVersion < 3) current = migrateV2ToV3(current) // SLOT01 — 4 → 9 slots
   // Ajouter les futures migrations ici :
-  // if (fromVersion < 3) current = migrateV2ToV3(current)
+  // if (fromVersion < 4) current = migrateV3ToV4(current)
 
   // Filet final : backfill des champs par défaut manquants, toutes versions confondues.
   return normalizeSave(current)

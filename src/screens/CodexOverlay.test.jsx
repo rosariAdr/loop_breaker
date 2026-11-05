@@ -1,8 +1,10 @@
 // CODEX01 — Tests du bestiaire (révélation progressive)
+// ONB03 — onglet « Rules » (codex des règles)
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import CodexOverlay from './CodexOverlay'
 import { useGameStore } from '../store/gameStore'
+import { CODEX_RULES } from '../data/codexRules'
 
 const setKills = (n) =>
   useGameStore.setState((s) => ({ world: { ...s.world, monsterKillCounts: { ashwood_wolf: n } } }))
@@ -43,5 +45,32 @@ describe('CODEX01 — bestiaire', () => {
     setKills(5)
     render(<CodexOverlay />)
     expect(screen.getByTestId('codex-skill-ashwood_wolf').textContent).toMatch(/Savage Bite/)
+  })
+})
+
+describe('ONB03 — onglet Rules (codex des règles)', () => {
+  it('démarre sur le bestiaire (pas de panneau Rules)', () => {
+    render(<CodexOverlay />)
+    expect(screen.queryByTestId('codex-rules')).toBeNull()
+  })
+
+  it('cliquer « Rules » affiche toutes les sections de règles', () => {
+    render(<CodexOverlay />)
+    fireEvent.click(screen.getByTestId('codex-tab-rules'))
+    const panel = screen.getByTestId('codex-rules')
+    expect(panel).toBeInTheDocument()
+    for (const r of CODEX_RULES) {
+      expect(screen.getByTestId(`codex-rule-${r.id}`)).toBeInTheDocument()
+    }
+    // contenus clés attendus
+    expect(panel.textContent).toMatch(/Transmigration/)
+    expect(panel.textContent).toMatch(/Vigor/)
+  })
+
+  it('revenir sur « Bestiary » masque le panneau Rules', () => {
+    render(<CodexOverlay />)
+    fireEvent.click(screen.getByTestId('codex-tab-rules'))
+    fireEvent.click(screen.getByTestId('codex-tab-bestiary'))
+    expect(screen.queryByTestId('codex-rules')).toBeNull()
   })
 })

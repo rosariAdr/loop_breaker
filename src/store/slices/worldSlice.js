@@ -1,11 +1,44 @@
 // REFAC01 — Slice « world » du store (extrait de gameStore.js, comportement inchangé).
+import { isBuildingUnlocked as isUnlockedPure } from '../../data/buildingUnlocks'
 import { getInformant } from '../../data/informants'
-import { ZONES } from '../../data/zones'
+import { ZONES, isNodeUnlocked as isNodeUnlockedPure } from '../../data/zones'
+import { appendAction } from '../../data/burnout'
 import { VIGOR_COST, VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
 import { tickDebuffsOneDay } from '../../utils/debuffs'
 import { useToastStore } from '../toastStore'
 
 export const createWorldSlice = (set, get) => ({
+  // ── BLDUNL01 — Déblocage des bâtiments ────────────────────────────────────
+  // Sélecteur : un bâtiment est accessible sauf s'il est dans world.buildingLocks.
+  isBuildingUnlocked: (id) => isUnlockedPure(id, get().world.buildingLocks ?? []),
+
+  // ── START02/04 — Déblocage des nodes (carte ashenvale) ────────────────────
+  // Sélecteur : un node est accessible s'il fait partie du départ ou a été ouvert
+  // par la chaîne de quêtes principale (world.unlockedNodes).
+  isNodeUnlocked: (nodeId) => isNodeUnlockedPure(nodeId, get().world),
+
+  // Verrouille un bâtiment (no-op si déjà verrouillé). Utilisé par le futur câblage
+  // des triggers (MQ-CHAIN01/START03) pour démarrer certains bâtiments verrouillés.
+  lockBuilding: (id) =>
+    set((state) => {
+      const locks = state.world.buildingLocks ?? []
+      if (locks.includes(id)) return state
+      return { world: { ...state.world, buildingLocks: [...locks, id] } }
+    }),
+
+  // Débloque un bâtiment (retire du verrou). C'est l'action appelée par un trigger
+  // (quête du maître / dialogue du doyen / arrivée en ville) une fois rempli.
+  unlockBuilding: (id) =>
+    set((state) => {
+      const locks = state.world.buildingLocks ?? []
+      if (!locks.includes(id)) return state
+      return { world: { ...state.world, buildingLocks: locks.filter((b) => b !== id) } }
+    }),
+
+  // BURN01/BURN02 — journalise une action (type) puis recalcule le burnout de monotonie.
+  logAction: (type) =>
+    set((state) => ({ world: { ...state.world, ...appendAction(state.world, type) } })),
+
   // ── Calendrier & monde ────────────────────────────────────────────────────
 
   sleep: () =>
@@ -41,6 +74,7 @@ export const createWorldSlice = (set, get) => ({
           dayCount: state.world.dayCount + 1,
           isNight: false,
           dungeons: newDungeons,
+          ...appendAction(state.world, 'rest'),
         },
       }
     }),
@@ -106,6 +140,7 @@ export const createWorldSlice = (set, get) => ({
           currentNode: nodeId,
           tickCount: total % 24,
           dayCount: state.world.dayCount + Math.floor(total / 24),
+          ...appendAction(state.world, 'travel'),
         },
         // STA01 — un voyage coûte 1 de vigueur (par unité de distance)
         hero: {

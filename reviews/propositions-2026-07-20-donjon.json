@@ -1,0 +1,76 @@
+{
+  "session": "Brainstorm — Donjon v1.41 : plongée procédurale (Tour 3)",
+  "skill": "lb-brainstorm",
+  "propositions": [
+    {
+      "ref": "P1",
+      "type": "OPTION DESIGN",
+      "cible": "v1.41",
+      "titre": "Option A — Chaîne linéaire « 9 salles » (spec 2026-06-13)",
+      "detail": "Implémenter D01-SPEC tel quel : 9 salles fixes en ligne (Combat 1/2/4/6/7 · Repos 3/8 · Trésor 5 · Boss 9), salle N+1 débloquée à la résolution de N. Pas d'embranchement, pas de probing, pas de coût en Vigueur. Le Repos devient le Pond.",
+      "justification": "Plancher de comparaison : c'est l'option la plus rapide, mais elle jette le design discuté (forks, probing, Vigueur) et reste en écart avec l'ADR-005 (path map à choix tactiques).",
+      "cout": "M",
+      "reco": "NON"
+    },
+    {
+      "ref": "P2",
+      "type": "OPTION DESIGN",
+      "cible": "v1.41",
+      "titre": "Option B — Plongée procédurale 5-6 salles (RETENUE à l'oral)",
+      "detail": "Layout regénéré à chaque entrée : salle de départ → chaîne courte avec 1 embranchement (2 branches qui reconvergent avant le boss) → salle du boss + glyphe (retour départ / sortie). Événements par salle : combat (majoritaire), trésor, 1 Pond of Recovery garanti par layout, salle élite + coffre dans ~25-30 % des layouts (sur la branche optionnelle). Monstre → combat direct ; sinon menu d'actions : inspecter les lieux, revoir l'équipement (gratuit), sonder une porte. Actions payées en Vigueur (STA01). Rebrousser chemin possible ; sortir = le layout se regénère. Répétable, grosse récompense au 1er clear (loot exclusif D04). Débutant = Hollow Crypt (5-6 salles) ; senior = Forsaken Citadel (10-12 salles, 2 embranchements, 2 élites).",
+      "justification": "Colle aux réponses du Tour 1, se réaligne sur l'ADR-005, réutilise Vigueur + paliers de malus existants (risque/récompense gratuit, rien à inventer), et se découpe en tickets S/M testables (générateur pur d'abord).",
+      "cout": "L",
+      "reco": "OUI"
+    },
+    {
+      "ref": "P3",
+      "type": "OPTION DESIGN",
+      "cible": "v1.41+",
+      "titre": "Option C — B + méta d'expédition (extensions futures)",
+      "detail": "Tout B, plus : affixes de nuit (le donjon respawn avec un modificateur — « nuit de brume : probing flou », « lune rouge : +1 élite »), boutique d'usage des dungeon_seals, variantes de Pond, recrutement de compagnon en salle événement (CMP06), vision nocturne EVT03 = un probing gratuit du prochain layout.",
+      "justification": "Bonnes briques mais aimant à scope creep — aucune n'est nécessaire au premier donjon jouable. Décision attendue : PLUS TARD (parkées dans le brainstorm doc comme extensions, réouvrables).",
+      "cout": "XL",
+      "reco": "PLUS TARD"
+    },
+    {
+      "ref": "P4",
+      "type": "STATU QUO",
+      "cible": "v1.41",
+      "titre": "Ne rien faire — garder le donjon one-shot actuel",
+      "detail": "Conserver le donjon actuel sans salles (world.dungeons : active/cleared/position/discovered, un seul combat de boss) ; l'épique v1.41 reste au frigo.",
+      "justification": "Le statu quo se coche aussi. Mais l'épique v1.41 existe précisément pour remplacer ce one-shot, et le design B est maintenant complet.",
+      "cout": "-",
+      "reco": "NON"
+    },
+    {
+      "ref": "P5",
+      "type": "OPTION DESIGN",
+      "cible": "B — probing",
+      "titre": "Probing à 2 niveaux, payé en Vigueur",
+      "detail": "Sonde rapide (coût Vigueur faible) → indice flou (« des grognements derrière la porte ») ; sonde approfondie (coût ~double) → type exact de la salle (trésor / recovery / monstre classique / élite). Chiffres exacts calés au cadrage (grille de coûts donjon, même exercice que CMB-COST01 côté combat).",
+      "justification": "Validé à l'oral (sous-question 1) : deux niveaux = un vrai choix économique à chaque porte, et couvre tes deux cas « indice flou OU type ».",
+      "cout": "-",
+      "reco": "OUI"
+    },
+    {
+      "ref": "P6",
+      "type": "OPTION DESIGN",
+      "cible": "B — Pond",
+      "titre": "Le Pond of Recovery rend vie + Vigueur",
+      "detail": "Le bassin restaure la totalité des PV et de la Vigueur (part exacte — pleine ou partielle — à caler au cadrage avec la grille de coûts). En senior (10-12 salles), c'est ce qui rend la plongée complète possible sans dormir.",
+      "justification": "Validé à l'oral (sous-question 2).",
+      "cout": "-",
+      "reco": "OUI"
+    },
+    {
+      "ref": "P7",
+      "type": "OPTION DESIGN",
+      "cible": "B — burnout",
+      "titre": "Le donjon fatigue l'Aura (burnout assumé)",
+      "detail": "Pas d'exemption : une plongée pleine de combats compte comme sur-combat pour BURN01 (−Aura). L'inspection/probing ne compte pas comme « 2e activité » exemptante.",
+      "justification": "Validé à l'oral (sous-question 3) : le donjon doit se payer — cohérent avec la philosophie burnout existante (exemption seulement si ≥2 activités réelles dans la journée).",
+      "cout": "-",
+      "reco": "OUI"
+    }
+  ]
+}

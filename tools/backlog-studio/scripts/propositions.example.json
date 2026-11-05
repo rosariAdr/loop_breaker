@@ -1,0 +1,36 @@
+{
+  "session": "Grooming backlog — test",
+  "skill": "lb-grooming",
+  "propositions": [
+    {
+      "ref": "P1",
+      "type": "NOUVEAU TICKET",
+      "cible": "-",
+      "titre": "Bonus de set 2 pièces",
+      "detail": "Créer EQSET-02 : appliquer un bonus quand 2 pièces d'un même set sont équipées.",
+      "justification": "Le système 9 slots est en place, les set bonuses 2-9 sont décidés mais non ticketés.",
+      "cout": "M",
+      "reco": "OUI"
+    },
+    {
+      "ref": "P2",
+      "type": "STATU QUO",
+      "cible": "SKL-E1",
+      "titre": "Laisser SKL-E1 bloqué",
+      "detail": "Aucun changement. Reste bloqué tant que skills.js n'est pas transmis.",
+      "justification": "Impossible d'auditer sans le fichier.",
+      "cout": "-",
+      "reco": "OUI"
+    },
+    {
+      "ref": "P3",
+      "type": "FUSION",
+      "cible": "EQDROP01",
+      "titre": "Marquer EQDROP01 superseded",
+      "detail": "EQDROP01 -> superseded par EQDROP01b.",
+      "justification": "Doublon connu.",
+      "cout": "S",
+      "reco": "A DISCUTER"
+    }
+  ]
+}

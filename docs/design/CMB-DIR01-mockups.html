@@ -1,0 +1,1118 @@
+<title>CMB-DIR01 — Deux directions pour l'écran de combat</title>
+
+<style>
+  /* ═══ Tokens ═══════════════════════════════════════════════════════
+     Palette héritée du projet (src/index.css) — précédence au système
+     existant. Seuls les neutres de la page-cadre sont ajoutés ici.     */
+  :root {
+    /* jeu — inchangés, viennent de src/index.css */
+    --parchment: #f2e0b6;
+    --parchment-2: #ead49c;
+    --scroll-paper: #f6e8c4;
+    --parchment-shadow: #c9a96e;
+    --ink: #3d2b1f;
+    --ink-soft: #5c4632;
+    --forest: #4a7c2f;
+    --forest-deep: #2d5216;
+    --gold: #d4a017;
+    --amber: #e8a020;
+    --amber-deep: #b97a12;
+    --danger: #c0392b;
+    --stone: #9b9080;
+    --sage: #70a070;
+    --sky: #7db9de;
+    --wood: #3d2b1f;
+    --wood-2: #5a3e29;
+
+    /* cadre de la page — neutres biaisés chaud (jamais du gris pur) */
+    --page-bg: #f7f2e7;
+    --page-panel: #fffdf7;
+    --page-line: #ddd0b6;
+    --page-fg: #2e2519;
+    --page-dim: #6d5f4a;
+    --page-accent: #9a6b12;
+
+    --face-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif;
+    --face-body: Georgia, 'Iowan Old Style', Cambria, serif;
+    --face-data: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page-bg: #16120c;
+      --page-panel: #1f1a12;
+      --page-line: #38301f;
+      --page-fg: #efe6d4;
+      --page-dim: #a2937a;
+      --page-accent: #e0ad3e;
+    }
+  }
+  :root[data-theme='dark'] {
+    --page-bg: #16120c;
+    --page-panel: #1f1a12;
+    --page-line: #38301f;
+    --page-fg: #efe6d4;
+    --page-dim: #a2937a;
+    --page-accent: #e0ad3e;
+  }
+  :root[data-theme='light'] {
+    --page-bg: #f7f2e7;
+    --page-panel: #fffdf7;
+    --page-line: #ddd0b6;
+    --page-fg: #2e2519;
+    --page-dim: #6d5f4a;
+    --page-accent: #9a6b12;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--page-fg);
+    font-family: var(--face-body);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 40px 24px 90px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  /* ═══ En-tête ══════════════════════════════════════════════════════ */
+  .masthead { display: flex; flex-direction: column; gap: 10px; }
+  .eyebrow {
+    font-family: var(--face-data);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--page-accent);
+  }
+  .masthead h1 {
+    font-family: var(--face-display);
+    font-weight: 400;
+    font-size: clamp(28px, 4.2vw, 46px);
+    line-height: 1.12;
+    margin: 0;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .standfirst {
+    margin: 0;
+    max-width: 66ch;
+    color: var(--page-dim);
+    font-size: 18px;
+  }
+
+  /* ═══ Contrôles ════════════════════════════════════════════════════ */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 26px;
+    align-items: flex-end;
+    padding: 18px 20px;
+    background: var(--page-panel);
+    border: 1px solid var(--page-line);
+    border-radius: 3px;
+  }
+  .ctl { display: flex; flex-direction: column; gap: 7px; }
+  .ctl > span {
+    font-family: var(--face-data);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--page-dim);
+  }
+  .seg { display: flex; flex-wrap: wrap; border: 1px solid var(--page-line); border-radius: 2px; overflow: hidden; }
+  .seg button {
+    appearance: none;
+    border: 0;
+    border-right: 1px solid var(--page-line);
+    background: transparent;
+    color: var(--page-fg);
+    font-family: var(--face-body);
+    font-size: 15px;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: background 140ms ease, color 140ms ease;
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button:hover { background: color-mix(in srgb, var(--page-accent) 12%, transparent); }
+  .seg button[aria-pressed='true'] {
+    background: var(--page-accent);
+    color: var(--page-bg);
+  }
+  .seg button:focus-visible { outline: 2px solid var(--page-accent); outline-offset: -2px; }
+
+  .note {
+    font-size: 14px;
+    color: var(--page-dim);
+    margin: 0;
+    flex: 1 1 240px;
+    min-width: 220px;
+  }
+
+  /* ═══ Le plateau 1920×1080 ═════════════════════════════════════════
+     Tout l'intérieur est dimensionné en `em`. La font-size du plateau
+     vaut 100cqw/192, donc 1em = 10px à 1920 de large : la maquette est
+     rigoureusement à l'échelle, quelle que soit la largeur de rendu.   */
+  .stage-frame {
+    container-type: inline-size;
+    border: 1px solid var(--page-line);
+    border-radius: 3px;
+    overflow: hidden;
+    background: #000;
+  }
+  .stage {
+    font-size: calc(100cqw / 192);
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    font-family: var(--face-body);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* — vernaculaire commun aux deux directions — */
+  .runic {
+    font-family: var(--face-display);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+  }
+  .data { font-family: var(--face-data); font-variant-numeric: tabular-nums; }
+
+  /* figurine : placeholder assumé pour les sprites CONT01 */
+  .fig { display: flex; flex-direction: column; align-items: center; gap: 0.5em; cursor: pointer; }
+  /* NB : la font-size vit sur le <span> interne, jamais sur la boîte —
+     sinon width/height en `em` se résoudraient contre elle et non contre
+     l'échelle du plateau. Même règle pour .crest, .qslot et .pip.        */
+  .fig-body {
+    width: 8.6em;
+    height: 11.4em;
+    border-radius: 46% 46% 30% 30% / 34% 34% 66% 66%;
+    display: grid;
+    place-items: center;
+    font-family: var(--face-display);
+    line-height: 1;
+    position: relative;
+    transition: transform 160ms ease, filter 160ms ease;
+  }
+  .fig-body > span { font-size: 3.2em; line-height: 1; }
+  .fig:hover .fig-body { transform: translateY(-0.12em) scale(1.02); }
+  .fig-ally .fig-body {
+    background: linear-gradient(168deg, #6b5433, #3c2d19);
+    border: 0.22em solid var(--gold);
+    color: var(--parchment);
+    box-shadow: 0 0.5em 1.4em rgba(0, 0, 0, 0.4), inset 0 0 1.6em rgba(212, 160, 23, 0.28);
+  }
+  .fig-foe .fig-body {
+    background: linear-gradient(168deg, #4d3330, #2a1a18);
+    border: 0.22em solid var(--danger);
+    color: #e8cfc4;
+    box-shadow: 0 0.5em 1.4em rgba(0, 0, 0, 0.45), inset 0 0 1.6em rgba(192, 57, 43, 0.3);
+  }
+  .fig[data-sel='1'] .fig-body {
+    outline: 0.3em solid var(--amber);
+    outline-offset: 0.28em;
+  }
+  .fig-name {
+    font-family: var(--face-display);
+    font-size: 1.35em;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    text-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.85);
+  }
+  .fig-ally .fig-name { color: var(--parchment); }
+  .fig-foe .fig-name { color: #edc9bf; }
+
+  /* barre de vie « au sol » (direction A) */
+  /* Sur fond peint, la barre ne peut plus compter sur un sol neutre :
+     plaque sombre opaque + liseré clair, lisibles sur n'importe quelle
+     illustration (le point de vigilance relevé en phase 1).           */
+  .floorbar {
+    width: 9.6em;
+    height: 0.9em;
+    background: rgba(12, 8, 5, 0.82);
+    border: 0.09em solid rgba(0, 0, 0, 0.85);
+    box-shadow: 0 0 0 0.09em rgba(242, 224, 182, 0.34), 0 0.2em 0.5em rgba(0, 0, 0, 0.55);
+    display: flex;
+    gap: 0.1em;
+    padding: 0.11em;
+  }
+  .floorbar i { flex: 1; display: block; }
+  .fig-ally .floorbar i { background: var(--parchment); }
+  .fig-foe .floorbar i { background: var(--danger); }
+  .floorbar i.off { background: rgba(255, 255, 255, 0.12); }
+
+  /* file des tours */
+  .queue { display: flex; align-items: center; gap: 0.75em; }
+  .qslot {
+    width: 4.6em;
+    height: 4.6em;
+    display: grid;
+    place-items: center;
+    font-family: var(--face-display);
+    transform: rotate(45deg);
+    border: 0.16em solid var(--gold);
+    background: linear-gradient(150deg, #6b5433, #3a2b18);
+    color: var(--parchment);
+    flex: none;
+  }
+  .qslot > span { transform: rotate(-45deg); font-size: 1.5em; }
+  .qslot.foe { border-color: var(--danger); background: linear-gradient(150deg, #4d3330, #291a18); color: #edc9bf; }
+  .qslot.now { box-shadow: 0 0 0 0.2em var(--amber), 0 0 1.4em rgba(232, 160, 32, 0.6); }
+  .qtag {
+    font-family: var(--face-display);
+    font-size: 1.15em;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--amber);
+    text-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.9);
+  }
+
+  /* grille d'action partagée */
+  .verbs { display: flex; flex-direction: column; }
+  .verb {
+    font-family: var(--face-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 1.55em;
+    padding: 0.5em 1.1em;
+    cursor: pointer;
+    border-left: 0.22em solid transparent;
+    display: flex;
+    justify-content: space-between;
+    gap: 1em;
+    transition: background 130ms ease;
+  }
+  .verb:hover { background: rgba(0, 0, 0, 0.07); }
+  .verb[aria-pressed='true'] {
+    border-left-color: var(--amber);
+    background: rgba(0, 0, 0, 0.12);
+  }
+  .verb em { font-style: normal; opacity: 0.45; font-size: 0.8em; }
+
+  .skills { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.6em; align-content: start; }
+  .skill {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 0.9em;
+    align-items: baseline;
+    padding: 0.42em 0.6em;
+    font-size: 1.4em;
+    cursor: pointer;
+    border-bottom: 0.05em solid rgba(61, 43, 31, 0.14);
+  }
+  .skill:hover { background: rgba(212, 160, 23, 0.16); }
+  .skill .cost { font-family: var(--face-data); font-variant-numeric: tabular-nums; font-size: 0.82em; }
+  .skill .rank {
+    font-family: var(--face-data);
+    font-size: 0.72em;
+    padding: 0.14em 0.5em;
+    border: 0.08em solid currentColor;
+    letter-spacing: 0.04em;
+  }
+  .r-fast { color: var(--forest); }
+  .r-norm { color: var(--ink-soft); }
+  .r-slow { color: var(--danger); }
+
+  .ribbon {
+    font-style: italic;
+    font-size: 1.42em;
+    padding: 0.5em 1.2em;
+    min-height: 2.6em;
+    display: flex;
+    align-items: center;
+  }
+
+  /* bloc de stats (DD) */
+  .statgrid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.22em 1.1em;
+    font-family: var(--face-data);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.25em;
+  }
+  .statgrid dt { letter-spacing: 0.1em; opacity: 0.66; }
+  .statgrid dd { margin: 0; font-weight: 700; }
+
+  /* jauge fine */
+  .gauge { height: 0.85em; background: rgba(0, 0, 0, 0.28); border: 0.08em solid rgba(0, 0, 0, 0.4); }
+  .gauge i { display: block; height: 100%; }
+
+  /* ══ DIRECTION A — « Le rang » ═════════════════════════════════════ */
+  .dirA { background: #241a12; }
+  .dirA .topband {
+    height: 11em;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2.4em;
+    gap: 2em;
+    background: linear-gradient(180deg, #2f2216, #241a12);
+    border-bottom: 0.18em solid var(--wood-2);
+  }
+  .dirA .arena {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 6em 3.4em;
+    position: relative;
+  }
+  .dirA .arena::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 34%;
+    background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.34));
+    pointer-events: none;
+  }
+
+  /* ── Fonds peints par spot ────────────────────────────────────────
+     Simulations CSS des illustrations à générer (ASSET_PROMPTS §11).
+     Une par spot de chasse réel ; le donjon a la sienne.            */
+  .paint { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+
+  .paint[data-zone='ashenvale_forest'] {
+    background:
+      radial-gradient(48% 40% at 68% 4%, rgba(255, 244, 186, 0.72), transparent 62%),
+      radial-gradient(24% 88% at 10% 0%, #24461a 60%, transparent 63%),
+      radial-gradient(20% 80% at 30% 0%, #35601f 58%, transparent 61%),
+      radial-gradient(22% 92% at 88% 0%, #24461a 60%, transparent 63%),
+      linear-gradient(180deg, #bcd9c4 0%, #9dc088 22%, #7ba055 42%, #5d8038 62%, #47632a 80%, #33471d 100%);
+  }
+  .paint[data-zone='wildmere_hills'] {
+    background:
+      radial-gradient(42% 32% at 76% 8%, rgba(255, 248, 200, 0.66), transparent 64%),
+      radial-gradient(70% 26% at 22% 46%, #7fa54c 60%, transparent 62%),
+      radial-gradient(64% 24% at 82% 52%, #6d9440 60%, transparent 62%),
+      linear-gradient(180deg, #a9d4e8 0%, #c8dfc4 26%, #9dbb66 40%, #86a851 58%, #6c8c3c 78%, #55702c 100%);
+  }
+  .paint[data-zone='crumbled_ruins'] {
+    background:
+      radial-gradient(52% 40% at 50% 6%, rgba(232, 226, 196, 0.5), transparent 66%),
+      linear-gradient(96deg, transparent 12%, rgba(150, 148, 128, 0.5) 14%, transparent 17%),
+      linear-gradient(84deg, transparent 74%, rgba(150, 148, 128, 0.45) 77%, transparent 80%),
+      linear-gradient(180deg, #b9bda8 0%, #9aa189 26%, #7d8570 46%, #646b58 68%, #4a5040 100%);
+  }
+  .paint[data-zone='thornmarsh'] {
+    background:
+      radial-gradient(58% 44% at 44% 10%, rgba(206, 218, 176, 0.4), transparent 68%),
+      radial-gradient(30% 70% at 16% 24%, #2f3f24 58%, transparent 62%),
+      radial-gradient(26% 64% at 84% 20%, #2a3a22 58%, transparent 62%),
+      linear-gradient(180deg, #9aa88a 0%, #7c8c6a 22%, #5e6d4c 44%, #47563a 66%, #35422c 100%);
+  }
+  .paint[data-zone='hollow_crypt'] {
+    background:
+      radial-gradient(34% 30% at 50% 16%, rgba(255, 196, 108, 0.42), transparent 66%),
+      radial-gradient(18% 46% at 14% 30%, rgba(255, 172, 84, 0.24), transparent 62%),
+      radial-gradient(18% 46% at 86% 30%, rgba(255, 172, 84, 0.24), transparent 62%),
+      linear-gradient(180deg, #35302a 0%, #2b2621 34%, #241f1b 62%, #1a1614 100%);
+  }
+
+  /* ── Traitement ÉLITE ─────────────────────────────────────────────
+     Même plaque peinte + une couche d'ambiance : ciel assombri,
+     braises, vignette rouge. 1 illustration par spot au lieu de 2.  */
+  .paint[data-rank='elite']::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(60% 46% at 50% 0%, rgba(96, 22, 14, 0.62), transparent 70%),
+      radial-gradient(120% 90% at 50% 116%, rgba(220, 96, 30, 0.26), transparent 62%),
+      linear-gradient(180deg, rgba(24, 8, 6, 0.5), rgba(24, 8, 6, 0.16) 44%, rgba(40, 12, 6, 0.42));
+  }
+  .paint[data-rank='elite']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 14em 3em rgba(72, 12, 6, 0.62);
+    background-image:
+      radial-gradient(0.16em 0.16em at 18% 62%, rgba(255, 176, 84, 0.9), transparent),
+      radial-gradient(0.13em 0.13em at 34% 44%, rgba(255, 148, 60, 0.85), transparent),
+      radial-gradient(0.18em 0.18em at 58% 70%, rgba(255, 196, 110, 0.8), transparent),
+      radial-gradient(0.12em 0.12em at 74% 38%, rgba(255, 160, 70, 0.9), transparent),
+      radial-gradient(0.15em 0.15em at 88% 58%, rgba(255, 180, 90, 0.75), transparent);
+  }
+
+  /* l'élite est unique et surdimensionnée */
+  .fig-elite .fig-body { width: 14em; height: 18.4em; border-width: 0.3em; }
+  .fig-elite .fig-body > span { font-size: 5.4em; }
+  .fig-elite .fig-name { font-size: 1.8em; }
+  .fig-elite .floorbar { width: 16em; height: 1em; }
+  .dirA .rank { display: flex; align-items: flex-end; gap: 2.2em; position: relative; z-index: 1; }
+  .dirA .console {
+    flex: none;
+    height: 40em;
+    display: grid;
+    grid-template-columns: 42em 1fr;
+    background: linear-gradient(180deg, var(--parchment) 0%, var(--parchment-2) 100%);
+    border-top: 0.3em solid var(--wood-2);
+    color: var(--ink);
+  }
+  .dirA .who {
+    border-right: 0.15em solid var(--parchment-shadow);
+    padding: 1.2em 1.8em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85em;
+    min-height: 0;
+  }
+  .dirA .who-head { display: flex; align-items: center; gap: 1.2em; }
+  .dirA .crest {
+    width: 5.6em;
+    height: 5.6em;
+    flex: none;
+    border-radius: 44% 44% 30% 30% / 32% 32% 68% 68%;
+    background: linear-gradient(160deg, #6b5433, #3c2d19);
+    border: 0.2em solid var(--gold);
+    color: var(--parchment);
+    display: grid;
+    place-items: center;
+    font-family: var(--face-display);
+  }
+  .dirA .crest > span { font-size: 2.2em; }
+  .dirA .who-name { font-family: var(--face-display); font-size: 2.5em; line-height: 1.05; letter-spacing: 0.04em; }
+  .dirA .who-class { font-size: 1.3em; font-style: italic; color: var(--ink-soft); }
+  .dirA .acts { display: flex; flex-direction: column; min-height: 0; }
+
+  /* ══ DIRECTION B — « La clairière » ════════════════════════════════ */
+  .dirB { background: #1d2416; }
+  .dirB .scene {
+    flex: 1;
+    position: relative;
+    background: #1d2416;
+    overflow: hidden;
+  }
+  .dirB .canopy {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 30%;
+    background:
+      radial-gradient(22% 100% at 8% 0%, var(--forest-deep) 62%, transparent 64%),
+      radial-gradient(18% 90% at 26% 0%, var(--forest) 60%, transparent 62%),
+      radial-gradient(20% 96% at 92% 0%, var(--forest-deep) 62%, transparent 64%),
+      radial-gradient(15% 76% at 76% 0%, var(--forest) 58%, transparent 60%);
+    opacity: 0.92;
+    pointer-events: none;
+  }
+  .dirB .rays {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(104deg, transparent 46%, rgba(255, 240, 190, 0.24) 52%, transparent 57%),
+      linear-gradient(99deg, transparent 62%, rgba(255, 240, 190, 0.16) 67%, transparent 71%);
+    pointer-events: none;
+  }
+  .dirB .fx-top {
+    position: absolute;
+    top: 2.2em;
+    left: 2.4em;
+    right: 2.4em;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2em;
+    z-index: 2;
+  }
+  .dirB .aura {
+    display: flex;
+    align-items: center;
+    gap: 0.9em;
+    background: rgba(30, 22, 12, 0.62);
+    border: 0.14em solid var(--gold);
+    padding: 0.5em 1.2em;
+    color: var(--parchment);
+  }
+  .dirB .aura .gauge { width: 15em; }
+  .dirB .queuebox {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.55em;
+    background: rgba(30, 22, 12, 0.62);
+    border: 0.14em solid var(--gold);
+    padding: 0.8em 1.1em;
+  }
+  .dirB .field {
+    position: absolute;
+    inset: auto 0 9em 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 8em;
+    z-index: 1;
+  }
+  .dirB .console {
+    flex: none;
+    height: 30em;
+    display: grid;
+    grid-template-columns: 1fr 34em;
+    background: linear-gradient(180deg, #2b2013 0%, #1d1409 100%);
+    border-top: 0.3em solid var(--gold);
+    color: var(--parchment);
+  }
+  .dirB .console .ribbon { color: var(--parchment-2); border-bottom: 0.1em solid rgba(212, 160, 23, 0.32); }
+  .dirB .cmd { display: grid; grid-template-columns: 16em 1fr; }
+  .dirB .verbs { border-right: 0.12em solid rgba(212, 160, 23, 0.32); }
+  .dirB .verb { color: var(--parchment); }
+  .dirB .verb:hover { background: rgba(212, 160, 23, 0.14); }
+  .dirB .verb[aria-pressed='true'] { background: rgba(212, 160, 23, 0.2); }
+  .dirB .skills { padding: 0.7em 1.4em; }
+  .dirB .skill { color: var(--parchment); border-bottom-color: rgba(212, 160, 23, 0.16); }
+  .dirB .skill .rank { color: var(--parchment-2); }
+  .dirB .r-fast { color: var(--sage); }
+  .dirB .r-slow { color: #e8927f; }
+  .dirB .roster {
+    border-left: 0.12em solid rgba(212, 160, 23, 0.32);
+    padding: 0.9em 1.3em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.55em;
+  }
+  .dirB .rrow {
+    display: grid;
+    grid-template-columns: 3.4em 1fr auto auto;
+    align-items: center;
+    gap: 1em;
+    font-family: var(--face-data);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.3em;
+  }
+  .dirB .rrow .pip {
+    width: 3.4em;
+    height: 3.4em;
+    display: grid;
+    place-items: center;
+    border: 0.14em solid var(--gold);
+    background: linear-gradient(150deg, #6b5433, #3a2b18);
+    font-family: var(--face-display);
+  }
+  .dirB .rrow .pip > span { font-size: 0.9em; }
+  .dirB .rrow .nm { font-family: var(--face-display); letter-spacing: 0.05em; font-size: 1.02em; }
+  .dirB .rrow .hp { color: #f0c9a0; }
+  .dirB .rrow .mp { color: var(--sky); }
+  .dirB .rrow.act { background: rgba(212, 160, 23, 0.16); box-shadow: inset 0.22em 0 0 var(--amber); }
+
+  /* intent au-dessus de l'ennemi */
+  .intent {
+    font-family: var(--face-data);
+    font-size: 1.15em;
+    background: rgba(30, 18, 12, 0.82);
+    border: 0.12em solid var(--danger);
+    color: #f3d3c6;
+    padding: 0.24em 0.7em;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+
+  /* ═══ Annotations ══════════════════════════════════════════════════ */
+  .callouts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+    gap: 1px;
+    background: var(--page-line);
+    border: 1px solid var(--page-line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .callout { background: var(--page-panel); padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; }
+  .callout .rule {
+    font-family: var(--face-data);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--page-accent);
+  }
+  .callout h3 { margin: 0; font-family: var(--face-display); font-size: 18px; font-weight: 400; }
+  .callout p { margin: 0; font-size: 14.5px; color: var(--page-dim); line-height: 1.55; }
+
+  .verdict {
+    border: 1px solid var(--page-line);
+    border-left: 3px solid var(--page-accent);
+    background: var(--page-panel);
+    padding: 22px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-radius: 0 3px 3px 0;
+  }
+  .verdict h2 { margin: 0; font-family: var(--face-display); font-weight: 400; font-size: 24px; }
+  .verdict p { margin: 0; max-width: 74ch; }
+  .verdict ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 7px; }
+  .verdict li { max-width: 72ch; }
+
+  .foot { color: var(--page-dim); font-size: 14px; border-top: 1px solid var(--page-line); padding-top: 18px; }
+  .foot code { font-family: var(--face-data); font-size: 13px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">CMB-DIR01 · phase 3 · v1.45</div>
+    <h1>Deux directions pour l'écran de combat</h1>
+    <p class="standfirst">
+      Même contenu, même palette chaude, deux arbitrages opposés entre lisibilité et spectacle.
+      Les deux appliquent les six règles tirées de Darkest Dungeon et Chained Echoes. Tout est cliquable :
+      choisissez une cible, un verbe, survolez un skill.
+    </p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl">
+      <span>Direction</span>
+      <div class="seg" id="segDir">
+        <button type="button" data-dir="A" aria-pressed="true">A — Le rang ✓ retenue</button>
+        <button type="button" data-dir="B" aria-pressed="false">B — archive</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span>Zone</span>
+      <div class="seg" id="segZone">
+        <button type="button" data-zone="ashenvale_forest" aria-pressed="true">Ashenvale</button>
+        <button type="button" data-zone="wildmere_hills" aria-pressed="false">Wildmere</button>
+        <button type="button" data-zone="crumbled_ruins" aria-pressed="false">Ruins</button>
+        <button type="button" data-zone="thornmarsh" aria-pressed="false">Thornmarsh</button>
+        <button type="button" data-zone="hollow_crypt" aria-pressed="false">Crypt</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span>Rencontre</span>
+      <div class="seg" id="segRank">
+        <button type="button" data-rank="common" aria-pressed="true">Commun</button>
+        <button type="button" data-rank="elite" aria-pressed="false">Élite</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span>Groupe</span>
+      <div class="seg" id="segParty">
+        <button type="button" data-party="1" aria-pressed="true">Héros seul</button>
+        <button type="button" data-party="4" aria-pressed="false">4 personnages</button>
+      </div>
+    </div>
+    <p class="note">
+      Plateau à l'échelle exacte 1920 × 1080. Les fonds sont des <strong>simulations CSS</strong> des
+      illustrations à générer ; les figurines sont des placeholders (sprites = CONT01).
+    </p>
+  </div>
+
+  <div class="stage-frame">
+    <div class="stage dirA" id="stage"></div>
+  </div>
+
+  <section class="callouts" id="callouts"></section>
+
+  <section class="verdict">
+    <h2>Direction A retenue, avec fonds peints par zone</h2>
+    <p>
+      La composition de A ne change pas — arène latérale, stats permanentes, file des tours pleine largeur.
+      Ce qui change, c'est que la cour de pierre neutre laisse la place à <strong>une illustration par spot
+      de chasse</strong>, déclinée en variante élite. Trois conséquences valent d'être notées.
+    </p>
+    <ul>
+      <li>
+        <strong>A devient asset-gated.</strong> C'était l'argument le plus fort en sa faveur — elle
+        fonctionnait sans illustration. Ce n'est plus vrai : il faut 5 fonds avant de pouvoir livrer l'écran.
+        C'est un coût assumé, pas un oubli, et ça déplace CMB-DIR01 dans la même file d'attente d'assets que
+        le donjon (DUN-ART01).
+      </li>
+      <li>
+        <strong>L'élite est un traitement, pas une seconde peinture.</strong> Même plaque peinte, plus une
+        couche d'ambiance : ciel assombri, braises, vignette rouge. On obtient une rencontre visiblement
+        différente pour <em>5 illustrations au lieu de 10</em>, et la lisibilité est garantie puisque la base
+        ne bouge pas. Repeindre entièrement reste possible plus tard, spot par spot, sans rien casser.
+      </li>
+      <li>
+        <strong>Les barres au sol ont dû être renforcées.</strong> Elles tenaient grâce au fond neutre ;
+        sur une illustration, elles se perdaient. Elles ont maintenant une plaque sombre opaque et un liseré
+        clair — comparez Ashenvale (fond clair) et Crypt (fond sombre) : la barre se lit pareil sur les deux.
+      </li>
+    </ul>
+    <p>
+      La composition de l'arène change aussi entre commun et élite : trois adversaires alignés d'un côté,
+      un seul adversaire surdimensionné de l'autre. C'est ce qui rend la bascule lisible avant même de lire
+      le nom du monstre.
+    </p>
+  </section>
+
+  <p class="foot">
+    Références : <code>design/reference/screenshots/combat/</code> · Analyse :
+    <code>docs/design/CMB-DIR01-references.md</code> · Coûts et rangs affichés = placeholders tant que
+    <code>CMB-COST01</code> n'est pas actée. Typographie finale = Cinzel + Crimson Text (non chargeables ici,
+    substitution par un serif système).
+  </p>
+</div>
+
+<script>
+  const PARTY = [
+    { k: 'C', name: 'Corwin', role: 'Wanderer', hp: [92, 110], mp: [48, 60], bars: 8 },
+    { k: 'R', name: 'Roswyn', role: 'Knight', hp: [104, 128], mp: [22, 40], bars: 8 },
+    { k: 'E', name: 'Elyndra', role: 'Arcanist', hp: [61, 78], mp: [70, 92], bars: 7 },
+    { k: 'B', name: 'Bulgar', role: 'Berserker', hp: [88, 134], mp: [12, 30], bars: 6 },
+  ]
+
+  /* Spots de chasse réels (zones.js) et leurs monstres réels (monsters.js). */
+  const ZONES = {
+    ashenvale_forest: {
+      label: 'Ashenvale Forest',
+      lv: '1–8',
+      common: [
+        { k: 'W', name: 'Ashwood Wolf', bars: 6, of: 8, intent: '⚔ 6–9 · Corwin' },
+        { k: 'W', name: 'Ashwood Wolf', bars: 8, of: 8, intent: '⚔ 6–9 · Roswyn' },
+        { k: 'H', name: 'Fire Hare', bars: 3, of: 6, intent: '↯ Ember · brûlure' },
+      ],
+      elite: { k: 'O', name: 'Old Oakheart', bars: 22, of: 30, intent: '⚔⚔ 18–26 · tout le groupe' },
+    },
+    wildmere_hills: {
+      label: 'Wildmere Hills',
+      lv: '6–14',
+      common: [
+        { k: 'S', name: 'Hill Slime', bars: 5, of: 7, intent: '⚔ 8–11 · Corwin' },
+        { k: 'F', name: 'Russet Fox', bars: 7, of: 8, intent: '↯ Feint · esquive ↑' },
+        { k: 'G', name: 'Knoll Goblin', bars: 4, of: 8, intent: '⚔ 9–13 · Elyndra' },
+      ],
+      elite: { k: 'T', name: 'Thunderhoof', bars: 26, of: 32, intent: '⚔⚔ 22–31 · charge' },
+    },
+    crumbled_ruins: {
+      label: 'Crumbled Ruins',
+      lv: '12–22',
+      common: [
+        { k: 'G', name: 'Stone Golem', bars: 9, of: 12, intent: '⚔ 14–19 · Roswyn' },
+        { k: 'K', name: 'Hollow Knight', bars: 6, of: 10, intent: '⛨ Garde · riposte' },
+        { k: 'S', name: 'Ruin Specter', bars: 4, of: 8, intent: '↯ Drain · mana' },
+      ],
+      elite: { k: 'S', name: 'Graven Sentinel', bars: 30, of: 38, intent: '⚔⚔ 28–37 · brise-garde' },
+    },
+    thornmarsh: {
+      label: 'Thornmarsh',
+      lv: '20–30',
+      common: [
+        { k: 'S', name: 'Marsh Serpent', bars: 11, of: 16, intent: '⚔ 19–25 · venin' },
+        { k: 'W', name: 'Briar Wraith', bars: 8, of: 14, intent: '↯ Hex · défense ↓' },
+        { k: 'M', name: 'Mire Slime', bars: 13, of: 14, intent: '⚔ 17–22 · Bulgar' },
+      ],
+      elite: { k: 'F', name: 'Fenrot Devourer', bars: 34, of: 46, intent: '⚔⚔ 31–42 · dévore' },
+    },
+    hollow_crypt: {
+      label: 'The Hollow Crypt',
+      lv: 'donjon',
+      common: [
+        { k: 'W', name: 'Barrow Wight', bars: 7, of: 12, intent: '↯ Chill · gel 20 %' },
+        { k: 'W', name: 'Barrow Wight', bars: 12, of: 12, intent: '⚔ 16–21 · Corwin' },
+      ],
+      elite: { k: 'C', name: 'The Crypt Keeper', bars: 40, of: 54, intent: '⚔⚔ 34–48 · appel des morts' },
+    },
+  }
+
+  const SKILLS = [
+    { n: 'Power Strike', c: 20, r: 'slow', d: 'Un coup lourd et appuyé. 180 % de Force, mais le prochain tour est repoussé.' },
+    { n: 'Cleave', c: 25, r: 'slow', d: 'Fauche tous les ennemis de front pour 90 % de Force.' },
+    { n: 'Shield Stance', c: 15, r: 'norm', d: 'Posture défensive : −50 % de dégâts subis jusqu’au prochain tour.' },
+    { n: 'Counter Strike', c: 18, r: 'norm', d: 'Riposte automatiquement à la première attaque physique reçue.' },
+    { n: 'Frostbite', c: 16, r: 'norm', d: 'Le givre mord la cible et la gèle 35 % du temps pour un tour.' },
+    { n: 'Ice Shard', c: 12, r: 'fast', d: 'Une pointe de glace acérée. 100 % d’Intelligence en dégâts de givre.' },
+    { n: 'Battle Focus', c: 0, r: 'fast', d: 'Concentration : le prochain skill est amplifié. Ne coûte pas de mana.' },
+    { n: 'Ember Burst', c: 14, r: 'fast', d: 'Une gerbe de braises qui enflamme la cible sur la durée.' },
+  ]
+
+  const RANKLABEL = { fast: '×0.7', norm: '×1.0', slow: '×1.5' }
+
+  const CALLOUTS = [
+    ['R1', 'Opposition latérale', 'Les deux camps se font face au lieu d’être empilés. C’est ce qui fait enfin exister le 16:9 — et ce qui manque le plus à l’écran actuel.'],
+    ['R2', 'Console à taille fixe', 'La zone d’action est toujours réservée, même quand l’ennemi joue. Passer d’un verbe à l’autre ne déplace rien.'],
+    ['R3', 'Les chiffres pendant la décision', 'Stats en A, coûts et rangs de tempo dans les deux. On ne quitte jamais l’écran pour savoir ce qu’on fait.'],
+    ['R4', 'Un groupe, pas un héros', 'Les emplacements alliés existent dès maintenant. Basculez sur « 4 personnages » : la composition ne bouge pas.'],
+    ['R5', 'La couleur du cadre code le camp', 'Or pour les alliés, rouge pour les ennemis, ambre pour qui agit. Aucun libellé « ennemi » nulle part.'],
+    ['R6', 'Une seule zone de texte', 'Le ruban décrit le skill survolé. Pas de tooltip flottant qui vienne masquer l’arène au moment de choisir.'],
+  ]
+
+  let dir = 'A'
+  let partySize = 1
+  let zone = 'ashenvale_forest'
+  let rank = 'common'
+  let verb = 'Skills'
+  let target = 0
+  let ribbon = 'Survolez un skill pour en lire l’effet.'
+
+  const stage = document.getElementById('stage')
+
+  const foes = () => (rank === 'elite' ? [ZONES[zone].elite] : ZONES[zone].common)
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+
+  function party() {
+    return PARTY.slice(0, partySize)
+  }
+
+  function floorbar(on, of) {
+    let h = ''
+    for (let i = 0; i < of; i++) h += `<i class="${i < on ? '' : 'off'}"></i>`
+    return `<div class="floorbar">${h}</div>`
+  }
+
+  function figure(o, side, idx) {
+    const foe = side === 'foe'
+    const sel = foe && idx === target ? '1' : '0'
+    const bars = foe ? floorbar(o.bars, o.of) : floorbar(o.bars, 8)
+    const intent = foe ? `<div class="intent">${esc(o.intent)}</div>` : ''
+    const big = foe && rank === 'elite' ? ' fig-elite' : ''
+    return `<div class="fig fig-${foe ? 'foe' : 'ally'}${big}" data-side="${side}" data-idx="${idx}" data-sel="${sel}">
+      ${intent}
+      <div class="fig-body"><span>${esc(o.k)}</span></div>
+      <div class="fig-name">${esc(o.name)}</div>
+      ${dir === 'A' ? bars : ''}
+    </div>`
+  }
+
+  function queue() {
+    const p = party()
+    const f = foes()
+    const order = []
+    // alternance héros/ennemi, bouclée jusqu'à remplir la file
+    for (let i = 0; order.length < 7; i++) {
+      order.push({ k: p[i % p.length].k, foe: false })
+      order.push({ k: f[i % f.length].k, foe: true })
+    }
+    return order
+      .slice(0, 7)
+      .map((o, i) => `<div class="qslot ${o.foe ? 'foe' : ''} ${i === 0 ? 'now' : ''}"><span>${esc(o.k)}</span></div>`)
+      .join('')
+  }
+
+  function skillList() {
+    return SKILLS.map(
+      (s, i) => `<div class="skill" data-skill="${i}">
+        <span>${esc(s.n)}</span>
+        <span class="cost">${s.c === 0 ? '—' : s.c + ' mp'}</span>
+        <span class="rank r-${s.r}">${RANKLABEL[s.r]}</span>
+      </div>`,
+    ).join('')
+  }
+
+  function verbs() {
+    const items = [
+      ['Attack', '×1.0'],
+      ['Skills', ''],
+      ['Items', '×0.7'],
+      ['Guard', '×0.7'],
+      ['Flee', ''],
+    ]
+    return items
+      .map(
+        ([v, t]) =>
+          `<div class="verb" role="button" tabindex="0" data-verb="${v}" aria-pressed="${v === verb}">
+            <span>${v}</span><em>${t}</em>
+          </div>`,
+      )
+      .join('')
+  }
+
+  function body(v) {
+    if (v === 'Skills') return `<div class="skills">${skillList()}</div>`
+    const msg = {
+      Attack: 'Frappe de base. Jamais de QTE dessus — c’est la garantie que le jeu reste finissable sans timing.',
+      Items: 'Potions et consommables du sac. Action immédiate, tempo réduit.',
+      Guard: 'Réduit de moitié les dégâts subis et banque un point de Focus (max 3).',
+      Flee: 'Tentative de fuite — la réussite dépend de l’Agilité comparée du groupe.',
+    }[v]
+    return `<div class="skills" style="grid-template-columns:1fr"><div class="skill" style="border:0;cursor:default;grid-template-columns:1fr"><span style="font-style:italic;opacity:.75">${esc(msg)}</span></div></div>`
+  }
+
+  function renderA() {
+    const p = party()
+    const active = p[0]
+    return `
+      <div class="topband">
+        <div class="queue">${queue()}<span class="qtag" style="margin-left:.6em">Act → Next</span></div>
+        <div class="runic" style="color:var(--parchment);font-size:1.3em;opacity:.75">
+          ${esc(ZONES[zone].label)} · Lv ${esc(ZONES[zone].lv)}${rank === 'elite' ? ' · <span style="color:var(--amber)">ELITE</span>' : ''} · Turn 3
+        </div>
+      </div>
+      <div class="arena">
+        <div class="paint" data-zone="${zone}" data-rank="${rank}"></div>
+        <div class="rank">${p.map((o, i) => figure(o, 'ally', i)).join('')}</div>
+        <div class="rank">${foes().map((o, i) => figure(o, 'foe', i)).join('')}</div>
+      </div>
+      <div class="console">
+        <div class="who">
+          <div class="who-head">
+            <div class="crest"><span>${esc(active.k)}</span></div>
+            <div>
+              <div class="who-name">${esc(active.name)}</div>
+              <div class="who-class">${esc(active.role)}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.45em">
+            <div class="data" style="font-size:1.25em;display:flex;justify-content:space-between">
+              <span>HP</span><b>${active.hp[0]} / ${active.hp[1]}</b>
+            </div>
+            <div class="gauge"><i style="width:${(active.hp[0] / active.hp[1]) * 100}%;background:var(--danger)"></i></div>
+            <div class="data" style="font-size:1.25em;display:flex;justify-content:space-between">
+              <span>MP</span><b>${active.mp[0]} / ${active.mp[1]}</b>
+            </div>
+            <div class="gauge"><i style="width:${(active.mp[0] / active.mp[1]) * 100}%;background:var(--sky)"></i></div>
+          </div>
+          <dl class="statgrid">
+            <dt>STR</dt><dd>18</dd>
+            <dt>AGI</dt><dd>14</dd>
+            <dt>INT</dt><dd>11</dd>
+            <dt>DEF</dt><dd>9</dd>
+            <dt>CRIT</dt><dd>12 %</dd>
+            <dt>SPD</dt><dd>4</dd>
+          </dl>
+        </div>
+        <div class="acts">
+          <div class="ribbon">${esc(ribbon)}</div>
+          <div style="display:grid;grid-template-columns:15em 1fr;flex:1;min-height:0">
+            <div class="verbs" style="border-right:.12em solid var(--parchment-shadow)">${verbs()}</div>
+            <div style="padding:.6em 1.2em;overflow:hidden">${body(verb)}</div>
+          </div>
+        </div>
+      </div>`
+  }
+
+  function renderB() {
+    const p = party()
+    return `
+      <div class="scene">
+        <div class="paint" data-zone="${zone}" data-rank="${rank}"></div>
+        <div class="rays"></div>
+        <div class="fx-top">
+          <div class="aura">
+            <span class="runic" style="font-size:1.15em">Sunlit</span>
+            <div class="gauge"><i style="width:62%;background:linear-gradient(90deg,var(--amber),var(--gold))"></i></div>
+          </div>
+          <div class="queuebox">
+            <div class="queue">${queue()}</div>
+            <div class="qtag">Act · Next</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="rank" style="display:flex;align-items:flex-end;gap:2.4em">
+            ${foes().map((o, i) => figure(o, 'foe', i)).join('')}
+          </div>
+          <div class="rank" style="display:flex;align-items:flex-end;gap:2.4em">
+            ${p.map((o, i) => figure(o, 'ally', i)).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="console">
+        <div style="display:flex;flex-direction:column;min-height:0">
+          <div class="ribbon">${esc(ribbon)}</div>
+          <div class="cmd" style="flex:1;min-height:0">
+            <div class="verbs">${verbs()}</div>
+            <div style="overflow:hidden">${body(verb)}</div>
+          </div>
+        </div>
+        <div class="roster">
+          ${p
+            .map(
+              (o, i) => `<div class="rrow ${i === 0 ? 'act' : ''}">
+                <span class="pip"><span>${esc(o.k)}</span></span>
+                <span class="nm">${esc(o.name)}</span>
+                <span class="hp">HP ${String(o.hp[0]).padStart(3, '0')}</span>
+                <span class="mp">MP ${String(o.mp[0]).padStart(3, '0')}</span>
+              </div>`,
+            )
+            .join('')}
+        </div>
+      </div>`
+  }
+
+  function render() {
+    stage.className = 'stage dir' + dir
+    stage.innerHTML = dir === 'A' ? renderA() : renderB()
+  }
+
+  document.getElementById('segDir').addEventListener('click', (e) => {
+    const b = e.target.closest('button')
+    if (!b) return
+    dir = b.dataset.dir
+    ;[...e.currentTarget.children].forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    render()
+  })
+
+  document.getElementById('segParty').addEventListener('click', (e) => {
+    const b = e.target.closest('button')
+    if (!b) return
+    partySize = Number(b.dataset.party)
+    ;[...e.currentTarget.children].forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    render()
+  })
+
+  document.getElementById('segZone').addEventListener('click', (e) => {
+    const b = e.target.closest('button')
+    if (!b) return
+    zone = b.dataset.zone
+    target = 0
+    ;[...e.currentTarget.children].forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    render()
+  })
+
+  document.getElementById('segRank').addEventListener('click', (e) => {
+    const b = e.target.closest('button')
+    if (!b) return
+    rank = b.dataset.rank
+    target = 0
+    ;[...e.currentTarget.children].forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    render()
+  })
+
+  stage.addEventListener('click', (e) => {
+    const f = e.target.closest('.fig')
+    if (f && f.dataset.side === 'foe') {
+      target = Number(f.dataset.idx)
+      render()
+      return
+    }
+    const v = e.target.closest('.verb')
+    if (v) {
+      verb = v.dataset.verb
+      ribbon = 'Survolez un skill pour en lire l’effet.'
+      render()
+    }
+  })
+
+  stage.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    const v = e.target.closest('.verb')
+    if (!v) return
+    e.preventDefault()
+    verb = v.dataset.verb
+    render()
+  })
+
+  stage.addEventListener('mouseover', (e) => {
+    const s = e.target.closest('.skill')
+    if (!s || !s.dataset.skill) return
+    const next = SKILLS[Number(s.dataset.skill)].d
+    if (next === ribbon) return
+    ribbon = next
+    render()
+  })
+
+  document.getElementById('callouts').innerHTML = CALLOUTS.map(
+    ([r, h, p]) => `<div class="callout">
+      <span class="rule">${r}</span>
+      <h3>${h}</h3>
+      <p>${p}</p>
+    </div>`,
+  ).join('')
+
+  render()
+</script>

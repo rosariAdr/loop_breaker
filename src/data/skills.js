@@ -74,7 +74,7 @@ export const SKILLS = {
       statusEffect: { type: 'poison', duration: 2, tickDamage: 5 },
     },
     xpToNext: [20, 50],
-    sourceMonster: 'rotting_shambler',
+    sourceMonster: null, // SKD-E1 — rotting_shambler retiré (MON01) ; skill orphelin (shop/futur)
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
@@ -94,7 +94,9 @@ export const SKILLS = {
       dodgeChance: 0.15,
     },
     xpToNext: [20, 50],
-    sourceMonster: 'briar_wraith',
+    // FIX-SRCMON01 — briar_wraith droppe thorn_lash, pas ce skill : orphelin
+    // (boutique des dieux / futur droppeur), comme reckless_blow.
+    sourceMonster: null,
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
@@ -114,7 +116,9 @@ export const SKILLS = {
       damageReduction: 0.1,
     },
     xpToNext: [20, 50],
-    sourceMonster: 'stone_golem',
+    // FIX-SRCMON01 — version ENSEIGNÉE à l'Académie (cf. ACADEMY_CATALOG) ; jumelle
+    // assumée de `stoneskin` (12 %, droppée par stone_golem — la droppée est meilleure).
+    sourceMonster: null,
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
@@ -135,7 +139,9 @@ export const SKILLS = {
       statusEffect: { type: 'poison', duration: 3, tickDamage: 8 },
     },
     xpToNext: [20, 50],
-    sourceMonster: 'marsh_serpent',
+    // FIX-SRCMON01 — version ENSEIGNÉE à l'Académie (cf. ACADEMY_CATALOG) ; jumelle
+    // assumée de `venom_strike` (droppée par marsh_serpent).
+    sourceMonster: null,
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
@@ -155,7 +161,9 @@ export const SKILLS = {
       defBonus: 0.2,
     },
     xpToNext: [20, 50],
-    sourceMonster: 'hollow_knight',
+    // FIX-SRCMON01 — hollow_knight droppe cursed_cleave ; le vrai droppeur d'iron_resolve
+    // est barrow_wight (monstre de RÉSERVE — re-surfacera avec la Hollow Crypt).
+    sourceMonster: 'barrow_wight',
     container: 'mana_stone',
     inheritable: true,
     levelBonuses: {
@@ -164,7 +172,7 @@ export const SKILLS = {
     },
   },
 
-  // ── Skills de Sir Aldric (entraîneur de Millhaven) ───────────────────
+  // ── Skills du Knight Trainer (Dame Roswyn, Millhaven — FIX-ALDRIC01) ─────────
 
   power_strike: {
     id: 'power_strike',
@@ -814,7 +822,7 @@ export const SKILLS = {
     cost: { mana: 22, hp: 0, stat_sacrifice: null },
     cooldown: 3,
     effect: {
-      damage: { type: 'physical', multiplier: 1.4 },
+      damage: { type: 'magical', multiplier: 1.4 }, // SKD-G1 — Fenrot = magic
       statusEffect: { type: 'poison', duration: 3, tickDamage: 14 },
     },
     xpToNext: [20, 50],
@@ -824,6 +832,144 @@ export const SKILLS = {
     levelBonuses: {
       2: { multiplierBonus: 0.3, costReduction: 0.1, tickDamageBonus: 6 },
       3: { multiplierBonus: 0.6, costReduction: 0.2, tickDamageBonus: 12 },
+    },
+  },
+
+  // SKD03 / SKD04 — skills de feu (magic_active) droppés par Fire Hare / Russet Fox.
+  ember_burst: {
+    id: 'ember_burst',
+    name: 'Ember Burst',
+    description: 'A sudden gout of flame that scorches the target and leaves it burning.',
+    type: 'active',
+    cost: { mana: 12, hp: 0, stat_sacrifice: null },
+    cooldown: 2,
+    effect: {
+      damage: { type: 'fire', multiplier: 1.0 }, // 100% INT
+      statusEffect: { type: 'burn', duration: 2, tickDamage: 6 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'thicket_hare', // SKD02 — Fire Hare (id conservé)
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1, tickDamageBonus: 3 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, tickDamageBonus: 6 },
+    },
+  },
+
+  fox_fire: {
+    id: 'fox_fire',
+    name: 'Fox Fire',
+    description: 'A spectral flame that clings to the target, searing it over time.',
+    type: 'active',
+    cost: { mana: 18, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'fire', multiplier: 1.2 }, // 120% INT
+      statusEffect: { type: 'burn', duration: 3, tickDamage: 8 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: 'russet_fox',
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1, tickDamageBonus: 4 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, tickDamageBonus: 8 },
+    },
+  },
+
+  // SKD-ICE01 — skills de GLACE (magic_active, élément `ice`, dérivés d'INT comme le feu).
+  // Aucun skill `ice` n'existait (Soul Chill est physique) → le pool `glace` (MST08) était
+  // vide. Ces quatre skills débloquent le maître de glace itinérant.
+  // FROZEN — la glace a désormais une vraie identité de contrôle : le statut `frozen`
+  // (skin de `stun`, saute-tour) est appliqué par `frostbite` avec une probabilité (< 100%).
+  // Le `slow` reste disponible pour un ralentissement fiable via d'autres sources.
+  ice_shard: {
+    id: 'ice_shard',
+    name: 'Ice Shard',
+    description: 'A jagged spike of ice that pierces the target. Deals 100% INT as ice damage.',
+    type: 'active',
+    cost: { mana: 12, hp: 0, stat_sacrifice: null },
+    cooldown: 2,
+    effect: {
+      damage: { type: 'ice', multiplier: 1.0 }, // 100% INT
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null, // récompense de maître (glace) — pas dans une table de drop
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
+    },
+  },
+
+  frostbite: {
+    id: 'frostbite',
+    name: 'Frostbite',
+    // SKD-ICE01/FROZEN — frostbite est l'identité de CONTRÔLE de la glace : 35% de
+    // chance de GELER la cible (saute-tour, skin de `stun`) en plus de ses dégâts.
+    // Décision slow-vs-frozen : PAS de `slow` de base (le proc `frozen` la remplace).
+    // Justification : cumuler slow garanti + gel aléatoire surchargerait le skill et
+    // brouillerait son rôle ; les autres skills de glace gardent le créneau slow fiable.
+    // Le 35% (< 100%) évite le chain-freeze (lock permanent d'un ennemi).
+    description:
+      'Creeping frost that bites the target and, 35% of the time, freezes it solid for a turn.',
+    type: 'active',
+    cost: { mana: 16, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'ice', multiplier: 1.1 }, // 110% INT
+      statusEffect: { type: 'frozen', duration: 1, chance: 0.35 },
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null,
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1, durationBonus: 1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2, durationBonus: 1 },
+    },
+  },
+
+  blizzard: {
+    id: 'blizzard',
+    name: 'Blizzard',
+    description: 'A howling storm of ice that batters all enemies for 90% INT as ice damage.',
+    type: 'active',
+    cost: { mana: 28, hp: 0, stat_sacrifice: null },
+    cooldown: 4,
+    effect: {
+      damage: { type: 'ice', multiplier: 0.9 }, // 90% INT
+      aoe: true,
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null,
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
+    },
+  },
+
+  frost_lance: {
+    id: 'frost_lance',
+    name: 'Frost Lance',
+    description: 'A lance of hardened ice hurled with lethal focus. Deals 180% INT as ice damage.',
+    type: 'active',
+    cost: { mana: 24, hp: 0, stat_sacrifice: null },
+    cooldown: 3,
+    effect: {
+      damage: { type: 'ice', multiplier: 1.8 }, // 180% INT
+    },
+    xpToNext: [20, 50],
+    sourceMonster: null,
+    container: 'mana_stone',
+    inheritable: true,
+    levelBonuses: {
+      2: { multiplierBonus: 0.3, costReduction: 0.1 },
+      3: { multiplierBonus: 0.6, costReduction: 0.2 },
     },
   },
 

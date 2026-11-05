@@ -1,43 +1,75 @@
 // REFAC01 — Slice « combat » du store (extrait de gameStore.js, comportement inchangé).
-import { MONSTERS } from '../../data/monsters'
+import { IDLE_MASTERY_KILLS } from './idleSlice'
 import { VIGOR_COST, VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
+import { getQuestById } from '../../data/quests'
+import { completedBestiaryZones, ZONE_BESTIARY } from '../../data/bestiary'
 import { useToastStore } from '../toastStore'
 
-export const createCombatSlice = (set) => ({
+export const createCombatSlice = (set, get) => ({
   // ── Kill count & idle ─────────────────────────────────────────────────────
-  recordKill: (monsterId) =>
-    set((state) => {
-      const current = (state.world.monsterKillCounts ?? {})[monsterId] || 0
-      const newCount = current + 1
-
-      // TUT02 — Hint idle unlock : 1ère fois qu'un mob atteint 5 kills (seuil idle)
-      // Accès défensif : `seenHints` peut être absent d'une vieille save → ?? []
-      // (sinon `.includes` throwait et bloquait l'incrément du compteur de kills).
-      const currentHints = state.meta.seenHints ?? []
-      let newSeenHints = currentHints
-      if (newCount >= 5 && !currentHints.includes('idle_unlock')) {
-        const monsterName = MONSTERS[monsterId]?.name ?? monsterId
-        useToastStore
-          .getState()
-          .addToast(
-            `Idle combat unlocked for ${monsterName}! Toggle it from the zone view.`,
-            'info',
-            4000,
-          )
-        newSeenHints = [...currentHints, 'idle_unlock']
-      }
-
-      return {
-        world: {
-          ...state.world,
-          monsterKillCounts: {
-            ...state.world.monsterKillCounts,
-            [monsterId]: newCount,
-          },
+  recordKill: (monsterId) => {
+    // Accès défensif : monsterKillCounts peut être absent d'une vieille save.
+    const before = (get().world.monsterKillCounts ?? {})[monsterId] || 0
+    set((state) => ({
+      world: {
+        ...state.world,
+        monsterKillCounts: {
+          ...state.world.monsterKillCounts,
+          [monsterId]: before + 1,
         },
-        meta: { ...state.meta, seenHints: newSeenHints },
-      }
-    }),
+      },
+    }))
+    // QA01 — la propagation (bestiaire, quêtes, burnout, titres, hint) est partagée avec
+    // les kills IDLE : elle NE touche PAS monsterKillCounts (déjà incrémenté par l'appelant).
+    get().propagateKills(monsterId, 1)
+  },
+
+  // QA01 — Propagation d'un ou plusieurs kills vers tous les systèmes en aval, SANS toucher
+  // `world.monsterKillCounts` (l'appelant l'a déjà incrémenté). Appelé par recordKill (combat)
+  // ET par l'idle (processIdleTick + applyOfflineProgress) pour garantir que le bestiaire,
+  // les toasts de quête, le burnout et les titres de zone comptent AUSSI les kills idle.
+  propagateKills: (monsterId, count = 1) => {
+    if (count <= 0) return
+    const before = ((get().world.monsterKillCounts ?? {})[monsterId] || 0) - count
+    // BEST01 — compteur de bestiaire PERSISTANT (méta, cumulé entre runs).
+    set((state) => ({
+      meta: {
+        ...state.meta,
+        bestiaryKills: {
+          ...(state.meta.bestiaryKills ?? {}),
+          [monsterId]: ((state.meta.bestiaryKills ?? {})[monsterId] ?? 0) + count,
+        },
+      },
+    }))
+    // ONB01/TUT02 — au passage du seuil de maîtrise, tip « idle unlocked » (one-shot ;
+    // déduplication + respect du réglage tutoriel gérés par triggerHint).
+    if (before < IDLE_MASTERY_KILLS && before + count >= IDLE_MASTERY_KILLS)
+      get().triggerHint('idle_unlock')
+
+    // QTOAST01 — pop-up de progrès pour les quêtes ACTIVES dont un objectif kill cible ce
+    // monstre (combat + idle). Progresse 1..N puis « done » à l'exact ; pas de spam après.
+    const st = get()
+    for (const id of st.world.activeQuests ?? []) {
+      const q = getQuestById(id)
+      const obj = q?.objectives?.find((o) => o.type === 'kill' && o.monsterId === monsterId)
+      if (!obj) continue
+      const baseKill = st.world.questProgress?.[id]?.baseKills?.[monsterId] ?? 0
+      const raw = (st.world.monsterKillCounts?.[monsterId] ?? 0) - baseKill
+      if (raw > obj.count) continue // déjà accompli → pas de spam
+      const done = raw === obj.count
+      useToastStore.getState().addToast(
+        `${done ? '✓ ' : ''}${q.name}: ${obj.label} ${raw}/${obj.count}`,
+        'quest',
+        done ? 4000 : 3200, // FIX-QTOAST-DUR01 — un poil plus persistant (+1 s)
+      )
+    }
+    // BURN01 — un kill compte comme une action « combat » pour le burnout de monotonie.
+    get().logAction('combat')
+    // BEST03 — complétion du bestiaire d'une zone → titre dédié (awardTitle dédoublonne).
+    for (const zone of completedBestiaryZones(get().meta.bestiaryKills)) {
+      get().awardTitle(ZONE_BESTIARY[zone].titleId)
+    }
+  },
 
   // ── Combat ────────────────────────────────────────────────────────────────
   startCombat: (enemies) =>

@@ -1,29 +1,21 @@
 // Définition des zones du monde médiéval fantasy
 
 import { MONSTERS } from './monsters'
+import { BALANCE } from '../config'
 
 export const ZONES = {
   ashenvale: {
     id: 'ashenvale',
     name: 'Ashenvale',
+    mapId: 'map1', // WMAP01/02 — région de Map 1 (« Eldenmoor »)
     description:
       'Ancient forests shrouded in ash and mist. Ruins of a forgotten civilization hide among the twisted trees.',
-    levelRange: [1, 26],
+    levelRange: [1, 30], // WMAP02 — barème Map 1 (Ashenvale 1-8 → Thornmarsh 20-30)
     zoneMult: 1.0,
-    monsters: [
-      'ashwood_wolf',
-      'rotting_shambler',
-      'gloom_bat',
-      'marsh_serpent',
-      'briar_wraith',
-      'bog_shambler',
-      'stone_golem',
-      'hollow_knight',
-      'ruin_specter',
-      'barrow_wight',
-      'grave_knight',
-      'soul_harvester',
-    ],
+    // FIX-ZONELIST01 — liste `monsters` zone-level RETIRÉE (legacy pré-MON01, aucun
+    // consommateur runtime, contenait 4 ids morts : rotting_shambler/gloom_bat/
+    // bog_shambler/grave_knight). Source de vérité = MONSTERS_BY_ZONE/_SPOT (monsters.js)
+    // + les listes `monsters` des huntingSpots ci-dessous (gardées par zones.deadids.test).
     // ── Spots de chasse (4 zones distinctes) ──────────────────────────
     huntingSpots: [
       {
@@ -40,7 +32,7 @@ export const ZONES = {
         name: 'Thornmarsh',
         icon: '🌿',
         description: 'A fetid swamp where serpents and wraiths lure travelers to their doom.',
-        levelRange: [6, 14],
+        levelRange: [20, 30], // WMAP02 — Thornmarsh = zone tardive de Map 1
         monsters: ['marsh_serpent', 'briar_wraith', 'mire_slime', 'fenrot_devourer'],
         mapPos: { x: 10, y: 52 },
       },
@@ -49,7 +41,7 @@ export const ZONES = {
         name: 'Crumbled Ruins',
         icon: '🏚',
         description: 'Shattered remnants of a lost civilization, haunted by golems and specters.',
-        levelRange: [12, 20],
+        levelRange: [12, 22], // WMAP02 — Crumbled Ruins (mid Map 1)
         monsters: ['stone_golem', 'hollow_knight', 'ruin_specter', 'graven_sentinel'],
         mapPos: { x: 65, y: 22 },
       },
@@ -58,7 +50,7 @@ export const ZONES = {
         name: 'Wildmere Hills',
         icon: '⛰',
         description: 'Verdant hills teeming with wild beasts and roaming creatures.',
-        levelRange: [18, 26],
+        levelRange: [6, 14], // WMAP02 — « Barrow Hills » (zone précoce de Map 1, re-niveau)
         monsters: ['hill_slime', 'russet_fox', 'knoll_goblin', 'thunderhoof'],
         mapPos: { x: 40, y: 72 },
       },
@@ -84,7 +76,7 @@ export const ZONES = {
         name: 'Millhaven',
         type: 'village',
         mapPos: { x: 16, y: 32 },
-        buildings: ['inn', 'church', 'knight_trainer'], // Sir Aldric est ici
+        buildings: ['inn', 'church', 'knight_trainer'], // FIX-ALDRIC01 — Dame Roswyn (Aldric = Greywatch)
         optionalBuildings: [
           { id: 'merchant', chance: 0.65 },
           { id: 'alchemy', chance: 0.4 },
@@ -111,10 +103,11 @@ export const ZONES = {
   blighted_road: {
     id: 'blighted_road',
     name: 'The Blighted Road',
+    mapId: 'bridge', // WMAP01 — zone de transition (pont Map 1 → Map 2)
     description: 'A cursed path between Ashenvale and Grimspire. Few dare to travel it alone.',
     levelRange: [15, 30],
     zoneMult: 1.8,
-    monsters: ['cursed_warlord', 'bone_colossus'],
+    // FIX-ZONELIST01 — liste zone-level retirée (cf. ashenvale).
     idleAllowed: false, // pas d'idle sur la route
     dungeon: null,
     city: null,
@@ -132,18 +125,12 @@ export const ZONES = {
   grimspire: {
     id: 'grimspire',
     name: 'Grimspire',
+    mapId: 'map2', // WMAP01/02 — région de Map 2 (« Draconic Frontier », gelée)
     description:
       'Ancient cursed mountains and fortresses. The air itself feels heavy with dark magic.',
-    levelRange: [21, 40],
+    levelRange: [28, 50], // WMAP02 — barème Map 2 (Veteran's 28-38 → Draconic 36-50)
     zoneMult: 2.5,
-    monsters: [
-      'grimstone_troll',
-      'cursed_sentinel',
-      'abyssal_hound',
-      'wyvern_scout',
-      'plague_monk',
-      'iron_wraith',
-    ],
+    // FIX-ZONELIST01 — liste zone-level retirée (cf. ashenvale).
     // PROG01 — déblocage data-driven (niveau 8 OU 40 kills d'Ashenvale, OU déblocage explicite PROG03)
     unlock: {
       hidden: false,
@@ -208,6 +195,28 @@ export function getLocationType(world) {
   return 'village'
 }
 
+// Bâtiments FIXES qui hébergent un tableau de maître (surfaçage des Trials of Mastery) :
+// l'Académie (villes) et le KnightTrainer (Sir Aldric, Millhaven).
+const MASTER_BOARD_BUILDINGS = new Set(['academy', 'knight_trainer'])
+
+/**
+ * MST08 / v1.43 — Une agglomération possède-t-elle DÉJÀ un PNJ-maître (Académie/KnightTrainer)
+ * qui surface le tableau de maîtrise ? Sert au repli communautaire de l'Église : dans un
+ * village SANS PNJ-maître (ex. Greywatch/Duskreach/Ashfall Post), le maître itinérant de
+ * passage surface sur le tableau de l'Église ; on l'évite là où un board dédié existe déjà
+ * (Millhaven/villes) pour ne pas doubler l'affichage.
+ */
+export function hasDedicatedMasterBoard(locationId) {
+  for (const zone of Object.values(ZONES)) {
+    if (zone.city?.id === locationId) {
+      return (zone.city.buildings ?? []).some((b) => MASTER_BOARD_BUILDINGS.has(b))
+    }
+    const village = zone.villages?.find((v) => v.id === locationId)
+    if (village) return (village.buildings ?? []).some((b) => MASTER_BOARD_BUILDINGS.has(b))
+  }
+  return false
+}
+
 // Ordre des zones sur la carte (pour la navigation)
 export const ZONE_ORDER = ['ashenvale', 'blighted_road', 'grimspire']
 
@@ -245,6 +254,24 @@ export function isZoneUnlocked(zoneId, state = {}) {
   })
 }
 
+// START02/04 — Déblocage au niveau du NODE (localité / hunting spot) à l'intérieur
+// d'ashenvale. Au démarrage (START01), seuls Greywatch + la forêt sont accessibles ;
+// les autres nodes s'ouvrent via la chaîne de quêtes principale (MQ-CHAIN01 écrit
+// dans world.unlockedNodes — c'est la CONDITION de déblocage, cf. START04).
+export const START_OPEN_NODES = ['greywatch', 'ashenvale_forest']
+
+/**
+ * Un node (localité ou hunting spot d'ashenvale) est-il accessible ?
+ * Ouvert d'office s'il fait partie du point de départ, sinon s'il a été ouvert par
+ * un palier de quête principale (world.unlockedNodes).
+ * @param {string} nodeId
+ * @param {object} world - world state (lit world.unlockedNodes)
+ */
+export function isNodeUnlocked(nodeId, world = {}) {
+  if (START_OPEN_NODES.includes(nodeId)) return true
+  return (world?.unlockedNodes ?? []).includes(nodeId)
+}
+
 /**
  * PROG01 — Zones visibles sur la carte : toutes les non-cachées + celles débloquées.
  * Une zone `unlock.hidden` reste invisible (fog total) tant qu'elle n'est pas débloquée.
@@ -258,19 +285,36 @@ export function getVisibleZones(state = {}) {
   })
 }
 
-// Multiplicateurs de zone pour le scaling de difficulté
+// Multiplicateurs de zone pour le scaling de difficulté.
+// BAL-CSV01 — dérivés de `BALANCE` (getter) : reflètent les overrides CSV appliqués
+// au boot. Les clés BALANCE sont préfixées `zone_mult_<zoneId>`.
+export function getZoneMult(zoneId) {
+  return BALANCE[`zone_mult_${zoneId}`] ?? 1.0
+}
+
+// Vue objet des multiplicateurs de zone (compat : consommé par le combat / les tests).
 export const ZONE_MULTS = {
-  ashenvale: 1.0,
-  blighted_road: 1.8,
-  grimspire: 2.5,
-  dungeon_boss: 3.5,
-  demon_lord: 6.0,
+  get ashenvale() {
+    return getZoneMult('ashenvale')
+  },
+  get blighted_road() {
+    return getZoneMult('blighted_road')
+  },
+  get grimspire() {
+    return getZoneMult('grimspire')
+  },
+  get dungeon_boss() {
+    return getZoneMult('dungeon_boss')
+  },
+  get demon_lord() {
+    return getZoneMult('demon_lord')
+  },
 }
 
 // Calcule les stats d'un monstre selon la zone et le run actuel
 export function scaleMonsterStats(baseStats, zoneId, runCount) {
-  const mult = ZONE_MULTS[zoneId] ?? 1.0
-  const runScale = Math.pow(1.08, Math.min(runCount, 25))
+  const mult = getZoneMult(zoneId)
+  const runScale = Math.pow(BALANCE.run_scaling, Math.min(runCount, BALANCE.run_scaling_cap))
   const scale = mult * runScale
 
   return {

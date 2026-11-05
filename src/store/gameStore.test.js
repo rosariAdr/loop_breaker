@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useGameStore } from './gameStore'
+import { IDLE_MASTERY_KILLS } from './slices/idleSlice'
 
 // Reset du store avant chaque test
 beforeEach(() => {
@@ -389,21 +390,21 @@ describe('processIdleTick', () => {
 // ── CRF01 — Debuffs passifs ───────────────────────────────────────────────────
 describe('CRF01 — debuffs (store)', () => {
   it('addHeroDebuff ajoute un debuff au héros', () => {
-    useGameStore.getState().addHeroDebuff('fatigue', 7)
+    useGameStore.getState().addHeroDebuff('sluggish', 7)
     const d = useGameStore.getState().hero.activeDebuffs
     expect(d).toHaveLength(1)
-    expect(d[0].debuffId).toBe('fatigue')
+    expect(d[0].debuffId).toBe('sluggish')
     expect(d[0].duration.remaining).toBe(7)
   })
 
   it('sleep décrémente la durée des debuffs temporaires', () => {
-    useGameStore.getState().addHeroDebuff('fatigue', 7)
+    useGameStore.getState().addHeroDebuff('sluggish', 7)
     useGameStore.getState().sleep()
     expect(useGameStore.getState().hero.activeDebuffs[0].duration.remaining).toBe(6)
   })
 
   it('sleep retire un debuff arrivé à expiration', () => {
-    useGameStore.getState().addHeroDebuff('fatigue', 1)
+    useGameStore.getState().addHeroDebuff('sluggish', 1)
     useGameStore.getState().sleep()
     expect(useGameStore.getState().hero.activeDebuffs).toHaveLength(0)
   })
@@ -569,36 +570,38 @@ describe('saveGame / loadGame', () => {
 })
 
 // ── Quêtes ────────────────────────────────────────────────────────────────────
+// QSV2-DROPDUP01 — fixture kill générique : nc_thin_the_boars (4× tuskmaw_boar, 60g)
+// remplace first_blood (retirée : doublon de mq01 à Greywatch).
 describe('Système de quêtes', () => {
   it('startQuest ajoute la quête aux activeQuests', () => {
-    useGameStore.getState().startQuest('first_blood')
-    expect(useGameStore.getState().world.activeQuests).toContain('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().world.activeQuests).toContain('nc_thin_the_boars')
   })
 
   it('startQuest ignore les doublons', () => {
-    useGameStore.getState().startQuest('first_blood')
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
     expect(useGameStore.getState().world.activeQuests).toHaveLength(1)
   })
 
   it('startQuest ignore les quêtes déjà complétées', () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, completedQuests: ['first_blood'], activeQuests: [] },
+      world: { ...state.world, completedQuests: ['nc_thin_the_boars'], activeQuests: [] },
     }))
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
     expect(useGameStore.getState().world.activeQuests).toHaveLength(0)
   })
 
   it('isQuestComplete retourne false si objectifs non remplis', () => {
-    useGameStore.getState().startQuest('first_blood')
-    expect(useGameStore.getState().isQuestComplete('first_blood')).toBe(false)
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().isQuestComplete('nc_thin_the_boars')).toBe(false)
   })
 
   it('isQuestComplete retourne true si kills suffisants', () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
+      world: { ...state.world, monsterKillCounts: { tuskmaw_boar: 4 } },
     }))
-    expect(useGameStore.getState().isQuestComplete('first_blood')).toBe(true)
+    expect(useGameStore.getState().isQuestComplete('nc_thin_the_boars')).toBe(true)
   })
 
   it('isQuestComplete — quête de niveau', () => {
@@ -609,48 +612,47 @@ describe('Système de quêtes', () => {
   })
 
   it("completeQuest retire la quête des actives et l'ajoute aux complètes", () => {
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
     useGameStore.setState((state) => ({
-      world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
+      world: { ...state.world, monsterKillCounts: { tuskmaw_boar: 4 } },
     }))
-    useGameStore.getState().completeQuest('first_blood')
+    useGameStore.getState().completeQuest('nc_thin_the_boars')
     const state = useGameStore.getState()
-    expect(state.world.activeQuests).not.toContain('first_blood')
-    expect(state.world.completedQuests).toContain('first_blood')
+    expect(state.world.activeQuests).not.toContain('nc_thin_the_boars')
+    expect(state.world.completedQuests).toContain('nc_thin_the_boars')
   })
 
   it('completeQuest ajoute la récompense en or', () => {
-    useGameStore.getState().startQuest('first_blood') // reward: 50g
+    useGameStore.getState().startQuest('nc_thin_the_boars') // 60g + 2 potions
     const before = useGameStore.getState().hero.inventory.gold
-    useGameStore.getState().completeQuest('first_blood')
-    expect(useGameStore.getState().hero.inventory.gold).toBe(before + 50)
+    useGameStore.getState().completeQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().hero.inventory.gold).toBe(before + 60)
   })
 
-  it('completeQuest ajoute les tokens de réputation', () => {
-    useGameStore.getState().startQuest('first_blood')
+  it("completeQuest ajoute les tokens de réputation (quête d'élite, REP01)", () => {
+    useGameStore.getState().startQuest('nc_thunderhoof_elite')
     const before = useGameStore.getState().hero.reputationTokens
-    useGameStore.getState().completeQuest('first_blood')
-    expect(useGameStore.getState().hero.reputationTokens).toBeGreaterThan(before)
+    useGameStore.getState().completeQuest('nc_thunderhoof_elite')
+    expect(useGameStore.getState().hero.reputationTokens).toBe(before + 5)
   })
 
-  it('completeQuest ajoute le skill de récompense dans manaStones', () => {
-    useGameStore.getState().startQuest('first_blood')
+  it('completeQuest ajoute le skill de récompense dans manaStones (MST03 : via un maître)', () => {
+    // MST03 — les skills sont désormais exclusifs aux maîtres : l'initiation d'Aldric
+    // octroie counter_strike (rerouté de first_blood).
+    useGameStore.getState().startQuest('master_init_aldric')
     useGameStore.setState((state) => ({
       world: { ...state.world, monsterKillCounts: { ashwood_wolf: 5 } },
     }))
-    useGameStore.getState().completeQuest('first_blood')
+    useGameStore.getState().completeQuest('master_init_aldric')
     const stones = useGameStore.getState().hero.inventory.manaStones
     expect(stones.some((s) => s.skillId === 'counter_strike')).toBe(true)
   })
 
-  it('clear_the_marsh donne 2 tokens (pas 1 par défaut)', () => {
+  it('REP01 — une quête non-élite ne donne aucun token (clear_the_marsh)', () => {
     useGameStore.getState().startQuest('clear_the_marsh')
-    useGameStore.setState((state) => ({
-      world: { ...state.world, monsterKillCounts: { marsh_serpent: 3 } },
-    }))
     const before = useGameStore.getState().hero.reputationTokens
     useGameStore.getState().completeQuest('clear_the_marsh')
-    expect(useGameStore.getState().hero.reputationTokens).toBe(before + 2)
+    expect(useGameStore.getState().hero.reputationTokens).toBe(before)
   })
 
   it('completeQuest ignore un questId inexistant', () => {
@@ -664,45 +666,45 @@ describe('Système de quêtes', () => {
   it('Q07 — completeQuest pousse un toast type quest', async () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
-    useGameStore.getState().startQuest('first_blood')
-    useGameStore.getState().completeQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    useGameStore.getState().completeQuest('nc_thin_the_boars')
     const toasts = useToastStore.getState().toasts
     expect(toasts.length).toBeGreaterThanOrEqual(1)
     const questToast = toasts.find((t) => t.type === 'quest')
     expect(questToast).toBeDefined()
-    expect(questToast.message).toMatch(/First Blood/)
+    expect(questToast.message).toMatch(/Boar Trouble/)
   })
 
   it('Q07 — le toast inclut les récompenses (gold + tokens + skill)', async () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
-    useGameStore.getState().startQuest('first_blood') // 50g + 1 token + counter_strike
-    useGameStore.getState().completeQuest('first_blood')
+    useGameStore.getState().startQuest('nc_graven_elite') // 180g + 5 tokens (élite) + power_strike
+    useGameStore.getState().completeQuest('nc_graven_elite')
     const questToast = useToastStore.getState().toasts.find((t) => t.type === 'quest')
-    expect(questToast.message).toMatch(/50g/)
+    expect(questToast.message).toMatch(/180g/)
     expect(questToast.message).toMatch(/🪙/)
   })
 
   // UX03 — abandonQuest
   it('abandonQuest retire la quête active sans la marquer complétée', () => {
-    useGameStore.getState().startQuest('first_blood')
-    expect(useGameStore.getState().world.activeQuests).toContain('first_blood')
-    useGameStore.getState().abandonQuest('first_blood')
-    expect(useGameStore.getState().world.activeQuests).not.toContain('first_blood')
-    expect(useGameStore.getState().world.completedQuests).not.toContain('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().world.activeQuests).toContain('nc_thin_the_boars')
+    useGameStore.getState().abandonQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().world.activeQuests).not.toContain('nc_thin_the_boars')
+    expect(useGameStore.getState().world.completedQuests).not.toContain('nc_thin_the_boars')
   })
 
   it('abandonQuest sur une quête non active ne change rien', () => {
     const before = useGameStore.getState().world.activeQuests
-    useGameStore.getState().abandonQuest('first_blood')
+    useGameStore.getState().abandonQuest('nc_thin_the_boars')
     expect(useGameStore.getState().world.activeQuests).toEqual(before)
   })
 
   it('abandonQuest permet de re-accepter la même quête plus tard', () => {
-    useGameStore.getState().startQuest('first_blood')
-    useGameStore.getState().abandonQuest('first_blood')
-    useGameStore.getState().startQuest('first_blood')
-    expect(useGameStore.getState().world.activeQuests).toContain('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    useGameStore.getState().abandonQuest('nc_thin_the_boars')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
+    expect(useGameStore.getState().world.activeQuests).toContain('nc_thin_the_boars')
   })
 })
 
@@ -721,27 +723,31 @@ describe('Quêtes Q03 — boss donjon', () => {
     const goldBefore = store().hero.inventory.gold
     const tokensBefore = store().hero.reputationTokens
     store().completeQuest('silence_the_crypt')
-    expect(store().hero.inventory.gold).toBe(goldBefore + 200)
-    expect(store().hero.reputationTokens).toBe(tokensBefore + 3)
-    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(true)
+    // MST03 — plus de skill (soul_crush est désormais exclusif au maître arcane) ; or rehaussé.
+    expect(store().hero.inventory.gold).toBe(goldBefore + 300)
+    expect(store().hero.reputationTokens).toBe(tokensBefore + 0) // REP01 : quête boss = 0 token
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'soul_crush')).toBe(false)
   })
 
-  it('end_the_demon : 10 tokens + 1000 gold pour Malachar', () => {
+  it('end_the_demon : 0 token de quête (REP01) + 1000 gold pour Malachar', () => {
     const store = useGameStore.getState
     store().startQuest('end_the_demon')
     store().recordKill('malachar')
     const tokensBefore = store().hero.reputationTokens
     store().completeQuest('end_the_demon')
-    expect(store().hero.reputationTokens).toBe(tokensBefore + 10)
+    expect(store().hero.reputationTokens).toBe(tokensBefore + 0)
     expect(store().hero.inventory.gold).toBeGreaterThanOrEqual(1000)
   })
 
-  it('storm_the_citadel drop forsaken_curse', () => {
+  it('storm_the_citadel ne drop plus forsaken_curse (MST03 : exclusif au maître arcane)', () => {
     const store = useGameStore.getState
     store().startQuest('storm_the_citadel')
     store().recordKill('forsaken_citadel_boss')
     store().completeQuest('storm_the_citadel')
-    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'forsaken_curse')).toBe(true)
+    // MST03 — forsaken_curse reroutée au maître arcane ; la quête ne récompense plus de skill.
+    expect(store().hero.inventory.manaStones.some((s) => s.skillId === 'forsaken_curse')).toBe(
+      false,
+    )
   })
 })
 
@@ -766,7 +772,7 @@ describe('Quêtes Q08 — NPCs multiples', () => {
 
   it('accepter plusieurs quêtes de NPCs différents simultanément', () => {
     const store = useGameStore.getState
-    store().startQuest('first_blood') // sir_aldric
+    store().startQuest('nc_thin_the_boars') // sir_aldric
     store().startQuest('silence_the_crypt') // ironhaven_captain
     store().startQuest('bog_purge') // greywatch_elder
     expect(store().world.activeQuests).toHaveLength(3)
@@ -1403,6 +1409,27 @@ describe('toggleIdle', () => {
     useGameStore.getState().toggleIdle('ashwood_wolf')
     expect(useGameStore.getState().world.isIdleActive).toBe(true)
   })
+
+  // IDLE-MASTERY01 — le seuil de maîtrise est unifié à 5× (combat) ; on épingle
+  // la constante et la frontière exacte pour qu'aucune dérive ne passe inaperçue.
+  it('IDLE-MASTERY01 — seuil de maîtrise = 5', () => {
+    expect(IDLE_MASTERY_KILLS).toBe(5)
+  })
+
+  it('IDLE-MASTERY01 — verrouillé à seuil-1, débloqué pile au seuil', () => {
+    const m = 'ashwood_wolf'
+    useGameStore.setState((s) => ({
+      world: { ...s.world, monsterKillCounts: { [m]: IDLE_MASTERY_KILLS - 1 } },
+    }))
+    useGameStore.getState().toggleIdle(m)
+    expect(useGameStore.getState().world.isIdleActive).toBe(false)
+
+    useGameStore.setState((s) => ({
+      world: { ...s.world, monsterKillCounts: { [m]: IDLE_MASTERY_KILLS } },
+    }))
+    useGameStore.getState().toggleIdle(m)
+    expect(useGameStore.getState().world.isIdleActive).toBe(true)
+  })
 })
 
 describe('resetGame', () => {
@@ -1468,7 +1495,7 @@ describe('recordKill', () => {
     useGameStore.getState().resetGame()
     for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('ashwood_wolf')
     expect(useGameStore.getState().meta.seenHints).toContain('idle_unlock')
-    const hint = useToastStore.getState().toasts.find((t) => /Idle combat unlocked/.test(t.message))
+    const hint = useToastStore.getState().toasts.find((t) => /Idle unlocked/.test(t.message))
     expect(hint).toBeDefined()
   })
 
@@ -1479,7 +1506,7 @@ describe('recordKill', () => {
     useToastStore.getState().clearToasts()
     // 2e mob atteint 5 → pas de nouveau hint
     for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('marsh_serpent')
-    const hint = useToastStore.getState().toasts.find((t) => /Idle combat unlocked/.test(t.message))
+    const hint = useToastStore.getState().toasts.find((t) => /Idle unlocked/.test(t.message))
     expect(hint).toBeUndefined()
   })
 
@@ -1800,11 +1827,21 @@ describe('Migration save — anti-crash inventaire (régression)', () => {
     expect(useGameStore.getState().hero.inventory.equipment).toHaveLength(0)
   })
 
-  it('ajoute hero.equipped avec 4 slots null si absent', () => {
+  it('ajoute hero.equipped avec les 9 slots null si absent (SLOT01)', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(oldSaveWithoutEquipment()))
     useGameStore.getState().loadGame()
     const eq = useGameStore.getState().hero.equipped
-    expect(eq).toEqual({ weapon: null, helmet: null, armor: null, boots: null })
+    expect(eq).toEqual({
+      weapon: null,
+      offhand: null,
+      helmet: null,
+      armor: null,
+      gloves: null,
+      boots: null,
+      amulet: null,
+      ring1: null,
+      ring2: null,
+    })
   })
 
   it('préserve les manaStones existantes', () => {
@@ -1917,12 +1954,12 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
     useGameStore.getState().saveGame()
     const raw = localStorage.getItem('roguelite_save')
     const parsed = JSON.parse(raw)
-    expect(parsed.saveVersion).toBe(2)
+    expect(parsed.saveVersion).toBe(3) // SLOT01 — bump v2 → v3
   })
 
   it('saveVersion est exporté comme constante (cohérence)', async () => {
     const mod = await import('./gameStore')
-    expect(mod.SAVE_VERSION).toBe(2)
+    expect(mod.SAVE_VERSION).toBe(3) // SLOT01
   })
 
   it("loadGame d'une save SANS saveVersion (legacy v1) la migre vers v2", () => {
@@ -1952,11 +1989,17 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
     expect(useGameStore.getState().hero.activeSkills).toEqual([])
     expect(useGameStore.getState().hero.passiveSkills).toEqual([])
     expect(useGameStore.getState().hero.inventory).toBeDefined()
+    // SLOT01 — 9 slots après migration v1 → v3.
     expect(useGameStore.getState().hero.equipped).toEqual({
       weapon: null,
+      offhand: null,
       helmet: null,
       armor: null,
+      gloves: null,
       boots: null,
+      amulet: null,
+      ring1: null,
+      ring2: null,
     })
     expect(useGameStore.getState().world.dayCount).toBe(3) // valeur préservée
   })
@@ -1964,7 +2007,7 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
   it('runMigrations exporté est testable directement', async () => {
     const { runMigrations } = await import('./gameStore')
     const result = runMigrations({ hero: {}, world: {}, meta: {} })
-    expect(result.saveVersion).toBe(2)
+    expect(result.saveVersion).toBe(3) // SLOT01
     expect(result.hero.activeSkills).toEqual([])
     expect(result.world.activeQuests).toEqual([])
   })
@@ -2044,14 +2087,19 @@ describe('X02 — Battery migration anti-régression', () => {
     expectObject('hero.inventory.resources')
   })
 
-  it('hero.equipped absent → 4 slots null', () => {
+  it('hero.equipped absent → 9 slots null (SLOT01)', () => {
     localStorage.setItem('roguelite_save', JSON.stringify(buildSaveMissing('hero.equipped')))
     useGameStore.getState().loadGame()
     expect(useGameStore.getState().hero.equipped).toEqual({
       weapon: null,
+      offhand: null,
       helmet: null,
       armor: null,
+      gloves: null,
       boots: null,
+      amulet: null,
+      ring1: null,
+      ring2: null,
     })
   })
 

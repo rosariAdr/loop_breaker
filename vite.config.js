@@ -13,9 +13,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html'],
       thresholds: {
-        // COV80 — seuil aligné sur l'acquis (~78 %) pour que test:coverage soit vert en CI ;
-        // cible 80 % à reprendre quand les internes de Combat.jsx seront couverts.
-        lines: 76,
+        // COV80 → COV-COMBAT01 (v1.34) — Combat.jsx passé de ~71 % à ~95 % de lignes
+        // (suite Combat.coverage.test.jsx) → couverture globale ~83 %. Seuil remonté à 80 %.
+        lines: 80,
       },
     },
   },

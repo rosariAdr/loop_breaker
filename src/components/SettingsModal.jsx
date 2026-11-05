@@ -5,6 +5,7 @@ import ConfirmDialog from './ConfirmDialog'
 
 export default function SettingsModal({ onClose }) {
   const animations = useGameStore((s) => s.meta.settings?.animations ?? true)
+  const tutorials = useGameStore((s) => s.meta.settings?.tutorials ?? true)
   const setSetting = useGameStore((s) => s.setSetting)
   const resetGame = useGameStore((s) => s.resetGame)
   const [pendingReset, setPendingReset] = useState(false)
@@ -47,6 +48,25 @@ export default function SettingsModal({ onClose }) {
                 aria-checked={animations}
                 aria-label="Toggle animations"
                 onClick={() => setSetting('animations', !animations)}
+              >
+                <span className="set-knob" />
+              </button>
+            </div>
+
+            {/* ONB01 — tutoriel contextuel (tips one-shot) */}
+            <div className="set-row">
+              <div>
+                <div className="inv-name" style={{ fontSize: 15 }}>
+                  Tutorial hints
+                </div>
+                <div className="inv-sub">One-time tips on your first key actions</div>
+              </div>
+              <button
+                className={`set-toggle ${tutorials ? 'on' : ''}`}
+                role="switch"
+                aria-checked={tutorials}
+                aria-label="Toggle tutorial hints"
+                onClick={() => setSetting('tutorials', !tutorials)}
               >
                 <span className="set-knob" />
               </button>

@@ -56,7 +56,11 @@ describe('Smoke tests — montage de chaque écran', () => {
   })
 
   it('QuestBoard monte', () => {
-    // GLD01 — lieu par défaut = ville (Ironhaven) → titre "Adventurers' Guild"
+    // GLD01 — en VILLE (Ironhaven) → titre "Adventurers' Guild". START01 démarre à
+    // Greywatch (village), donc on place explicitement le héros en ville ici.
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentLocation: 'ironhaven', currentNode: 'ironhaven' },
+    }))
     render(<QuestBoard />)
     expect(screen.getByText("Adventurers' Guild")).toBeInTheDocument()
   })
@@ -168,10 +172,10 @@ describe('CRF05 — HeroSheet debuffs', () => {
   })
 
   it('affiche un debuff temporaire avec sa durée restante', () => {
-    useGameStore.getState().addHeroDebuff('fatigue', 5)
+    useGameStore.getState().addHeroDebuff('sluggish', 5)
     render(<HeroSheet />)
     expect(screen.getByTestId('active-debuffs')).toBeInTheDocument()
-    expect(screen.getByText('Fatigue')).toBeInTheDocument()
+    expect(screen.getByText('Sluggish')).toBeInTheDocument()
     expect(screen.getByText('5d left')).toBeInTheDocument()
   })
 
@@ -444,7 +448,7 @@ describe('UX02 — Diff comparée équipement', () => {
     render(<Inventory />)
     fireEvent.click(screen.getByText(/Equipment/))
     fireEvent.click(screen.getByText('Steel Sword'))
-    expect(screen.getByText(/vs équipé : Iron Sword/)).toBeInTheDocument()
+    expect(screen.getByText(/vs equipped: Iron Sword/)).toBeInTheDocument()
   })
 
   it("n'affiche PAS de diff quand l'item est l'équipement actuel", () => {
@@ -556,32 +560,44 @@ describe('Inventory — régression vieille save (bug user)', () => {
 // QuestBoard : rendu des quêtes
 // ─────────────────────────────────────────────────────────────────────────────
 describe('QuestBoard — affichage quêtes', () => {
-  it('affiche au moins une quête disponible (sir_aldric a 3 quêtes)', () => {
+  // START01 démarre le héros à Greywatch (village) ; ces tests visent le board
+  // complet de la Guilde (Ironhaven, ville) où vivent les quêtes de sir_aldric.
+  beforeEach(() => {
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentLocation: 'ironhaven', currentNode: 'ironhaven' },
+    }))
+  })
+
+  it('affiche au moins une quête disponible (Ironhaven)', () => {
     render(<QuestBoard />)
     // GLD01 — en ville la section s'intitule "Available · Guild Commissions"
     expect(screen.getByText(/Available/)).toBeInTheDocument()
-    expect(screen.getByText('First Blood')).toBeInTheDocument()
+    // QSV2-ADJ-AUDIT01 — Clear the Marsh émise à Ironhaven (thornmarsh adjacent)
+    expect(screen.getByText('Clear the Marsh')).toBeInTheDocument()
   })
 
-  it('affiche le NPC donneur sur chaque quête (Q08)', () => {
+  it('affiche le NPC donneur sur chaque quête', () => {
     render(<QuestBoard />)
-    // sir_aldric (titre = Knight of Millhaven)
-    expect(screen.getAllByText(/Knight of Millhaven/).length).toBeGreaterThan(0)
+    // QSV2-ADJ-AUDIT01 — à Ironhaven : Captain Vaern
+    expect(screen.getAllByText(/Captain of the Ironhaven Guard/).length).toBeGreaterThan(0)
   })
 
-  it('affiche les nouvelles quêtes Q03 (boss)', () => {
+  it('affiche la quête boss Map 1 ; les boss Map 2 sont gelés (QSV2-ADJ-AUDIT01)', () => {
     render(<QuestBoard />)
     expect(screen.getByText('Silence the Crypt')).toBeInTheDocument()
-    expect(screen.getByText('Storm the Citadel')).toBeInTheDocument()
-    expect(screen.getByText('End the Demon')).toBeInTheDocument()
+    // Storm the Citadel / End the Demon = Map 2 (mapTier:2) → hors board tant que Map 2 fermée
+    expect(screen.queryByText('Storm the Citadel')).not.toBeInTheDocument()
+    expect(screen.queryByText('End the Demon')).not.toBeInTheDocument()
   })
 
-  it('affiche les nouvelles quêtes Q08 (greywatch) — disponibles à Greywatch (QSV2)', () => {
-    // QSV2-LOCALITY01 — les quêtes de Greywatch ne sont disponibles qu'à Greywatch.
-    useGameStore.setState((s) => ({ world: { ...s.world, currentLocation: 'greywatch' } }))
+  it('affiche les quêtes de Greywatch (Sir Aldric relocalisé) — QSV2-ADJ-AUDIT01', () => {
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentLocation: 'greywatch', currentNode: 'greywatch' },
+    }))
     render(<QuestBoard />)
-    expect(screen.getByText('Bog Purge')).toBeInTheDocument()
-    expect(screen.getByText('Cleanse the Ruins')).toBeInTheDocument()
+    expect(screen.getByText('Boar Trouble')).toBeInTheDocument() // QSV2-DROPDUP01 — ex-First Blood
+    // Bog Purge a été re-domicilié à Millhaven (thornmarsh non adjacent à Greywatch)
+    expect(screen.queryByText('Bog Purge')).not.toBeInTheDocument()
   })
 
   it('clic sur Accept ajoute la quête aux activeQuests', () => {
@@ -592,7 +608,7 @@ describe('QuestBoard — affichage quêtes', () => {
   })
 
   it('section Active apparaît après acceptation', () => {
-    useGameStore.getState().startQuest('first_blood')
+    useGameStore.getState().startQuest('nc_thin_the_boars')
     render(<QuestBoard />)
     expect(screen.getByText(/Active \(1\)/)).toBeInTheDocument()
   })
@@ -608,32 +624,36 @@ describe('QuestBoard — affichage quêtes', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // LevelUpModal : flow complet
 // ─────────────────────────────────────────────────────────────────────────────
+// FIX-LVLQUEUE01 — modal allocateur (N points), plus « Do it later ».
 describe('LevelUpModal — flow', () => {
   beforeEach(() => {
     useGameStore.setState({ pendingLevelUp: 1 })
   })
 
-  it('clic sur une stat la sélectionne', () => {
-    render(<LevelUpModal />)
-    fireEvent.click(screen.getByText('Strength'))
-    // Le bouton Confirm doit devenir actif
-    const confirmBtn = screen.getByText(/Confirm & Continue/)
-    expect(confirmBtn).not.toBeDisabled()
-  })
-
-  it('Confirm sans choix ne fait rien', () => {
-    render(<LevelUpModal />)
-    const confirmBtn = screen.getByText(/Confirm & Continue/)
-    expect(confirmBtn).toBeDisabled()
-  })
-
-  it('Confirm avec choix applique le bonus + clear pendingLevelUp', () => {
+  it('allouer un point à une stat (+) puis Confirm applique le bonus + clear pendingLevelUp', () => {
     const before = useGameStore.getState().hero.stats.strength
     render(<LevelUpModal />)
-    fireEvent.click(screen.getByText('Strength'))
-    fireEvent.click(screen.getByText(/Confirm & Continue/))
+    fireEvent.click(screen.getByTestId('levelup-plus-strength'))
+    fireEvent.click(screen.getByTestId('levelup-confirm'))
     expect(useGameStore.getState().hero.stats.strength).toBe(before + 1)
     expect(useGameStore.getState().pendingLevelUp).toBe(0)
+    expect(useGameStore.getState().hero.pendingStatPoints).toBe(0)
+  })
+
+  it('Confirm sans allouer → le point est reporté dans pendingStatPoints', () => {
+    render(<LevelUpModal />)
+    fireEvent.click(screen.getByTestId('levelup-confirm'))
+    expect(useGameStore.getState().pendingLevelUp).toBe(0)
+    expect(useGameStore.getState().hero.pendingStatPoints).toBe(1)
+  })
+
+  it('« Do it later » reporte tous les points sans rien attribuer', () => {
+    const before = useGameStore.getState().hero.stats.strength
+    render(<LevelUpModal />)
+    fireEvent.click(screen.getByTestId('levelup-defer'))
+    expect(useGameStore.getState().hero.stats.strength).toBe(before)
+    expect(useGameStore.getState().pendingLevelUp).toBe(0)
+    expect(useGameStore.getState().hero.pendingStatPoints).toBe(1)
   })
 })
 

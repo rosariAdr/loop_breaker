@@ -2,14 +2,28 @@ import { useGameStore } from '../store/gameStore'
 import { useToastStore } from '../store/toastStore'
 import { SKILLS } from '../data/skills'
 import { DEITIES } from '../data/deities'
-import { RARITY_CONFIG, calcEquippedStatBonuses } from '../data/equipment'
+import {
+  RARITY_CONFIG,
+  calcEquippedStatBonuses,
+  EQUIP_SLOTS as EQUIP_SLOT_KEYS,
+} from '../data/equipment'
+import { getActiveSetsSummary } from '../data/sets'
 import { DEBUFFS } from '../data/debuffs'
-import { TITLES } from '../data/titles'
+import { TITLES, getTitleStatBuffs } from '../data/titles'
+import { STAT_MILESTONES } from '../data/statMilestones'
 import { hasGluttony, isGluttonyReady, gluttonyDaysRemaining } from '../engine/gluttony'
 import { ArtSlot } from '../components/parchment'
 import Tooltip from '../components/Tooltip'
 
 const HERO_SPRITE = '/sprites/hero/idle/00.png'
+
+// TITLE-BUF01 — résumé des buffs d'un titre pour le tooltip.
+const buffText = (buffs) =>
+  buffs && Object.keys(buffs).length
+    ? ` · ${Object.entries(buffs)
+        .map(([k, v]) => `+${v} ${k}`)
+        .join(', ')}`
+    : ''
 
 // UX01 — Descriptions in-game des stats du héros
 const STAT_TOOLTIPS = {
@@ -28,7 +42,19 @@ const STAT_TOOLTIPS = {
   Defense: 'Réduit les dégâts subis : dmg = max(1, atk - DEF/2).',
 }
 
-const EQUIP_SLOTS = ['weapon', 'helmet', 'armor', 'boots']
+// SLOT01 — 9 slots portés (ordre d'affichage). Libellés lisibles pour l'UI.
+const EQUIP_SLOTS = EQUIP_SLOT_KEYS
+const SLOT_LABELS = {
+  weapon: 'weapon',
+  offhand: 'offhand',
+  helmet: 'helmet',
+  armor: 'armor',
+  gloves: 'gloves',
+  boots: 'boots',
+  amulet: 'amulet',
+  ring1: 'ring I',
+  ring2: 'ring II',
+}
 const ATTR_DEFS = [
   { key: 'strength', label: 'Strength' },
   { key: 'agility', label: 'Agility' },
@@ -38,12 +64,17 @@ const ATTR_DEFS = [
 ]
 
 export default function HeroSheet({ onClose }) {
-  const { hero, meta, world, setScreen, unequipItem } = useGameStore()
+  const { hero, meta, world, setScreen, unequipItem, setActiveTitle, assignStatPoint } =
+    useGameStore()
   // ACA02 — équiper est libre partout, mais déséquiper un skill se fait UNIQUEMENT à
   // l'Académie de magie. Ailleurs, on donne un feedback clair au lieu de déséquiper.
   const blockSkillUnequip = () =>
     useToastStore.getState().addToast('Visit the Academy of Magic to unequip skills.', 'info')
-  const equippedBonuses = calcEquippedStatBonuses(hero.equipped ?? {})
+  // TITLE-BUF01 — bonus affichés = équipement + buffs du titre actif.
+  const equippedBonuses = { ...calcEquippedStatBonuses(hero.equipped ?? {}) }
+  for (const [stat, bonus] of Object.entries(getTitleStatBuffs(meta?.activeTitle))) {
+    equippedBonuses[stat] = (equippedBonuses[stat] ?? 0) + bonus
+  }
   const earnedTitles = (meta?.titlesEarned ?? []).map((id) => TITLES[id]).filter(Boolean) // M01
   // GLT03 — statut Gluttony
   const gluttonyEquipped = hasGluttony(hero.passiveSkills ?? [])
@@ -58,6 +89,11 @@ export default function HeroSheet({ onClose }) {
         {/* En-tête */}
         <div className="sheet-hd">
           <div className="sh-title">
+            {meta?.activeTitle && TITLES[meta.activeTitle] && (
+              <span className="hs-active-title" data-testid="active-title">
+                {TITLES[meta.activeTitle].icon} {TITLES[meta.activeTitle].name}
+              </span>
+            )}
             {hero.name}
             <span className="sh-meta">
               Wanderer · Run #{hero.runNumber} · Level {hero.level} · {hero.deathCount} deaths
@@ -77,7 +113,20 @@ export default function HeroSheet({ onClose }) {
         <div className="sheet-body" style={{ overflowY: 'auto' }}>
           {/* Colonne gauche */}
           <div className="hs-left">
-            {/* HS-DEITY01 — bloc Divinité remonté en haut de la colonne gauche, avant l'avatar */}
+            {/* HSV2-01 — avatar en tête de colonne gauche (remonté au-dessus d'Allegiance) */}
+            <div className="lb-slot hs-portrait art-slot" data-testid="hero-avatar">
+              <img
+                src={HERO_SPRITE}
+                alt="Hero avatar"
+                draggable={false}
+                style={{
+                  imageRendering: 'pixelated',
+                  maxHeight: '88%',
+                  maxWidth: '92%',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
             <div className="panel-block">
               <div className="pb-title">Allegiance</div>
               {hero.deity ? (
@@ -97,24 +146,18 @@ export default function HeroSheet({ onClose }) {
                 </div>
               )}
             </div>
-            <div className="lb-slot hs-portrait art-slot">
-              <img
-                src={HERO_SPRITE}
-                alt=""
-                draggable={false}
-                style={{ imageRendering: 'pixelated', height: '88%', objectFit: 'contain' }}
-              />
-            </div>
-
             <div className="panel-block">
               <div className="pb-title">Equipment</div>
               <div className="equip-grid">
                 {EQUIP_SLOTS.map((slot) => {
                   const item = hero.equipped?.[slot]
                   const rc = item ? RARITY_CONFIG[item.rarity] : null
+                  // SLOT01 — l'offhand est verrouillée quand une arme 2 mains est portée.
+                  const lockedByTwoHanded =
+                    slot === 'offhand' && !item && hero.equipped?.weapon?.twoHanded
                   return (
                     <div className="equip-cell" key={slot}>
-                      <span className="eq-label">{slot}</span>
+                      <span className="eq-label">{SLOT_LABELS[slot] ?? slot}</span>
                       <div
                         className="eq-slot art-slot"
                         style={
@@ -129,12 +172,12 @@ export default function HeroSheet({ onClose }) {
                           </span>
                         ) : (
                           <span className="as-cap" style={{ fontSize: 10 }}>
-                            —
+                            {lockedByTwoHanded ? '🔒' : '—'}
                           </span>
                         )}
                       </div>
                       <span className={`eq-name ${item ? '' : 'empty'}`}>
-                        {item ? item.name : '— empty —'}
+                        {item ? item.name : lockedByTwoHanded ? '— two-handed —' : '— empty —'}
                         {item && (
                           <button
                             className="hs-unequip"
@@ -149,6 +192,8 @@ export default function HeroSheet({ onClose }) {
                   )
                 })}
               </div>
+              {/* SET-UI01 — bonus de set actifs (pièces 2/3/4… + bonus appliqués) */}
+              <SetBonusPanel equipped={hero.equipped ?? {}} />
             </div>
 
             {/* HS-CURR01 — « Currencies » (Gold / Tokens) ; carte « Run » retirée (info déjà en en-tête) */}
@@ -177,6 +222,13 @@ export default function HeroSheet({ onClose }) {
                 onClick={() => setScreen('codex')}
               >
                 📖 Bestiary
+              </button>
+              <button
+                className="pbtn wide"
+                style={{ marginTop: 6 }}
+                onClick={() => setScreen('achievements')}
+              >
+                🏆 Achievements
               </button>
             </div>
           </div>
@@ -223,26 +275,11 @@ export default function HeroSheet({ onClose }) {
                   cur={hero.exp}
                   max={hero.expToNext}
                 />
-                {/* STA02 — Aura (mult. de dégâts) */}
-                <VitalBar
-                  label="Aura"
-                  tip={STAT_TOOLTIPS.Aura}
-                  color="#c084fc"
-                  cur={hero.aura ?? 0}
-                  max={20}
-                  locked={(hero.aura ?? 0) <= 0}
-                  display={`${hero.aura ?? 0} (+${((hero.aura ?? 0) * 0.5).toFixed(1)}% dmg)`}
-                />
-                {/* STA03 — Concentration (qualité de craft) */}
-                <VitalBar
-                  label="Concentration"
-                  tip={STAT_TOOLTIPS.Concentration}
-                  color="#60a0d0"
-                  cur={hero.concentration ?? 0}
-                  max={150}
-                  locked={(hero.concentration ?? 0) <= 0}
-                />
               </div>
+              {/* FIX-HSBARS01 — les 5 attributs ET Aura/Concentration partagent le gabarit
+                  `.attr-row` dans la même grille : tracks de largeur identique par famille
+                  (valeur + repères en largeur fixe, cf. index.css). Aura/Concentration
+                  verrouillées = barre floutée + 🔒 + « ??? » (HSV2-03 conservé). */}
               <div className="attr-grid">
                 {ATTR_DEFS.map(({ key, label }) => {
                   const base = hero.stats[key] ?? 0
@@ -256,7 +293,18 @@ export default function HeroSheet({ onClose }) {
                         </span>
                       </Tooltip>
                       <span className="ar-bar">
-                        <i style={{ width: `${Math.min(100, (total / 25) * 100)}%` }} />
+                        <i style={{ width: `${Math.min(100, ((total % 35) / 35) * 100)}%` }} />
+                      </span>
+                      {/* HSV2-04 — repères tous les 35 pts (paliers franchis = « on ») */}
+                      <span className="ar-ticks">
+                        {Array.from({ length: Math.floor(total / 35) }).map((_, i) => (
+                          <span
+                            key={i}
+                            className="ar-tick on"
+                            data-testid="stat-milestone"
+                            title={`Palier ${(i + 1) * 35} — ${STAT_MILESTONES[key]?.label ?? ''}`}
+                          />
+                        ))}
                       </span>
                       <span className="ar-val">
                         {total}
@@ -270,7 +318,80 @@ export default function HeroSheet({ onClose }) {
                     </div>
                   )
                 })}
+                {/* HSV2-03 / FIX-HSBARS01 — Aura & Concentration à la suite de DÉF, même gabarit. */}
+                <AttrStatRow
+                  label="Aura"
+                  tip={STAT_TOOLTIPS.Aura}
+                  cur={hero.aura ?? 0}
+                  max={20}
+                  color="#c084fc"
+                  locked={(hero.aura ?? 0) <= 0}
+                  display={`${hero.aura ?? 0} (+${((hero.aura ?? 0) * 0.5).toFixed(1)}%)`}
+                />
+                <AttrStatRow
+                  label="Concentration"
+                  tip={STAT_TOOLTIPS.Concentration}
+                  cur={hero.concentration ?? 0}
+                  max={150}
+                  color="#60a0d0"
+                  locked={(hero.concentration ?? 0) <= 0}
+                />
               </div>
+
+              {/* FIX-LVLQUEUE01 — points de stat différés (« Do it later » du level-up) :
+                  badge + attribution en 1 clic (+1) par stat. */}
+              {(hero.pendingStatPoints ?? 0) > 0 && (
+                <div
+                  className="hs-pending-points"
+                  data-testid="pending-stat-points"
+                  style={{
+                    marginTop: 14,
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    background: 'rgba(96, 208, 255, 0.08)',
+                    border: '1px solid rgba(96, 208, 255, 0.35)',
+                  }}
+                >
+                  <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-head)',
+                        fontSize: 13,
+                        color: '#3a86a8',
+                      }}
+                    >
+                      ✦ Stat points to assign
+                    </span>
+                    <span
+                      data-testid="pending-points-count"
+                      style={{
+                        fontFamily: 'var(--font-head)',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        color: '#2a6a8a',
+                        background: 'rgba(96, 208, 255, 0.18)',
+                        borderRadius: 10,
+                        padding: '1px 10px',
+                      }}
+                    >
+                      {hero.pendingStatPoints}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {ATTR_DEFS.map(({ key, label }) => (
+                      <button
+                        key={key}
+                        className="pbtn"
+                        data-testid={`assign-point-${key}`}
+                        onClick={() => assignStatPoint(key)}
+                        style={{ fontSize: 12, padding: '4px 10px' }}
+                      >
+                        +1 {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* CRF05 — Debuffs actifs */}
@@ -378,13 +499,21 @@ export default function HeroSheet({ onClose }) {
               <div className="panel-block">
                 <div className="pb-title">Titles</div>
                 <div className="hs-titles" data-testid="permanent-titles">
-                  {earnedTitles.map((t) => (
-                    <Tooltip key={t.id} content={t.description}>
-                      <span className="hs-title-chip" style={{ cursor: 'help' }}>
-                        <span>{t.icon}</span> {t.name}
-                      </span>
-                    </Tooltip>
-                  ))}
+                  {earnedTitles.map((t) => {
+                    const active = meta?.activeTitle === t.id
+                    return (
+                      <Tooltip key={t.id} content={`${t.description}${buffText(t.statBuffs)}`}>
+                        <button
+                          className={`hs-title-chip ${active ? 'active' : ''}`}
+                          data-testid={`title-chip-${t.id}`}
+                          onClick={() => setActiveTitle(active ? null : t.id)}
+                        >
+                          <span>{t.icon}</span> {t.name}
+                          {active ? ' ✓' : ''}
+                        </button>
+                      </Tooltip>
+                    )
+                  })}
                   {hero.titles.map((t) => (
                     <span key={t} className="hs-title-chip legacy">
                       {t}
@@ -403,19 +532,103 @@ export default function HeroSheet({ onClose }) {
 // HS-VITALS01 / HS-AURA01 — barre de vitale : libellé + jauge colorée + valeur.
 // `locked` (Aura/Concentration non débloquées) → jauge floutée + 🔒 (pattern S02) ; le
 // libellé reste net avec son tooltip explicatif.
+// FIX-HSBARS01 — stat de type « attribut » (Aura / Concentration) rendue dans la grille des
+// attributs (même gabarit `.attr-row` que STR/AGI/…). Verrouillée : nom « ??? », barre floutée
+// (classe `ar-locked`), valeur 🔒 — sans repères de palier (ces stats n'en ont pas).
+function AttrStatRow({ label, cur, max, color, tip, locked = false, display }) {
+  const pct = max > 0 ? Math.min(100, Math.max(0, (cur / max) * 100)) : 0
+  const nameEl = (
+    <span className="ar-name" style={{ cursor: locked ? 'default' : 'help' }}>
+      {locked ? '???' : label}
+    </span>
+  )
+  return (
+    <div
+      className={`attr-row ${locked ? 'ar-locked' : ''}`}
+      data-testid={`vital-${label.toLowerCase()}`}
+    >
+      {tip && !locked ? <Tooltip content={tip}>{nameEl}</Tooltip> : nameEl}
+      <span className="ar-bar">
+        <i style={{ width: `${locked ? 100 : pct}%`, background: color }} />
+      </span>
+      <span className="ar-ticks" />
+      <span className="ar-val">{locked ? '🔒' : (display ?? cur)}</span>
+    </div>
+  )
+}
+
 function VitalBar({ label, cur, max, color, tip, locked = false, display }) {
   const pct = max > 0 ? Math.min(100, Math.max(0, (cur / max) * 100)) : 0
-  const labelEl = <span className="hvb-label">{label}</span>
+  // HSV2-03 — verrouillé : nom masqué (« ??? ») + pas de tooltip (masquage complet).
+  const labelEl = <span className="hvb-label">{locked ? '???' : label}</span>
   return (
     <div
       className={`hvb ${locked ? 'hvb-locked' : ''}`}
       data-testid={`vital-${label.toLowerCase()}`}
     >
-      {tip ? <Tooltip content={tip}>{labelEl}</Tooltip> : labelEl}
+      {tip && !locked ? <Tooltip content={tip}>{labelEl}</Tooltip> : labelEl}
       <span className="hvb-bar">
         <i style={{ width: `${locked ? 100 : pct}%`, background: color }} />
       </span>
       <span className="hvb-val">{locked ? '🔒' : (display ?? `${cur}/${max}`)}</span>
+    </div>
+  )
+}
+
+// SET-UI01 — Panneau des bonus de set actifs : pour chaque set dont ≥1 pièce est portée,
+// affiche le nombre de pièces (x/total) et, si ≥2 pièces, les bonus de stat appliqués.
+function SetBonusPanel({ equipped }) {
+  const sets = getActiveSetsSummary(equipped)
+  if (sets.length === 0) return null
+  return (
+    <div className="hs-setbonus" data-testid="set-bonuses" style={{ marginTop: 10 }}>
+      {sets.map((s) => {
+        const bonusText = Object.entries(s.bonuses)
+          .map(([stat, val]) => `+${val} ${stat}`)
+          .join(' · ')
+        return (
+          <div
+            key={s.id}
+            className="hs-set-row"
+            data-testid={`set-${s.id}`}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              padding: '4px 0',
+              borderTop: '1px dashed var(--parchment-shadow)',
+            }}
+          >
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-head)',
+                  fontSize: 12,
+                  color: s.active ? 'var(--forest-deep)' : 'var(--ink-soft)',
+                }}
+              >
+                {s.name}
+              </span>
+              <span
+                data-testid={`set-count-${s.id}`}
+                style={{ fontSize: 11, color: 'var(--ink-soft)' }}
+              >
+                {s.count}/{s.total}
+              </span>
+            </div>
+            {s.active && bonusText && (
+              <span
+                data-testid={`set-bonus-${s.id}`}
+                style={{ fontSize: 11, color: 'var(--forest-deep)' }}
+              >
+                ✦ {bonusText}
+              </span>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -499,9 +712,6 @@ function SkillRow({ skill, isDivine = false, onUnequip, compact = false }) {
           )}
           {template.cost.hp > 0 && (
             <span style={{ color: 'var(--danger)' }}>{template.cost.hp} HP</span>
-          )}
-          {template.cooldown > 0 && (
-            <span style={{ color: 'var(--ink-soft)' }}>CD {template.cooldown}t</span>
           )}
         </div>
         {skill.level < 3 && (

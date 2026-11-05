@@ -1294,6 +1294,14 @@ html.lb-no-anim *::after {
   transform: translate(-50%, -52%) scale(1.04);
   filter: brightness(1.05);
 }
+/* BLDUNL05 — bâtiment verrouillé : grisé (inline) + curseur d'interdiction. */
+.bld-locked {
+  cursor: not-allowed;
+}
+.bld-locked:hover {
+  transform: translate(-50%, -50%);
+  filter: grayscale(0.5) brightness(1.02);
+}
 .bld .bld-frame {
   border: 3px solid var(--ink);
   border-radius: 8px;
@@ -2130,6 +2138,33 @@ html.lb-no-anim *::after {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
 }
+/* ONB03 — onglets Bestiary / Rules + cartes de règles */
+.codex-tab {
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0 2px 3px;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.codex-tab.on {
+  color: var(--ink);
+  border-bottom-color: var(--amber-deep);
+}
+.codex-rule {
+  padding: 10px 4px 14px;
+  border-bottom: 1px solid var(--parchment-shadow);
+  max-width: 760px;
+}
+.codex-rule:last-child {
+  border-bottom: none;
+}
 .codex-card {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent 40%), rgba(246, 232, 196, 0.55);
@@ -2341,14 +2376,44 @@ html.lb-no-anim *::after {
   height: 100%;
   background: linear-gradient(90deg, var(--amber), var(--gold));
 }
+/* FIX-HSBARS01 — verrouillé (Aura/Concentration non débloquées) : barre floutée, comme les vitales. */
+.attr-row.ar-locked .ar-bar i {
+  filter: blur(3px);
+  opacity: 0.45;
+}
+/* FIX-HSBARS01 — largeur FIXE de la valeur (indépendante du bonus « (+N ») pour que le track
+   `.ar-bar` (flex:1) ait la MÊME largeur sur chaque ligne des 2 colonnes. */
 .attr-row .ar-val {
   font-family: var(--font-head);
   font-weight: 700;
   font-size: 16px;
-  width: 28px;
+  flex: 0 0 62px;
+  width: 62px;
   text-align: right;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* HSV2-04 — repères de palier d'attribut (/35 pts). FIX-HSBARS01 — largeur FIXE (les repères
+   ne rognent plus le track ; au-delà de 3 paliers les points passent à la ligne). */
+.attr-row .ar-ticks {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  flex-wrap: wrap;
+}
+.attr-row .ar-tick {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(61, 43, 31, 0.22);
+}
+.attr-row .ar-tick.on {
+  background: var(--gold);
+  box-shadow: 0 0 3px rgba(201, 169, 110, 0.8);
 }
 .derived {
   display: flex;
@@ -2674,6 +2739,26 @@ html.lb-no-anim *::after {
   border-color: var(--parchment-shadow);
   color: var(--ink-soft);
 }
+/* TITLE-G1 — chips de titre cliquables (activer/désactiver) + titre actif */
+button.hs-title-chip {
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+button.hs-title-chip:hover {
+  border-color: var(--gold);
+}
+.hs-title-chip.active {
+  background: linear-gradient(180deg, rgba(96, 200, 120, 0.28), rgba(96, 200, 120, 0.12));
+  border-color: var(--forest-deep);
+}
+.sh-title .hs-active-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #7a3fb0;
+  font-family: var(--font-head);
+  margin-bottom: 2px;
+}
 
 /* ── Inventory : onglets + cartes parchemin ────────────────────────────────── */
 .inv-tabs {
@@ -2929,10 +3014,30 @@ html.lb-no-anim *::after {
 }
 
 /* ── WorldMap : carte illustrée + marqueurs discrets ───────────────────────── */
-.wm-map {
+/* UI12 — bande cinématique 3:2 (Option A, décidée 2026-07-06).
+   .wm-band = zone disponible (map-area moins la colonne du panneau, réservée par
+   padding-right) ; container-type:size expose cqw/cqh pour contenir la boîte.
+   .wm-map = boîte 3:2 FORCÉE (aspect-ratio), centrée H+V, bornée par l'espace :
+   height-bound aux résolutions 16:9 de réf (remplit la hauteur, marges bois
+   symétriques via le centrage), width-bound aux fenêtres très étroites.
+   ⚠️ Ne pas toucher : background-size 100% 100% de .wm-bg ni les coords POS (%)
+   — elles restent relatives à .wm-map, donc alignées 1:1 quel que soit l'écran. */
+.wm-band {
   position: absolute;
   inset: 0;
+  padding-right: 302px; /* colonne du panneau (.sidebar 286px + gouttière) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+.wm-map {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  width: min(100cqw, calc(100cqh * 3 / 2));
   overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 /* background-size: 100% 100% (fill) → l'image remplit exactement le conteneur,
    donc les coordonnées % des nodes (mesurées sur l'image) restent alignées 1:1
