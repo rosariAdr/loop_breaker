@@ -32,6 +32,7 @@ export const ONBOARDING_QUESTS = {
         id: 'kill_wolves',
         type: 'kill',
         monsterId: 'ashwood_wolf',
+        cumulative: true,
         count: 3,
         label: 'Kill 3 Ashwood Wolves',
       },

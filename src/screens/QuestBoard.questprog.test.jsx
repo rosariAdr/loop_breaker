@@ -9,7 +9,7 @@ afterEach(() => cleanup())
 
 const killQuest = {
   id: 'test_kill',
-  name: 'The Waking',
+  name: 'The Hunting Journal',
   flavorText: 'wolves',
   giverNpc: 'greywatch_elder',
   objectives: [

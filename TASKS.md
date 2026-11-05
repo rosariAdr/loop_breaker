@@ -1130,6 +1130,15 @@ _(aucune dépendance externe bloquante)_
 
 ## Done
 
+### Campagne et progression — 2026-11-05
+
+- [x] **MQ-FLOW02 — Campagne complète d'accès aux zones** · L · P1 · 🟢 — 11 quêtes jusqu'à Malachar, liaison Millhaven–Wildmere Hills, portes cohérentes pour zones/donjons/boss, remplacement des remises aléatoires et niveaux provisoires, objectifs validés dans le store. AC automatisés : destinations atteignables avant récompense, parcours complet sans rare ni quête facultative, accès anticipés refusés. ⟶ `docs/design/QUEST_CAMPAIGN_IDLE.md`.
+- [x] **MQ-IDLE01 — Apprentissage de l'idle et continuité du journal** · M · P2 · 🟢 — MQ01 apprend l'idle, seuil par espèce conservé ; suivi de prochaine destination, conclusion de campagne et migration des anciennes maîtrises. Journal en portail au-dessus de la sidebar.
+- [x] **MQ-SENTINEL01 — Épreuve répétable déterministe** · M · P2 · 🟢 — deux victoires manuelles successives → un orbe ; repos/rechargement conservés, fuite/défaite/autre espèce remettent à zéro ; première remise pour Thornmarsh, deux améliorations d'arme optionnelles, aucun orbe idle/offline ni double récompense.
+- [x] **MQ-SIDE01 — Trois fils facultatifs** · L · P2 · 🟢 — convois, notes du chasseur et serment du gardien ; neuf quêtes, choix de solution/fin et conséquences persistantes, test des trois chaînes et des deux fins du gardien. Ces fils ne conditionnent aucun accès obligatoire.
+
+La livraison de code ci-dessus n'est pas une nouvelle release : la grille de recette navigateur complète S1–S10 reste à dérouler avant un merge de release.
+
 > **TASK-HIST01 (2026-06-13)** : le détail par ticket des milestones ci-dessous reste **coché `[x]` inline** dans leurs sections (`## v1.1`, `## MON01`, `## v1.2`) = source de vérité unique ; ici on n'inscrit que le **niveau milestone** (on ne duplique pas les 75 tickets). `docs/ROADMAP.csv` (tracker hérité early-planning, périmé vs TASKS.md) a été **supprimé le 2026-07-03** — TASKS.md est l'unique source de vérité (récupérable via l'historique git si besoin).
 
 ### v1.2 — Profondeur & contenu (NPC → STA → PROG) (2026-06-08 → 13)

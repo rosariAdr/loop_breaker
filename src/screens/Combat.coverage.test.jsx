@@ -18,6 +18,9 @@ import { useGameStore } from '../store/gameStore'
 
 beforeEach(() => {
   useGameStore.getState().resetGame()
+  useGameStore.setState((s) => ({
+    world: { ...s.world, campaignLegacyAccess: ['crypt', 'forsaken_citadel', 'malachar'] },
+  }))
   localStorage.clear()
   vi.useFakeTimers()
 })

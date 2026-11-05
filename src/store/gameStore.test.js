@@ -1,3 +1,4 @@
+import { readyQuest } from '../test/questFixtures'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useGameStore } from './gameStore'
 import { IDLE_MASTERY_KILLS } from './slices/idleSlice'
@@ -5,6 +6,7 @@ import { IDLE_MASTERY_KILLS } from './slices/idleSlice'
 // Reset du store avant chaque test
 beforeEach(() => {
   useGameStore.getState().resetGame()
+  useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
   localStorage.clear()
 })
 
@@ -290,7 +292,12 @@ describe('processIdleTick', () => {
 
   it("ajoute de l'or et des ressources quand actif", () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      world: {
+        ...state.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'ashwood_wolf',
+      },
     }))
     const before = useGameStore.getState().hero.inventory.gold
     useGameStore.getState().processIdleTick()
@@ -299,7 +306,12 @@ describe('processIdleTick', () => {
 
   it('incrémente le kill count', () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      world: {
+        ...state.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'ashwood_wolf',
+      },
     }))
     useGameStore.getState().processIdleTick()
     expect(useGameStore.getState().world.monsterKillCounts['ashwood_wolf']).toBeGreaterThanOrEqual(
@@ -309,7 +321,12 @@ describe('processIdleTick', () => {
 
   it('réduit les HP du héros (combat idle)', () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      world: {
+        ...state.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'ashwood_wolf',
+      },
       hero: { ...state.hero, stats: { ...state.hero.stats, hp: 100 } },
     }))
     useGameStore.getState().processIdleTick()
@@ -319,7 +336,12 @@ describe('processIdleTick', () => {
   it("désactive l'idle si HP < 20%", () => {
     // ashwood_wolf (Lv 1) pour ne PAS déclencher le garde B12 (trop fort)
     useGameStore.setState((state) => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      world: {
+        ...state.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'ashwood_wolf',
+      },
       hero: { ...state.hero, level: 5, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } },
     }))
     useGameStore.getState().processIdleTick()
@@ -331,7 +353,12 @@ describe('processIdleTick', () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
     useGameStore.setState((state) => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      world: {
+        ...state.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'ashwood_wolf',
+      },
       hero: { ...state.hero, level: 5, stats: { ...state.hero.stats, hp: 1, maxHp: 100 } },
     }))
     useGameStore.getState().processIdleTick()
@@ -343,7 +370,12 @@ describe('processIdleTick', () => {
   it("B12 — force un combat manuel quand l'ennemi est trop fort", () => {
     // stone_golem = Lv 12 ; héros Lv 1 → 12 > 1+5 → trop fort
     useGameStore.setState((state) => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'stone_golem' },
+      world: {
+        ...state.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'stone_golem',
+      },
       hero: { ...state.hero, level: 1, stats: { ...state.hero.stats, hp: 100, maxHp: 100 } },
     }))
     useGameStore.getState().processIdleTick()
@@ -355,7 +387,12 @@ describe('processIdleTick', () => {
 
   it("B12 — n'interrompt PAS si le héros est assez haut niveau", () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'stone_golem' },
+      world: {
+        ...state.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'stone_golem',
+      },
       hero: {
         ...state.hero,
         level: 20,
@@ -373,7 +410,12 @@ describe('processIdleTick', () => {
     useToastStore.getState().clearToasts()
     // Héros proche du level up + idle actif sur un monstre rentable
     useGameStore.setState((state) => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      world: {
+        ...state.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'ashwood_wolf',
+      },
       hero: {
         ...state.hero,
         exp: 99,
@@ -533,6 +575,7 @@ describe('saveGame / loadGame', () => {
     useGameStore.getState().addGold(250)
     useGameStore.getState().saveGame()
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     useGameStore.getState().loadGame()
     expect(useGameStore.getState().hero.inventory.gold).toBe(250)
   })
@@ -616,6 +659,7 @@ describe('Système de quêtes', () => {
     useGameStore.setState((state) => ({
       world: { ...state.world, monsterKillCounts: { tuskmaw_boar: 4 } },
     }))
+    readyQuest('nc_thin_the_boars')
     useGameStore.getState().completeQuest('nc_thin_the_boars')
     const state = useGameStore.getState()
     expect(state.world.activeQuests).not.toContain('nc_thin_the_boars')
@@ -625,6 +669,7 @@ describe('Système de quêtes', () => {
   it('completeQuest ajoute la récompense en or', () => {
     useGameStore.getState().startQuest('nc_thin_the_boars') // 60g + 2 potions
     const before = useGameStore.getState().hero.inventory.gold
+    readyQuest('nc_thin_the_boars')
     useGameStore.getState().completeQuest('nc_thin_the_boars')
     expect(useGameStore.getState().hero.inventory.gold).toBe(before + 60)
   })
@@ -632,6 +677,7 @@ describe('Système de quêtes', () => {
   it("completeQuest ajoute les tokens de réputation (quête d'élite, REP01)", () => {
     useGameStore.getState().startQuest('nc_thunderhoof_elite')
     const before = useGameStore.getState().hero.reputationTokens
+    readyQuest('nc_thunderhoof_elite')
     useGameStore.getState().completeQuest('nc_thunderhoof_elite')
     expect(useGameStore.getState().hero.reputationTokens).toBe(before + 5)
   })
@@ -667,6 +713,7 @@ describe('Système de quêtes', () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
     useGameStore.getState().startQuest('nc_thin_the_boars')
+    readyQuest('nc_thin_the_boars')
     useGameStore.getState().completeQuest('nc_thin_the_boars')
     const toasts = useToastStore.getState().toasts
     expect(toasts.length).toBeGreaterThanOrEqual(1)
@@ -679,6 +726,7 @@ describe('Système de quêtes', () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
     useGameStore.getState().startQuest('nc_graven_elite') // 180g + 5 tokens (élite) + power_strike
+    readyQuest('nc_graven_elite')
     useGameStore.getState().completeQuest('nc_graven_elite')
     const questToast = useToastStore.getState().toasts.find((t) => t.type === 'quest')
     expect(questToast.message).toMatch(/180g/)
@@ -867,6 +915,7 @@ describe('refuseDeity', () => {
   // DV07 — Refus = run solo
   it('DV07 — refuseDeity lève le flag hero.soloRun', () => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     expect(useGameStore.getState().hero.soloRun).toBe(false)
     useGameStore.getState().triggerDivineCall('ignareth')
     useGameStore.getState().refuseDeity()
@@ -875,6 +924,7 @@ describe('refuseDeity', () => {
 
   it('DV07 — soloRun garantit le bonus T11 (+1 lvl skills) même si une divinité existait', () => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     // Simule : a une divinité MAIS soloRun=true (a refusé une 2e divinité)
     useGameStore.setState((state) => ({
       hero: { ...state.hero, deity: 'ignareth', soloRun: true },
@@ -1088,6 +1138,7 @@ describe('advanceTick', () => {
 describe('CAL01 — prayAtChurch', () => {
   beforeEach(() => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     useGameStore.setState((state) => ({
       hero: { ...state.hero, stats: { ...state.hero.stats, hp: 30, mana: 10 } },
       world: { ...state.world, tickCount: 5 },
@@ -1319,6 +1370,7 @@ describe('Donjons', () => {
     useGameStore.setState((state) => ({
       world: {
         ...state.world,
+        idleUnlocked: true,
         isIdleActive: true,
         idleTargetMonster: 'ashwood_wolf',
       },
@@ -1328,9 +1380,9 @@ describe('Donjons', () => {
     expect(useGameStore.getState().world.idleTargetMonster).toBeNull()
   })
 
-  it('D05 — clearDungeon grimspire warpe vers stonehaven', () => {
+  it('D05 — clearDungeon grimspire returns to navigable Ironhaven', () => {
     useGameStore.getState().clearDungeon('grimspire')
-    expect(useGameStore.getState().world.currentLocation).toBe('stonehaven')
+    expect(useGameStore.getState().world.currentLocation).toBe('ironhaven')
   })
 
   // W03 — Flag malacharDefeatedThisRun
@@ -1437,6 +1489,7 @@ describe('resetGame', () => {
     useGameStore.getState().addGold(500)
     useGameStore.getState().gainExp(300)
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     const state = useGameStore.getState()
     expect(state.hero.inventory.gold).toBe(0)
     expect(state.hero.exp).toBe(0)
@@ -1446,12 +1499,14 @@ describe('resetGame', () => {
   it('retourne à world_map', () => {
     useGameStore.getState().setScreen('combat')
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     expect(useGameStore.getState().currentScreen).toBe('world_map')
   })
 
   it('nettoie activeCombat et pendingDivineCall', () => {
     useGameStore.getState().triggerDivineCall('ignareth')
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     expect(useGameStore.getState().pendingDivineCall).toBeNull()
     expect(useGameStore.getState().activeCombat).toBeNull()
   })
@@ -1459,6 +1514,7 @@ describe('resetGame', () => {
   it('réinitialise heroNamed à false (re-déclenche CharacterCreation)', () => {
     useGameStore.getState().renameHero('Kael')
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     expect(useGameStore.getState().hero.heroNamed).toBe(false)
   })
 })
@@ -1493,6 +1549,7 @@ describe('recordKill', () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('ashwood_wolf')
     expect(useGameStore.getState().meta.seenHints).toContain('idle_unlock')
     const hint = useToastStore.getState().toasts.find((t) => /Idle unlocked/.test(t.message))
@@ -1502,6 +1559,7 @@ describe('recordKill', () => {
   it('TUT02 — hint affiché UNE seule fois (pas au 2e mob qui atteint 5)', async () => {
     const { useToastStore } = await import('./toastStore')
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('ashwood_wolf')
     useToastStore.getState().clearToasts()
     // 2e mob atteint 5 → pas de nouveau hint
@@ -1514,6 +1572,7 @@ describe('recordKill', () => {
     const { useToastStore } = await import('./toastStore')
     useToastStore.getState().clearToasts()
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     for (let i = 0; i < 4; i++) useGameStore.getState().recordKill('ashwood_wolf')
     expect(useGameStore.getState().meta.seenHints).not.toContain('idle_unlock')
   })
@@ -1561,6 +1620,7 @@ describe('Migration save — heroNamed (C01)', () => {
 describe('gainSkillXp — S04 notif level-up', () => {
   beforeEach(() => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     useGameStore.getState().addSkillToInventory({ skillId: 'savage_bite', level: 1, xp: 0 })
     useGameStore.getState().equipActiveSkill({ skillId: 'savage_bite', level: 1, xp: 0 })
   })
@@ -1603,6 +1663,7 @@ describe('gainSkillXp — S04 notif level-up', () => {
   it('resetGame vide les recentSkillLevelUps', () => {
     for (let i = 0; i < 20; i++) useGameStore.getState().gainSkillXp('savage_bite', 1)
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     expect(useGameStore.getState().recentSkillLevelUps).toEqual([])
   })
 })
@@ -1611,6 +1672,7 @@ describe('gainSkillXp — S04 notif level-up', () => {
 describe('acceptDeity — DV08 blessing applied', () => {
   it("Ignareth : strength augmente de 15% à l'acceptation", () => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     const before = useGameStore.getState().hero.stats.strength
     useGameStore.getState().acceptDeity('ignareth', 'inferno_strike')
     const after = useGameStore.getState().hero.stats.strength
@@ -1619,6 +1681,7 @@ describe('acceptDeity — DV08 blessing applied', () => {
 
   it('hero.deityBlessing est set après acceptation Ignareth', () => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     useGameStore.getState().acceptDeity('ignareth', 'inferno_strike')
     expect(useGameStore.getState().hero.deityBlessing).toBeDefined()
     expect(useGameStore.getState().hero.deityBlessing.id).toBe('ignareth_blessing')
@@ -1626,6 +1689,7 @@ describe('acceptDeity — DV08 blessing applied', () => {
 
   it('Sylvara : pas de modification immédiate de stat (effet runtime)', () => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     const beforeStr = useGameStore.getState().hero.stats.strength
     const beforeMaxHp = useGameStore.getState().hero.stats.maxHp
     useGameStore.getState().acceptDeity('sylvara', 'healing_bloom')
@@ -1640,6 +1704,7 @@ describe('acceptDeity — DV08 blessing applied', () => {
 describe('applyTransmigration — T06 à T11 (boutique)', () => {
   beforeEach(() => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
   })
 
   // Par défaut on simule un run AVEC divinité pour neutraliser T11 (compensation solo)
@@ -1943,6 +2008,7 @@ describe('UX05 — unseenLoot flag', () => {
   it('resetGame reset le flag', () => {
     useGameStore.getState().addResource('wolf_pelt', 1)
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     expect(useGameStore.getState().unseenLoot).toBe(false)
   })
 })
@@ -1951,15 +2017,16 @@ describe('UX05 — unseenLoot flag', () => {
 describe('TECH02 — saveGame écrit avec saveVersion', () => {
   it('saveGame écrit un saveVersion dans le JSON localStorage', () => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     useGameStore.getState().saveGame()
     const raw = localStorage.getItem('roguelite_save')
     const parsed = JSON.parse(raw)
-    expect(parsed.saveVersion).toBe(3) // SLOT01 — bump v2 → v3
+    expect(parsed.saveVersion).toBe(4) // SLOT01 — bump v2 → v3
   })
 
   it('saveVersion est exporté comme constante (cohérence)', async () => {
     const mod = await import('./gameStore')
-    expect(mod.SAVE_VERSION).toBe(3) // SLOT01
+    expect(mod.SAVE_VERSION).toBe(4) // SLOT01
   })
 
   it("loadGame d'une save SANS saveVersion (legacy v1) la migre vers v2", () => {
@@ -2007,7 +2074,7 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
   it('runMigrations exporté est testable directement', async () => {
     const { runMigrations } = await import('./gameStore')
     const result = runMigrations({ hero: {}, world: {}, meta: {} })
-    expect(result.saveVersion).toBe(3) // SLOT01
+    expect(result.saveVersion).toBe(4) // SLOT01
     expect(result.hero.activeSkills).toEqual([])
     expect(result.world.activeQuests).toEqual([])
   })
@@ -2017,6 +2084,7 @@ describe('TECH02 — saveGame écrit avec saveVersion', () => {
 describe('X02 — Battery migration anti-régression', () => {
   beforeEach(() => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     localStorage.clear()
   })
 
@@ -2202,6 +2270,7 @@ describe('X02 — Battery migration anti-régression', () => {
 describe('TECH03 — localStorage quota warning', () => {
   beforeEach(() => {
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
   })
 
   it('saveQuotaExceeded est false par défaut', () => {
@@ -2239,6 +2308,7 @@ describe('TECH03 — localStorage quota warning', () => {
   it('resetGame remet saveQuotaExceeded à false', () => {
     useGameStore.setState({ saveQuotaExceeded: true })
     useGameStore.getState().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     expect(useGameStore.getState().saveQuotaExceeded).toBe(false)
   })
 })

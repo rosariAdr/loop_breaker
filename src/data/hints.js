@@ -5,7 +5,7 @@
 export const HINTS = {
   idle_unlock: {
     title: 'Idle unlocked',
-    text: 'You have mastered this foe — toggle Idle from the zone view to farm it automatically.',
+    text: 'You have mastered this foe. Return The Hunting Journal to Moira to unlock idle, then toggle it from the zone view. Each new species needs 5 victories.',
   },
   first_quest: {
     title: 'Quest accepted',
@@ -26,7 +26,7 @@ export const HINTS = {
   // ONB02 — tips enseignés par la chaîne de quêtes principale (MQ-CHAIN01).
   mq_elite_turnin: {
     title: 'Elite hunt',
-    text: "Main quests against elites are turn-ins: bring back the elite's rare drops (or its weapon) to the quest-giver to claim its signature weapon.",
+    text: 'Main-story elite victories are guaranteed progress. The Sentinel Trial grants an orb after two consecutive manual victories; activate it in Crumbled Ruins.',
   },
   mq_new_region: {
     title: 'The road opens',

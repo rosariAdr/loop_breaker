@@ -2,6 +2,7 @@
 // Objectives: { type: 'kill', monsterId, count } | { type: 'level', targetLevel }
 // Rewards: { skill: { skillId, level }, gold, reputationTokens, consumables, ... }
 
+import { SIDE_QUESTS } from './sideQuestChains'
 import { CHURCH_QUESTS, CHURCH_QUEST_NPC } from './churchQuests'
 import { MAIN_QUESTS, MAIN_QUEST_NPC } from './mainQuests'
 import { MASTER_QUESTS, MASTER_QUEST_NPC } from './masterQuests'
@@ -408,6 +409,7 @@ export function getQuestById(id) {
     CHURCH_QUESTS[id] ??
     MASTER_QUESTS[id] ??
     MAIN_QUESTS[id] ??
+    SIDE_QUESTS[id] ??
     ONBOARDING_QUESTS[id] ?? // QONBOARD01 — chaîne d'onboarding « Premières fois »
     getVillageQuestById(id) ?? // VQ — quêtes de village générées par adjacence
     null
@@ -479,6 +481,8 @@ export function snapshotForQuest(quest, state) {
     baseCraftByKind, // QOBJ-TYPES01 — craft filtré par kind (delta vs snapshot)
     basePray: state.meta?.prayCount ?? 0, // QOBJ-TYPES01 — `pray` en delta (mirror craft)
     baseDeeds: state.meta?.deedsAccepted ?? 0, // QOBJ-TYPES01 — `accept_deed` en delta
+    baseIdle: state.world?.idleVictoryCount ?? 0,
+    baseChoiceKills: { ...(state.world?.monsterKillCounts ?? {}) },
     acceptedDay: state.world?.dayCount ?? 1, // QSV2-TIMED01 — jour d'acceptation
   }
 }
@@ -509,16 +513,36 @@ export function questObjectiveStatus(quest, state, { accepted = true } = {}) {
   const basePray = base.basePray ?? 0
   const baseDeeds = base.baseDeeds ?? 0
   const skillLevels = heroSkillLevels(state.hero)
+  const statuses = []
   return (quest?.objectives ?? []).map((obj) => {
     let raw = 0
     let target = 1
-    if (obj.type === 'kill') {
+    if (obj.type === 'event') {
+      raw = (state.world?.campaignEvents ?? []).includes(obj.eventId) ? 1 : 0
+    } else if (obj.type === 'choice') {
+      raw = state.world?.campaignChoices?.[obj.choiceId] ? 1 : 0
+    } else if (obj.type === 'resource') {
+      target = obj.count
+      raw = state.hero?.inventory?.resources?.[obj.resourceId] ?? 0
+      if (
+        obj.resourceId === 'sentinel_orb' &&
+        !quest.isMainQuest &&
+        !(state.world?.completedQuests ?? []).includes('mq06_beyond_marsh')
+      )
+        raw = Math.max(0, raw - 1)
+    } else if (obj.type === 'mastery') {
+      target = obj.count
+      raw = Math.max(0, ...obj.monsters.map((id) => state.world?.monsterKillCounts?.[id] ?? 0))
+    } else if (obj.type === 'idle_kills') {
+      target = obj.count
+      raw = accepted ? Math.max(0, (state.world?.idleVictoryCount ?? 0) - (base.baseIdle ?? 0)) : 0
+    } else if (obj.type === 'kill') {
       target = obj.count
       raw = accepted
         ? Math.max(
             0,
             (state.world?.monsterKillCounts?.[obj.monsterId] ?? 0) -
-              (baseKills[obj.monsterId] ?? 0),
+              (obj.cumulative ? 0 : (baseKills[obj.monsterId] ?? 0)),
           )
         : 0
     } else if (obj.type === 'level') {
@@ -581,7 +605,10 @@ export function questObjectiveStatus(quest, state, { accepted = true } = {}) {
       const killedElite = (state.world?.monsterKillCounts?.[obj.eliteId] ?? 0) >= 1
       raw = hasWeapon || (hasItems && killedElite) ? 1 : 0
     }
-    return { obj, current: Math.min(raw, target), target, done: raw >= target }
+    if (obj.afterObjective && !statuses.find((s) => s.obj.id === obj.afterObjective)?.done) raw = 0
+    const status = { obj, current: Math.min(raw, target), target, done: raw >= target }
+    statuses.push(status)
+    return status
   })
 }
 

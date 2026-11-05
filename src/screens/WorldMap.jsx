@@ -1,3 +1,4 @@
+import { campaignGate, nextCampaignQuest } from '../data/campaignProgression'
 import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { MONSTERS } from '../data/monsters'
@@ -42,13 +43,20 @@ export default function WorldMap() {
   const [qteOpen, setQteOpen] = useState(false)
   const [walking, setWalking] = useState(false) // TRV02 — animation de marche pendant un voyage
 
-  const totalAshenvaleKills = Object.entries(world.monsterKillCounts)
-    .filter(([id]) => MONSTERS[id]?.zone === 'ashenvale')
-    .reduce((sum, [, n]) => sum + n, 0)
   // PROG01 — déblocage data-driven (mêmes conditions niveau/kills, désormais dans zones.js)
   // + voie explicite (PROG03 : quête/info → world.unlockedZones).
   const blightedUnlocked = isZoneUnlocked('blighted_road', { world, hero })
   const grimspireUnlocked = isZoneUnlocked('grimspire', { world, hero })
+  const nextQuest = nextCampaignQuest(world)
+  const activeMain = nextQuest && world.activeQuests.includes(nextQuest.id)
+  const targetObjective =
+    activeMain && nextQuest.objectives.find((o) => o.type === 'visit' || o.type === 'kill')
+  const storyTarget =
+    !activeMain || useGameStore.getState().isQuestComplete(nextQuest.id)
+      ? nextQuest?.issuedBy
+      : (targetObjective?.spotId ??
+        MONSTERS[targetObjective?.monsterId]?.huntingSpot ??
+        (nextQuest.id === 'mq06_beyond_marsh' ? 'crumbled_ruins' : nextQuest.issuedBy))
 
   // TRV01 — position du héros sur la carte (fallback = village de départ Greywatch)
   const heroNode =
@@ -95,12 +103,28 @@ export default function WorldMap() {
 
   const dungeon = world.dungeons?.ashenvale
   const onCrypt = () => {
-    if (!dungeon?.discovered) discoverDungeon('ashenvale')
+    if (!campaignGate('crypt', world)) return
+    if (heroNode !== 'ironhaven') {
+      setTip({ ...POS.crypt, text: 'Approach Hollow Crypt from Ironhaven.' })
+      return
+    }
+    discoverDungeon('ashenvale')
+    const state = useGameStore.getState()
+    state.setScreen('zone_view')
+    useGameStore.setState({
+      world: { ...state.world, currentZone: 'ashenvale', currentHuntingSpot: null },
+    })
   }
 
   const enterBlighted = () => {
+    if (heroNode !== 'ironhaven' || !campaignGate('blighted_road', world)) return
     useGameStore.setState((s) => ({
-      world: { ...s.world, currentZone: 'blighted_road', currentHuntingSpot: null },
+      world: {
+        ...s.world,
+        currentZone: 'blighted_road',
+        currentHuntingSpot: null,
+        campaignEvents: [...new Set([...(s.world.campaignEvents ?? []), 'road_crossed'])],
+      },
     }))
     setScreen('zone_view')
   }
@@ -186,6 +210,9 @@ export default function WorldMap() {
               {...n}
               locked={nodeLocked}
               sub={lr ? `Lv ${lr[0]}–${lr[1]}` : undefined}
+              tag={
+                storyTarget === n.id ? { text: '⚔ Main story', color: 'var(--gold)' } : undefined
+              }
               onClick={() => onNode(n)}
               onHover={
                 nodeLocked
@@ -227,6 +254,7 @@ export default function WorldMap() {
             dungeon
             name={dungeon.discovered ? 'The Hollow Crypt' : ''}
             tag={dungeon.discovered ? { text: 'Lv 12–16', color: 'var(--dungeon)' } : null}
+            locked={!campaignGate('crypt', world)}
             onClick={onCrypt}
             onHover={(on) =>
               setTip(
@@ -263,7 +291,7 @@ export default function WorldMap() {
           locked={!grimspireUnlocked}
           glow={grimspireUnlocked ? 'amber' : undefined}
           tag={{
-            text: grimspireUnlocked ? 'Lv 21–40' : 'Lv 8+ to unlock',
+            text: grimspireUnlocked ? 'Lv 21–40' : 'Complete the Blighted Road crossing',
             color: grimspireUnlocked ? 'var(--ink-soft)' : 'var(--stone)',
           }}
           onClick={grimspireUnlocked ? onGrimspire : undefined}
@@ -274,7 +302,7 @@ export default function WorldMap() {
                 ? {
                     x: POS.grimspire.x,
                     y: POS.grimspire.y - 8,
-                    text: '⚠ Grimspire — Reach Level 8 to unlock',
+                    text: 'Grimspire — follow the main story and cross the Blighted Road.',
                   }
                 : null,
             )
@@ -285,11 +313,19 @@ export default function WorldMap() {
         <div
           className="wm-blighted"
           style={{ left: '74%', top: '52%', cursor: blightedUnlocked ? 'pointer' : 'default' }}
-          onClick={() => blightedUnlocked && setQteOpen(true)}
+          onClick={() => {
+            if (blightedUnlocked && heroNode === 'ironhaven') setQteOpen(true)
+            else
+              setTip({
+                x: 74,
+                y: 46,
+                text: 'Cross from Ironhaven after completing The Master of the Crypt.',
+              })
+          }}
         >
           <div className="wm-blighted-label">{blightedUnlocked ? '⚔' : '💀'} The Blighted Road</div>
           <div className="wm-blighted-chip">
-            {blightedUnlocked ? 'Cross the road' : `${totalAshenvaleKills}/10 kills or Lv 3`}
+            {blightedUnlocked ? 'Cross the road' : 'Complete The Master of the Crypt'}
           </div>
         </div>
 
@@ -302,6 +338,20 @@ export default function WorldMap() {
           walking={walking}
         />
 
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: 8,
+            maxWidth: 300,
+            background: 'var(--parchment)',
+            padding: 8,
+            borderRadius: 6,
+          }}
+          data-testid="map-story-hint"
+        >
+          ⚔ {nextQuest?.name ?? 'Campaign complete'} · {storyTarget ?? 'Eldenmoor'}
+        </div>
         {/* UX-MAPCLARITY01 — légende des symboles de la carte (cohérente PROG/fog) */}
         <div className="wm-legend" data-testid="wm-legend">
           <div className="wl-title">Legend</div>

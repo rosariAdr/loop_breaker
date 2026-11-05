@@ -1,4 +1,10 @@
 // REFAC01 — Slice « quests » du store (extrait de gameStore.js, comportement inchangé).
+import {
+  hasQuestPrerequisites,
+  CAMPAIGN_INTERACTIONS,
+  campaignGate,
+} from '../../data/campaignProgression'
+import { EMPTY_TRIAL } from '../../engine/sentinelTrial'
 import { CHURCH_QUESTS, churchRotationBlock } from '../../data/churchQuests'
 import { createEquipmentInstance, RARITY_TIERS } from '../../data/equipment'
 import { getMqTutorialHint } from '../../data/hints'
@@ -18,6 +24,115 @@ import { ZONES } from '../../data/zones'
 import { useToastStore } from '../toastStore'
 
 export const createQuestsSlice = (set, get) => ({
+  interactCampaign: (eventId) => {
+    const state = get()
+    const interaction = CAMPAIGN_INTERACTIONS[eventId]
+    const reportQuest = state.world.activeQuests
+      .map(getQuestById)
+      .find((q) => q?.reportEvent === eventId)
+    if (interaction) {
+      if (
+        state.world.currentHuntingSpot !== interaction.spot ||
+        !state.world.activeQuests.includes(interaction.quest)
+      )
+        return false
+    } else if (
+      !reportQuest ||
+      state.world.currentLocation !== reportQuest.issuedBy ||
+      state.currentScreen !== 'quest_board'
+    )
+      return false
+    if ((state.world.campaignEvents ?? []).includes(eventId)) return false
+    set((s) => ({
+      world: { ...s.world, campaignEvents: [...(s.world.campaignEvents ?? []), eventId] },
+    }))
+    return true
+  },
+
+  chooseQuestOption: (questId, optionId) => {
+    const state = get()
+    const quest = getQuestById(questId)
+    const option = quest?.choices?.find((o) => o.id === optionId)
+    if (
+      !option ||
+      !state.world.activeQuests.includes(questId) ||
+      state.world.currentLocation !== quest.issuedBy ||
+      state.currentScreen !== 'quest_board'
+    )
+      return false
+    if (state.world.campaignChoices?.[quest.choiceId]) return false
+    if ((state.hero.inventory.gold ?? 0) < (option.gold ?? 0)) return false
+    if (option.kills) {
+      const { monsterId, count } = option.kills
+      const baseline = state.world.questProgress?.[questId]?.baseChoiceKills?.[monsterId] ?? 0
+      if ((state.world.monsterKillCounts[monsterId] ?? 0) - baseline < count) return false
+    }
+    set((s) => ({
+      hero: {
+        ...s.hero,
+        inventory: { ...s.hero.inventory, gold: s.hero.inventory.gold - (option.gold ?? 0) },
+      },
+      world: {
+        ...s.world,
+        campaignChoices: { ...s.world.campaignChoices, [quest.choiceId]: optionId },
+      },
+    }))
+    return true
+  },
+
+  startSentinelTrial: () => {
+    const { world } = get()
+    if (
+      world.currentHuntingSpot !== 'crumbled_ruins' ||
+      (!world.activeQuests.includes('mq06_beyond_marsh') &&
+        !world.completedQuests.includes('mq06_beyond_marsh')) ||
+      world.sentinelTrial?.active
+    )
+      return false
+    set((s) => ({
+      world: {
+        ...s.world,
+        sentinelTrial: { ...(s.world.sentinelTrial ?? EMPTY_TRIAL), active: true, wins: 0 },
+      },
+    }))
+    return true
+  },
+
+  upgradeSentinelWeapon: () => {
+    const s = get()
+    const upgrades = s.world.sentinelUpgrades ?? 0
+    const cost = upgrades + 1
+    if (
+      !s.world.completedQuests.includes('mq06_beyond_marsh') ||
+      s.world.currentHuntingSpot !== 'crumbled_ruins' ||
+      upgrades >= 2 ||
+      (s.hero.inventory.resources.sentinel_orb ?? 0) < cost
+    )
+      return false
+    const weapon = s.hero.inventory.equipment.find((e) => e.templateId === 'graven_edge')
+    if (!weapon) return false
+    const rarity =
+      RARITY_TIERS[Math.min(RARITY_TIERS.indexOf(weapon.rarity) + 1, RARITY_TIERS.length - 1)]
+    if (rarity === weapon.rarity) return false
+    const replacement = createEquipmentInstance('graven_edge', rarity)
+    set((state) => ({
+      world: { ...state.world, sentinelUpgrades: upgrades + 1 },
+      hero: {
+        ...state.hero,
+        inventory: {
+          ...state.hero.inventory,
+          resources: {
+            ...state.hero.inventory.resources,
+            sentinel_orb: state.hero.inventory.resources.sentinel_orb - cost,
+          },
+          equipment: state.hero.inventory.equipment.map((e) =>
+            e.instanceId === weapon.instanceId ? replacement : e,
+          ),
+        },
+      },
+    }))
+    return true
+  },
   // ── Système de quêtes ────────────────────────────────────────────────────
   startQuest: (questId) => {
     const wasActive = (get().world.activeQuests ?? []).includes(questId)
@@ -28,7 +143,8 @@ export const createQuestsSlice = (set, get) => ({
       // MST02 — refuse d'accepter une quête de maître verrouillée (pas encore initié, ou
       // quête d'un AUTRE maître que celui engagé). L'initiation reste toujours acceptable.
       const q0 = getQuestById(questId)
-      if (get().isMasterQuestLocked(q0)) return state
+      if (!q0 || !hasQuestPrerequisites(q0, state.world) || get().isMasterQuestLocked(q0))
+        return state
       // FIX-QUESTSNAP01 — fige les compteurs cumulés au moment de l'acceptation.
       const quest = getQuestById(questId)
       const snapshot = quest ? snapshotForQuest(quest, state) : { baseKills: {}, baseCraft: 0 }
@@ -41,6 +157,13 @@ export const createQuestsSlice = (set, get) => ({
         meta,
         world: {
           ...state.world,
+          unlockedNodes: [
+            ...new Set([
+              ...(state.world.unlockedNodes ?? []),
+              ...(quest.acceptUnlocks?.spots ?? []),
+              ...(quest.acceptUnlocks?.locations ?? []),
+            ]),
+          ],
           activeQuests: [...activeQuests, questId],
           questProgress: { ...(state.world.questProgress ?? {}), [questId]: snapshot },
         },
@@ -120,13 +243,17 @@ export const createQuestsSlice = (set, get) => ({
     }),
 
   completeQuest: (questId) => {
+    let didComplete = false
     let xpGain = 0
     let rankGain = 0
     set((state) => {
       const { activeQuests: active, completedQuests: completed } = state.world
       if (!active.includes(questId)) return state
       const quest = getQuestById(questId)
-      if (!quest) return state
+      if (!quest || !isQuestCompleteState(quest, state) || isQuestExpired(quest, state.world))
+        return state
+      if (completed.includes(questId) && (quest.isMainQuest || quest.track === 'side')) return state
+      didComplete = true
       // FIX-CHURCH-DRY01 — les actes de dévotion (église) sont RÉPÉTABLES : au lieu d'être exclus
       // à jamais, on stampe le bloc de rotation courant → re-proposables au bloc suivant.
       const isChurchQuest = !!CHURCH_QUESTS[questId]
@@ -145,7 +272,10 @@ export const createQuestsSlice = (set, get) => ({
       rankGain = firstTime
         ? questRankPoints(quest)
         : Math.round(questRankPoints(quest) * QUEST_XP_REPEAT_MULT)
-      const r = quest.reward
+      const choiceReward =
+        quest.choices?.find((o) => o.id === state.world.campaignChoices?.[quest.choiceId])
+          ?.reward ?? {}
+      const r = { ...quest.reward, ...choiceReward }
       const newManaStones = [...state.hero.inventory.manaStones]
       const newEquipment = [...state.hero.inventory.equipment]
       const newResources = { ...state.hero.inventory.resources }
@@ -178,6 +308,11 @@ export const createQuestsSlice = (set, get) => ({
         }
       }
 
+      for (const obj of quest.objectives ?? []) {
+        if (obj.type === 'resource' && obj.consume)
+          newResources[obj.resourceId] = (newResources[obj.resourceId] ?? 0) - obj.count
+      }
+
       // Q09 — récompenses variées : équipement / ressources / stat
       const eqItem = r.equipment ? createEquipmentInstance(r.equipment.templateId, eqRarity) : null
       if (eqItem) {
@@ -204,7 +339,12 @@ export const createQuestsSlice = (set, get) => ({
       if (r.concentration) newConcentration += r.concentration
       // PROG03 — récompense qui débloque une zone (voie « quête »)
       const newUnlockedZones = [...(state.world.unlockedZones ?? [])]
-      if (r.unlockZone && ZONES[r.unlockZone] && !newUnlockedZones.includes(r.unlockZone)) {
+      if (
+        r.unlockZone &&
+        ZONES[r.unlockZone] &&
+        campaignGate(r.unlockZone, { ...state.world, completedQuests: [...completed, questId] }) &&
+        !newUnlockedZones.includes(r.unlockZone)
+      ) {
         newUnlockedZones.push(r.unlockZone)
       }
 
@@ -247,6 +387,7 @@ export const createQuestsSlice = (set, get) => ({
           ...state.world,
           activeQuests: active.filter((q) => q !== questId),
           completedQuests: completed.includes(questId) ? completed : [...completed, questId],
+          idleUnlocked: state.world.idleUnlocked || !!r.idleUnlock,
           churchDeeds,
           unlockedZones: newUnlockedZones,
           unlockedNodes: newUnlockedNodes,
@@ -270,6 +411,9 @@ export const createQuestsSlice = (set, get) => ({
       }
     })
     // FIX-QXP01 — octroi de l'XP hors du set (réutilise gainExp : level-up + hint gérés).
+    if (!didComplete) return
+    const completedQuest = getQuestById(questId)
+    if (completedQuest?.reward?.title) get().awardTitle(completedQuest.reward.title)
     if (xpGain > 0) get().gainExp(xpGain)
 
     // MST02 — Verrou d'engagement : valider une quête d'INITIATION engage définitivement

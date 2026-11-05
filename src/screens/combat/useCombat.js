@@ -194,6 +194,7 @@ export function useCombat() {
         // CMB-WIN-FIX — ne jamais bloquer la résolution du combat sur une erreur d'état.
         console.error('[Combat] Échec de sauvegarde des PV/PM en fin de combat :', err)
       }
+      useGameStore.getState().recordManualBattle(outcome)
       if (outcome === 'defeat') {
         addLog('You have fallen...', 'defeat')
         setTimeout(() => useGameStore.getState().heroDeath(cause), 1000)
@@ -209,6 +210,7 @@ export function useCombat() {
     (defeatedEnemies) => {
       if (resolvedRef.current) return // évite double-comptage si déclenché plusieurs fois
       resolvedRef.current = true
+      useGameStore.getState().recordManualBattle('victory')
       addLog('Victory!', 'victory')
       // CMB-WIN-FIX — Robustesse : TOUTE la distribution de récompenses est encapsulée
       // dans un try/catch. Auparavant, si une seule récompense throwait (save corrompue,
@@ -272,6 +274,8 @@ export function useCombat() {
         }
         assassinatedRef.current.clear()
 
+        if (defeatedEnemies.some((e) => e.monsterId === 'hollow_crypt_boss'))
+          useGameStore.getState().clearDungeon('ashenvale')
         // DEMON-FIGHT — victoire sur le Demon Lord (Malachar) → déclenche la défaite du
         // Demon Lord (W01 +200 tokens, M02 compteur, W03 bannière, titres + warp ville),
         // en réutilisant la logique éprouvée de clearDungeon('grimspire').
@@ -844,6 +848,7 @@ export function useCombat() {
     handleUseSkill,
     handleUseItem,
     handleFlee,
+    handleRetreat: () => finishCombat('fled'),
     handleLeave,
     handleVictory,
   }

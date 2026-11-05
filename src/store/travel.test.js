@@ -14,7 +14,13 @@ describe('TRV — travelTo', () => {
 
   it('déplace currentNode et avance le temps de 3 tics', () => {
     useGameStore.setState((s) => ({
-      world: { ...s.world, tickCount: 5, dayCount: 1, currentNode: 'ironhaven' },
+      world: {
+        ...s.world,
+        tickCount: 5,
+        dayCount: 1,
+        currentNode: 'ironhaven',
+        unlockedNodes: ['millhaven'],
+      },
     }))
     useGameStore.getState().travelTo('millhaven')
     const w = useGameStore.getState().world
@@ -24,7 +30,15 @@ describe('TRV — travelTo', () => {
   })
 
   it('gère le rollover de jour (>24 tics)', () => {
-    useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 23, dayCount: 2 } }))
+    useGameStore.setState((s) => ({
+      world: {
+        ...s.world,
+        tickCount: 23,
+        dayCount: 2,
+        currentNode: 'ironhaven',
+        unlockedNodes: ['thornmarsh'],
+      },
+    }))
     useGameStore.getState().travelTo('thornmarsh')
     const w = useGameStore.getState().world
     expect(w.tickCount).toBe(2) // 23 + 3 = 26 → 26 % 24
@@ -53,7 +67,7 @@ describe('TRV — travelTo', () => {
 
   it('le coût en tics est paramétrable', () => {
     useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 0 } }))
-    useGameStore.getState().travelTo('millhaven', 5)
+    useGameStore.getState().travelTo('ashenvale_forest', 5)
     expect(useGameStore.getState().world.tickCount).toBe(5)
   })
 })

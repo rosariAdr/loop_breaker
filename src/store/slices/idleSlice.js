@@ -14,6 +14,7 @@ export const IDLE_MASTERY_KILLS = 5
 export const createIdleSlice = (set, get) => ({
   toggleIdle: (monsterId) =>
     set((state) => {
+      if (!state.world.idleUnlocked) return state
       const kills = state.world.monsterKillCounts[monsterId] || 0
       if (kills < IDLE_MASTERY_KILLS) return state // pas encore débloqué
 
@@ -51,6 +52,7 @@ export const createIdleSlice = (set, get) => ({
     // (bestiaire/quêtes/burnout/titres) APRÈS le set, comme le fait recordKill en combat.
     let killedMonsterId = null
     set((state) => {
+      if (!state.world.idleUnlocked) return state
       if (!state.world.isIdleActive || !state.world.idleTargetMonster) return state
 
       const monsterId = state.world.idleTargetMonster
@@ -207,6 +209,7 @@ export const createIdleSlice = (set, get) => ({
         pendingLevelUp: state.pendingLevelUp + levelsGained,
         world: {
           ...state.world,
+          idleVictoryCount: (state.world.idleVictoryCount ?? 0) + 1,
           isIdleActive: isLowHp ? false : state.world.isIdleActive,
           idleTargetMonster: isLowHp ? null : state.world.idleTargetMonster,
           monsterKillCounts: {
@@ -225,6 +228,12 @@ export const createIdleSlice = (set, get) => ({
   // était actif. Calcul en batch (valeurs espérées). nowMs injectable pour les tests.
   applyOfflineProgress: (nowMs = Date.now()) => {
     const { hero, world, meta } = get()
+    if (
+      !world.idleUnlocked ||
+      ZONES[world.currentZone]?.idleAllowed === false ||
+      get().currentScreen === 'dungeon'
+    )
+      return
     if (!world.isIdleActive || !world.idleTargetMonster || !meta.lastSeen) return
     const monsterId = world.idleTargetMonster
     const monster = MONSTERS[monsterId]
@@ -245,6 +254,7 @@ export const createIdleSlice = (set, get) => ({
     set((s) => ({
       world: {
         ...s.world,
+        idleVictoryCount: (s.world.idleVictoryCount ?? 0) + gains.kills,
         monsterKillCounts: {
           ...s.world.monsterKillCounts,
           [monsterId]: (s.world.monsterKillCounts[monsterId] || 0) + gains.kills,

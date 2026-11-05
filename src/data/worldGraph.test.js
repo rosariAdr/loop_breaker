@@ -106,9 +106,9 @@ describe('worldGraph v2 — cartes & topologie', () => {
     expect(ALL_EDGES).toContain(MAP_BRIDGE)
   })
 
-  it('Map 1 = 8 arêtes, Map 2 = 5 arêtes (+ pont)', () => {
-    expect(MAPS.map1.edges).toHaveLength(8)
+  it('Map 1 = 9 arêtes, Map 2 = 5 arêtes (+ pont)', () => {
+    expect(MAPS.map1.edges).toHaveLength(9)
     expect(MAPS.map2.edges).toHaveLength(5)
-    expect(ALL_EDGES).toHaveLength(8 + 5 + 1)
+    expect(ALL_EDGES).toHaveLength(9 + 5 + 1)
   })
 })

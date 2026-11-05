@@ -23,6 +23,20 @@ export const COMMON_DROP_BAND = { min: 0.4, max: 0.65 }
 export const RARE_DROP_RATE_BY_TIER = { T1: null, T2: 0.15, T3: 0.075 }
 
 export const RESOURCES = {
+  sentinel_orb: {
+    id: 'sentinel_orb',
+    name: 'Sentinel Orb',
+    description:
+      'Guaranteed by two consecutive manual Sentinel victories. The first opens Thornmarsh; spare orbs upgrade Graven Edge.',
+    rarity: 'rare',
+    rarityTier: 'boss',
+    dropRate: null,
+    sources: [],
+    uses: ['quest', 'upgrade'],
+    category: 'quest',
+    zone: 'ashenvale',
+    sellPrice: 0,
+  },
   // ── Ressources — Ashenvale ────────────────────────────────────────────
   // FIX-CRAFTSRC01 — bat_wing/void_fang/troll_blood : ORPHELINES (sources vides, plus
   // AUCUNE recette ne les référence — substituées par wolf_fang/bone_fragment/

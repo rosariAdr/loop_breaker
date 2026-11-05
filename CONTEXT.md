@@ -2,7 +2,18 @@
 
 > **Comment utiliser ce fichier** : copier-coller (ou attacher) dans une conversation Claude Chat ou Claude Code pour reprendre le projet. Self-contained — un Claude sans contexte peut le lire en 5 min et comprendre l'état complet. **Mettre à jour à chaque fin de session.** Backlog détaillé : `TASKS.md`. Historique : `docs/CHANGELOG.md`. Specs de design : `docs/DESIGN.md`. *(Toute la doc est dans `docs/` — REORG01.)*
 
-**Dernière mise à jour : 2026-07-03** (audit docs) — v1.2 clôturée, en cours v1.31 → v1.33 (branche `feat/v1.33_progression`). Store refactoré en slices (`REFAC01`).
+**Dernière mise à jour : 2026-11-05** — campagne principale complète jusqu'à Malachar, trois fils facultatifs et épreuve répétable du Sentinelle. Sauvegardes v4. Détail : `docs/design/QUEST_CAMPAIGN_IDLE.md` et `[Unreleased]` du changelog.
+
+### Campagne livrée le 5 novembre 2026
+
+- MQ01–MQ11 : Greywatch → Millhaven → collines → Ironhaven → Sentinelle → Thornmarsh → Hollow Crypt → Blighted Road → Grimspire → citadelle → Malachar. Les IDs MQ01–MQ06 sont conservés. La liaison Millhaven–Wildmere Hills corrige le blocage de progression.
+- MQ01 débloque la fonction idle après cinq victoires cumulées contre les loups et remise à Moira ; maîtrise de chaque espèce à cinq victoires. Pas d'attente hors ligne imposée dans la campagne principale.
+- Sentinelle : épreuve à activer dans les ruines ; deux combats manuels gagnés donnent un orbe garanti, puis réactivation possible. Défaite/fuite/autre espèce rompent la série ; repos et sauvegarde la conservent. Aucun orbe via idle/offline. Le premier orbe ouvre Thornmarsh, les suivants améliorent facultativement Graven Edge (arme dans le sac, deux paliers).
+- `sideQuestChains.js` : trois fils optionnels de trois étapes, interactions et choix persistants. Aucun n'est requis pour accéder à une zone ou finir la campagne.
+- `campaignProgression.js` : prochaine quête, prérequis et portes ; `sentinelTrial.js` : résolution pure de l'épreuve ; `CampaignPanel`/`CampaignInteractions` : suivi, rapports, choix et ruines.
+- `SAVE_VERSION=4` : anciennes maîtrises et accès préservés ; anciennes quêtes de reconnaissance acceptées ouvrent les lieux nécessaires. Un héros sur un ancien node Map 2 non navigable revient au hub Ironhaven.
+- Les donjons ouvrent les combats de leurs boss existants ; la navigation multi-salles n'est pas implémentée. La future Map 2 reste gelée. La recette complète S1–S10 avant release reste distincte des tests automatisés et du smoke test navigateur de cette modification.
+- Validation de cette modification : **2085 tests verts dans 182 fichiers**, dont **34 nouveaux tests dédiés** ; build et lint réussis. Les chiffres de release 0.2.0 plus bas sont historiques.
 
 ---
 
@@ -73,7 +84,7 @@ src/
 │   ├── gameStore.js            # compose les slices → { hero, world, meta, currentScreen, activeCombat, ... }
 │   ├── slices/                 # heroSlice · worldSlice · metaSlice · combatSlice · questsSlice · idleSlice · saveSlice
 │   ├── initialState.js         # INITIAL_HERO / INITIAL_WORLD / INITIAL_META + SAVE_VERSION
-│   ├── migrations.js           # runMigrations / normalizeSave (backfill idempotent, anti-piège node FIX-START01, SAVE_VERSION=2)
+│   ├── migrations.js           # runMigrations / normalizeSave (backfill idempotent, campagne / anti-piège node, SAVE_VERSION=4)
 │   ├── helpers.js              # utilitaires partagés entre slices
 │   └── toastStore.js           # [U01] Store Zustand séparé pour les toasts (auto-dismiss)
 ├── screens/

@@ -37,6 +37,7 @@ const STATIC_QUESTS = [
 describe('QA01 — Volet 1 : compteurs de monstres (combat + idle)', () => {
   beforeEach(() => {
     s().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     localStorage.clear()
   })
 
@@ -80,7 +81,12 @@ describe('QA01 — Volet 1 : compteurs de monstres (combat + idle)', () => {
           level: 30,
           stats: { ...st.hero.stats, strength: 200, def: 100, hp: 500, maxHp: 500 },
         },
-        world: { ...st.world, isIdleActive: true, idleTargetMonster: monsterId },
+        world: {
+          ...st.world,
+          idleUnlocked: true,
+          isIdleActive: true,
+          idleTargetMonster: monsterId,
+        },
       }))
     }
 
@@ -111,7 +117,12 @@ describe('QA01 — Volet 1 : compteurs de monstres (combat + idle)', () => {
     it('crédite les kills batch dans monsterKillCounts ET meta.bestiaryKills', () => {
       const now = 5_000_000
       useGameStore.setState((st) => ({
-        world: { ...st.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+        world: {
+          ...st.world,
+          idleUnlocked: true,
+          isIdleActive: true,
+          idleTargetMonster: 'ashwood_wolf',
+        },
         meta: { ...st.meta, lastSeen: now - 40 * IDLE_TICK_MS },
       }))
       const bestBefore = s().meta.bestiaryKills.ashwood_wolf ?? 0
@@ -125,7 +136,12 @@ describe('QA01 — Volet 1 : compteurs de monstres (combat + idle)', () => {
     it('bestiaire persistant + monsterKillCounts restent alignés sur le récap offline', () => {
       const now = 6_000_000
       useGameStore.setState((st) => ({
-        world: { ...st.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+        world: {
+          ...st.world,
+          idleUnlocked: true,
+          isIdleActive: true,
+          idleTargetMonster: 'ashwood_wolf',
+        },
         meta: { ...st.meta, lastSeen: now - 25 * IDLE_TICK_MS },
       }))
       s().applyOfflineProgress(now)
@@ -256,6 +272,7 @@ describe('QA01 — Volet 2 : intégrité référentielle des items', () => {
 
   it('livres (ITM01) : effet gain_stat cible une stat réelle du héros', () => {
     s().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     const heroStatKeys = new Set([...Object.keys(s().hero.stats), 'concentration', 'aura'])
     for (const res of Object.values(RESOURCES)) {
       if (res.effect?.type !== 'gain_stat') continue
@@ -272,6 +289,7 @@ describe('QA01 — Volet 2 : intégrité référentielle des items', () => {
 describe('QA01 — Volet 3 : items fonctionnels + logiques', () => {
   beforeEach(() => {
     s().resetGame()
+    useGameStore.setState((s) => ({ world: { ...s.world, idleUnlocked: true } }))
     localStorage.clear()
   })
 

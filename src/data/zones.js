@@ -2,6 +2,7 @@
 
 import { MONSTERS } from './monsters'
 import { BALANCE } from '../config'
+import { campaignGate } from './campaignProgression'
 
 export const ZONES = {
   ashenvale: {
@@ -243,6 +244,8 @@ export function isZoneUnlocked(zoneId, state = {}) {
   if (!zone) return false
   if (!zone.unlock) return true
   const world = state.world ?? state
+  if (world.campaignVersion && ['blighted_road', 'grimspire'].includes(zoneId))
+    return campaignGate(zoneId, world)
   const hero = state.hero ?? {}
   if ((world?.unlockedZones ?? []).includes(zoneId)) return true
   return (zone.unlock.conditions ?? []).some((c) => {

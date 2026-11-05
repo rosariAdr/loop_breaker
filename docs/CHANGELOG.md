@@ -9,7 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-> Rien en cours pour la prochaine version — voir « 🗺 Plan de release » dans `TASKS.md`.
+### Added
+- Campagne principale de 11 étapes jusqu'à Malachar, centrée sur l'apprentissage de l'idle et l'ouverture des routes. Trois fils facultatifs de trois étapes : convois de Halric, notes du chasseur et serment du gardien, avec choix et conséquences persistants.
+- Épreuve répétable du Sentinelle : deux victoires manuelles consécutives donnent un orbe garanti. Premier orbe pour Thornmarsh ; orbes suivants pour deux améliorations maximum de Graven Edge (coûts 1 puis 2 orbes).
+- Interactions des ruines, prochaine destination dans le journal/carte, rapports de mission et accès jouable aux boss des donjons existants. Les donjons utilisent un affrontement direct avec leur boss ; le parcours multi-salles reste au backlog.
+
+### Changed
+- L'idle global est appris à la remise de MQ01 ; chaque espèce conserve son seuil de cinq victoires. Les anciennes parties ayant déjà maîtrisé une espèce conservent l'accès.
+- Sauvegardes en version 4 : migration idempotente des événements, choix, épreuve et accès historiques ; reprise des anciennes quêtes de Millhaven sans reset.
+- Les accès à Blighted Road, Grimspire et aux boss suivent la campagne. Les rumeurs et quêtes secondaires ne contournent plus ces portes. Les lieux gelés de Map 2 restent gelés.
+- Vitest ne découvre que les tests de `src/`, excluant les copies des anciens worktrees.
+
+### Fixed
+- Dépendance circulaire de Millhaven : nouvelle liaison vers Wildmere Hills avant l'ouverture d'Ironhaven.
+- Plus de trois drops rares obligatoires sur le chemin principal ; objectifs et prérequis vérifiés par le store avant remise de récompenses.
+- « Exit Combat » termine en retraite sans récompense, au lieu d'accorder une victoire artificielle ; la série du Sentinelle est remise à zéro.
+- Journal des quêtes rendu au-dessus de la sidebar via un portail ; retour à Ironhaven après Malachar pour éviter un node Map 2 sans chemin navigable.
 
 ---
 

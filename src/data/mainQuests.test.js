@@ -12,8 +12,8 @@ const stateWith = ({ resources = {}, equipment = [], level = 1, kills = {} } = {
 })
 
 describe('MQ-CHAIN01 — registre & ordre du spine', () => {
-  it('expose 6 quêtes principales résolubles par getQuestById', () => {
-    expect(MAIN_QUEST_ORDER).toHaveLength(6)
+  it('expose 11 quêtes principales résolubles par getQuestById', () => {
+    expect(MAIN_QUEST_ORDER).toHaveLength(11)
     for (const id of MAIN_QUEST_ORDER) {
       expect(getQuestById(id)).toBe(MAIN_QUESTS[id])
       expect(MAIN_QUESTS[id].isMainQuest).toBe(true)
@@ -29,7 +29,8 @@ describe('MQ-CHAIN01 — registre & ordre du spine', () => {
 
   it('nextMainQuest suit la chaîne et s’arrête à la fin', () => {
     expect(nextMainQuest('mq01_waking')).toBe('mq02_millhaven_road')
-    expect(nextMainQuest('mq06_beyond_marsh')).toBeNull()
+    expect(nextMainQuest('mq06_beyond_marsh')).toBe('mq07_marsh_circuit')
+    expect(nextMainQuest('mq11_last_obstacle')).toBeNull()
     expect(nextMainQuest('inconnu')).toBeNull()
   })
 
@@ -79,7 +80,19 @@ describe('MQ-ELITETURN01 — armes signature d’élite', () => {
 })
 
 describe('MQ-ELITETURN01 / MQ-TURNIN-SIG01 — complétude de l’objectif elite_turnin', () => {
-  const mq02 = MAIN_QUESTS.mq02_millhaven_road
+  // Legacy objective remains supported for old external quest definitions.
+  const mq02 = {
+    id: 'legacy_turnin',
+    objectives: [
+      {
+        type: 'elite_turnin',
+        eliteId: 'old_oakheart',
+        resourceId: 'earth_crystal',
+        count: 3,
+        weaponTemplateId: 'oakheart_branch',
+      },
+    ],
+  }
 
   it('non rempli sans items ni arme', () => {
     expect(isQuestCompleteState(mq02, stateWith())).toBe(false)

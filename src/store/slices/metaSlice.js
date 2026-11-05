@@ -162,6 +162,7 @@ export const createMetaSlice = (set, get) => ({
 
   // ── Mort & transmigration ─────────────────────────────────────────────────
   heroDeath: (cause = 'Unknown enemy') => {
+    get().recordManualBattle('defeat')
     set((state) => {
       const { hero, world } = state
       const summary = {

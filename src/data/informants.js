@@ -28,9 +28,11 @@ export const INFORMANTS = [
     name: 'Road Warden',
     kind: 'zone',
     teaser: "There's a path beyond the Blighted Road… for the worthy.",
-    reveal: 'Grimspire opens to the proven — reach level 8, or cull forty Ashenvale beasts.',
+    reveal:
+      'Vaern can open the way: clear Hollow Crypt, then cross the Blighted Road from Ironhaven.',
     price: 40,
-    unlockZone: 'grimspire', // PROG03 — acheter cette info débloque la zone immédiatement
+    // A rumor reveals the route; it does not bypass the campaign gate.
+    revealedZone: 'grimspire', // PROG03 — acheter cette info débloque la zone immédiatement
   },
 ]
 

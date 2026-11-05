@@ -1,3 +1,6 @@
+import CampaignPanel from '../components/CampaignPanel'
+import CampaignInteractions from '../components/CampaignInteractions'
+import { campaignGate } from '../data/campaignProgression'
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { IDLE_MASTERY_KILLS } from '../store/slices/idleSlice'
@@ -90,6 +93,8 @@ export default function ZoneView() {
             </div>
           )}
 
+          <CampaignPanel />
+          <CampaignInteractions />
           {/* Monstres → clairières */}
           <Section title="Clearings">
             {/* ZV-CARDS01 — afficher/masquer le bloc de stats des cartes */}
@@ -148,7 +153,7 @@ function MonsterRow({ monsterId, showStats = false }) {
   if (!monster) return null
 
   const killCount = world.monsterKillCounts[monsterId] || 0
-  const idleUnlocked = killCount >= IDLE_MASTERY_KILLS
+  const idleUnlocked = world.idleUnlocked && killCount >= IDLE_MASTERY_KILLS
   const isIdleActive = world.idleToggles[monsterId] || false
   const isElite = monster.rank === 'elite'
 
@@ -192,7 +197,11 @@ function MonsterRow({ monsterId, showStats = false }) {
           className="kbar-label"
           style={{ color: idleUnlocked ? 'var(--forest-deep)' : 'var(--ink-soft)' }}
         >
-          {idleUnlocked ? '✓ Idle unlocked' : `${killCount}/${IDLE_MASTERY_KILLS} kills`}
+          {idleUnlocked
+            ? '✓ Idle unlocked'
+            : killCount >= IDLE_MASTERY_KILLS
+              ? 'Mastered — return Moira’s hunting journal to unlock idle'
+              : `${killCount}/${IDLE_MASTERY_KILLS} kills`}
         </span>
       </div>
 
@@ -255,10 +264,19 @@ function SkillDropPreview({ monster, killCount }) {
 function DungeonSection({ zone, world }) {
   const dungeon = world.dungeons[zone.id]
   if (!dungeon) return null
+  const open = campaignGate(zone.id === 'ashenvale' ? 'crypt' : 'forsaken_citadel', world)
 
   const handleEnter = () => {
-    // TODO : lancer le flux de donjon
-    alert('Dungeon system coming soon!')
+    const gate = zone.id === 'ashenvale' ? 'crypt' : 'forsaken_citadel'
+    if (!campaignGate(gate, world)) return
+    const state = useGameStore.getState()
+    const enemies = generateEnemies(
+      zone.dungeon.bossId,
+      zone.id,
+      state.hero.runNumber,
+      state.hero.level,
+    )
+    state.startCombat(enemies)
   }
 
   return (
@@ -266,7 +284,7 @@ function DungeonSection({ zone, world }) {
       {dungeon.active && !dungeon.cleared ? (
         <div
           className={`fsec-card ${dungeon.discovered ? 'arcane' : 'arcane-dim'}`}
-          onClick={handleEnter}
+          onClick={open ? handleEnter : undefined}
         >
           <div className="fsec-row">
             <div>
@@ -274,7 +292,11 @@ function DungeonSection({ zone, world }) {
                 className="fsec-title"
                 style={{ color: dungeon.discovered ? '#7a3fb0' : '#8a7a92' }}
               >
-                {dungeon.discovered ? zone.dungeon.name : '??? Unknown Dungeon'}
+                {!open
+                  ? 'Locked — follow the main story'
+                  : dungeon.discovered
+                    ? zone.dungeon.name
+                    : '??? Unknown Dungeon'}
               </p>
               <p className="fsec-sub">
                 {dungeon.discovered
@@ -304,6 +326,7 @@ function DemonLordSection({ world }) {
   // DEMON-FIGHT — lance le vrai combat contre Malachar (rank demon_lord, 3 phases BSS03,
   // drop Soul Rend garanti). La victoire est gérée dans Combat.handleVictory → clearDungeon('grimspire').
   const handleChallenge = () => {
+    if (!campaignGate('malachar', world)) return
     const enemies = generateEnemies('malachar', 'grimspire', hero.runNumber, hero.level)
     if (enemies.length) startCombat(enemies)
   }
@@ -322,14 +345,19 @@ function DemonLordSection({ world }) {
           )}
         </div>
       ) : (
-        <div className="fsec-card danger" onClick={handleChallenge}>
+        <div
+          className="fsec-card danger"
+          onClick={campaignGate('malachar', world) ? handleChallenge : undefined}
+        >
           <div className="fsec-row">
             <div>
               <p className="fsec-title" style={{ color: 'var(--danger)' }}>
                 ⚡ Malachar the Undying
               </p>
               <p className="fsec-sub" style={{ color: '#9a5048' }}>
-                Demon Lord of Eldenmoor · Grimspire Depths
+                {campaignGate('malachar', world)
+                  ? 'Demon Lord of Eldenmoor · Grimspire Depths'
+                  : 'Locked — complete The Forsaken Citadel'}
               </p>
             </div>
             <span className="fsec-cta danger">Challenge ➜</span>

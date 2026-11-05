@@ -65,6 +65,7 @@ const MAP1_EDGES = [
   ['greywatch', 'ashenvale_forest'],
   ['ashenvale_forest', 'millhaven'],
   ['millhaven', 'crumbled_ruins'],
+  ['millhaven', 'wildmere_hills'],
   ['millhaven', 'thornmarsh'],
   ['millhaven', 'ironhaven'],
   ['ironhaven', 'thornmarsh'],

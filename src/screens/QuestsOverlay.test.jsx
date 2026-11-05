@@ -1,6 +1,6 @@
 // UI-QUESTS — Tests de l'overlay de suivi des quêtes actives.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, within } from '@testing-library/react'
 import QuestsOverlay from './QuestsOverlay'
 import { useGameStore } from '../store/gameStore'
 
@@ -17,9 +17,11 @@ describe('UI-QUESTS — overlay de suivi', () => {
       world: { ...s.world, activeQuests: ['mq01_waking'], monsterKillCounts: { ashwood_wolf: 2 } },
     }))
     render(<QuestsOverlay />)
-    expect(screen.getByText(/The Waking/)).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('quest-mq01_waking')).getByText(/The Hunting Journal/),
+    ).toBeInTheDocument()
     // progression 2/5 affichée
-    expect(screen.getByText('Cull the Ashwood Wolves')).toBeInTheDocument()
+    expect(screen.getByText('Master the Ashwood Wolves (5 victories)')).toBeInTheDocument()
     expect(screen.getByText('2/5')).toBeInTheDocument()
   })
 
@@ -28,7 +30,7 @@ describe('UI-QUESTS — overlay de suivi', () => {
       world: { ...s.world, activeQuests: ['mq01_waking'], monsterKillCounts: { ashwood_wolf: 2 } },
     }))
     render(<QuestsOverlay />)
-    const bar = screen.getByRole('progressbar', { name: /The Waking|Ashwood/i })
+    const bar = screen.getByRole('progressbar', { name: /The Hunting Journal|Ashwood/i })
     expect(bar).toBeInTheDocument()
     expect(bar.getAttribute('aria-valuenow')).toBe('2')
     expect(bar.getAttribute('aria-valuemax')).toBe('5')
@@ -39,7 +41,7 @@ describe('UI-QUESTS — overlay de suivi', () => {
       world: { ...s.world, activeQuests: ['mq01_waking'], monsterKillCounts: { ashwood_wolf: 5 } },
     }))
     render(<QuestsOverlay />)
-    expect(screen.getByText(/Ready to turn in/i)).toBeInTheDocument()
+    expect(screen.getByText(/✓ Ready to turn in/i)).toBeInTheDocument()
   })
 
   it('aucune quête active → message vide', () => {

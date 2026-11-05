@@ -2,6 +2,13 @@
 // TITLE-BUF01 — chaque titre porte des `statBuffs` appliqués aux stats effectives (combat + fiche).
 // TITLE-G1 — un seul titre ACTIF à la fois (meta.activeTitle) ; seuls ses buffs s'appliquent.
 export const TITLES = {
+  seasoned_tracker: {
+    id: 'seasoned_tracker',
+    name: 'Seasoned Tracker',
+    icon: '🐾',
+    description: 'Completed the Hunter’s Notes and established a safe automatic circuit.',
+    statBuffs: { agility: 1 },
+  },
   first_steps: {
     id: 'first_steps',
     name: 'First Steps',

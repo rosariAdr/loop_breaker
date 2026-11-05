@@ -108,6 +108,7 @@ describe('Scénario 2 — Idle grinding', () => {
       world: {
         ...state.world,
         monsterKillCounts: { ashwood_wolf: 5 },
+        idleUnlocked: true,
         isIdleActive: true,
         idleTargetMonster: 'ashwood_wolf',
       },
@@ -138,6 +139,7 @@ describe('Scénario 2 — Idle grinding', () => {
       world: {
         ...state.world,
         monsterKillCounts: { stone_golem: 5 },
+        idleUnlocked: true,
         isIdleActive: true,
         idleTargetMonster: 'stone_golem',
       },
@@ -368,6 +370,8 @@ describe('Scénario 8 — Cycle donjon', () => {
     expect(initial.cleared).toBe(false)
 
     // Discover (approche)
+    useGameStore.setState((s) => ({ world: { ...s.world, campaignLegacyAccess: ['crypt'] } }))
+    useGameStore.setState((s) => ({ world: { ...s.world, campaignLegacyAccess: ['crypt'] } }))
     store().discoverDungeon('ashenvale')
     expect(store().world.dungeons.ashenvale.discovered).toBe(true)
 
@@ -702,7 +706,12 @@ describe('BAL01 — Économie tokens (simulations REP01)', () => {
 describe('Scénario 12 — Robustesse', () => {
   it('processIdleTick ne crash pas avec un monstre idleTarget invalide', () => {
     useGameStore.setState((state) => ({
-      world: { ...state.world, isIdleActive: true, idleTargetMonster: 'fake_monster_id' },
+      world: {
+        ...state.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'fake_monster_id',
+      },
     }))
     expect(() => useGameStore.getState().processIdleTick()).not.toThrow()
   })

@@ -58,7 +58,7 @@ describe('RES01 — Modèle de données ressource { id, name, rarityTier, dropRa
   })
 
   it('uses[] ne contient que des tags connus', () => {
-    const VOCAB = ['craft', 'sell']
+    const VOCAB = ['craft', 'sell', 'quest', 'upgrade']
     for (const r of collectibleResources) {
       for (const u of r.uses) expect(VOCAB, `${r.id} use ${u}`).toContain(u)
     }
