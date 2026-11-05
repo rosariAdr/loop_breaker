@@ -80,8 +80,7 @@ describe('MST04 — panneau Académie : état & scoping', () => {
 // MST08 / v1.43 (DÉCISION #3) — l'itinérant de passage surface au board de l'Académie
 // UNIQUEMENT les jours où Ironhaven est son agglo-hôte du bloc (single-location).
 describe('MST08 — maître itinérant de passage (à son agglo-hôte)', () => {
-  const setDay = (dayCount) =>
-    useGameStore.setState((s) => ({ world: { ...s.world, dayCount } }))
+  const setDay = (dayCount) => useGameStore.setState((s) => ({ world: { ...s.world, dayCount } }))
 
   it('affiche l’initiation de l’itinérant de FEU (Pyra) le jour où il visite Ironhaven', () => {
     setDay(dayForItinerantAtIronhaven('flame_wanderer'))

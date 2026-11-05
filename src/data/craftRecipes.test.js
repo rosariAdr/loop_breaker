@@ -25,9 +25,10 @@ describe('CRAFT-* — forme & intégrité des recettes', () => {
       expect(outputExists(r.output), `${r.id} output ${r.output} introuvable`).toBe(true)
       expect(CRAFT_PROFESSIONS, `${r.id} profession`).toContain(r.profession)
       expect(typeof r.known, `${r.id}.known`).toBe('boolean')
-      expect(Array.isArray(r.combinations) && r.combinations.length >= 1, `${r.id}.combinations`).toBe(
-        true,
-      )
+      expect(
+        Array.isArray(r.combinations) && r.combinations.length >= 1,
+        `${r.id}.combinations`,
+      ).toBe(true)
     }
   })
 

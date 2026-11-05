@@ -3,12 +3,7 @@
 // chemin hybride resolveCraftedRarity combine roll de base + bumps bornés (Concentration/outil
 // /palier) ; (3) resolveCraftOutcome (STA03) et resolveCraftedRarity CONVERGENT sur ce cœur.
 import { describe, it, expect } from 'vitest'
-import {
-  applyRarityBumps,
-  tierRarityBump,
-  resolveCraftOutcome,
-  bumpRarity,
-} from './crafting'
+import { applyRarityBumps, tierRarityBump, resolveCraftOutcome, bumpRarity } from './crafting'
 import { resolveCraftedRarity, toolRarityBump } from './craftModel'
 
 describe('HYBRIDE — applyRarityBumps (cœur borné partagé)', () => {
@@ -68,9 +63,9 @@ describe('HYBRIDE — resolveCraftedRarity (chemin de qualité unique)', () => {
   })
   it('la Concentration à 150 garantit +1 cran (borné)', () => {
     // base common, concentration 150 → bump concentration garanti = +1 → rare.
-    expect(resolveCraftedRarity({ baseRarity: 'common', concentration: 150, rng: () => 0.99 })).toBe(
-      'rare',
-    )
+    expect(
+      resolveCraftedRarity({ baseRarity: 'common', concentration: 150, rng: () => 0.99 }),
+    ).toBe('rare')
   })
   it('l’outil ajoute au plus +1 (pas de multiplication)', () => {
     // base common, sans concentration, outil 5 → +1 SEULEMENT → rare (pas legendary).

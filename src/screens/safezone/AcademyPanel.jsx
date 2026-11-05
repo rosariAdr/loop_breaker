@@ -7,14 +7,8 @@ import MasterBoard from './MasterBoard'
 
 // ── ACA01/ACA03 — Académie de magie : acheter / revendre des skills ───────────
 export default function AcademyPanel({ onBack }) {
-  const {
-    hero,
-    buySkill,
-    buySkillAtLevel,
-    sellSkill,
-    unequipActiveSkill,
-    unequipPassiveSkill,
-  } = useGameStore()
+  const { hero, buySkill, buySkillAtLevel, sellSkill, unequipActiveSkill, unequipPassiveSkill } =
+    useGameStore()
   const catalog = getAcademyCatalog()
   const owned = hero.inventory.manaStones ?? []
   // ACA06 — achat d'un skill déjà monté (Lv2-5) à prix premium

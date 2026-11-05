@@ -15,8 +15,12 @@ import { RESOURCES } from './resources'
 import { EQUIPMENT_TEMPLATES, RARITY_TIERS } from './equipment'
 
 // Regroupements par système (préfixe d'id + profession) — remplacent les anciens shims.
-const ALCHEMY_RECIPES = getRecipesByProfession('alchemist').filter((r) => r.id.startsWith('alchemy_'))
-const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) => r.id.startsWith('master_'))
+const ALCHEMY_RECIPES = getRecipesByProfession('alchemist').filter((r) =>
+  r.id.startsWith('alchemy_'),
+)
+const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) =>
+  r.id.startsWith('master_'),
+)
 const LEATHER_RECIPES = getRecipesByProfession('leatherworker').filter((r) =>
   r.id.startsWith('leather_'),
 )
@@ -139,7 +143,12 @@ describe('CRAFT-UNIFY01 — accès par profession/rareté sur la source unifiée
   })
 
   it('toutes ces recettes ont un id, et chaque combinaison un coût en or positif + des ingrédients', () => {
-    for (const r of [...ALCHEMY_RECIPES, ...MASTER_RECIPES, ...LEATHER_RECIPES, ...COOKING_RECIPES]) {
+    for (const r of [
+      ...ALCHEMY_RECIPES,
+      ...MASTER_RECIPES,
+      ...LEATHER_RECIPES,
+      ...COOKING_RECIPES,
+    ]) {
       expect(r.id).toBeTypeOf('string')
       for (const c of r.combinations) {
         expect(c.gold).toBeGreaterThan(0)

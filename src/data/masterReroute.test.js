@@ -49,7 +49,9 @@ describe('MST03 — skills de récompense exclusifs au maître', () => {
       if (!q.reward?.skill) continue
       const m = questToMaster[qid]
       expect(m, `${qid} rattachée à un maître`).toBeDefined()
-      expect(MASTER_SKILL_POOLS[m.focus], `${qid} → pool ${m.focus}`).toContain(q.reward.skill.skillId)
+      expect(MASTER_SKILL_POOLS[m.focus], `${qid} → pool ${m.focus}`).toContain(
+        q.reward.skill.skillId,
+      )
     }
   })
 

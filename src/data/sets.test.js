@@ -8,11 +8,7 @@ import {
   getSetBonus,
   getActiveSetsSummary,
 } from './sets'
-import {
-  EQUIPMENT_TEMPLATES,
-  createEquipmentInstance,
-  calcEquippedStatBonuses,
-} from './equipment'
+import { EQUIPMENT_TEMPLATES, createEquipmentInstance, calcEquippedStatBonuses } from './equipment'
 
 // Fabrique une pièce équipée « nue » avec un set et des stats donnés.
 const piece = (setId, stats) => ({ instanceId: Math.random().toString(36), set: setId, stats })
@@ -179,7 +175,10 @@ describe('SET-CONTENT01 — intégrité des sets', () => {
         for (const k of Object.keys(EQUIPMENT_TEMPLATES[tId].baseStats ?? {})) providedStats.add(k)
       }
       for (const stat of s.stats) {
-        expect(providedStats.has(stat), `${id} gouverne ${stat} mais aucune pièce ne le fournit`).toBe(true)
+        expect(
+          providedStats.has(stat),
+          `${id} gouverne ${stat} mais aucune pièce ne le fournit`,
+        ).toBe(true)
       }
     }
   })
@@ -187,7 +186,9 @@ describe('SET-CONTENT01 — intégrité des sets', () => {
   it('les pièces d’un set (hors arme d’élite alternative) occupent des SLOTS DISTINCTS', () => {
     for (const [id, s] of Object.entries(SETS)) {
       const slots = s.pieces.map((tId) => EQUIPMENT_TEMPLATES[tId].slot)
-      expect(new Set(slots).size, `${id} : slots dupliqués → set non complétable`).toBe(slots.length)
+      expect(new Set(slots).size, `${id} : slots dupliqués → set non complétable`).toBe(
+        slots.length,
+      )
     }
   })
 

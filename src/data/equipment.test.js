@@ -113,8 +113,12 @@ describe('BIJOU01/LEAT01 — templates amulette / bague / gants', () => {
   it('chaque nouveau template s’instancie et se résout dans le bon slot porté', () => {
     const empty = Object.fromEntries(EQUIP_SLOTS.map((s) => [s, null]))
     // gants → gloves ; amulette → amulet ; bague → ring1 (1ère libre).
-    expect(resolveEquipSlot(createEquipmentInstance('leather_gloves', 'common'), empty)).toBe('gloves')
-    expect(resolveEquipSlot(createEquipmentInstance('iron_pendant', 'common'), empty)).toBe('amulet')
+    expect(resolveEquipSlot(createEquipmentInstance('leather_gloves', 'common'), empty)).toBe(
+      'gloves',
+    )
+    expect(resolveEquipSlot(createEquipmentInstance('iron_pendant', 'common'), empty)).toBe(
+      'amulet',
+    )
     expect(resolveEquipSlot(createEquipmentInstance('iron_band', 'common'), empty)).toBe('ring1')
   })
 

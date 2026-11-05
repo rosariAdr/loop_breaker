@@ -499,7 +499,8 @@ export const MASTER_QUESTS = {
   master_init_grukk: {
     id: 'master_init_grukk',
     name: 'Blood on the Snow',
-    description: 'Grukk respects only spilled blood. Hunt the boars and bring him a kill worth telling.',
+    description:
+      'Grukk respects only spilled blood. Hunt the boars and bring him a kill worth telling.',
     giverNpc: 'savage_wanderer',
     isMasterQuest: true,
     isInitiation: true,

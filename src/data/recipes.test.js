@@ -19,8 +19,12 @@ import { EQUIPMENT_TEMPLATES, RARITY_TIERS } from './equipment'
 // tag `uses:['craft']` d'une ressource doit être VRAI ssi elle sert d'ingrédient.
 
 // Regroupements par système (préfixe d'id + profession).
-const ALCHEMY_RECIPES = getRecipesByProfession('alchemist').filter((r) => r.id.startsWith('alchemy_'))
-const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) => r.id.startsWith('master_'))
+const ALCHEMY_RECIPES = getRecipesByProfession('alchemist').filter((r) =>
+  r.id.startsWith('alchemy_'),
+)
+const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) =>
+  r.id.startsWith('master_'),
+)
 const LEATHER_RECIPES = getRecipesByProfession('leatherworker').filter((r) =>
   r.id.startsWith('leather_'),
 )
@@ -62,9 +66,10 @@ describe('RES-G2 — Intégrité référentielle globale des recettes', () => {
     for (const id of craftIds) {
       const r = RESOURCES[id]
       expect(r.uses, `${id}.uses`).toBeDefined()
-      expect(r.uses.includes('craft'), `${id} est ingrédient mais uses=${JSON.stringify(r.uses)}`).toBe(
-        true,
-      )
+      expect(
+        r.uses.includes('craft'),
+        `${id} est ingrédient mais uses=${JSON.stringify(r.uses)}`,
+      ).toBe(true)
     }
   })
 
@@ -121,9 +126,7 @@ describe('Z04 — recettes alchimie (alchemy_*)', () => {
     })
   })
   it('chaque combinaison a un coût en or positif', () => {
-    ALCHEMY_RECIPES.forEach((r) =>
-      r.combinations.forEach((c) => expect(c.gold).toBeGreaterThan(0)),
-    )
+    ALCHEMY_RECIPES.forEach((r) => r.combinations.forEach((c) => expect(c.gold).toBeGreaterThan(0)))
   })
 })
 

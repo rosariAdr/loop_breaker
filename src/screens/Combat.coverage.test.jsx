@@ -91,7 +91,9 @@ async function attackRound(advanceMs = 2600) {
 describe('COV-COMBAT01 — types d’effet de skill', () => {
   it('PHYSICAL (Power Strike) → dégâts infligés + log', async () => {
     setHero({ stats: { strength: 40, intelligence: 40 }, activeSkills: [skill('power_strike')] })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 500, stats: { hp: 500, atk: 5, def: 2, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 500, stats: { hp: 500, atk: 5, def: 2, spd: 5 } })])
     render(<Combat />)
     await castSkill(/Power Strike/i)
     // Le combat progresse (dégâts infligés) sans se terminer
@@ -103,7 +105,12 @@ describe('COV-COMBAT01 — types d’effet de skill', () => {
     setHero({ stats: { intelligence: 60, strength: 60 }, activeSkills: [skill('wing_gust')] })
     useGameStore.getState().startCombat([
       makeEnemy({ id: 'a', currentHp: 400, stats: { hp: 400, atk: 5, def: 2, spd: 5 } }),
-      makeEnemy({ id: 'b', name: 'Wolf B', currentHp: 400, stats: { hp: 400, atk: 5, def: 2, spd: 5 } }),
+      makeEnemy({
+        id: 'b',
+        name: 'Wolf B',
+        currentHp: 400,
+        stats: { hp: 400, atk: 5, def: 2, spd: 5 },
+      }),
     ])
     render(<Combat />)
     await castSkill(/Wing Gust/i)
@@ -111,8 +118,13 @@ describe('COV-COMBAT01 — types d’effet de skill', () => {
   })
 
   it('HEAL (Healing Bloom, percentage) → PV restaurés', async () => {
-    setHero({ stats: { intelligence: 40, hp: 500, maxHp: 2000 }, activeSkills: [skill('healing_bloom')] })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 5, def: 2, spd: 5 } })])
+    setHero({
+      stats: { intelligence: 40, hp: 500, maxHp: 2000 },
+      activeSkills: [skill('healing_bloom')],
+    })
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 5, def: 2, spd: 5 } })])
     render(<Combat />)
     await castSkill(/Healing Bloom/i)
     // "restores X HP" loggé
@@ -121,7 +133,9 @@ describe('COV-COMBAT01 — types d’effet de skill', () => {
 
   it('SELF-BUFF (Shield Stance) → « activated » + combat continue', async () => {
     setHero({ activeSkills: [skill('shield_stance')] })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 5, def: 2, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 5, def: 2, spd: 5 } })])
     render(<Combat />)
     await castSkill(/Shield Stance/i)
     expect(screen.getByText(/Shield Stance activated/i)).toBeTruthy()
@@ -130,7 +144,9 @@ describe('COV-COMBAT01 — types d’effet de skill', () => {
 
   it('DoT (Venom Bite, poison) → statut appliqué + tick au tour ennemi', async () => {
     setHero({ stats: { strength: 20, intelligence: 20 }, activeSkills: [skill('venom_bite')] })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
     render(<Combat />)
     await castSkill(/Venom Bite/i, 300)
     // Le statut est affligé (log B05) — le poison est présent
@@ -148,7 +164,12 @@ describe('COV-COMBAT01 — types d’effet de skill', () => {
     setHero({ stats: { mana: 300 }, activeSkills: [skill('forsaken_curse')] })
     useGameStore.getState().startCombat([
       makeEnemy({ id: 'a', currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } }),
-      makeEnemy({ id: 'b', name: 'Wolf B', currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } }),
+      makeEnemy({
+        id: 'b',
+        name: 'Wolf B',
+        currentHp: 900,
+        stats: { hp: 900, atk: 3, def: 2, spd: 5 },
+      }),
     ])
     render(<Combat />)
     await castSkill(/Forsaken Curse/i, 300)
@@ -157,7 +178,9 @@ describe('COV-COMBAT01 — types d’effet de skill', () => {
 
   it('DAMAGE + STATUS (Cursed Blade, defense_break) → dégâts ET debuff', async () => {
     setHero({ stats: { strength: 25 }, activeSkills: [skill('cursed_blade')] })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 10, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 10, spd: 5 } })])
     render(<Combat />)
     await castSkill(/Cursed Blade/i, 300)
     expect(screen.getByText(/afflicted: Defense Break/i)).toBeTruthy()
@@ -167,7 +190,12 @@ describe('COV-COMBAT01 — types d’effet de skill', () => {
     setHero({ stats: { strength: 40 }, activeSkills: [skill('cleave')] })
     useGameStore.getState().startCombat([
       makeEnemy({ id: 'a', currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } }),
-      makeEnemy({ id: 'b', name: 'Wolf B', currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } }),
+      makeEnemy({
+        id: 'b',
+        name: 'Wolf B',
+        currentHp: 900,
+        stats: { hp: 900, atk: 3, def: 2, spd: 5 },
+      }),
     ])
     render(<Combat />)
     await castSkill(/Cleave/i, 300)
@@ -176,15 +204,22 @@ describe('COV-COMBAT01 — types d’effet de skill', () => {
 
   it('SACRIFICE de stat (Reckless Blow, agility −3 temporaire) → log de sacrifice', async () => {
     setHero({ stats: { strength: 30, agility: 20 }, activeSkills: [skill('reckless_blow')] })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
     render(<Combat />)
     await castSkill(/Reckless Blow/i, 300)
     expect(screen.getByText(/sacrificed 3 AGILITY/i)).toBeTruthy()
   })
 
   it('HP-cost skill (Soul Crush, magical + max_hp_reduction) → coûte des PV', async () => {
-    setHero({ stats: { intelligence: 40, hp: 2000, maxHp: 2000 }, activeSkills: [skill('soul_crush')] })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
+    setHero({
+      stats: { intelligence: 40, hp: 2000, maxHp: 2000 },
+      activeSkills: [skill('soul_crush')],
+    })
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
     render(<Combat />)
     await castSkill(/Soul Crush/i, 300)
     expect(screen.getByText(/afflicted: Max HP Down/i)).toBeTruthy()
@@ -197,7 +232,12 @@ describe('COV-COMBAT01 — skill élémentaire AoE (Chain Lightning)', () => {
     setHero({ stats: { intelligence: 50 }, activeSkills: [skill('chain_lightning')] })
     useGameStore.getState().startCombat([
       makeEnemy({ id: 'a', currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } }),
-      makeEnemy({ id: 'b', name: 'Wolf B', currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } }),
+      makeEnemy({
+        id: 'b',
+        name: 'Wolf B',
+        currentHp: 900,
+        stats: { hp: 900, atk: 3, def: 2, spd: 5 },
+      }),
     ])
     render(<Combat />)
     await castSkill(/Chain Lightning/i, 300)
@@ -322,9 +362,9 @@ describe('COV-COMBAT01 — Gluttony / assassinat (GLT02)', () => {
       passiveSkills: [{ skillId: 'gluttony', level: 1, xp: 0 }],
     })
     // gluttonyLastUsed absent → prêt ; ennemi one-shot depuis HP max → assassinat
-    useGameStore.getState().startCombat([
-      makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 }),
-    ])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
     render(<Combat />)
     await act(async () => {
       screen.getByText(/Basic Attack/i).click()
@@ -341,9 +381,9 @@ describe('COV-COMBAT01 — Gluttony / assassinat (GLT02)', () => {
       stats: { strength: 9999 },
       passiveSkills: [{ skillId: 'gluttony', level: 1, xp: 0 }],
     })
-    useGameStore.getState().startCombat([
-      makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 }),
-    ])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
     render(<Combat />)
     await act(async () => {
       screen.getByText(/Basic Attack/i).click()
@@ -362,9 +402,9 @@ describe('COV-COMBAT01 — Gluttony / assassinat (GLT02)', () => {
       activeSkills: [skill('power_strike')],
       passiveSkills: [{ skillId: 'gluttony', level: 1, xp: 0 }],
     })
-    useGameStore.getState().startCombat([
-      makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 }),
-    ])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 1, atk: 5, def: 0, spd: 10 }, currentHp: 1 })])
     render(<Combat />)
     await castSkill(/Power Strike/i, 600)
     expect(screen.getByTestId('gluttony-choice')).toBeTruthy()
@@ -378,9 +418,9 @@ describe('COV-COMBAT01 — Gluttony / assassinat (GLT02)', () => {
       passiveSkills: [{ skillId: 'gluttony', level: 1, xp: 0 }],
     })
     // 40 HP, def 0 → survit au 1er coup, meurt au 2e (pas one-shot depuis full)
-    useGameStore.getState().startCombat([
-      makeEnemy({ stats: { hp: 40, atk: 1, def: 0, spd: 10 }, currentHp: 40 }),
-    ])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 40, atk: 1, def: 0, spd: 10 }, currentHp: 40 })])
     render(<Combat />)
     for (let i = 0; i < 5 && !screen.queryByText(/Continue/i); i++) {
       if (!(await attackRound(2600))) break
@@ -400,7 +440,9 @@ describe('COV-COMBAT01 — aura / vigueur sur les dégâts', () => {
       activeSkills: [skill('power_strike')],
       hero: { aura: 100 },
     })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
     render(<Combat />)
     await castSkill(/Power Strike/i, 300)
     expect(screen.getByText(/for .* damage/i)).toBeTruthy()
@@ -456,9 +498,11 @@ describe('COV-COMBAT01 — défaite → heroDeath → post_mortem', () => {
   it('PV du héros à 0 sous les coups ennemis → currentScreen = post_mortem', async () => {
     setHero({ stats: { strength: 1, def: 0, hp: 20, maxHp: 20 } })
     // Ennemi costaud qui frappe fort : le héros meurt en 1 tour
-    useGameStore.getState().startCombat([
-      makeEnemy({ stats: { hp: 5000, atk: 500, def: 999, spd: 20 }, currentHp: 5000 }),
-    ])
+    useGameStore
+      .getState()
+      .startCombat([
+        makeEnemy({ stats: { hp: 5000, atk: 500, def: 999, spd: 20 }, currentHp: 5000 }),
+      ])
     render(<Combat />)
     await attackRound(3000)
     // finishCombat('defeat') planifie heroDeath 1s plus tard
@@ -471,9 +515,11 @@ describe('COV-COMBAT01 — défaite → heroDeath → post_mortem', () => {
 
   it('log « You have fallen » affiché à la défaite', async () => {
     setHero({ stats: { strength: 1, def: 0, hp: 20, maxHp: 20 } })
-    useGameStore.getState().startCombat([
-      makeEnemy({ stats: { hp: 5000, atk: 500, def: 999, spd: 20 }, currentHp: 5000 }),
-    ])
+    useGameStore
+      .getState()
+      .startCombat([
+        makeEnemy({ stats: { hp: 5000, atk: 500, def: 999, spd: 20 }, currentHp: 5000 }),
+      ])
     render(<Combat />)
     // Clique attaque puis avance jusqu'au tour ennemi + finishCombat('defeat')
     // (le log « You have fallen » est ajouté immédiatement dans finishCombat).
@@ -516,7 +562,9 @@ describe('COV-COMBAT01 — usage d’objets en combat', () => {
   it('heal_percent (HP potion) → PV restaurés + objet consommé', async () => {
     setHero({ stats: { hp: 100, maxHp: 1000 } })
     giveConsumables({ hp_potion_small: 2 })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
     render(<Combat />)
     await openItemsAndUse(/Healing Potion/i)
     expect(useGameStore.getState().hero.inventory.consumables.hp_potion_small).toBe(1)
@@ -526,7 +574,9 @@ describe('COV-COMBAT01 — usage d’objets en combat', () => {
   it('mana_restore_percent (Mana potion) → Mana restauré', async () => {
     setHero({ stats: { mana: 10, maxMana: 200 } })
     giveConsumables({ mana_potion_small: 1 })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
     render(<Combat />)
     await openItemsAndUse(/Mana/i)
     expect(useGameStore.getState().hero.inventory.consumables.mana_potion_small).toBe(0)
@@ -536,7 +586,9 @@ describe('COV-COMBAT01 — usage d’objets en combat', () => {
   it('restore_both (Elixir/Ration) → PV + Mana restaurés', async () => {
     setHero({ stats: { hp: 100, maxHp: 1000, mana: 10, maxMana: 200 } })
     giveConsumables({ elixir_minor: 1 })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
     render(<Combat />)
     await openItemsAndUse(/Elixir/i)
     expect(useGameStore.getState().hero.inventory.consumables.elixir_minor).toBe(0)
@@ -549,7 +601,9 @@ describe('COV-COMBAT01 — usage d’objets en combat', () => {
       hero: { activeDebuffs: [{ id: 'd1', stat: 'strength', amount: 5, permanent: false }] },
     })
     giveConsumables({ antidote_basic: 1 })
-    useGameStore.getState().startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ currentHp: 900, stats: { hp: 900, atk: 3, def: 2, spd: 5 } })])
     render(<Combat />)
     await openItemsAndUse(/Antidote/i)
     // L'antidote a été consommé et le combat continue sans crash
@@ -576,9 +630,9 @@ describe('COV-COMBAT01 — invariant : la fin est toujours atteignable', () => {
   it('victoire par DoT seul (poison tue au tour ennemi) → ResultPanel', async () => {
     setHero({ stats: { strength: 5, intelligence: 20 }, activeSkills: [skill('venom_bite')] })
     // Ennemi à faibles PV : le poison (tick 8/tour) l'achève au tour ennemi
-    useGameStore.getState().startCombat([
-      makeEnemy({ stats: { hp: 30, atk: 1, def: 0, spd: 5 }, currentHp: 12 }),
-    ])
+    useGameStore
+      .getState()
+      .startCombat([makeEnemy({ stats: { hp: 30, atk: 1, def: 0, spd: 5 }, currentHp: 12 })])
     render(<Combat />)
     await castSkill(/Venom Bite/i, 300)
     // Avance le(s) tour(s) ennemi(s) → le tick DoT finit l'ennemi
@@ -598,7 +652,12 @@ describe('COV-COMBAT01 — invariant : la fin est toujours atteignable', () => {
     setHero({ stats: { strength: 40 }, activeSkills: [skill('power_strike')] })
     useGameStore.getState().startCombat([
       makeEnemy({ id: 'a', stats: { hp: 1, atk: 1, def: 0, spd: 5 }, currentHp: 1 }),
-      makeEnemy({ id: 'b', name: 'Wolf B', stats: { hp: 900, atk: 1, def: 2, spd: 5 }, currentHp: 900 }),
+      makeEnemy({
+        id: 'b',
+        name: 'Wolf B',
+        stats: { hp: 900, atk: 1, def: 2, spd: 5 },
+        currentHp: 900,
+      }),
     ])
     render(<Combat />)
     // Tue le premier via attaque de base

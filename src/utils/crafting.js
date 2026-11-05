@@ -122,7 +122,8 @@ export function resolveCraftOutcome(baseRarity, tier, extraBump = 0, locationCap
   if (tier === 'catastrophe') {
     return { success: false, tier, rarity: null, severity: 'catastrophe', permanentDebuff: true }
   }
-  const resolvedTier = tier === 'perfect' || tier === 'good' || tier === 'neutral' ? tier : 'neutral'
+  const resolvedTier =
+    tier === 'perfect' || tier === 'good' || tier === 'neutral' ? tier : 'neutral'
   const bumps = tierRarityBump(resolvedTier) + extraBump
   return {
     success: true,

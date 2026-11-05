@@ -223,7 +223,9 @@ export default function ActionPanel({
         )}
 
         {selectedAction === 'flee' && isBoss && (
-          <p style={{ color: '#4a3028', fontSize: '0.85rem', fontStyle: 'italic', padding: '4px 0' }}>
+          <p
+            style={{ color: '#4a3028', fontSize: '0.85rem', fontStyle: 'italic', padding: '4px 0' }}
+          >
             You cannot flee from this encounter.
           </p>
         )}

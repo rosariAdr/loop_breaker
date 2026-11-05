@@ -15,7 +15,12 @@ import {
 describe('batch 6 — resolveHybridCraftOutcome (issue de craft runtime)', () => {
   it('raté → pas d’objet, debuff non permanent', () => {
     const o = resolveHybridCraftOutcome({ tier: 'fail', rarityTable: { common: 100 } })
-    expect(o).toMatchObject({ success: false, rarity: null, severity: 'fail', permanentDebuff: false })
+    expect(o).toMatchObject({
+      success: false,
+      rarity: null,
+      severity: 'fail',
+      permanentDebuff: false,
+    })
   })
 
   it('catastrophe → pas d’objet, debuff permanent', () => {
@@ -112,7 +117,12 @@ describe('CRAFT-G2 — attemptDiscovery', () => {
   })
 
   it('correspondance découvrable + succès du jet → recette apprise, aucun ingrédient perdu', () => {
-    const r = attemptDiscovery({ ingredients: goodMix, freeSlots: 4, rng: () => 0.0, successChance: 1 })
+    const r = attemptDiscovery({
+      ingredients: goodMix,
+      freeSlots: 4,
+      rng: () => 0.0,
+      successChance: 1,
+    })
     expect(r.success).toBe(true)
     expect(r.reason).toBe('learned')
     expect(r.learnedRecipeId).toBe('craft_hunters_grips')

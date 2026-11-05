@@ -201,7 +201,8 @@ describe('MST08 / v1.43 — quêtes surfaçables : fixes + itinérant du jour (�
   // Trouve un jour où `masterId` est l’itinérant du bloc ET où `host` l’accueille.
   const dayFor = (masterId, host) => {
     for (let d = 0; d < ITINERANT_ROTATION_DAYS * 6 * 4; d++) {
-      if (getItinerantMasterForDay(d).id === masterId && getItinerantHostForDay(d) === host) return d
+      if (getItinerantMasterForDay(d).id === masterId && getItinerantHostForDay(d) === host)
+        return d
     }
     throw new Error(`no day where ${masterId} hosts at ${host}`)
   }

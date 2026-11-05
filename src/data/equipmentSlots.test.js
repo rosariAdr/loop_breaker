@@ -1,14 +1,13 @@
 // SLOT01 — Tests des 9 slots, de la résolution de slot et des règles d'armes.
 import { describe, it, expect } from 'vitest'
-import {
-  EQUIP_SLOTS,
-  RING_SLOTS,
-  resolveEquipSlot,
-  equipInSlot,
-} from './equipment'
+import { EQUIP_SLOTS, RING_SLOTS, resolveEquipSlot, equipInSlot } from './equipment'
 
 // Fabriques d'instances minimales (on ne teste ici que la logique de placement).
-const mk = (over = {}) => ({ instanceId: over.instanceId ?? Math.random().toString(36), stats: {}, ...over })
+const mk = (over = {}) => ({
+  instanceId: over.instanceId ?? Math.random().toString(36),
+  stats: {},
+  ...over,
+})
 const weapon1h = (o) => mk({ slot: 'weapon', ...o })
 const weapon2h = (o) => mk({ slot: 'weapon', twoHanded: true, ...o })
 const offhand = (o) => mk({ slot: 'offhand', ...o })

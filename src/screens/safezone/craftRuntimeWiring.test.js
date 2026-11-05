@@ -22,7 +22,9 @@ function blacksmithCombination(templateId, rarity) {
 }
 
 // Reproduit la source du MasterSmithPanel : recettes `master_*` (profession blacksmith).
-const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) => r.id.startsWith('master_'))
+const MASTER_RECIPES = getRecipesByProfession('blacksmith').filter((r) =>
+  r.id.startsWith('master_'),
+)
 
 describe('BlacksmithPanel — rareté depuis la rarityTable de la combinaison forge_<template>', () => {
   it('chaque rareté craftable d’un template expose une combinaison forge avec rarityTable', () => {
