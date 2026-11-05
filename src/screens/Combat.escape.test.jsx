@@ -34,7 +34,7 @@ function setHero(over = {}) {
 }
 
 describe('CMB-ESCAPE01 — filet anti-blocage « Exit Combat »', () => {
-  it('résout un combat INJOUABLE (ennemi quasi invincible) en victoire propre', async () => {
+  it('résout un combat INJOUABLE (ennemi quasi invincible) en retraite sans récompense', async () => {
     setHero({ stats: { strength: 1 } })
     // def 999 → l'attaque de base ne peut pas tuer : sans filet, on serait coincé.
     useGameStore
@@ -46,7 +46,7 @@ describe('CMB-ESCAPE01 — filet anti-blocage « Exit Combat »', () => {
       screen.getByTestId('combat-escape').click() // ouvre la confirmation
     })
     await act(async () => {
-      screen.getByText(/Exit \(count as win\)/i).click() // confirme
+      screen.getByText(/Exit \(retreat\)/i).click() // confirme
       vi.advanceTimersByTime(600)
     })
     expect(screen.queryByText(/Continue/i)).toBeTruthy() // ResultPanel atteint
@@ -101,7 +101,7 @@ describe('CMB-INVARIANT01 — l’écran de fin est toujours atteignable', () =>
       screen.getByTestId('combat-escape').click()
     })
     await act(async () => {
-      screen.getByText(/Exit \(count as win\)/i).click()
+      screen.getByText(/Exit \(retreat\)/i).click()
       vi.advanceTimersByTime(600)
     })
     expect(screen.queryByText(/Continue/i)).toBeTruthy()

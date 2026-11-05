@@ -1,6 +1,18 @@
 # Campagne : ouvrir les routes, maîtriser la chasse
 
-Proposition de conception — 5 novembre 2026. Aucun changement de gameplay implémenté dans ce document.
+Conception et implémentation — 5 novembre 2026.
+
+**État : implémenté dans le projet.** Campagne de onze étapes, trois fils facultatifs (neuf quêtes), verrou global d'idle, épreuve du Sentinelle et migration v4. L'amélioration d'arme demande 1 puis 2 orbes, avec un plafond de deux améliorations ; l'arme doit être dans le sac. La variante de verrou global proposée plus bas a été choisie. Les paragraphes de conception restent la référence des intentions initiales.
+
+Les donjons utilisent les combats de boss déjà disponibles ; le parcours multi-salles reste à réaliser. La campagne de la future Map 2 n'est pas activée. Validation automatisée et smoke test navigateur documentés dans `../TEST_SCENARIOS.md` ; ne pas confondre avec une recette manuelle complète avant release.
+
+### Validation de l'implémentation
+
+- `npm run test:run -- --maxWorkers=4` : **2085 tests réussis, 0 échec, 0 ignoré, 182 fichiers**. Les 34 nouveaux tests dédiés se répartissent en 20 tests store, 6 tests purs de l'épreuve et 8 tests UI.
+- Build de production et ESLint réussis ; contrôle de formatage effectué après suppression des rapports temporaires de tests. Le build conserve les avertissements existants sur l'ordre de l'import Google Fonts et la taille du chunk principal.
+- `git diff --check` : aucune erreur d'espacement. Aucun commit ni déploiement effectué.
+- Smoke test sur la vraie interface locale : démarrage → Greywatch → auberge → tableau → acceptation MQ01 → journal actif. Portail du journal contrôlé visuellement après correction de la superposition avec la sidebar.
+- Les onze quêtes et les trois fils facultatifs, y compris les deux choix finaux du gardien, sont parcourus par les tests automatisés. L'équilibrage en jeu et la recette manuelle complète jusqu'à Malachar ne sont pas certifiés par ces tests ; checklist dans `../TEST_SCENARIOS.md`.
 
 ## Demande et direction
 

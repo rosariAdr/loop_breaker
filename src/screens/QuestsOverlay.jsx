@@ -1,6 +1,8 @@
 // UI-QUESTS — Suivi global des quêtes actives (overlay accessible partout via la Topbar).
 // Lecture seule : liste les quêtes en cours avec progression par objectif + récompenses.
 // Pour accepter/rendre une quête, c'est le Quest Board (en village) qui s'en charge.
+import CampaignPanel from '../components/CampaignPanel'
+import { createPortal } from 'react-dom'
 import { useGameStore } from '../store/gameStore'
 import { getQuestById, QUEST_NPC_REGISTRY, questObjectiveStatus } from '../data/quests'
 import { RESOURCES } from '../data/resources'
@@ -22,7 +24,7 @@ export default function QuestsOverlay({ onClose }) {
     // MQUI01 — épingle la quête principale en tête du tracker.
     .sort((a, b) => (b.isMainQuest ? 1 : 0) - (a.isMainQuest ? 1 : 0))
 
-  return (
+  return createPortal(
     <div className="sheet-scrim" onClick={back}>
       <div
         className="sheet"
@@ -42,6 +44,7 @@ export default function QuestsOverlay({ onClose }) {
           style={{ display: 'block', overflowY: 'auto' }}
           data-testid="quests-overlay"
         >
+          <CampaignPanel />
           {quests.length === 0 && (
             <p
               style={{
@@ -213,7 +216,8 @@ export default function QuestsOverlay({ onClose }) {
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

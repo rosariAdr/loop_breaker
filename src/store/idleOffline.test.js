@@ -12,7 +12,12 @@ describe('IDLE-OFF — applyOfflineProgress (store)', () => {
   it("crédite gold + kills + récap quand l'idle était actif", () => {
     const now = 1_000_000
     useGameStore.setState((s) => ({
-      world: { ...s.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      world: {
+        ...s.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'ashwood_wolf',
+      },
       meta: { ...s.meta, lastSeen: now - 100 * IDLE_TICK_MS },
     }))
     const goldBefore = useGameStore.getState().hero.inventory.gold
@@ -31,7 +36,12 @@ describe('IDLE-OFF — applyOfflineProgress (store)', () => {
   it('met à jour lastSeen pour éviter le double-comptage', () => {
     const now = 2_000_000
     useGameStore.setState((s) => ({
-      world: { ...s.world, isIdleActive: true, idleTargetMonster: 'ashwood_wolf' },
+      world: {
+        ...s.world,
+        idleUnlocked: true,
+        isIdleActive: true,
+        idleTargetMonster: 'ashwood_wolf',
+      },
       meta: { ...s.meta, lastSeen: now - 50 * IDLE_TICK_MS },
     }))
     useGameStore.getState().applyOfflineProgress(now)

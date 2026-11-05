@@ -2,6 +2,8 @@
 
 Date : 5 novembre 2026. Retour joueur : blocage à Millhaven après les monstres de Crumbled Ruins.
 
+**Note après implémentation :** ce document conserve le diagnostic avant correction. La chaîne d'accès, le blocage de Millhaven et le mécanisme du Sentinelle ont depuis été repris ; état livré dans `QUEST_CAMPAIGN_IDLE.md` et le changelog `[Unreleased]`. Les mentions « aucun comportement modifié » ci-dessous décrivent uniquement la phase initiale d'audit.
+
 ## Périmètre et conclusion
 
 Lecture de l'architecture et de la documentation du projet, puis analyse ciblée des données de quêtes, du graphe de déplacement, du verrouillage des lieux, des tableaux/journal, des récompenses, de l'équipement, des sauvegardes et de leurs tests. Il ne s'agit pas d'une revue exhaustive ligne par ligne de tous les systèmes du jeu. Aucune sauvegarde joueur ni partie réelle n'a été inspectée.

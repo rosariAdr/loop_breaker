@@ -53,7 +53,7 @@ export default function Combat() {
     handleUseItem,
     handleFlee,
     handleLeave,
-    handleVictory,
+    handleRetreat,
   } = useCombat()
 
   if (!activeCombat) return null
@@ -63,14 +63,13 @@ export default function Combat() {
       className="flex flex-col select-none"
       style={{ minHeight: 'calc(100vh - 48px)', background: arenaBg }}
     >
-      {/* CMB-ESCAPE01 — filet anti-blocage : bouton toujours dispo (hors résultat) qui résout
-          le combat comme une victoire propre, pour que le joueur ne soit JAMAIS coincé. */}
+      {/* Safety exit remains available, but retreat cannot bypass campaign objectives. */}
       {phase !== 'result' && (
         <button
           className="cmb-escape-btn"
           data-testid="combat-escape"
           onClick={() => setConfirmEscape(true)}
-          title="Safety net — end this combat as a clean victory"
+          title="Safety net — retreat without rewards"
         >
           🚪 Exit Combat
         </button>
@@ -79,12 +78,12 @@ export default function Combat() {
         open={confirmEscape}
         variant="warn"
         title="Exit this combat?"
-        message="Safety net: the fight ends now and is resolved as a clean victory. Use this only if the combat seems stuck."
-        confirmLabel="Exit (count as win)"
+        message="Retreat safely without victory rewards. An active Sentinel Trial streak will reset."
+        confirmLabel="Exit (retreat)"
         cancelLabel="Keep fighting"
         onConfirm={() => {
           setConfirmEscape(false)
-          handleVictory(enemies)
+          handleRetreat()
         }}
         onCancel={() => setConfirmEscape(false)}
       />

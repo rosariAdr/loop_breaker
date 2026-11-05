@@ -21,7 +21,7 @@ afterEach(cleanup)
 describe('B6 — board de Greywatch (Doyen)', () => {
   it('affiche le premier palier (mq01) au départ', () => {
     render(<QuestBoard />)
-    expect(screen.getByText('The Waking')).toBeInTheDocument()
+    expect(screen.getByText('The Hunting Journal')).toBeInTheDocument()
   })
 
   it('mq02 n’apparaît qu’après mq01 (chaînage)', () => {
@@ -29,6 +29,7 @@ describe('B6 — board de Greywatch (Doyen)', () => {
     expect(screen.queryByText('The Road to Millhaven')).toBeNull()
 
     useGameStore.getState().startQuest('mq01_waking')
+    for (let i = 0; i < 5; i++) useGameStore.getState().recordKill('ashwood_wolf')
     useGameStore.getState().completeQuest('mq01_waking')
     rerender(<QuestBoard />)
     expect(screen.getByText('The Road to Millhaven')).toBeInTheDocument()

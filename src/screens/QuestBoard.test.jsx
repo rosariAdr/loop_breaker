@@ -166,12 +166,12 @@ describe('Q02 — Barres de progression objectifs', () => {
 
 // ── FIX-QXP01 / FIX-QRANK01 — balance injectée, visible sur le board (intégration) ──────────
 describe('FIX-QXP01/QRANK01 — chips XP + rang injectés sur le board', () => {
-  it("une quête autorée affiche l'XP et les points de rang injectés (The Waking → +40 XP / +1 rang)", () => {
+  it("une quête autorée affiche l'XP et les points de rang injectés (The Hunting Journal → +40 XP / +1 rang)", () => {
     useGameStore.setState((state) => ({
       world: { ...state.world, currentLocation: 'greywatch', currentNode: 'greywatch' },
     }))
     render(<QuestBoard />)
-    const card = screen.getByText('The Waking').closest('div.p-4')
+    const card = screen.getByText('The Hunting Journal').closest('div.p-4')
     expect(within(card).getByText('+40 XP')).toBeInTheDocument() // QUEST_BALANCE.mq01_waking.xp
     expect(within(card).getByText('+1 rank')).toBeInTheDocument() // QUEST_BALANCE.mq01_waking.rankPoints
   })

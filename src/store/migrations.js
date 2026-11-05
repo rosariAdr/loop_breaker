@@ -2,6 +2,7 @@
 import { INITIAL_HERO, INITIAL_WORLD, INITIAL_META } from './initialState'
 import { ZONE_ORDER, isNodeUnlocked, START_OPEN_NODES } from '../data/zones'
 import { getQuestById } from '../data/quests'
+import { MAIN_QUEST_ORDER, MAIN_QUESTS } from '../data/mainQuests'
 
 // ── TECH02 — Migrations save (séquentielles) ─────────────────────────────────
 
@@ -175,6 +176,92 @@ export function normalizeSave(save) {
     dungeons: asObject(sWorld.dungeons, { ...INITIAL_WORLD.dungeons }),
     generatedVillages: asObject(sWorld.generatedVillages),
     questProgress: asObject(sWorld.questProgress), // FIX-QUESTSNAP01
+    campaignVersion: 1,
+    campaignEvents: asArray(sWorld.campaignEvents),
+    campaignChoices: asObject(sWorld.campaignChoices),
+    campaignLegacyAccess: asArray(sWorld.campaignLegacyAccess),
+    idleUnlocked: sWorld.idleUnlocked === true,
+    idleVictoryCount: Number.isFinite(sWorld.idleVictoryCount)
+      ? Math.max(0, sWorld.idleVictoryCount)
+      : 0,
+    sentinelTrial: {
+      active: sWorld.sentinelTrial?.active === true,
+      wins: sWorld.sentinelTrial?.wins === 1 ? 1 : 0,
+      completed: Number.isInteger(sWorld.sentinelTrial?.completed)
+        ? Math.max(0, sWorld.sentinelTrial.completed)
+        : 0,
+    },
+    sentinelUpgrades: Number.isInteger(sWorld.sentinelUpgrades)
+      ? Math.min(2, Math.max(0, sWorld.sentinelUpgrades))
+      : 0,
+  }
+  world.unlockedNodes = asArray(sWorld.unlockedNodes)
+  if (!sWorld.campaignVersion) {
+    world.idleUnlocked =
+      sWorld.isIdleActive === true ||
+      Object.values(world.monsterKillCounts).some((n) => n >= 5) ||
+      world.completedQuests.includes('mq01_waking')
+    const advanced =
+      world.currentZone === 'grimspire' ||
+      world.unlockedZones.includes('grimspire') ||
+      ['stonehaven', 'duskreach', 'ashfall_post'].includes(world.currentNode)
+    const road =
+      advanced ||
+      world.currentZone === 'blighted_road' ||
+      world.unlockedZones.includes('blighted_road')
+    if (road) world.campaignLegacyAccess.push('blighted_road')
+    if (advanced) world.campaignLegacyAccess.push('grimspire', 'forsaken_citadel', 'malachar')
+    if (world.dungeons.ashenvale?.cleared || advanced) world.campaignEvents.push('crypt_cleared')
+    if (advanced) world.campaignEvents.push('road_crossed')
+    if (sWorld.demonLordDefeated) world.campaignEvents.push('citadel_cleared', 'malachar_defeated')
+    if (advanced || world.dungeons.ashenvale?.discovered) world.campaignLegacyAccess.push('crypt')
+    // Preserve the historical main-chain prefix and all nodes it had opened.
+    const last = Math.max(-1, ...world.completedQuests.map((id) => MAIN_QUEST_ORDER.indexOf(id)))
+    world.completedQuests = [
+      ...new Set([...world.completedQuests, ...MAIN_QUEST_ORDER.slice(0, last + 1)]),
+    ]
+    for (const id of world.completedQuests) {
+      const q = MAIN_QUESTS[id]
+      if (q)
+        world.unlockedNodes.push(
+          ...(q.unlocks.spots ?? []),
+          ...(q.unlocks.locations ?? []),
+          ...(q.acceptUnlocks?.spots ?? []),
+        )
+    }
+    if (advanced) world.unlockedNodes.push('stonehaven', 'duskreach', 'ashfall_post')
+    if (advanced) {
+      world.completedQuests = [
+        ...new Set([...world.completedQuests, ...MAIN_QUEST_ORDER.slice(0, 6)]),
+      ]
+      world.unlockedNodes.push(
+        'millhaven',
+        'ironhaven',
+        'wildmere_hills',
+        'crumbled_ruins',
+        'thornmarsh',
+      )
+      if (['stonehaven', 'duskreach', 'ashfall_post'].includes(world.currentNode)) {
+        world.currentNode = 'ironhaven'
+        world.currentLocation = 'ironhaven'
+        world.currentZone = 'ashenvale'
+        world.currentHuntingSpot = null
+      }
+    }
+    world.unlockedNodes = [...new Set(world.unlockedNodes)]
+    world.campaignEvents = [...new Set(world.campaignEvents)]
+    world.campaignLegacyAccess = [...new Set(world.campaignLegacyAccess)]
+  }
+  for (const id of world.activeQuests) {
+    const q = MAIN_QUESTS[id]
+    if (q?.acceptUnlocks)
+      world.unlockedNodes = [
+        ...new Set([
+          ...world.unlockedNodes,
+          ...(q.acceptUnlocks.spots ?? []),
+          ...(q.acceptUnlocks.locations ?? []),
+        ]),
+      ]
   }
   // MON01 — remap des ids de spot/node renommés
   if (SPOT_ID_REMAP[world.currentHuntingSpot])
@@ -242,5 +329,8 @@ export function runMigrations(save) {
   // if (fromVersion < 4) current = migrateV3ToV4(current)
 
   // Filet final : backfill des champs par défaut manquants, toutes versions confondues.
-  return normalizeSave(current)
+  if (!save.world?.campaignVersion && current.world?.campaignVersion) {
+    current = { ...current, world: { ...current.world, campaignVersion: undefined } }
+  }
+  return normalizeSave({ ...current, saveVersion: Math.max(fromVersion, 4) })
 }

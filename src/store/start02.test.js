@@ -1,3 +1,4 @@
+import { readyQuest } from '../test/questFixtures'
 // START02/04 — Déblocage des nodes : au départ seuls Greywatch + la forêt sont
 // ouverts ; les autres s'ouvrent via la chaîne principale (world.unlockedNodes).
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -41,7 +42,7 @@ describe('START01/02 — état de départ', () => {
 describe('START04 — la chaîne principale ouvre les nodes', () => {
   it('compléter mq02 ouvre Millhaven (condition = le spine)', () => {
     expect(s().isNodeUnlocked('millhaven')).toBe(false)
-    s().startQuest('mq02_millhaven_road')
+    readyQuest('mq02_millhaven_road')
     s().completeQuest('mq02_millhaven_road')
     expect(s().isNodeUnlocked('millhaven')).toBe(true)
   })

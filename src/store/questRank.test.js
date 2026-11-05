@@ -1,3 +1,4 @@
+import { readyQuest } from '../test/questFixtures'
 // FIX-QRANK01 — points de rang d'aventurier (compteur dédié rankPoints, échelle 10 paliers).
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useGameStore } from './gameStore'
@@ -56,6 +57,7 @@ describe('FIX-QRANK01 — points de rang', () => {
       },
     }))
     const before = s().hero.rankPoints ?? 0
+    readyQuest('nc_thunderhoof_elite')
     s().completeQuest('nc_thunderhoof_elite')
     const expected = Math.round(questRankPoints(getQuestById('nc_thunderhoof_elite')) * 0.25) // 5 → 1
     expect(s().hero.rankPoints).toBe(before + expected)

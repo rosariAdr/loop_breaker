@@ -72,7 +72,7 @@ describe('GLD — venue rendu du QuestBoard', () => {
     setLocation('ashenvale', 'greywatch')
     render(<QuestBoard />)
     expect(screen.getByText('⚔ Main Quest')).toBeInTheDocument()
-    expect(screen.getByText('The Waking')).toBeInTheDocument() // mq01
+    expect(screen.getByText('The Hunting Journal')).toBeInTheDocument() // mq01
   })
 
   it('prestige gardé par le rang : verrou si tokens < seuil, Accept si ≥ seuil', () => {

@@ -15,9 +15,9 @@ const NINE_SLOTS = [
   'ring2',
 ]
 
-describe('SLOT01 — SAVE_VERSION bumpé à 3', () => {
-  it('SAVE_VERSION === 3', () => {
-    expect(SAVE_VERSION).toBe(3)
+describe('SLOT01 — SAVE_VERSION courante (4)', () => {
+  it('SAVE_VERSION === 4', () => {
+    expect(SAVE_VERSION).toBe(4)
   })
 })
 
@@ -37,14 +37,14 @@ describe('SLOT01 — migration des slots d’équipement', () => {
     expect(out.hero.equipped.ring1).toBeNull()
     expect(out.hero.equipped.ring2).toBeNull()
     expect(out.hero.equipped.offhand).toBeNull()
-    expect(out.saveVersion).toBe(3)
+    expect(out.saveVersion).toBe(4)
   })
 
   it('une save legacy v1 (sans saveVersion) monte jusqu’à 9 slots', () => {
     const save = { hero: { name: 'X', equipped: { weapon: null } }, world: {}, meta: {} }
     const out = runMigrations(save)
     for (const s of NINE_SLOTS) expect(s in out.hero.equipped).toBe(true)
-    expect(out.saveVersion).toBe(3)
+    expect(out.saveVersion).toBe(4)
   })
 
   it('normalizeSave backfill les 9 slots même sur une save v3 écrite avant l’ajout', () => {
@@ -63,6 +63,6 @@ describe('SLOT01 — migration des slots d’équipement', () => {
     const once = runMigrations(save)
     const twice = runMigrations(once)
     for (const s of NINE_SLOTS) expect(s in twice.hero.equipped).toBe(true)
-    expect(twice.saveVersion).toBe(3)
+    expect(twice.saveVersion).toBe(4)
   })
 })

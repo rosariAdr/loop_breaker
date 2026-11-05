@@ -1,3 +1,6 @@
+import CampaignPanel, { QuestActions } from '../components/CampaignPanel'
+import { SIDE_QUESTS } from '../data/sideQuestChains'
+import { hasQuestPrerequisites } from '../data/campaignProgression'
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import {
@@ -68,9 +71,10 @@ export default function QuestBoard() {
   const allBoardQuests = [
     ...Object.values(QUESTS),
     ...Object.values(MAIN_QUESTS),
+    ...Object.values(SIDE_QUESTS),
     ...Object.values(ONBOARDING_QUESTS), // QONBOARD01 — chaîne « Premières fois »
   ]
-  const canTurnInHere = (q) => getQuestIssuer(q) === here || isCity
+  const canTurnInHere = (q) => q.remote || getQuestIssuer(q) === here || isCity
 
   // VQ06/VQ07 — quêtes de village générées par adjacence (rotation + level-gate VQ-G3/G4).
   const villageActive = getActiveVillageQuests(here, {
@@ -81,7 +85,8 @@ export default function QuestBoard() {
   const available = [
     ...allBoardQuests.filter((q) => {
       if ((q.mapTier ?? 1) > 1) return false // QSV2-ADJ-AUDIT01 — quêtes Map 2 gelées hors board
-      if (getQuestIssuer(q) !== here) return false
+      if (!q.remote && getQuestIssuer(q) !== here) return false
+      if (!hasQuestPrerequisites(q, world)) return false
       if (activeIds.includes(q.id) || completedIds.includes(q.id)) return false
       if (q.isMainQuest) return isMainQuestAvailable(q.id)
       if (q.track === 'onboarding') return isOnboardingQuestAvailable(q.id) // QONBOARD01 — gate par chaînage
@@ -127,6 +132,7 @@ export default function QuestBoard() {
           </span>
         </div>
 
+        <CampaignPanel />
         {/* GLD01/GLD02 — sous-titre selon le lieu */}
         <p
           style={{
@@ -177,23 +183,32 @@ export default function QuestBoard() {
         {active.length > 0 && (
           <Section title={`Active (${active.length})`}>
             {active.map((q) => (
-              <QuestCard
-                key={q.id}
-                quest={q}
-                questStatus="active"
-                heroLevel={hero.level}
-                objectiveStatus={qStatus(q, true)}
-                daysLeft={questDaysLeft(q, world)}
-                canComplete={isQuestComplete(q.id)}
-                onComplete={() => completeQuest(q.id)}
-                onAbandon={() => setPendingAbandon(q)}
-              />
+              <div key={q.id}>
+                {(q.reportEvent || q.choices) && <QuestActions quest={q} />}
+                <QuestCard
+                  key={q.id}
+                  quest={q}
+                  questStatus="active"
+                  heroLevel={hero.level}
+                  objectiveStatus={qStatus(q, true)}
+                  daysLeft={questDaysLeft(q, world)}
+                  canComplete={isQuestComplete(q.id)}
+                  onComplete={() => completeQuest(q.id)}
+                  onAbandon={() => setPendingAbandon(q)}
+                />
+              </div>
             ))}
           </Section>
         )}
 
         {otherAvailable.length > 0 && (
-          <Section title={isGuild ? 'Available · Guild Commissions' : 'Available'}>
+          <Section
+            title={
+              isGuild
+                ? 'Available · Guild Commissions & Side Stories'
+                : 'Available · Side Stories & Commissions'
+            }
+          >
             {otherAvailable.map((q) => {
               const locked = isPrestigiousQuest(q) && !canAcceptPrestige
               return (
@@ -455,6 +470,11 @@ export function QuestCard({
               </span>
             )}
             {quest.name}
+            {quest.chain && (
+              <span style={{ display: 'block', fontSize: '.72rem', color: '#b69a70' }}>
+                {quest.chain} · Optional story
+              </span>
+            )}
             {isCompleted && ' ✓'}
             {isActive && daysLeft != null && (
               <span

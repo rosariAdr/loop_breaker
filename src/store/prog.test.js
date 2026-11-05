@@ -80,7 +80,8 @@ describe('PROG03 — unlockZone (quête / info)', () => {
     localStorage.clear()
   })
 
-  it('unlockZone ajoute la zone une seule fois', () => {
+  it('unlockZone ajoute une zone autorisée une seule fois', () => {
+    useGameStore.setState((s) => ({ world: { ...s.world, completedQuests: ['mq09_crossing'] } }))
     store().unlockZone('grimspire', 'info')
     expect(store().world.unlockedZones).toContain('grimspire')
     const len = store().world.unlockedZones.length
@@ -94,21 +95,22 @@ describe('PROG03 — unlockZone (quête / info)', () => {
     expect(store().world.unlockedZones.length).toBe(before)
   })
 
-  it('voie « info » : acheter la rumeur Grimspire débloque la zone', () => {
+  it('voie « info » : acheter la rumeur Grimspire révèle le chemin sans ouvrir la zone', () => {
     useGameStore.setState((s) => ({
       hero: { ...s.hero, inventory: { ...s.hero.inventory, gold: 999 } },
     }))
     expect(store().world.unlockedZones).not.toContain('grimspire')
     store().buyInfo('zone_rumor_grimspire', 40)
-    expect(store().world.unlockedZones).toContain('grimspire')
+    expect(store().meta.knownInfo).toContain('zone_rumor_grimspire')
+    expect(store().world.unlockedZones).not.toContain('grimspire')
   })
 
-  it('voie « quête » : compléter nc_explore_hills débloque Grimspire', () => {
+  it('voie « quête » : une quête secondaire ne contourne pas le verrou de Grimspire', () => {
     expect(QUESTS.nc_explore_hills.reward.unlockZone).toBe('grimspire')
     store().startQuest('nc_explore_hills')
     useGameStore.setState((s) => ({ world: { ...s.world, visitedSpots: ['wildmere_hills'] } }))
     expect(store().isQuestComplete('nc_explore_hills')).toBe(true)
     store().completeQuest('nc_explore_hills')
-    expect(store().world.unlockedZones).toContain('grimspire')
+    expect(store().world.unlockedZones).not.toContain('grimspire')
   })
 })

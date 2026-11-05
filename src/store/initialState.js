@@ -1,7 +1,7 @@
 // ── TECH02 — Save schema versioning ──────────────────────────────────────────
 // Incrémenter SAVE_VERSION chaque fois qu'un changement de structure persisté
 // nécessite une migration. Ajouter la migration correspondante dans `runMigrations`.
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 
 // ── État initial du héros ─────────────────────────────────────────────────────
 // (les migrations sont définies plus bas, après les INITIAL_*)
@@ -102,6 +102,14 @@ export const INITIAL_HERO = {
 
 // ── État initial du monde ─────────────────────────────────────────────────────
 export const INITIAL_WORLD = {
+  campaignVersion: 1,
+  idleUnlocked: false,
+  campaignEvents: [],
+  campaignChoices: {},
+  campaignLegacyAccess: [],
+  idleVictoryCount: 0,
+  sentinelTrial: { active: false, wins: 0, completed: 0 },
+  sentinelUpgrades: 0,
   currentZone: 'ashenvale',
   // START01 — le run démarre au village de départ Greywatch (et non Ironhaven).
   currentLocation: 'greywatch', // ville/village où se trouve le héros

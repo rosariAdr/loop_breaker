@@ -1,3 +1,4 @@
+import { readyQuest } from '../test/questFixtures'
 // QONBOARD01 — séquençage de la chaîne d'onboarding au niveau du store (gating par chaînage)
 // + acheminement des récompenses (équipement / consommables) au moment de la complétion.
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -23,7 +24,7 @@ describe('QONBOARD01 — gating de la chaîne (isOnboardingQuestAvailable)', () 
   })
 
   it('compléter un maillon débloque UNIQUEMENT le suivant', () => {
-    s().startQuest('onb_first_edge')
+    readyQuest('onb_first_edge')
     s().completeQuest('onb_first_edge')
     expect(s().world.completedQuests).toContain('onb_first_edge')
     expect(s().isOnboardingQuestAvailable('onb_well_armed')).toBe(true)
@@ -41,7 +42,7 @@ describe('QONBOARD01 — gating de la chaîne (isOnboardingQuestAvailable)', () 
     ]
     for (const id of order) {
       expect(s().isOnboardingQuestAvailable(id)).toBe(true)
-      s().startQuest(id)
+      readyQuest(id)
       s().completeQuest(id)
     }
     expect(order.every((id) => s().world.completedQuests.includes(id))).toBe(true)
@@ -55,14 +56,14 @@ describe('QONBOARD01 — récompenses acheminées', () => {
   })
 
   it("onb_first_edge octroie l'arme de départ (worn_iron_dagger)", () => {
-    s().startQuest('onb_first_edge')
+    readyQuest('onb_first_edge')
     s().completeQuest('onb_first_edge')
     const hasDagger = s().hero.inventory.equipment.some((e) => e.templateId === 'worn_iron_dagger')
     expect(hasDagger).toBe(true)
   })
 
   it('onb_first_brew octroie 2 potions de soin', () => {
-    s().startQuest('onb_first_brew')
+    readyQuest('onb_first_brew')
     const before = s().hero.inventory.consumables.hp_potion_small ?? 0
     s().completeQuest('onb_first_brew')
     expect((s().hero.inventory.consumables.hp_potion_small ?? 0) - before).toBe(2)

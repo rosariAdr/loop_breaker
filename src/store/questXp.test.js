@@ -1,7 +1,7 @@
 // FIX-QXP01 — les quêtes octroient de l'XP de héros (plein la 1ʳᵉ fois, réduit sur re-complétion).
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useGameStore } from './gameStore'
-import { getQuestById, questXpReward, defaultQuestXp, QUEST_XP_REPEAT_MULT } from '../data/quests'
+import { getQuestById, questXpReward, defaultQuestXp } from '../data/quests'
 
 const s = () => useGameStore.getState()
 
@@ -34,8 +34,7 @@ describe('FIX-QXP01 — XP de quête', () => {
     }
   })
 
-  it('re-complétion (déjà dans completedQuests) → XP réduite (×MULT)', () => {
-    const quest = getQuestById('mq01_waking')
+  it('main quest already completed cannot grant XP twice', () => {
     useGameStore.setState((st) => ({
       world: {
         ...st.world,
@@ -46,7 +45,7 @@ describe('FIX-QXP01 — XP de quête', () => {
     }))
     const before = { exp: s().hero.exp, level: s().hero.level }
     s().completeQuest('mq01_waking')
-    const expected = Math.round(questXpReward(quest) * QUEST_XP_REPEAT_MULT)
+    const expected = 0
     if (s().hero.level === before.level) {
       expect(s().hero.exp).toBe(before.exp + expected)
     } else {

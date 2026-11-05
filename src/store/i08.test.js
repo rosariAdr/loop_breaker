@@ -31,6 +31,7 @@ describe('I08 — seuil de PV idle configurable', () => {
     useGameStore.setState((s) => ({
       world: {
         ...s.world,
+        idleUnlocked: true,
         isIdleActive: true,
         idleTargetMonster: 'ashwood_wolf',
         idleHpThreshold: 0.5, // seuil élevé

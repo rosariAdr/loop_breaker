@@ -147,6 +147,20 @@ export default function SafeZone() {
           <div className="t-sub zh-sub">
             {isCity ? '🏰 Major City' : '🏘 Village'} · {zone.name}
           </div>
+          {location.id === 'millhaven' && world.completedQuests.includes('sq_convoy_2') && (
+            <p className="t-sub">
+              {world.campaignChoices?.convoy_route === 'patrol'
+                ? 'Halric: “Your patrol reopened the alternate road. The wagons are returning.”'
+                : 'Halric: “Your provisions brought the drivers home. Ironhaven will hear of this.”'}
+            </p>
+          )}
+          {location.id === 'ironhaven' && world.completedQuests.includes('sq_guardian_3') && (
+            <p className="t-sub">
+              {world.campaignChoices?.guardian_fate === 'restore'
+                ? 'Vaern: “The restored wards now guard our marsh patrols.”'
+                : 'Vaern: “The salvaged wards are becoming tools for the living.”'}
+            </p>
+          )}
         </div>
 
         {/* Place centrale en terre battue */}

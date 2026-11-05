@@ -10,6 +10,24 @@
 
 ## Comment dérouler une passe
 
+### Complément campagne — 2026-11-05
+
+Tests automatisés dédiés : `src/store/campaign.test.js`, `src/engine/sentinelTrial.test.js` et `src/screens/campaign.test.jsx`. Ils couvrent le parcours des onze quêtes, la connectivité, les trois fils facultatifs, l'épreuve du Sentinelle, les migrations et plusieurs interactions UI.
+
+Smoke test navigateur effectué sur le serveur local : démarrage, entrée dans Greywatch, ouverture de l'auberge puis du tableau, acceptation de MQ01 et affichage de son suivi dans le journal. Le contrôle visuel a détecté le journal masqué par la sidebar ; corrigé par portail et re-vérifié. Ce smoke test n'est pas un playthrough manuel complet jusqu'à Malachar.
+
+Avant la prochaine release, compléter manuellement :
+
+- [ ] Charger une vieille save bloquée à Millhaven ; rejoindre Wildmere Hills et terminer MQ04 sans reset.
+- [ ] Nouveau run : cinq loups puis remise de MQ01 ; l'idle devient disponible pour les espèces maîtrisées.
+- [ ] Sentinelle : activer, gagner une fois, dormir et recharger, gagner à nouveau → un orbe ; vérifier fuite/défaite/autre espèce puis reprise à zéro.
+- [ ] Refaire l'épreuve ; vérifier les coûts d'amélioration 1 puis 2 orbes et le plafond de deux améliorations.
+- [ ] Parcourir MQ07–MQ11 via les vrais déplacements, QTE et combats de boss. Une retraite de secours ne donne ni victoire ni orbe.
+- [ ] Terminer chaque fil facultatif et observer les dialogues résultant des choix ; finir aussi la campagne sans aucun de ces fils.
+- [ ] Vérifier la conclusion après Malachar et le retour à Ironhaven. Les nodes gelés Map 2 ne doivent pas apparaître comme une campagne livrée.
+
+### Procédure de release existante
+
 1. Vider la save : DevTools → Application → Local Storage → supprimer `roguelite_save` (ou Settings → Reset save).
 2. Dérouler S1 → S10 dans l'ordre (S1 exige une save vierge ; les suivants peuvent s'appuyer sur le debug panel).
 3. Cocher ci-dessous avec la date + commit testé. Toute anomalie → noter + ticket.

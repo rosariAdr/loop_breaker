@@ -6,6 +6,8 @@ import { appendAction } from '../../data/burnout'
 import { VIGOR_COST, VIGOR_MAX, applyVigorCost } from '../../engine/vigor'
 import { tickDebuffsOneDay } from '../../utils/debuffs'
 import { useToastStore } from '../toastStore'
+import { campaignGate } from '../../data/campaignProgression'
+import { areAdjacent } from '../../data/worldGraph'
 
 export const createWorldSlice = (set, get) => ({
   // ── BLDUNL01 — Déblocage des bâtiments ────────────────────────────────────
@@ -91,6 +93,7 @@ export const createWorldSlice = (set, get) => ({
   unlockZone: (zoneId, source = 'unknown') =>
     set((state) => {
       if (!ZONES[zoneId]) return state
+      if (!campaignGate(zoneId, state.world)) return state
       const cur = state.world.unlockedZones ?? []
       if (cur.includes(zoneId)) return state
       useToastStore
@@ -133,6 +136,8 @@ export const createWorldSlice = (set, get) => ({
   // (on ne farme pas en marchant — décision 2026-06-06).
   travelTo: (nodeId, ticks = 3) =>
     set((state) => {
+      if (!areAdjacent(state.world.currentNode, nodeId) || !isNodeUnlockedPure(nodeId, state.world))
+        return state
       const total = state.world.tickCount + ticks
       return {
         world: {
@@ -167,6 +172,8 @@ export const createWorldSlice = (set, get) => ({
   // ── Donjons ───────────────────────────────────────────────────────────────
   discoverDungeon: (zoneId) =>
     set((state) => {
+      if (!campaignGate(zoneId === 'ashenvale' ? 'crypt' : 'forsaken_citadel', state.world))
+        return state
       const dungeon = state.world.dungeons[zoneId]
       if (!dungeon) return state
       return {
@@ -188,7 +195,9 @@ export const createWorldSlice = (set, get) => ({
       // D05 — warp à la sortie : héros téléporté à la ville principale de la zone,
       // sortie du spot de chasse, idle stop (cohérence D07).
       const zoneData = ZONES[zoneId]
-      const safeCityId = zoneData?.city?.id ?? state.world.currentLocation
+      // Map 2 is not navigable yet; return to the reachable campaign hub.
+      const safeCityId =
+        zoneId === 'grimspire' ? 'ironhaven' : (zoneData?.city?.id ?? state.world.currentLocation)
 
       // M02 — incrément du compteur Demon Lords kills par univers
       // Pour l'instant un seul univers : 'medieval_fantasy'. Préparation X08.
@@ -225,6 +234,7 @@ export const createWorldSlice = (set, get) => ({
           },
           demonLordDefeated: isDemonLordKill ? true : state.world.demonLordDefeated,
           // D05 — warp
+          currentZone: 'ashenvale',
           currentLocation: safeCityId,
           currentNode: safeCityId, // TRV01 — garde la position carte synchronisée au warp
           currentHuntingSpot: null,

@@ -83,7 +83,7 @@ describe('STA01 — store (coûts & restauration)', () => {
     expect(store().hero.vigor).toBe(97)
   })
   it('un voyage coûte 1 de vigueur', () => {
-    store().travelTo('millhaven')
+    store().travelTo('ashenvale_forest')
     expect(store().hero.vigor).toBe(99)
   })
   it('dormir restaure la vigueur à 100', () => {
