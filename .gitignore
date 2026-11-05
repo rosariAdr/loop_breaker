@@ -54,7 +54,13 @@ Thumbs.db
 # Exclus : les dossiers `raw/` = sources haute-résolution (backups locaux, ~344 Mo,
 # jamais servis par l'app) + la référence `design/` (local-only).
 public/*/raw/
-design/
+# ⚠️ ANCRÉ (`/design/*`, pas `design/`) : sans le slash initial, le motif matchait
+# AUSSI `docs/design/` et rendait toute la doc de design invisible à git —
+# les commits passaient « propres » sans jamais embarquer les livrables.
+# `design/reference/` reste local-only (captures de jeux tiers, sources lourdes) ;
+# `design/combat/` est la SOURCE du kit poussé dans le Design System → suivi.
+/design/*
+!/design/combat/
 
 # ── Asset Forge (asset_forge/) ───────────────────────────────────────────────
 # with_bg raw sources live in public/<folder>/raw/ (already ignored above).

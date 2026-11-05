@@ -1,0 +1,417 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Loop Breaker — Combat kit (CMB-DIR01, direction A « Le rang »)
+   Additif : ce fichier ne touche PAS lb-components.css. Il n'introduit que
+   des classes préfixées `lb-cbt-`.
+
+   ⚠️ Règle d'unités — tout l'intérieur de l'arène est dimensionné en `em`,
+   et le conteneur `.lb-cbt-stage` porte `font-size: calc(100cqw / 192)`
+   (1em = 10px à 1920 de large). Une boîte ne doit JAMAIS porter à la fois
+   une `font-size` et une `width/height` en em : la longueur se résoudrait
+   contre sa propre police. Mettre la font-size sur un <span> interne.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.lb-cbt-frame {
+  container-type: inline-size;
+  background: #000;
+  overflow: hidden;
+}
+
+.lb-cbt-stage {
+  font-size: calc(100cqw / 192);
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink, #3d2b1f);
+  font-family: var(--font-body, 'Crimson Text', Georgia, serif);
+  user-select: none;
+}
+
+/* ── ArenaBackdrop ──────────────────────────────────────────────────── */
+.lb-cbt-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.lb-cbt-backdrop[data-zone='ashenvale_forest'] {
+  background:
+    radial-gradient(48% 40% at 68% 4%, rgba(255, 244, 186, 0.72), transparent 62%),
+    radial-gradient(24% 88% at 10% 0%, #24461a 60%, transparent 63%),
+    radial-gradient(20% 80% at 30% 0%, #35601f 58%, transparent 61%),
+    radial-gradient(22% 92% at 88% 0%, #24461a 60%, transparent 63%),
+    linear-gradient(180deg, #bcd9c4 0%, #9dc088 22%, #7ba055 42%, #5d8038 62%, #47632a 80%, #33471d 100%);
+}
+.lb-cbt-backdrop[data-zone='wildmere_hills'] {
+  background:
+    radial-gradient(42% 32% at 76% 8%, rgba(255, 248, 200, 0.66), transparent 64%),
+    radial-gradient(70% 26% at 22% 46%, #7fa54c 60%, transparent 62%),
+    radial-gradient(64% 24% at 82% 52%, #6d9440 60%, transparent 62%),
+    linear-gradient(180deg, #a9d4e8 0%, #c8dfc4 26%, #9dbb66 40%, #86a851 58%, #6c8c3c 78%, #55702c 100%);
+}
+.lb-cbt-backdrop[data-zone='crumbled_ruins'] {
+  background:
+    radial-gradient(52% 40% at 50% 6%, rgba(232, 226, 196, 0.5), transparent 66%),
+    linear-gradient(96deg, transparent 12%, rgba(150, 148, 128, 0.5) 14%, transparent 17%),
+    linear-gradient(84deg, transparent 74%, rgba(150, 148, 128, 0.45) 77%, transparent 80%),
+    linear-gradient(180deg, #b9bda8 0%, #9aa189 26%, #7d8570 46%, #646b58 68%, #4a5040 100%);
+}
+.lb-cbt-backdrop[data-zone='thornmarsh'] {
+  background:
+    radial-gradient(58% 44% at 44% 10%, rgba(206, 218, 176, 0.4), transparent 68%),
+    radial-gradient(30% 70% at 16% 24%, #2f3f24 58%, transparent 62%),
+    radial-gradient(26% 64% at 84% 20%, #2a3a22 58%, transparent 62%),
+    linear-gradient(180deg, #9aa88a 0%, #7c8c6a 22%, #5e6d4c 44%, #47563a 66%, #35422c 100%);
+}
+.lb-cbt-backdrop[data-zone='hollow_crypt'] {
+  background:
+    radial-gradient(34% 30% at 50% 16%, rgba(255, 196, 108, 0.42), transparent 66%),
+    radial-gradient(18% 46% at 14% 30%, rgba(255, 172, 84, 0.24), transparent 62%),
+    radial-gradient(18% 46% at 86% 30%, rgba(255, 172, 84, 0.24), transparent 62%),
+    linear-gradient(180deg, #35302a 0%, #2b2621 34%, #241f1b 62%, #1a1614 100%);
+}
+
+/* Traitement ÉLITE — couche d'ambiance sur la MÊME plaque peinte.
+   5 illustrations au lieu de 10 (décision CMB-DIR01). */
+.lb-cbt-backdrop[data-rank='elite']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 46% at 50% 0%, rgba(96, 22, 14, 0.62), transparent 70%),
+    radial-gradient(120% 90% at 50% 116%, rgba(220, 96, 30, 0.26), transparent 62%),
+    linear-gradient(180deg, rgba(24, 8, 6, 0.5), rgba(24, 8, 6, 0.16) 44%, rgba(40, 12, 6, 0.42));
+}
+.lb-cbt-backdrop[data-rank='elite']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 14em 3em rgba(72, 12, 6, 0.62);
+  background-image:
+    radial-gradient(0.16em 0.16em at 18% 62%, rgba(255, 176, 84, 0.9), transparent),
+    radial-gradient(0.13em 0.13em at 34% 44%, rgba(255, 148, 60, 0.85), transparent),
+    radial-gradient(0.18em 0.18em at 58% 70%, rgba(255, 196, 110, 0.8), transparent),
+    radial-gradient(0.12em 0.12em at 74% 38%, rgba(255, 160, 70, 0.9), transparent),
+    radial-gradient(0.15em 0.15em at 88% 58%, rgba(255, 180, 90, 0.75), transparent);
+}
+
+/* ── Combatant ──────────────────────────────────────────────────────── */
+.lb-cbt-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+.lb-cbt-unit__body {
+  width: 8.6em;
+  height: 11.4em;
+  border-radius: 46% 46% 30% 30% / 34% 34% 66% 66%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-head, 'Cinzel', Georgia, serif);
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+.lb-cbt-unit__body > span { font-size: 3.2em; line-height: 1; }
+.lb-cbt-unit:hover .lb-cbt-unit__body { transform: translateY(-0.12em) scale(1.02); }
+
+.lb-cbt-unit--ally .lb-cbt-unit__body {
+  background: linear-gradient(168deg, #6b5433, #3c2d19);
+  border: 0.22em solid var(--gold, #d4a017);
+  color: var(--parchment, #f2e0b6);
+  box-shadow: 0 0.5em 1.4em rgba(0, 0, 0, 0.4), inset 0 0 1.6em rgba(212, 160, 23, 0.28);
+}
+.lb-cbt-unit--foe .lb-cbt-unit__body {
+  background: linear-gradient(168deg, #4d3330, #2a1a18);
+  border: 0.22em solid var(--danger, #c0392b);
+  color: #e8cfc4;
+  box-shadow: 0 0.5em 1.4em rgba(0, 0, 0, 0.45), inset 0 0 1.6em rgba(192, 57, 43, 0.3);
+}
+.lb-cbt-unit[aria-pressed='true'] .lb-cbt-unit__body {
+  outline: 0.3em solid var(--amber, #e8a020);
+  outline-offset: 0.28em;
+}
+.lb-cbt-unit:focus-visible .lb-cbt-unit__body {
+  outline: 0.3em solid var(--sky, #7db9de);
+  outline-offset: 0.28em;
+}
+
+.lb-cbt-unit__name {
+  font-family: var(--font-head, 'Cinzel', Georgia, serif);
+  font-size: 1.35em;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  text-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.85);
+}
+.lb-cbt-unit--ally .lb-cbt-unit__name { color: var(--parchment, #f2e0b6); }
+.lb-cbt-unit--foe .lb-cbt-unit__name { color: #edc9bf; }
+
+/* Élite : unique et surdimensionné — la rencontre se lit avant le nom. */
+.lb-cbt-unit--elite .lb-cbt-unit__body { width: 14em; height: 18.4em; border-width: 0.3em; }
+.lb-cbt-unit--elite .lb-cbt-unit__body > span { font-size: 5.4em; }
+.lb-cbt-unit--elite .lb-cbt-unit__name { font-size: 1.8em; }
+.lb-cbt-unit--elite .lb-cbt-bar { width: 16em; height: 1em; }
+
+/* Barre au sol — plaque opaque + liseré clair, pour rester lisible sur
+   n'importe quelle illustration de fond (clair comme sombre). */
+.lb-cbt-bar {
+  width: 9.6em;
+  height: 0.9em;
+  background: rgba(12, 8, 5, 0.82);
+  border: 0.09em solid rgba(0, 0, 0, 0.85);
+  box-shadow: 0 0 0 0.09em rgba(242, 224, 182, 0.34), 0 0.2em 0.5em rgba(0, 0, 0, 0.55);
+  display: flex;
+  gap: 0.1em;
+  padding: 0.11em;
+}
+.lb-cbt-bar i { flex: 1; display: block; }
+.lb-cbt-unit--ally .lb-cbt-bar i { background: var(--parchment, #f2e0b6); }
+.lb-cbt-unit--foe .lb-cbt-bar i { background: var(--danger, #c0392b); }
+.lb-cbt-bar i.is-off { background: rgba(255, 255, 255, 0.12); }
+
+/* Intent — CMB-INT01 : fourchette affichée, jamais le crit. */
+.lb-cbt-intent {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 1.15em;
+  background: rgba(30, 18, 12, 0.82);
+  border: 0.12em solid var(--danger, #c0392b);
+  color: #f3d3c6;
+  padding: 0.24em 0.7em;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+/* ── TurnBand ───────────────────────────────────────────────────────── */
+.lb-cbt-band {
+  height: 11em;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2.4em;
+  gap: 2em;
+  background: linear-gradient(180deg, #2f2216, #241a12);
+  border-bottom: 0.18em solid var(--wood-2, #5a3e29);
+}
+.lb-cbt-queue { display: flex; align-items: center; gap: 0.75em; }
+.lb-cbt-slot {
+  width: 4.6em;
+  height: 4.6em;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-head, 'Cinzel', Georgia, serif);
+  transform: rotate(45deg);
+  border: 0.16em solid var(--gold, #d4a017);
+  background: linear-gradient(150deg, #6b5433, #3a2b18);
+  color: var(--parchment, #f2e0b6);
+  flex: none;
+}
+.lb-cbt-slot > span { transform: rotate(-45deg); font-size: 1.5em; }
+.lb-cbt-slot--foe {
+  border-color: var(--danger, #c0392b);
+  background: linear-gradient(150deg, #4d3330, #291a18);
+  color: #edc9bf;
+}
+.lb-cbt-slot--now { box-shadow: 0 0 0 0.2em var(--amber, #e8a020), 0 0 1.4em rgba(232, 160, 32, 0.6); }
+.lb-cbt-band__tag {
+  font-family: var(--font-head, 'Cinzel', Georgia, serif);
+  font-size: 1.15em;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--amber, #e8a020);
+}
+.lb-cbt-band__where {
+  font-family: var(--font-head, 'Cinzel', Georgia, serif);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 1.3em;
+  color: var(--parchment, #f2e0b6);
+  opacity: 0.75;
+}
+
+/* ── Arène ──────────────────────────────────────────────────────────── */
+.lb-cbt-arena {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 6em 3.4em;
+  position: relative;
+}
+.lb-cbt-arena::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 34%;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.34));
+  pointer-events: none;
+}
+.lb-cbt-line { display: flex; align-items: flex-end; gap: 2.2em; position: relative; z-index: 1; }
+
+/* ── Console ────────────────────────────────────────────────────────── */
+.lb-cbt-console {
+  flex: none;
+  height: 40em;
+  display: grid;
+  grid-template-columns: 42em 1fr;
+  background: linear-gradient(180deg, var(--parchment, #f2e0b6) 0%, var(--parchment-2, #ead49c) 100%);
+  border-top: 0.3em solid var(--wood-2, #5a3e29);
+  color: var(--ink, #3d2b1f);
+}
+
+/* ActiveCharacter */
+.lb-cbt-who {
+  border-right: 0.15em solid var(--parchment-shadow, #c9a96e);
+  padding: 1.2em 1.8em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85em;
+  min-height: 0;
+}
+.lb-cbt-who__head { display: flex; align-items: center; gap: 1.2em; }
+.lb-cbt-who__crest {
+  width: 5.6em;
+  height: 5.6em;
+  flex: none;
+  border-radius: 44% 44% 30% 30% / 32% 32% 68% 68%;
+  background: linear-gradient(160deg, #6b5433, #3c2d19);
+  border: 0.2em solid var(--gold, #d4a017);
+  color: var(--parchment, #f2e0b6);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-head, 'Cinzel', Georgia, serif);
+}
+.lb-cbt-who__crest > span { font-size: 2.2em; }
+.lb-cbt-who__name {
+  font-family: var(--font-head, 'Cinzel', Georgia, serif);
+  font-size: 2.5em;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+}
+.lb-cbt-who__role { font-size: 1.3em; font-style: italic; color: var(--ink-soft, #5c4632); }
+.lb-cbt-who__gauges { display: flex; flex-direction: column; gap: 0.45em; }
+.lb-cbt-who__read {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25em;
+  display: flex;
+  justify-content: space-between;
+}
+.lb-cbt-gauge {
+  height: 0.85em;
+  background: rgba(0, 0, 0, 0.28);
+  border: 0.08em solid rgba(0, 0, 0, 0.4);
+}
+.lb-cbt-gauge i { display: block; height: 100%; }
+
+/* R3 — les stats restent visibles PENDANT le choix de l'action. */
+.lb-cbt-stats {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 0.22em 1.1em;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25em;
+  margin: 0;
+}
+.lb-cbt-stats dt { letter-spacing: 0.1em; opacity: 0.66; }
+.lb-cbt-stats dd { margin: 0; font-weight: 700; }
+
+/* ActionGrid */
+.lb-cbt-acts { display: flex; flex-direction: column; min-height: 0; }
+.lb-cbt-ribbon {
+  font-style: italic;
+  font-size: 1.42em;
+  padding: 0.5em 1.2em;
+  min-height: 2.6em;
+  display: flex;
+  align-items: center;
+}
+.lb-cbt-acts__grid { display: grid; grid-template-columns: 15em 1fr; flex: 1; min-height: 0; }
+.lb-cbt-verbs {
+  display: flex;
+  flex-direction: column;
+  border-right: 0.12em solid var(--parchment-shadow, #c9a96e);
+}
+.lb-cbt-verb {
+  font-family: var(--font-head, 'Cinzel', Georgia, serif);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 1.55em;
+  padding: 0.5em 1.1em;
+  cursor: pointer;
+  border: 0;
+  border-left: 0.22em solid transparent;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+  text-align: left;
+  transition: background 130ms ease;
+}
+.lb-cbt-verb:hover { background: rgba(0, 0, 0, 0.07); }
+.lb-cbt-verb[aria-pressed='true'] {
+  border-left-color: var(--amber, #e8a020);
+  background: rgba(0, 0, 0, 0.12);
+}
+.lb-cbt-verb:focus-visible { outline: 0.15em solid var(--amber, #e8a020); outline-offset: -0.15em; }
+.lb-cbt-verb em { font-style: normal; opacity: 0.45; font-size: 0.8em; }
+
+.lb-cbt-skills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1.6em;
+  align-content: start;
+  padding: 0.6em 1.2em;
+  overflow: hidden;
+}
+.lb-cbt-skill {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.9em;
+  align-items: baseline;
+  padding: 0.42em 0.6em;
+  font-size: 1.4em;
+  cursor: pointer;
+  border: 0;
+  border-bottom: 0.05em solid rgba(61, 43, 31, 0.14);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-family: inherit;
+}
+.lb-cbt-skill:hover { background: rgba(212, 160, 23, 0.16); }
+.lb-cbt-skill:focus-visible { outline: 0.1em solid var(--amber, #e8a020); outline-offset: -0.1em; }
+.lb-cbt-skill__cost {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82em;
+}
+/* CMB-COST01 — rank de tempo : le coût en tours, pas en mana. */
+.lb-cbt-skill__rank {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 0.72em;
+  padding: 0.14em 0.5em;
+  border: 0.08em solid currentColor;
+  letter-spacing: 0.04em;
+}
+.lb-cbt-skill__rank--fast { color: var(--forest, #4a7c2f); }
+.lb-cbt-skill__rank--norm { color: var(--ink-soft, #5c4632); }
+.lb-cbt-skill__rank--slow { color: var(--danger, #c0392b); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-cbt-unit__body,
+  .lb-cbt-verb { transition: none; }
+}

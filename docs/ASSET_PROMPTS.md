@@ -20,7 +20,7 @@
 | **Character-select** — §10 | ❌ | **8** classes |
 | **Carte + médaillons donjon** — §12 | ❌ | **5** : `crypt_map` + `room_combat/rest/treasure/boss` |
 | **Déco props** — §7 | ❌ | **5** *(option)* : `barrels`, `hens`, `market_stall`, `lantern_post`, `hay_cart` — (`well`/`signpost` remplacés par les vignettes) |
-| **Fonds d'arène combat** — §11 | dégradés CSS | **6** *(option, polish)* |
+| **Fonds d'arène combat** — §11 | dégradés CSS | **5 REQUIS** *(CMB-DIR01 — plus optionnel)* : `ashenvale_forest`, `wildmere_hills`, `crumbled_ruins`, `thornmarsh`, `hollow_crypt` (+2 réserve : `blighted_road`, `grimspire`) |
 | **Portraits PNJ** (pixel 128² × 6 émotions) — §9 | **5** (aldric, smith, marta, merchant, mage) | prêtre + doyen → 🟠 **à sourcer (CraftPix), pas Gemini** |
 | **Héros** (sprites idle/walk/dying) — §5 | placeholder en place | 🟠 **à sourcer**, pas Gemini |
 | **Carte monde** | `map/eldenmoor.png` ✅ | — |
@@ -474,9 +474,30 @@ A charming heroic character portrait bust of a charismatic bard — a lute held 
 
 ---
 
-## 11) 🟢 FONDS D'ARÈNE (optionnel, Gemini)
+## 11) 🔴 FONDS D'ARÈNE (REQUIS — CMB-DIR01, Gemini)
 
-> Actuellement dégradés CSS (suffisants). Polish optionnel : 1 illustration de fond par spot. `public/arenas/<spot>.png`, **format paysage 16:9**. Chaque bloc est un **prompt complet prêt à copier-coller** *(fond pleine image — pas de détourage)*.
+> **⚠️ Promu « optionnel » → BLOQUANT le 2026-07-21.** La direction de combat retenue (CMB-DIR01, direction A
+> « Le rang ») s'appuie sur **une illustration peinte par spot de chasse** : les dégradés CSS ne suffisent plus.
+> `public/arenas/<spot>.png`, **format paysage 16:9**. Chaque bloc est un **prompt complet prêt à copier-coller**
+> *(fond pleine image — pas de détourage)*.
+>
+> **Périmètre réel** : seuls **4 spots de surface** portent des monstres (`monsters.js`) — `ashenvale_forest`,
+> `wildmere_hills`, `crumbled_ruins`, `thornmarsh` — plus les **donjons**. `blighted_road` et `grimspire` sont
+> conservés ci-dessous pour plus tard (pas de spot de chasse câblé aujourd'hui).
+>
+> ### Variante ÉLITE — traitement, pas seconde peinture
+>
+> **Décision (CMB-DIR01, 2026-07-21)** : une rencontre d'élite doit se voir avant même de lire le nom du monstre.
+> Plutôt que 2 illustrations par spot, on garde **la même plaque peinte** et on superpose une **couche
+> d'ambiance** (ciel assombri, braises, vignette rouge) — rendue **en CSS**, donc gratuite en assets.
+>
+> - **Coût** : 5 illustrations au lieu de 10.
+> - **Lisibilité garantie** : la base ne bouge pas, donc le contraste des barres et des intents reste validé une seule fois.
+> - **Réversible** : repeindre entièrement un spot en version élite reste possible plus tard, spot par spot, sans rien casser.
+> - La composition de l'arène change en plus du fond : **3 adversaires alignés** en commun → **1 adversaire surdimensionné** en élite.
+>
+> Si un jour on veut une vraie peinture élite pour un spot, reprendre son prompt ci-dessous et y ajouter :
+> *« …storm-darkened sky, drifting embers and a menacing red rim-light, same location and same camera as the reference image. »*
 
 **`ashenvale_forest.png`**
 ```
@@ -494,7 +515,11 @@ An atmospheric medieval-fantasy combat background illustration of broken overgro
 ```
 An atmospheric medieval-fantasy combat background illustration of rolling verdant hills under a wide bright sky — wildflowers, scattered boulders and a distant tree line, warm sunny greens, painterly storybook style with gentle depth-of-field, no characters, no creatures, empty scene, landscape 16:9 composition. No text, no watermark, no UI, no border.
 ```
-**`blighted_road.png`**
+**`hollow_crypt.png`** *(donjon Ashenvale — la seule arène d'intérieur)*
+```
+An atmospheric medieval-fantasy combat background illustration of the interior of an ancient burial crypt — carved stone walls and vaulted arches, cracked flagstones, scattered bones and cobwebs, warm candlelight and torch glow pooling on the floor against deep shadow, painterly storybook style with gentle depth-of-field, no characters, no creatures, empty scene, landscape 16:9 composition. No text, no watermark, no UI, no border.
+```
+**`blighted_road.png`** *(pas de spot de chasse câblé — pour plus tard)*
 ```
 An atmospheric medieval-fantasy combat background illustration of a cursed blighted wasteland road — cracked dead earth, withered black trees, a sickly red-tinged sky and drifting ash, ominous and desolate, painterly storybook style with gentle depth-of-field, no characters, no creatures, empty scene, landscape 16:9 composition. No text, no watermark, no UI, no border.
 ```
