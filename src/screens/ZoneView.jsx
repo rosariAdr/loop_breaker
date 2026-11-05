@@ -153,8 +153,8 @@ function MonsterRow({ monsterId, showStats = false }) {
   const isElite = monster.rank === 'elite'
 
   const handleFight = () => {
-    // B03 — 1 à 3 ennemis selon la zone et le rang (élite/boss → 1)
-    const enemies = generateEnemies(monsterId, world.currentZone, hero.runNumber)
+    // 1 à 4 ennemis selon le niveau du héros (élite/boss → 1).
+    const enemies = generateEnemies(monsterId, world.currentZone, hero.runNumber, hero.level)
     if (enemies.length === 0) return
     startCombat(enemies)
   }
@@ -304,7 +304,7 @@ function DemonLordSection({ world }) {
   // DEMON-FIGHT — lance le vrai combat contre Malachar (rank demon_lord, 3 phases BSS03,
   // drop Soul Rend garanti). La victoire est gérée dans Combat.handleVictory → clearDungeon('grimspire').
   const handleChallenge = () => {
-    const enemies = generateEnemies('malachar', 'grimspire', hero.runNumber)
+    const enemies = generateEnemies('malachar', 'grimspire', hero.runNumber, hero.level)
     if (enemies.length) startCombat(enemies)
   }
 

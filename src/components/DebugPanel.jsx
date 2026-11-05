@@ -94,7 +94,8 @@ function DebugPanelContent({ onClose }) {
   // ── Déclencheurs de flux ──────────────────────────────────────────────────
   const triggers = [
     cmd('⚔ Start combat', () => {
-      const enemies = generateEnemies('ashwood_wolf', 'ashenvale', get().hero.runNumber)
+      const { runNumber, level } = get().hero
+      const enemies = generateEnemies('ashwood_wolf', 'ashenvale', runNumber, level)
       if (enemies.length) get().startCombat(enemies)
     }),
     cmd('✦ Divine call', () => get().triggerDivineCall('ignareth')),

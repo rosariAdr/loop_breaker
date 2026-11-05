@@ -703,7 +703,7 @@ describe('B12 — isEnemyTooStrong + getMonsterLevel', () => {
   })
 })
 
-// ── B03 — Multi-ennemis (comptage par rang / zone) ────────────────────────────
+// ── Multi-ennemis (comptage par rang / niveau) ───────────────────────────────
 describe('B03 — getEnemyCount', () => {
   const common = { rank: 'common' }
   const elite = { rank: 'elite' }
@@ -711,31 +711,30 @@ describe('B03 — getEnemyCount', () => {
   const demonLord = { rank: 'demon_lord' }
 
   it('élite / boss / demon_lord → toujours 1', () => {
-    expect(getEnemyCount(elite, 'ashenvale', () => 0.99)).toBe(1)
-    expect(getEnemyCount(boss, 'grimspire', () => 0.99)).toBe(1)
-    expect(getEnemyCount(demonLord, 'grimspire', () => 0.99)).toBe(1)
+    expect(getEnemyCount(elite, 50, () => 0.99)).toBe(1)
+    expect(getEnemyCount(boss, 50, () => 0.99)).toBe(1)
+    expect(getEnemyCount(demonLord, 50, () => 0.99)).toBe(1)
   })
 
-  it('zone 1 (ashenvale) → 1 à 2 ennemis', () => {
-    expect(getEnemyCount(common, 'ashenvale', () => 0)).toBe(1)
-    expect(getEnemyCount(common, 'ashenvale', () => 0.99)).toBe(2)
-  })
-
-  it('zone 2 (blighted_road) → 1 à 3 ennemis', () => {
-    expect(getEnemyCount(common, 'blighted_road', () => 0)).toBe(1)
-    expect(getEnemyCount(common, 'blighted_road', () => 0.99)).toBe(3)
-  })
-
-  it('zone 3 (grimspire) → jusqu’à 3 ennemis', () => {
-    expect(getEnemyCount(common, 'grimspire', () => 0.99)).toBe(3)
+  it.each([
+    [1, 2],
+    [9, 2],
+    [10, 3],
+    [19, 3],
+    [20, 4],
+    [50, 4],
+  ])('niveau %i : tous les effectifs de 1 à %i sont possibles', (level, max) => {
+    for (let count = 1; count <= max; count++) {
+      expect(getEnemyCount(common, level, () => (count - 0.5) / max)).toBe(count)
+    }
   })
 
   it('borne toujours ≥ 1', () => {
-    expect(getEnemyCount(common, 'ashenvale', () => 0)).toBeGreaterThanOrEqual(1)
+    expect(getEnemyCount(common, 1, () => 0)).toBeGreaterThanOrEqual(1)
   })
 
   it('monstre absent → 0', () => {
-    expect(getEnemyCount(null, 'ashenvale', () => 0.5)).toBe(0)
+    expect(getEnemyCount(null, 20, () => 0.5)).toBe(0)
   })
 })
 

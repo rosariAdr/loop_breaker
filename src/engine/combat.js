@@ -6,7 +6,8 @@ import { SKILLS, getLevelBonus } from '../data/skills'
 import { RESOURCES } from '../data/resources'
 import { getStatMilestoneBonuses, milestonesFor, STAT_MILESTONES } from '../data/statMilestones'
 import { bestiaryDropBonus } from '../data/bestiary'
-import { scaleMonsterStats, ZONE_MULTS, ZONE_ORDER } from '../data/zones'
+import { scaleMonsterStats, ZONE_MULTS } from '../data/zones'
+import { monsterPortraitSrc } from '../data/monsterPortraits'
 import { BALANCE } from '../config'
 import {
   checkIgnarethAwakening,
@@ -360,38 +361,41 @@ export function buildEnemy(monsterId, zoneId, runCount) {
 }
 
 /**
- * B03 — Nombre d'ennemis pour un combat, selon le rang et la zone.
+ * Nombre d'ennemis selon le rang et le niveau actuel du héros.
  * - élite / boss / demon_lord → toujours 1
- * - zone 1 (index 0) → 1 à 2 ; zone 2+ → 1 à 3
+ * - niveaux 1–9 → 1 à 2 ; 10–19 → 1 à 3 ; 20+ → 1 à 4
  * @param {{rank:string}} monster - Template du monstre
- * @param {string} zoneId - Id de la zone (pour le palier)
+ * @param {number} [heroLevel=1] - Niveau actuel du héros
  * @param {() => number} [rng=Math.random] - Générateur injectable (tests)
  * @returns {number} Nombre d'ennemis (0 si monstre nul)
- * @example getEnemyCount({ rank:'common' }, 'ashenvale', () => 0.9) // 2
+ * @example getEnemyCount({ rank:'common' }, 20, () => 0.9) // 4
  */
-export function getEnemyCount(monster, zoneId, rng = Math.random) {
+export function getEnemyCount(monster, heroLevel = 1, rng = Math.random) {
   if (!monster) return 0
   if (['elite', 'boss', 'demon_lord'].includes(monster.rank)) return 1
-  const zoneIndex = ZONE_ORDER.indexOf(zoneId)
-  const max = zoneIndex <= 0 ? 2 : 3 // zone 1 → max 2, zone 2+ → max 3
+  const max = heroLevel >= 20 ? 4 : heroLevel >= 10 ? 3 : 2
   return 1 + Math.floor(rng() * max) // 1..max
 }
 
 /**
- * Génère les ennemis d'un combat normal en zone (B03 — 1 à 3 selon zone/rang).
+ * Génère 1 à 4 ennemis selon le niveau du héros et le rang.
  * Les boss/élites sont toujours seuls.
  * @param {string} monsterId - Id du monstre
- * @param {string} zoneId - Id de la zone (scaling + nombre)
+ * @param {string} zoneId - Id de la zone (scaling)
  * @param {number} runCount - Numéro de run (scaling des stats)
+ * @param {number} [heroLevel=1] - Niveau actuel du héros (nombre d'ennemis)
  * @returns {object[]} Tableau d'ennemis prêts au combat (vide si monstre inconnu)
  * @example generateEnemies('ashwood_wolf', 'ashenvale', 1)
  */
-export function generateEnemies(monsterId, zoneId, runCount) {
+export function generateEnemies(monsterId, zoneId, runCount, heroLevel = 1) {
   const monster = MONSTERS[monsterId]
   if (!monster) return []
 
-  const count = getEnemyCount(monster, zoneId)
-  return Array.from({ length: count }, () => buildEnemy(monsterId, zoneId, runCount))
+  const count = getEnemyCount(monster, heroLevel)
+  return Array.from({ length: count }, (_, index) => ({
+    ...buildEnemy(monsterId, zoneId, runCount),
+    portraitSrc: monsterPortraitSrc(monsterId, index),
+  }))
 }
 
 // ── IA ennemie ────────────────────────────────────────────────────────────────
