@@ -9,6 +9,8 @@ import InformantsPanel from '../components/InformantsPanel'
 import { BLD_POS } from './safezone/constants'
 import NpcOverlay from './safezone/NpcOverlay'
 import VilBuilding from './safezone/VilBuilding'
+import GreywatchScene from './safezone/GreywatchScene'
+import { GREYWATCH_SCENE } from './safezone/villageScenes'
 import ChurchPanel, { ChurchPrayBlock } from './safezone/ChurchPanel'
 import MerchantPanel from './safezone/MerchantPanel'
 import AlchemyPanel from './safezone/AlchemyPanel'
@@ -126,19 +128,31 @@ export default function SafeZone() {
     guild: { icon: '⚜', name: "Adventurers' Guild", color: '#c084fc' }, // GLD01
   }
 
+  const isGreywatch = location.id === 'greywatch'
+  const leaveVillage = () => {
+    setActiveBuilding(null)
+    setScreen('world_map')
+  }
+  const buildingCards = buildings.map((id) => (
+    <VilBuilding
+      key={id}
+      id={id}
+      info={BUILDING_INFO[id]}
+      position={isGreywatch ? GREYWATCH_SCENE.buildings[id] : undefined}
+      closed={!isBuildingOpen(id, world.tickCount)}
+      locked={!isBuildingUnlocked(id)}
+      lockReason={buildingLockReason(id)}
+      onClick={() => openBuilding(id)}
+    />
+  ))
+
   return (
     <>
       {/* ── Carte du village (parchemin) ─────────────────────────────── */}
-      <div className="parchment fill village">
+      <div className={`parchment fill village${isGreywatch ? ' village-greywatch' : ''}`}>
         <ParchmentFrame variant="vine" />
 
-        <button
-          className="back-btn"
-          onClick={() => {
-            setActiveBuilding(null)
-            setScreen('world_map')
-          }}
-        >
+        <button className="back-btn" onClick={leaveVillage}>
           ← Map
         </button>
 
@@ -163,50 +177,53 @@ export default function SafeZone() {
           )}
         </div>
 
-        {/* Place centrale en terre battue */}
-        <div className="vil-square" />
+        {isGreywatch ? (
+          <GreywatchScene
+            tick={world.tickCount}
+            heroName={hero.name}
+            buildings={buildings}
+            onLeave={leaveVillage}
+          >
+            {buildingCards}
+          </GreywatchScene>
+        ) : (
+          <>
+            {/* Place centrale en terre battue */}
+            <div className="vil-square" />
 
-        {/* Chemins du puits vers chaque bâtiment */}
-        <svg className="vil-paths" preserveAspectRatio="none">
-          {buildings.map((id) => {
-            const p = BLD_POS[id]
-            if (!p) return null
-            return (
-              <line
-                key={id}
-                x1="50%"
-                y1="50%"
-                x2={`${p.x}%`}
-                y2={`${p.y}%`}
-                stroke="#c9b083"
-                strokeWidth="11"
-                strokeLinecap="round"
-                opacity="0.55"
-              />
-            )
-          })}
-        </svg>
+            {/* Chemins du puits vers chaque bâtiment */}
+            <svg className="vil-paths" preserveAspectRatio="none">
+              {buildings.map((id) => {
+                const p = BLD_POS[id]
+                if (!p) return null
+                return (
+                  <line
+                    key={id}
+                    x1="50%"
+                    y1="50%"
+                    x2={`${p.x}%`}
+                    y2={`${p.y}%`}
+                    stroke="#c9b083"
+                    strokeWidth="11"
+                    strokeLinecap="round"
+                    opacity="0.55"
+                  />
+                )
+              })}
+            </svg>
 
-        {/* Puits au centre */}
-        <div className="vil-well">
-          <ArtSlot caption="village well" w={84} h={66} />
-        </div>
+            {/* Puits au centre */}
+            <div className="vil-well">
+              <ArtSlot caption="village well" w={84} h={66} />
+            </div>
 
-        {/* Bâtiments */}
-        {buildings.map((id) => (
-          <VilBuilding
-            key={id}
-            id={id}
-            info={BUILDING_INFO[id]}
-            closed={!isBuildingOpen(id, world.tickCount)}
-            locked={!isBuildingUnlocked(id)}
-            lockReason={buildingLockReason(id)}
-            onClick={() => openBuilding(id)}
-          />
-        ))}
+            {/* Bâtiments */}
+            {buildingCards}
 
-        {/* Héros près du puits */}
-        <HeroAvatar x="50%" y="40%" name={hero.name} src={HERO_SPRITE} />
+            {/* Héros près du puits */}
+            <HeroAvatar x="50%" y="40%" name={hero.name} src={HERO_SPRITE} />
+          </>
+        )}
       </div>
 
       {/* ── UI05/IMM02 — Dialogue PNJ + panneau fonctionnel DANS LA MÊME fenêtre ── */}

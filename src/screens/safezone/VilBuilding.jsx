@@ -8,17 +8,28 @@ export default function VilBuilding({
   closed = false,
   locked = false,
   lockReason = '',
+  position,
 }) {
-  const p = BLD_POS[id]
+  const p = position ?? BLD_POS[id]
   if (!p || !info) return null
   // BLDUNL05 — un bâtiment verrouillé prime sur « fermé » (raison + 🔒 + grisé).
   const dimmed = locked || closed
   return (
     <div
-      className={`bld${locked ? ' bld-locked' : ''}`}
+      className={`bld${position ? ' bld-scene' : ''}${locked ? ' bld-locked' : ''}`}
+      role="button"
+      tabIndex={0}
+      aria-label={info.name}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onClick?.()
+        }
+      }}
       style={{
         left: `${p.x}%`,
         top: `${p.y}%`,
+        ...(position ? { width: `${p.width}%`, zIndex: 10 + Math.round(p.y) } : {}),
         opacity: dimmed ? 0.55 : 1,
         filter: dimmed ? 'grayscale(0.5)' : 'none',
       }}
