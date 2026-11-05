@@ -89,7 +89,12 @@ export default function EnemyCard({
           {dead ? (
             <span>💀</span>
           ) : (
-            <MonsterPortrait monsterId={enemy.monsterId} fallbackEmoji={emoji} size={240} />
+            <MonsterPortrait
+              monsterId={enemy.monsterId}
+              portraitSrc={enemy.portraitSrc}
+              fallbackEmoji={emoji}
+              size={240}
+            />
           )}
         </div>
 

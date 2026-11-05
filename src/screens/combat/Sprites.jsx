@@ -31,7 +31,7 @@ export function HeroBattleSprite({ size = 88 }) {
   )
 }
 
-export function MonsterPortrait({ monsterId, fallbackEmoji, size = 120 }) {
+export function MonsterPortrait({ monsterId, portraitSrc, fallbackEmoji, size = 120 }) {
   const [errored, setErrored] = useState(false)
   if (errored || !monsterId) {
     return (
@@ -42,7 +42,7 @@ export function MonsterPortrait({ monsterId, fallbackEmoji, size = 120 }) {
   }
   return (
     <img
-      src={`/monsters/${monsterId}.png`}
+      src={portraitSrc ?? `/monsters/${monsterId}.png`}
       alt=""
       onError={() => setErrored(true)}
       draggable={false}

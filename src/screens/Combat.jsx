@@ -96,7 +96,7 @@ export default function Combat() {
       >
         {/* Zone ennemis — haut, centré */}
         <div
-          className="flex justify-center items-end gap-10 px-8 pt-6 pb-4 relative"
+          className="flex flex-wrap justify-center items-end gap-10 px-8 pt-6 pb-4 relative"
           style={{ minHeight: '200px' }}
         >
           {/* ANIM02 — onde de choc AoE teintée par l'élément */}
