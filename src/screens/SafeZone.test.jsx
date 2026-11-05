@@ -1,6 +1,6 @@
 // SafeZone — village parchemin + dialogue PNJ (IMM01)
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import SafeZone from './SafeZone'
 import { useGameStore } from '../store/gameStore'
 
@@ -101,5 +101,56 @@ describe('SafeZone — VIL-FACADE01 (façades en grand)', () => {
   it('un bâtiment avec asset (Inn) est rendu en façade (.bld-facade), sans cadre', () => {
     const { container } = render(<SafeZone />)
     expect(container.querySelector('.bld-facade')).not.toBeNull()
+  })
+})
+
+describe('SafeZone — intégration de Greywatch', () => {
+  beforeEach(() => {
+    useGameStore.setState((s) => ({
+      world: { ...s.world, currentLocation: 'greywatch', tickCount: 12 },
+    }))
+  })
+
+  it('compose le nouveau village, garde les bâtiments et ouvre le dialogue de l’auberge', () => {
+    const { container } = render(<SafeZone />)
+    expect(screen.getByRole('region', { name: 'Greywatch village' })).toBeInTheDocument()
+    expect(screen.getByAltText('Village well')).toBeInTheDocument()
+    expect(container.querySelector('.vil-paths')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'The Hearth Inn' }))
+    expect(screen.getByText('Marta')).toBeInTheDocument()
+  })
+
+  it('les bâtiments sont accessibles au clavier', () => {
+    render(<SafeZone />)
+    fireEvent.keyDown(screen.getByRole('button', { name: 'The Hearth Inn' }), { key: 'Enter' })
+    expect(screen.getByText('Marta')).toBeInTheDocument()
+  })
+
+  it('suit l’heure du monde sans se baser sur le drapeau isNight', () => {
+    render(<SafeZone />)
+    act(() =>
+      useGameStore.setState((s) => ({ world: { ...s.world, tickCount: 21, isNight: false } })),
+    )
+    expect(screen.getByRole('region')).toHaveAttribute('data-lighting', 'night')
+    expect(screen.queryByAltText(/Children playing/)).toBeNull()
+  })
+
+  it.each(['south', 'east'])(
+    'la porte %s retourne à la carte sans voyager ni avancer l’heure',
+    (gate) => {
+      render(<SafeZone />)
+      fireEvent.click(screen.getByRole('button', { name: new RegExp(`${gate} gate`) }))
+      expect(useGameStore.getState().currentScreen).toBe('world_map')
+      expect(useGameStore.getState().world.currentLocation).toBe('greywatch')
+      expect(useGameStore.getState().world.tickCount).toBe(12)
+    },
+  )
+
+  it('Millhaven conserve son affichage et ses chemins actuels', () => {
+    useGameStore.setState((s) => ({ world: { ...s.world, currentLocation: 'millhaven' } }))
+    const { container } = render(<SafeZone />)
+    expect(screen.queryByRole('region', { name: 'Greywatch village' })).toBeNull()
+    expect(container.querySelector('.vil-paths')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'The Hearth Inn' })).toBeInTheDocument()
   })
 })
