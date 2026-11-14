@@ -98,7 +98,7 @@ Puis `http://127.0.0.1:5173`. Le **Test harness** s'ouvre au bouton flottant `�
 
 | # | Scénario | Dernier passage | Résultat |
 |---|---|---|---|
-| S1 | Onboarding nouveau joueur | 2026-07-17 (partiel) | ✅ (2 maillons) |
+| S1 | Onboarding nouveau joueur | 2026-11-14 | ✅ auto Playwright (nommage + persistance) — `e2e/scenarios/S1-onboarding.spec.js` |
 | S2 | Récolte → craft forge → équiper | — | ⬜ |
 | S3 | 9 slots + bonus de set | — | ⬜ |
 | S4 | Maître itinérant | — | ⬜ |
