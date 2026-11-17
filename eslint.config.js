@@ -8,7 +8,15 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   // DX-LINTIGNORE01 — `.claude/**` (worktrees temporaires, agents) hors du périmètre lint :
   // un worktree résiduel sur une branche en retard faisait échouer `npm run lint` sur tout le repo.
-  globalIgnores(['dist', 'design', 'coverage', '.claude/**']),
+  globalIgnores([
+    'dist',
+    'design',
+    'coverage',
+    '.claude/**',
+    'test-results',
+    'playwright-report',
+    'blob-report',
+  ]),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -60,6 +68,13 @@ export default defineConfig([
     files: ['src/screens/GodsShop.jsx', 'src/screens/ZoneView.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  // E2E Playwright — fichiers Node + navigateur (process.env côté config, window dans addInitScript).
+  {
+    files: ['e2e/**/*.js', 'playwright.config.js'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
     },
   },
   // DEVBP01 — doit rester en dernier : désactive les règles ESLint de mise en forme

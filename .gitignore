@@ -25,6 +25,12 @@ lerna-debug.log*
 # Test coverage
 coverage/
 
+# Playwright (E2E) — artefacts régénérables
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Python (venv + outils dans scripts/)
 .venv/
 __pycache__/
