@@ -98,7 +98,7 @@ Puis `http://127.0.0.1:5173`. Le **Test harness** s'ouvre au bouton flottant `�
 
 | # | Scénario | Dernier passage | Résultat |
 |---|---|---|---|
-| S1 | Onboarding nouveau joueur | 2026-11-14 | ✅ auto Playwright (nommage + persistance) — `e2e/scenarios/S1-onboarding.spec.js` |
+| S1 | Onboarding nouveau joueur | 2026-11-19 (partiel) — base `3d39457` + `fix/s1-persistance` | ✅ auto Playwright (nommage + nom du héros relu après reload ; sans la chaîne « Premières fois ») — `e2e/scenarios/S1-onboarding.spec.js` |
 | S2 | Récolte → craft forge → équiper | — | ⬜ |
 | S3 | 9 slots + bonus de set | — | ⬜ |
 | S4 | Maître itinérant | — | ⬜ |
@@ -116,6 +116,11 @@ Puis `http://127.0.0.1:5173`. Le **Test harness** s'ouvre au bouton flottant `�
   chaîne « Premières fois ») sans dévier, jusqu'au bout de la chaîne d'onboarding. F5 en cours de route.
 - **Attendu** : chaque étape pointe un élément réellement cliquable ; aucune étape bloquante ; l'état d'onboarding
   persiste après F5 ; la chaîne ne se redéclenche pas une fois terminée ; **tout le texte est en anglais**.
+- **Couverture auto (partielle)** : `e2e/scenarios/S1-onboarding.spec.js` couvre le nommage, la sauvegarde et le
+  reload. Après le reload, il attend le montage React (`#boot-splash` absent), puis le nom du héros relu depuis la
+  save, avant de vérifier que l'écran de création ne revient pas. Il ne couvre pas encore le guidage, la chaîne
+  « Premières fois », un F5 en cours de chaîne, ni le texte entièrement en anglais : ces points restent en recette
+  manuelle.
 - **Valide** : QONBOARD01/QOBJ-TYPES01, first-time UX, persistance.
 
 ## S2 — Récolte → craft forge (mini-jeu) → équiper
