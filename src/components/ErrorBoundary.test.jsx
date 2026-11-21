@@ -143,3 +143,43 @@ describe('ErrorBoundary — TECH01', () => {
     expect(screen.getByText(/Copy error details/i)).toBeInTheDocument()
   })
 })
+
+// LB-11 — Topbar, Breadcrumb, Sidebar, modales et toasts sont rendus hors des boundaries
+// d'écran d'App.jsx : une erreur chez eux doit afficher le fallback, pas un écran blanc.
+describe('LB-11 — boundary racine (main.jsx)', () => {
+  let rootEl
+
+  beforeEach(() => {
+    rootEl = document.createElement('div')
+    rootEl.id = 'root'
+    document.body.appendChild(rootEl)
+    vi.resetModules()
+  })
+
+  afterEach(() => {
+    rootEl.remove()
+    vi.doUnmock('../App.jsx')
+    vi.doUnmock('../config')
+    vi.resetModules()
+  })
+
+  it('une erreur de rendu hors des écrans affiche le fallback « Reload / Reset save »', async () => {
+    // main.jsx lance aussi loadBalance au boot : sans rapport avec la boundary, on le neutralise.
+    vi.doMock('../config', () => ({
+      FEATURE_FLAGS: { csvBalanceLive: false },
+      loadBalance: vi.fn(),
+    }))
+    vi.doMock('../App.jsx', () => ({
+      default: function CrashingApp() {
+        throw new Error('Topbar crash')
+      },
+    }))
+
+    await import('../main.jsx')
+
+    expect(await screen.findByText(/Something broke/i)).toBeInTheDocument()
+    expect(screen.getByText(/Topbar crash/)).toBeInTheDocument()
+    expect(screen.getByText(/Reload page/i)).toBeInTheDocument()
+    expect(screen.getByText(/Reset save/i)).toBeInTheDocument()
+  })
+})
