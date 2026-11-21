@@ -315,9 +315,11 @@ function Topbar({ onOpenSettings }) {
   const [saveMenuOpen, setSaveMenuOpen] = useState(false)
   const fileRef = useRef(null)
   const handleSave = () => {
-    saveGame()
-    setSaveFlash(true)
-    setTimeout(() => setSaveFlash(false), 1500)
+    // LB-01 — pas de « ✓ » quand rien n'a été écrit (save illisible protégée, quota dépassé).
+    if (saveGame()) {
+      setSaveFlash(true)
+      setTimeout(() => setSaveFlash(false), 1500)
+    }
     setSaveMenuOpen(false)
   }
 
