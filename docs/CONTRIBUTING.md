@@ -382,7 +382,7 @@ Les décisions structurantes sont documentées dans **`CONTEXT.md` §11**. Avant
 
 - `TASKS.md` — backlog source de vérité
 - `CONTEXT.md` — état du projet, ADRs, processus condensé
-- `CHANGELOG.md` — historique versions
+- `docs/CHANGELOG.md` — historique versions
 - `balance/combat_stats.csv` — stats monstres calculées (×zone × run scaling)
 - `public/monsters/README.md` — guide génération portraits
 
@@ -391,5 +391,5 @@ Les décisions structurantes sont documentées dans **`CONTEXT.md` §11**. Avant
 ## Questions ouvertes / à formaliser
 
 - **Branche `release/*`** ? Pour stabiliser une version avant merge master. Pas mis en place pour le moment (équipe solo, friction inutile).
-- **Automatisation** ? Pas de CI GitHub Actions pour l'instant (ticket DX-CI01). À considérer en v1 si le projet grossit (`npm run lint` + `npm run test:run` + `npm run build` à chaque PR).
+- **Automatisation** ? CI GitHub Actions en place (DX-CI01, `.github/workflows/ci.yml`) : `npm run lint` + `npm run test:run` + `npm run build` sous Node 20, à chaque push sur `master`/`dev` et à chaque PR. Reste ouvert : elle n'exécute ni `format:check` ni les e2e Playwright, donc pas toute la porte (`npm run porte`) — à arbitrer, voir `AGENTS.md` §7 (CI).
 - ~~**Pré-commit hook** ?~~ ✅ Fait (DEVBP01) : `husky` + `lint-staged` installés, hook pre-commit actif (eslint --fix + prettier sur les fichiers stagés). Voir §8.

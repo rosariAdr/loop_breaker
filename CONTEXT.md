@@ -47,7 +47,7 @@ npm run lint          # ESLint check
 **Hébergement v1 (DEPLOY01)** : **Vercel + Vercel Authentication** (alpha **privée**). SPA 100 % client-side (pas de backend ; saves `localStorage`). Routing SPA via `vercel.json` (rewrites → `/index.html`). Réglages : preset Vite · build `npm run build` · output `dist`. ✅ **`public/` est committé** (DEPLOY01) → assets servis par Vercel (`raw/` HD exclus). Le **durcissement réel** (backend, autorité serveur, comptes/rôles, anti-triche) est repoussé à une version ultérieure (cf. `SEC02`) — l'alpha privée s'appuie uniquement sur l'auth Vercel.
 
 **État technique (2026-07-20, release 0.2.0)** :
-- **2044 tests** dans **178 fichiers** — tous verts (`npx vitest run`) ; couverture lignes **84.83 %** (seuil ≥ 70 %). *(NB : un compte antérieur ~3437 était gonflé par un worktree résiduel `.claude/` doublonné — corrigé via DX-LINTIGNORE01.)*
+- **2044 tests** dans **178 fichiers** — tous verts (`npx vitest run`) ; couverture lignes **84.83 %** (seuil ≥ 80 %, `vite.config.js`). *(NB : un compte antérieur ~3437 était gonflé par un worktree résiduel `.claude/` doublonné — corrigé via DX-LINTIGNORE01.)*
 - Build prod : **~570 KB JS / ~160 KB gzipped** (code-split : chunks Combat/GodsShop/Codex lazy)
 - ESLint : **0 erreur** (`.claude/**` ignoré), quelques warnings intentionnels (`react-hooks/exhaustive-deps` sur des `useEffect` run-once)
 - **Milestones livrés** : v1 (POC), v1.1 (UI parchemin + sprites + QoL), v1.2 (NPC→STA→PROG), **v1.31→1.33 (quêtes / skills-drops / progression)**, **v1.34 (Tech/DX/Balance)**, **v1.42 (Équipement & Craft — recettes unifiées `craftRecipes.js`)**, **v1.43 (Maîtres & mentors + itinérants)**, **UI critique (UI11/UI12)**, **onboarding**. **DEPLOY01** : repo prêt pour Vercel (alpha privée), `public/` committé. Reste backlog v1.41 (donjon), combat ATB (v1.44), design + univers.
@@ -196,7 +196,7 @@ racine/
 ### Inventory / Equipment / Calendar / Donjons / Save
 - 4 slots équipement, mana stones, resources, consumables. Calendrier 24 ticks/jour, sleep (restore + spawn donjons + **tick debuffs CRF01**), church pray (1 tick CAL01).
 - Donjons : `world.dungeons[zoneId] = { active, cleared, position, discovered }`, loot exclusif (D04), warp sortie (D05), idle interdit (D07). **Manque** : flux 5 salles path map (D01), carte donjon (D03), respawn nuit (D06).
-- Save : localStorage `roguelite_save`, migration robuste (`runMigrations`/`normalizeSave` dans `store/migrations.js`, SAVE_VERSION=2). **Règle non négociable** : tout champ `INITIAL_*` → ligne de migration + test.
+- Save : localStorage `roguelite_save`, migration robuste (`runMigrations`/`normalizeSave` dans `store/migrations.js`, `SAVE_VERSION=4` dans `store/initialState.js`). **Règle non négociable** : tout champ `INITIAL_*` → ligne de migration + test.
 
 ### Stats de tension (STA — v1.2)
 - **Vigueur** (STA01, 0-100) : décroît à l'effort, restaurée au sommeil, malus par palier. **Aura** (STA02) : multiplicateur de dégâts permanent, débloquée à l'usage (masquée avant). **Concentration** (STA03) : qualité de craft. Atténuation Fatigue par Aura/Concentration (STA04). Livres de stats (ITM01), entraînement chez un maître (TRA01).
