@@ -30,16 +30,24 @@ test.describe('S1 — Onboarding nouveau joueur', () => {
     await nameInput.fill(HERO_NAME)
     await page.getByRole('button', { name: /Begin the Journey/ }).click()
 
-    // 3) Le modal disparaît et on est en jeu (topbar « Run #1 »).
+    // 3) Le modal disparaît et on est en jeu : le nom choisi s'affiche sur la carte.
+    // (« Run #1 » ne prouve rien : la topbar l'affiche aussi sous le modal de création.)
     await expect(page.getByText('The Wanderer Awakes')).toHaveCount(0)
-    await expect(page.getByText(/Run #1/)).toBeVisible()
+    await expect(page.getByText(HERO_NAME, { exact: true })).toBeVisible()
 
     // 4) Sauvegarder explicitement (la save auto est débouncée ~30 s).
     await page.getByText('Save', { exact: true }).click()
     await page.getByRole('button', { name: /Save now/ }).click()
 
-    // 5) Reload : l'onboarding ne se re-déclenche pas, l'état persiste.
+    // 5) Reload : l'état persiste et l'onboarding ne se re-déclenche pas.
     await page.reload()
+    // 5a) Signal positif de montage : React a remplacé le splash statique (cf. smoke.spec.js).
+    await expect(page.locator('#boot-splash')).toHaveCount(0)
+    // 5b) Signal propre au héros nommé : son nom, lu depuis la save (le héros par défaut
+    // s'appelle « The Wanderer »). Il n'apparaît qu'une fois `loadGame` appliqué.
+    await expect(page.getByText(HERO_NAME, { exact: true })).toBeVisible()
+    // 5c) Seulement alors, l'assertion négative : sans les deux signaux ci-dessus, elle pourrait
+    // être lue avant le premier rendu React et passer à tort (LB-02).
     await expect(page.getByText('The Wanderer Awakes')).toHaveCount(0)
     await expect(page.getByText(/Run #1/)).toBeVisible()
   })
